@@ -188,6 +188,8 @@ Rules:
 
 ## PF-E9: Decision Workbench And DCC
 
+Status: complete
+
 Purpose: add decision creation, compile, approvals, evidence resolution, risk acceptance, and current-state overlay.
 
 Deliverables:

@@ -21,9 +21,9 @@
 | PF-E6 | Dedicated frontend shell | Complete | |
 | PF-E7 | Full Admin UI | Complete | |
 | PF-E8 | SRA MCP advisory layer | Complete | |
-| PF-E9 | Decision Workbench and DCC | Pending | |
+| PF-E9 | Decision Workbench and DCC | Complete | |
 | PF-E10 | Reports, demos, validation pack | Pending | |
 
 ## Next Epic
 
-PF-E9: Patch decision workbench and Decision Control Center.
+PF-E10: PatchForge reports, demos, and validation pack.

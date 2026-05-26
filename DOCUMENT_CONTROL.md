@@ -50,6 +50,8 @@ DIIaC™ PatchForge
 | customer-config/demo/admin_config.json | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | backend-api/sra/securityResearchAgent.js | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | backend-api/sra/securityResearchAgent.test.mjs | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| runtime/decision_control_center.py | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| runtime/tests/test_decision_control_center.py | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 
 ## Change Control
 

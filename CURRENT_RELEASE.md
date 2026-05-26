@@ -1,14 +1,14 @@
 # Current Release
 
-## DIIaC™ PatchForge PF-E8
+## DIIaC™ PatchForge PF-E9
 
-Release state: SRA advisory layer baseline in progress
+Release state: Decision Control Center baseline in progress
 
 Date: 2026-05-26
 
 ## Scope
 
-PF-E8 adds the Security Research Agent advisory layer inside PatchForge governance boundaries.
+PF-E9 adds PatchForge Decision Control Center runtime foundations.
 
 Included:
 
@@ -65,6 +65,14 @@ Included:
 - pending-review default
 - no exploit or deployment action flags
 - SRA boundary tests
+- immutable source pack model
+- current-state overlay model
+- DCC event ledger
+- evidence blocker resolution
+- human approval recording
+- risk acceptance expiry checks
+- post-patch validation event handling
+- DCC tests
 - release baseline manifest
 - document control register
 
