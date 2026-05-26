@@ -3,37 +3,63 @@
   "target": "production-postgresql-temporary-firewall-rule",
   "tenant_id": "diiac.io",
   "cleanup_scope": "CVE-2026-PF-DEMO-001",
-  "deleted": [
+  "cleanup_passes": [
     {
-      "collection": "vulnerabilities",
-      "count": 0,
-      "record_ids": []
+      "timestamp_utc": "2026-05-26T23:30:45.656Z",
+      "purpose": "remove live-visible synthetic PF-AZ5 validation records",
+      "deleted": [
+        {
+          "collection": "vulnerabilities",
+          "count": 1,
+          "record_ids": [
+            "CVE-2026-PF-DEMO-001"
+          ]
+        },
+        {
+          "collection": "sources",
+          "count": 2,
+          "record_ids": [
+            "src-61584ffd-71ea-4e55-83ee-1d0862f26c07",
+            "src-5d9e179f-3837-4aef-9686-3eb8bf58e97f"
+          ]
+        },
+        {
+          "collection": "decision_packs",
+          "count": 1,
+          "record_ids": [
+            "PF-20260526-e90d3a02"
+          ]
+        },
+        {
+          "collection": "bayesian_assessments",
+          "count": 0,
+          "record_ids": []
+        }
+      ]
     },
     {
-      "collection": "sources",
-      "count": 0,
-      "record_ids": []
-    },
-    {
-      "collection": "decision_packs",
-      "count": 0,
-      "record_ids": []
-    },
-    {
-      "collection": "bayesian_assessments",
-      "count": 0,
-      "record_ids": []
-    },
-    {
-      "collection": "audit_events",
-      "count": 3,
-      "record_ids": [
-        "audit-24ace961-a7f4-4018-a711-fadc3f80401b",
-        "audit-7f2c73e9-a318-4307-bc6f-8952d6144364",
-        "audit-ab719986-33a4-4399-9ae0-cb6d09e79e12"
+      "timestamp_utc": "2026-05-26T23:35:06.490Z",
+      "purpose": "remove internal audit references to the synthetic PF-AZ5 validation record",
+      "deleted": [
+        {
+          "collection": "audit_events",
+          "count": 3,
+          "record_ids": [
+            "audit-24ace961-a7f4-4018-a711-fadc3f80401b",
+            "audit-7f2c73e9-a318-4307-bc6f-8952d6144364",
+            "audit-ab719986-33a4-4399-9ae0-cb6d09e79e12"
+          ]
+        }
       ]
     }
   ],
+  "deleted_totals": {
+    "vulnerabilities": 1,
+    "sources": 2,
+    "decision_packs": 1,
+    "bayesian_assessments": 0,
+    "audit_events": 3
+  },
   "remaining_demo_records": [],
   "verification": "pass"
 }
