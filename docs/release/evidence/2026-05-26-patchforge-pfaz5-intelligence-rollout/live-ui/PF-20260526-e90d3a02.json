@@ -1,0 +1,1002 @@
+{
+  "tenant_id": "diiac.io",
+  "tenant_context": {
+    "requested_tenant_id": "diiac.io",
+    "effective_tenant_id": "diiac.io",
+    "token_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+    "tenant_id_source": "token_mapping",
+    "tenant_override_ignored": false
+  },
+  "pack_id": "PF-20260526-e90d3a02",
+  "exported_at": "2026-05-26T21:24:47.165Z",
+  "source_pack_immutable": true,
+  "verification": {
+    "verified": true,
+    "artefacts": [
+      {
+        "ok": true,
+        "name": "affected_asset_scope.json",
+        "actual": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843",
+        "expected": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843"
+      },
+      {
+        "ok": true,
+        "name": "bayesian_patch_risk_snapshot.json",
+        "actual": "2cc9789bae2dc3a993231e34052868eecbba71b7517f2e58cdba1bf0ff02c6d4",
+        "expected": "2cc9789bae2dc3a993231e34052868eecbba71b7517f2e58cdba1bf0ff02c6d4"
+      },
+      {
+        "ok": true,
+        "name": "compensating_controls_plan.json",
+        "actual": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+        "expected": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+      },
+      {
+        "ok": true,
+        "name": "exploitability_assessment.json",
+        "actual": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843",
+        "expected": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843"
+      },
+      {
+        "ok": true,
+        "name": "human_review_state.json",
+        "actual": "f5f8227f3fa4f41292047918bc64d137e32d178ec0ec747dde4e0e5479863180",
+        "expected": "f5f8227f3fa4f41292047918bc64d137e32d178ec0ec747dde4e0e5479863180"
+      },
+      {
+        "ok": true,
+        "name": "patch_change_readiness.json",
+        "actual": "0f508a5b6ba0bb870b67ec8f9e2e3691cc0848893d9798cd484de6c1b865af6e",
+        "expected": "0f508a5b6ba0bb870b67ec8f9e2e3691cc0848893d9798cd484de6c1b865af6e"
+      },
+      {
+        "ok": true,
+        "name": "patch_decision_context.json",
+        "actual": "04b00af6f65c04cb4f1e79356cb31a27f824b89d757ca2e8e20b53b937d931ba",
+        "expected": "04b00af6f65c04cb4f1e79356cb31a27f824b89d757ca2e8e20b53b937d931ba"
+      },
+      {
+        "ok": true,
+        "name": "patch_feasibility_assessment.json",
+        "actual": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+        "expected": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+      },
+      {
+        "ok": true,
+        "name": "patch_prior_update_proposal.json",
+        "actual": "ebd17e0c3518ab9b4f9ec1402c52a30c51159eb7b324036c18a4ac825745debc",
+        "expected": "ebd17e0c3518ab9b4f9ec1402c52a30c51159eb7b324036c18a4ac825745debc"
+      },
+      {
+        "ok": true,
+        "name": "patch_prior_usage_manifest.json",
+        "actual": "1ec923d2d899a39e2c1abf07c969efc219a9047d5583c1d35bccd912ebe56215",
+        "expected": "1ec923d2d899a39e2c1abf07c969efc219a9047d5583c1d35bccd912ebe56215"
+      },
+      {
+        "ok": true,
+        "name": "patch_risk_acceptance_state.json",
+        "actual": "240fa9c55e6c6a5659a74edfc30c159d74c3616651fa672443d312682e6c66df",
+        "expected": "240fa9c55e6c6a5659a74edfc30c159d74c3616651fa672443d312682e6c66df"
+      },
+      {
+        "ok": true,
+        "name": "replay_certificate.json",
+        "actual": "df2b7e2499462e80100c15409b6a528b6d8142539266454a430522b54f096688",
+        "expected": "df2b7e2499462e80100c15409b6a528b6d8142539266454a430522b54f096688"
+      },
+      {
+        "ok": true,
+        "name": "sra_trace.json",
+        "actual": "47dbb360210fd7279ed2120f0e090807e8de6b6198ebe6d2bfac7f8a514b8292",
+        "expected": "47dbb360210fd7279ed2120f0e090807e8de6b6198ebe6d2bfac7f8a514b8292"
+      },
+      {
+        "ok": true,
+        "name": "threat_landscape_snapshot.json",
+        "actual": "70af08ad65b18133874e3e3dd08e9a8089504f598bbd06ce515eddd8203a5516",
+        "expected": "70af08ad65b18133874e3e3dd08e9a8089504f598bbd06ce515eddd8203a5516"
+      },
+      {
+        "ok": true,
+        "name": "trust_bundle.json",
+        "actual": "af2e7686ddf7befdc5df08c00811af347a9f944457285dc6ba6ac4f39a6de4ed",
+        "expected": "af2e7686ddf7befdc5df08c00811af347a9f944457285dc6ba6ac4f39a6de4ed"
+      },
+      {
+        "ok": true,
+        "name": "vendor_intelligence_snapshot.json",
+        "actual": "2e240f711b516376553cf0e1479b5d9a4e2df182c0723d207958448a90898a3f",
+        "expected": "2e240f711b516376553cf0e1479b5d9a4e2df182c0723d207958448a90898a3f"
+      },
+      {
+        "ok": true,
+        "name": "vulnerability_intelligence_snapshot.json",
+        "actual": "9462af3633516f0ede2809bfcf2f8786d693b84e560b94a533bc87e5b524fe2a",
+        "expected": "9462af3633516f0ede2809bfcf2f8786d693b84e560b94a533bc87e5b524fe2a"
+      }
+    ],
+    "manifest_ok": true,
+    "signature_ok": true
+  },
+  "decision_pack": {
+    "pack_id": "PF-20260526-e90d3a02",
+    "blockers": [
+      "affected_asset_scope",
+      "human_review_signoff",
+      "patch_availability",
+      "vulnerability_identity"
+    ],
+    "actor_oid": "2d2f273d-a815-4a19-a258-c48c858252f3",
+    "actor_upn": "n.bailey@diiac.io",
+    "artefacts": {
+      "sra_trace.json": {
+        "available": false,
+        "advisory_only": true,
+        "can_close_hard_gates_alone": false
+      },
+      "signed_export.sig": "wG4ObW3BMkdUYkFlSO8EdBPFuevFjrJG1AWLt0O72tbgSdCRm9spxfaG5KS2WB_oUjqPeXJ-iWP532Jhauy9KQ",
+      "trust_bundle.json": {
+        "key_id": "https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod",
+        "signing_mode": "azure_key_vault",
+        "signature_scope": "artefact_integrity_not_source_truth"
+      },
+      "human_review_state.json": {
+        "approval_events": [],
+        "final_approval_issued": false,
+        "no_autonomous_approval": true
+      },
+      "replay_certificate.json": {
+        "pack_id": "PF-20260526-e90d3a02",
+        "created_at": "2026-05-26T21:24:16+00:00",
+        "source_pack_immutable": true
+      },
+      "governance_manifest.json": {
+        "pack_id": "PF-20260526-e90d3a02",
+        "boundary": {
+          "no_scanner": true,
+          "no_patch_deployment": true,
+          "no_exploit_generation": true,
+          "no_autonomous_approval": true,
+          "no_production_mutation": true
+        },
+        "artefacts": [
+          {
+            "name": "affected_asset_scope.json",
+            "sha256": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843"
+          },
+          {
+            "name": "bayesian_patch_risk_snapshot.json",
+            "sha256": "2cc9789bae2dc3a993231e34052868eecbba71b7517f2e58cdba1bf0ff02c6d4"
+          },
+          {
+            "name": "compensating_controls_plan.json",
+            "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+          },
+          {
+            "name": "exploitability_assessment.json",
+            "sha256": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843"
+          },
+          {
+            "name": "human_review_state.json",
+            "sha256": "f5f8227f3fa4f41292047918bc64d137e32d178ec0ec747dde4e0e5479863180"
+          },
+          {
+            "name": "patch_change_readiness.json",
+            "sha256": "0f508a5b6ba0bb870b67ec8f9e2e3691cc0848893d9798cd484de6c1b865af6e"
+          },
+          {
+            "name": "patch_decision_context.json",
+            "sha256": "04b00af6f65c04cb4f1e79356cb31a27f824b89d757ca2e8e20b53b937d931ba"
+          },
+          {
+            "name": "patch_feasibility_assessment.json",
+            "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+          },
+          {
+            "name": "patch_prior_update_proposal.json",
+            "sha256": "ebd17e0c3518ab9b4f9ec1402c52a30c51159eb7b324036c18a4ac825745debc"
+          },
+          {
+            "name": "patch_prior_usage_manifest.json",
+            "sha256": "1ec923d2d899a39e2c1abf07c969efc219a9047d5583c1d35bccd912ebe56215"
+          },
+          {
+            "name": "patch_risk_acceptance_state.json",
+            "sha256": "240fa9c55e6c6a5659a74edfc30c159d74c3616651fa672443d312682e6c66df"
+          },
+          {
+            "name": "replay_certificate.json",
+            "sha256": "df2b7e2499462e80100c15409b6a528b6d8142539266454a430522b54f096688"
+          },
+          {
+            "name": "sra_trace.json",
+            "sha256": "47dbb360210fd7279ed2120f0e090807e8de6b6198ebe6d2bfac7f8a514b8292"
+          },
+          {
+            "name": "threat_landscape_snapshot.json",
+            "sha256": "70af08ad65b18133874e3e3dd08e9a8089504f598bbd06ce515eddd8203a5516"
+          },
+          {
+            "name": "trust_bundle.json",
+            "sha256": "af2e7686ddf7befdc5df08c00811af347a9f944457285dc6ba6ac4f39a6de4ed"
+          },
+          {
+            "name": "vendor_intelligence_snapshot.json",
+            "sha256": "2e240f711b516376553cf0e1479b5d9a4e2df182c0723d207958448a90898a3f"
+          },
+          {
+            "name": "vulnerability_intelligence_snapshot.json",
+            "sha256": "9462af3633516f0ede2809bfcf2f8786d693b84e560b94a533bc87e5b524fe2a"
+          }
+        ],
+        "tenant_id": "diiac.io",
+        "created_at": "2026-05-26T21:24:16+00:00",
+        "decision_id": "decision-8a6da8f2-3c37-4d11-a95c-426fb56a71ff",
+        "decision_posture": "defer_pending_evidence",
+        "final_approval_issued": false,
+        "source_pack_immutable": true
+      },
+      "affected_asset_scope.json": {
+        "evidence": []
+      },
+      "signed_export.sigmeta.json": {
+        "key_id": "https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod/2e348fdeaaaf448ebba206130ef86b52",
+        "algorithm": "ES256",
+        "public_jwk": {
+          "x": "yzeI7iI0iH9eeQugSaJFdOkessqDo9fEo1Bmofm5JwA",
+          "y": "IaBFNHG2ZaWZSyCcagh5hUu_BPPdA_piXNwE9eS2APc",
+          "crv": "JsonWebKeyCurveName.P256",
+          "kty": "JsonWebKeyType.EC"
+        },
+        "dev_key_hint": null,
+        "signed_payload": {
+          "pack_id": "PF-20260526-e90d3a02",
+          "governance_manifest_sha256": "d601294a7c96b9438e3d489b382eb4f86e45a6441432f5509816bb52771097d4",
+          "verification_manifest_sha256": "ec0dac1ad21085cf2ca2062e19271f390ccdd6c46da3fccc23d36124ae83f29b"
+        },
+        "signing_provider": "azure_key_vault",
+        "signature_encoding": "base64url_raw_ecdsa"
+      },
+      "verification_manifest.json": {
+        "pack_id": "PF-20260526-e90d3a02",
+        "expected_artefacts": [
+          "vulnerability_intelligence_snapshot.json",
+          "patch_decision_context.json",
+          "affected_asset_scope.json",
+          "exploitability_assessment.json",
+          "patch_feasibility_assessment.json",
+          "compensating_controls_plan.json",
+          "patch_change_readiness.json",
+          "patch_risk_acceptance_state.json",
+          "human_review_state.json",
+          "bayesian_patch_risk_snapshot.json",
+          "patch_prior_usage_manifest.json",
+          "patch_prior_update_proposal.json",
+          "vendor_intelligence_snapshot.json",
+          "threat_landscape_snapshot.json",
+          "sra_trace.json",
+          "governance_manifest.json",
+          "verification_manifest.json",
+          "trust_bundle.json",
+          "replay_certificate.json"
+        ],
+        "verification_scope": "local_artefact_hashes_and_signature",
+        "governance_manifest_sha256": "d601294a7c96b9438e3d489b382eb4f86e45a6441432f5509816bb52771097d4"
+      },
+      "patch_change_readiness.json": {
+        "blockers": [
+          "affected_asset_scope",
+          "human_review_signoff",
+          "patch_availability",
+          "vulnerability_identity"
+        ],
+        "readiness_score": 0,
+        "readiness_state": "blocked",
+        "final_approval_issued": false
+      },
+      "patch_decision_context.json": {
+        "blockers": [
+          "affected_asset_scope",
+          "human_review_signoff",
+          "patch_availability",
+          "vulnerability_identity"
+        ],
+        "readiness": {
+          "blockers": [
+            "affected_asset_scope",
+            "human_review_signoff",
+            "patch_availability",
+            "vulnerability_identity"
+          ],
+          "readiness_score": 0,
+          "readiness_state": "blocked",
+          "final_approval_issued": false
+        },
+        "tenant_id": "diiac.io",
+        "created_at": "2026-05-26T21:24:16+00:00",
+        "decision_id": "decision-8a6da8f2-3c37-4d11-a95c-426fb56a71ff",
+        "evidence_refs": [
+          "src-61584ffd-71ea-4e55-83ee-1d0862f26c07",
+          "src-5d9e179f-3837-4aef-9686-3eb8bf58e97f"
+        ],
+        "evidence_model": "vuln_patch_governance",
+        "decision_posture": "defer_pending_evidence",
+        "vulnerability_id": "CVE-2026-PF-DEMO-001",
+        "decision_rationale": "Deterministic PatchForge governance context compiled from source-bound evidence.",
+        "human_review_state": "pending",
+        "final_approval_issued": false
+      },
+      "exploitability_assessment.json": {
+        "evidence": []
+      },
+      "threat_landscape_snapshot.json": {
+        "metrics": {
+          "ot_relevance": 0,
+          "patch_maturity": "unknown",
+          "known_exploited_rate": 0,
+          "patch_available_rate": 0,
+          "false_positive_history": 0,
+          "customer_estate_exposure": 0,
+          "active_exploitation_count": 0,
+          "superseded_advisory_count": 0,
+          "vendor_response_timeliness": "source_bound_pending_review",
+          "critical_open_advisory_count": 0,
+          "internet_exposed_asset_count": 0,
+          "open_customer_decision_count": 0
+        },
+        "tenant_id": "diiac.io",
+        "generated_at": "2026-05-26T21:24:16.331Z",
+        "source_bound": true,
+        "vendor_count": 28,
+        "review_required": true,
+        "top_exposed_vendors": []
+      },
+      "compensating_controls_plan.json": {},
+      "patch_prior_usage_manifest.json": {
+        "dry_run_only": true,
+        "prior_set_id": "patchforge-default-v1",
+        "advisory_only": true,
+        "prior_usage_id": "prior-1779830656328",
+        "live_prior_mutation_performed": false
+      },
+      "patch_prior_update_proposal.json": {
+        "dry_run": true,
+        "proposal_id": "not-generated",
+        "live_update_applied": false,
+        "admin_approval_required": true
+      },
+      "patch_risk_acceptance_state.json": {
+        "final_approval_issued": false
+      },
+      "bayesian_patch_risk_snapshot.json": {
+        "boundary": {
+          "no_patch_deployment": true,
+          "no_autonomous_approval": true,
+          "prior_update_dry_run_only": true
+        },
+        "prior_usage": {
+          "dry_run_only": true,
+          "prior_set_id": "patchforge-default-v1",
+          "advisory_only": true,
+          "prior_usage_id": "prior-1779830636109",
+          "live_prior_mutation_performed": false
+        },
+        "generated_at": "2026-05-26T21:23:56.109Z",
+        "advisory_only": true,
+        "assessment_id": "bayes-1779830636109",
+        "change_risk_posterior": 0.52,
+        "final_approval_issued": false,
+        "deferral_risk_posterior": 0.585,
+        "business_impact_posterior": 0.35,
+        "can_close_hard_gates_alone": false,
+        "patch_feasibility_posterior": 0.67,
+        "exploit_probability_posterior": 0.62,
+        "recommended_governance_posture": "defer_pending_evidence"
+      },
+      "patch_feasibility_assessment.json": {},
+      "vendor_intelligence_snapshot.json": {
+        "available": false,
+        "source_bound": true,
+        "review_required": true,
+        "can_close_hard_gates_alone": false
+      },
+      "vulnerability_intelligence_snapshot.json": {
+        "tags": [],
+        "title": "Orion Gateway critical known-exploited exposure",
+        "sources": [
+          {
+            "actor_oid": "2d2f273d-a815-4a19-a258-c48c858252f3",
+            "actor_upn": "n.bailey@diiac.io",
+            "tenant_id": "diiac.io",
+            "source_url": "https://patchforge.diiac.io/live-validation",
+            "actor_roles": [
+              "PatchForge.Admin"
+            ],
+            "ingested_at": "2026-05-26T21:21:36.915Z",
+            "reviewed_at": null,
+            "reviewed_by": null,
+            "source_name": "PatchForge live validation operator input",
+            "payload_hash": "3dc6f1468804a1fd165f37365dd9a6dc94f848669edcfc24c288d4a07976ca1c",
+            "review_state": "pending_review",
+            "source_class": "vendor_advisory",
+            "evidence_state": "referenced",
+            "actor_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+            "source_record_id": "src-61584ffd-71ea-4e55-83ee-1d0862f26c07",
+            "tenant_id_source": "token_mapping",
+            "vulnerability_id": "CVE-2026-PF-DEMO-001",
+            "effective_tenant_id": "diiac.io",
+            "requested_tenant_id": "diiac.io",
+            "tenant_override_ignored": false
+          },
+          {
+            "actor_oid": "2d2f273d-a815-4a19-a258-c48c858252f3",
+            "actor_upn": "n.bailey@diiac.io",
+            "tenant_id": "diiac.io",
+            "source_url": "https://patchforge.diiac.io/live-validation",
+            "actor_roles": [
+              "PatchForge.Admin"
+            ],
+            "ingested_at": "2026-05-26T21:22:54.662Z",
+            "reviewed_at": null,
+            "reviewed_by": null,
+            "source_name": "PatchForge live validation operator input",
+            "payload_hash": "3dc6f1468804a1fd165f37365dd9a6dc94f848669edcfc24c288d4a07976ca1c",
+            "review_state": "pending_review",
+            "source_class": "vendor_advisory",
+            "evidence_state": "referenced",
+            "actor_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+            "source_record_id": "src-5d9e179f-3837-4aef-9686-3eb8bf58e97f",
+            "tenant_id_source": "token_mapping",
+            "vulnerability_id": "CVE-2026-PF-DEMO-001",
+            "effective_tenant_id": "diiac.io",
+            "requested_tenant_id": "diiac.io",
+            "tenant_override_ignored": false
+          }
+        ],
+        "severity": "critical",
+        "actor_oid": "2d2f273d-a815-4a19-a258-c48c858252f3",
+        "actor_upn": "n.bailey@diiac.io",
+        "tenant_id": "diiac.io",
+        "created_at": "2026-05-26T21:22:54.662Z",
+        "cvss_score": null,
+        "sla_due_at": null,
+        "updated_at": null,
+        "actor_roles": [
+          "PatchForge.Admin"
+        ],
+        "description": "",
+        "ot_relevant": false,
+        "canonical_id": "CVE-2026-PF-DEMO-001",
+        "patch_status": "patch_available",
+        "review_state": "pending_review",
+        "source_state": "source_bound",
+        "actor_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+        "known_exploited": true,
+        "internet_exposed": true,
+        "tenant_id_source": "token_mapping",
+        "vulnerability_id": "CVE-2026-PF-DEMO-001",
+        "source_record_ids": [
+          "src-5d9e179f-3837-4aef-9686-3eb8bf58e97f"
+        ],
+        "affected_asset_ids": [
+          "orion-gateway-prod-01"
+        ],
+        "effective_tenant_id": "diiac.io",
+        "requested_tenant_id": "diiac.io",
+        "affected_service_ids": [
+          "Orion Gateway"
+        ],
+        "tenant_override_ignored": false,
+        "usable_evidence_sources": []
+      }
+    },
+    "readiness": {
+      "blockers": [
+        "affected_asset_scope",
+        "human_review_signoff",
+        "patch_availability",
+        "vulnerability_identity"
+      ],
+      "readiness_score": 0,
+      "readiness_state": "blocked",
+      "final_approval_issued": false
+    },
+    "tenant_id": "diiac.io",
+    "created_at": "2026-05-26T21:24:16+00:00",
+    "actor_roles": [
+      "PatchForge.Admin"
+    ],
+    "decision_id": "decision-8a6da8f2-3c37-4d11-a95c-426fb56a71ff",
+    "verification": {
+      "verified": true,
+      "artefacts": [
+        {
+          "ok": true,
+          "name": "affected_asset_scope.json",
+          "actual": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843",
+          "expected": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843"
+        },
+        {
+          "ok": true,
+          "name": "bayesian_patch_risk_snapshot.json",
+          "actual": "2cc9789bae2dc3a993231e34052868eecbba71b7517f2e58cdba1bf0ff02c6d4",
+          "expected": "2cc9789bae2dc3a993231e34052868eecbba71b7517f2e58cdba1bf0ff02c6d4"
+        },
+        {
+          "ok": true,
+          "name": "compensating_controls_plan.json",
+          "actual": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+          "expected": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+        },
+        {
+          "ok": true,
+          "name": "exploitability_assessment.json",
+          "actual": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843",
+          "expected": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843"
+        },
+        {
+          "ok": true,
+          "name": "human_review_state.json",
+          "actual": "f5f8227f3fa4f41292047918bc64d137e32d178ec0ec747dde4e0e5479863180",
+          "expected": "f5f8227f3fa4f41292047918bc64d137e32d178ec0ec747dde4e0e5479863180"
+        },
+        {
+          "ok": true,
+          "name": "patch_change_readiness.json",
+          "actual": "0f508a5b6ba0bb870b67ec8f9e2e3691cc0848893d9798cd484de6c1b865af6e",
+          "expected": "0f508a5b6ba0bb870b67ec8f9e2e3691cc0848893d9798cd484de6c1b865af6e"
+        },
+        {
+          "ok": true,
+          "name": "patch_decision_context.json",
+          "actual": "04b00af6f65c04cb4f1e79356cb31a27f824b89d757ca2e8e20b53b937d931ba",
+          "expected": "04b00af6f65c04cb4f1e79356cb31a27f824b89d757ca2e8e20b53b937d931ba"
+        },
+        {
+          "ok": true,
+          "name": "patch_feasibility_assessment.json",
+          "actual": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+          "expected": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+        },
+        {
+          "ok": true,
+          "name": "patch_prior_update_proposal.json",
+          "actual": "ebd17e0c3518ab9b4f9ec1402c52a30c51159eb7b324036c18a4ac825745debc",
+          "expected": "ebd17e0c3518ab9b4f9ec1402c52a30c51159eb7b324036c18a4ac825745debc"
+        },
+        {
+          "ok": true,
+          "name": "patch_prior_usage_manifest.json",
+          "actual": "1ec923d2d899a39e2c1abf07c969efc219a9047d5583c1d35bccd912ebe56215",
+          "expected": "1ec923d2d899a39e2c1abf07c969efc219a9047d5583c1d35bccd912ebe56215"
+        },
+        {
+          "ok": true,
+          "name": "patch_risk_acceptance_state.json",
+          "actual": "240fa9c55e6c6a5659a74edfc30c159d74c3616651fa672443d312682e6c66df",
+          "expected": "240fa9c55e6c6a5659a74edfc30c159d74c3616651fa672443d312682e6c66df"
+        },
+        {
+          "ok": true,
+          "name": "replay_certificate.json",
+          "actual": "df2b7e2499462e80100c15409b6a528b6d8142539266454a430522b54f096688",
+          "expected": "df2b7e2499462e80100c15409b6a528b6d8142539266454a430522b54f096688"
+        },
+        {
+          "ok": true,
+          "name": "sra_trace.json",
+          "actual": "47dbb360210fd7279ed2120f0e090807e8de6b6198ebe6d2bfac7f8a514b8292",
+          "expected": "47dbb360210fd7279ed2120f0e090807e8de6b6198ebe6d2bfac7f8a514b8292"
+        },
+        {
+          "ok": true,
+          "name": "threat_landscape_snapshot.json",
+          "actual": "70af08ad65b18133874e3e3dd08e9a8089504f598bbd06ce515eddd8203a5516",
+          "expected": "70af08ad65b18133874e3e3dd08e9a8089504f598bbd06ce515eddd8203a5516"
+        },
+        {
+          "ok": true,
+          "name": "trust_bundle.json",
+          "actual": "af2e7686ddf7befdc5df08c00811af347a9f944457285dc6ba6ac4f39a6de4ed",
+          "expected": "af2e7686ddf7befdc5df08c00811af347a9f944457285dc6ba6ac4f39a6de4ed"
+        },
+        {
+          "ok": true,
+          "name": "vendor_intelligence_snapshot.json",
+          "actual": "2e240f711b516376553cf0e1479b5d9a4e2df182c0723d207958448a90898a3f",
+          "expected": "2e240f711b516376553cf0e1479b5d9a4e2df182c0723d207958448a90898a3f"
+        },
+        {
+          "ok": true,
+          "name": "vulnerability_intelligence_snapshot.json",
+          "actual": "9462af3633516f0ede2809bfcf2f8786d693b84e560b94a533bc87e5b524fe2a",
+          "expected": "9462af3633516f0ede2809bfcf2f8786d693b84e560b94a533bc87e5b524fe2a"
+        }
+      ],
+      "manifest_ok": true,
+      "signature_ok": true
+    },
+    "actor_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+    "decision_pack_id": "PF-20260526-e90d3a02",
+    "decision_posture": "defer_pending_evidence",
+    "signing_provider": "azure_key_vault",
+    "tenant_id_source": "token_mapping",
+    "vulnerability_id": "CVE-2026-PF-DEMO-001",
+    "runtime_component": "patchforge-runtime",
+    "effective_tenant_id": "diiac.io",
+    "requested_tenant_id": "diiac.io",
+    "final_approval_issued": false,
+    "source_pack_immutable": true,
+    "tenant_override_ignored": false
+  },
+  "artefacts": {
+    "sra_trace.json": {
+      "available": false,
+      "advisory_only": true,
+      "can_close_hard_gates_alone": false
+    },
+    "signed_export.sig": "wG4ObW3BMkdUYkFlSO8EdBPFuevFjrJG1AWLt0O72tbgSdCRm9spxfaG5KS2WB_oUjqPeXJ-iWP532Jhauy9KQ",
+    "trust_bundle.json": {
+      "key_id": "https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod",
+      "signing_mode": "azure_key_vault",
+      "signature_scope": "artefact_integrity_not_source_truth"
+    },
+    "human_review_state.json": {
+      "approval_events": [],
+      "final_approval_issued": false,
+      "no_autonomous_approval": true
+    },
+    "replay_certificate.json": {
+      "pack_id": "PF-20260526-e90d3a02",
+      "created_at": "2026-05-26T21:24:16+00:00",
+      "source_pack_immutable": true
+    },
+    "governance_manifest.json": {
+      "pack_id": "PF-20260526-e90d3a02",
+      "boundary": {
+        "no_scanner": true,
+        "no_patch_deployment": true,
+        "no_exploit_generation": true,
+        "no_autonomous_approval": true,
+        "no_production_mutation": true
+      },
+      "artefacts": [
+        {
+          "name": "affected_asset_scope.json",
+          "sha256": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843"
+        },
+        {
+          "name": "bayesian_patch_risk_snapshot.json",
+          "sha256": "2cc9789bae2dc3a993231e34052868eecbba71b7517f2e58cdba1bf0ff02c6d4"
+        },
+        {
+          "name": "compensating_controls_plan.json",
+          "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+        },
+        {
+          "name": "exploitability_assessment.json",
+          "sha256": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843"
+        },
+        {
+          "name": "human_review_state.json",
+          "sha256": "f5f8227f3fa4f41292047918bc64d137e32d178ec0ec747dde4e0e5479863180"
+        },
+        {
+          "name": "patch_change_readiness.json",
+          "sha256": "0f508a5b6ba0bb870b67ec8f9e2e3691cc0848893d9798cd484de6c1b865af6e"
+        },
+        {
+          "name": "patch_decision_context.json",
+          "sha256": "04b00af6f65c04cb4f1e79356cb31a27f824b89d757ca2e8e20b53b937d931ba"
+        },
+        {
+          "name": "patch_feasibility_assessment.json",
+          "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+        },
+        {
+          "name": "patch_prior_update_proposal.json",
+          "sha256": "ebd17e0c3518ab9b4f9ec1402c52a30c51159eb7b324036c18a4ac825745debc"
+        },
+        {
+          "name": "patch_prior_usage_manifest.json",
+          "sha256": "1ec923d2d899a39e2c1abf07c969efc219a9047d5583c1d35bccd912ebe56215"
+        },
+        {
+          "name": "patch_risk_acceptance_state.json",
+          "sha256": "240fa9c55e6c6a5659a74edfc30c159d74c3616651fa672443d312682e6c66df"
+        },
+        {
+          "name": "replay_certificate.json",
+          "sha256": "df2b7e2499462e80100c15409b6a528b6d8142539266454a430522b54f096688"
+        },
+        {
+          "name": "sra_trace.json",
+          "sha256": "47dbb360210fd7279ed2120f0e090807e8de6b6198ebe6d2bfac7f8a514b8292"
+        },
+        {
+          "name": "threat_landscape_snapshot.json",
+          "sha256": "70af08ad65b18133874e3e3dd08e9a8089504f598bbd06ce515eddd8203a5516"
+        },
+        {
+          "name": "trust_bundle.json",
+          "sha256": "af2e7686ddf7befdc5df08c00811af347a9f944457285dc6ba6ac4f39a6de4ed"
+        },
+        {
+          "name": "vendor_intelligence_snapshot.json",
+          "sha256": "2e240f711b516376553cf0e1479b5d9a4e2df182c0723d207958448a90898a3f"
+        },
+        {
+          "name": "vulnerability_intelligence_snapshot.json",
+          "sha256": "9462af3633516f0ede2809bfcf2f8786d693b84e560b94a533bc87e5b524fe2a"
+        }
+      ],
+      "tenant_id": "diiac.io",
+      "created_at": "2026-05-26T21:24:16+00:00",
+      "decision_id": "decision-8a6da8f2-3c37-4d11-a95c-426fb56a71ff",
+      "decision_posture": "defer_pending_evidence",
+      "final_approval_issued": false,
+      "source_pack_immutable": true
+    },
+    "affected_asset_scope.json": {
+      "evidence": []
+    },
+    "signed_export.sigmeta.json": {
+      "key_id": "https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod/2e348fdeaaaf448ebba206130ef86b52",
+      "algorithm": "ES256",
+      "public_jwk": {
+        "x": "yzeI7iI0iH9eeQugSaJFdOkessqDo9fEo1Bmofm5JwA",
+        "y": "IaBFNHG2ZaWZSyCcagh5hUu_BPPdA_piXNwE9eS2APc",
+        "crv": "JsonWebKeyCurveName.P256",
+        "kty": "JsonWebKeyType.EC"
+      },
+      "dev_key_hint": null,
+      "signed_payload": {
+        "pack_id": "PF-20260526-e90d3a02",
+        "governance_manifest_sha256": "d601294a7c96b9438e3d489b382eb4f86e45a6441432f5509816bb52771097d4",
+        "verification_manifest_sha256": "ec0dac1ad21085cf2ca2062e19271f390ccdd6c46da3fccc23d36124ae83f29b"
+      },
+      "signing_provider": "azure_key_vault",
+      "signature_encoding": "base64url_raw_ecdsa"
+    },
+    "verification_manifest.json": {
+      "pack_id": "PF-20260526-e90d3a02",
+      "expected_artefacts": [
+        "vulnerability_intelligence_snapshot.json",
+        "patch_decision_context.json",
+        "affected_asset_scope.json",
+        "exploitability_assessment.json",
+        "patch_feasibility_assessment.json",
+        "compensating_controls_plan.json",
+        "patch_change_readiness.json",
+        "patch_risk_acceptance_state.json",
+        "human_review_state.json",
+        "bayesian_patch_risk_snapshot.json",
+        "patch_prior_usage_manifest.json",
+        "patch_prior_update_proposal.json",
+        "vendor_intelligence_snapshot.json",
+        "threat_landscape_snapshot.json",
+        "sra_trace.json",
+        "governance_manifest.json",
+        "verification_manifest.json",
+        "trust_bundle.json",
+        "replay_certificate.json"
+      ],
+      "verification_scope": "local_artefact_hashes_and_signature",
+      "governance_manifest_sha256": "d601294a7c96b9438e3d489b382eb4f86e45a6441432f5509816bb52771097d4"
+    },
+    "patch_change_readiness.json": {
+      "blockers": [
+        "affected_asset_scope",
+        "human_review_signoff",
+        "patch_availability",
+        "vulnerability_identity"
+      ],
+      "readiness_score": 0,
+      "readiness_state": "blocked",
+      "final_approval_issued": false
+    },
+    "patch_decision_context.json": {
+      "blockers": [
+        "affected_asset_scope",
+        "human_review_signoff",
+        "patch_availability",
+        "vulnerability_identity"
+      ],
+      "readiness": {
+        "blockers": [
+          "affected_asset_scope",
+          "human_review_signoff",
+          "patch_availability",
+          "vulnerability_identity"
+        ],
+        "readiness_score": 0,
+        "readiness_state": "blocked",
+        "final_approval_issued": false
+      },
+      "tenant_id": "diiac.io",
+      "created_at": "2026-05-26T21:24:16+00:00",
+      "decision_id": "decision-8a6da8f2-3c37-4d11-a95c-426fb56a71ff",
+      "evidence_refs": [
+        "src-61584ffd-71ea-4e55-83ee-1d0862f26c07",
+        "src-5d9e179f-3837-4aef-9686-3eb8bf58e97f"
+      ],
+      "evidence_model": "vuln_patch_governance",
+      "decision_posture": "defer_pending_evidence",
+      "vulnerability_id": "CVE-2026-PF-DEMO-001",
+      "decision_rationale": "Deterministic PatchForge governance context compiled from source-bound evidence.",
+      "human_review_state": "pending",
+      "final_approval_issued": false
+    },
+    "exploitability_assessment.json": {
+      "evidence": []
+    },
+    "threat_landscape_snapshot.json": {
+      "metrics": {
+        "ot_relevance": 0,
+        "patch_maturity": "unknown",
+        "known_exploited_rate": 0,
+        "patch_available_rate": 0,
+        "false_positive_history": 0,
+        "customer_estate_exposure": 0,
+        "active_exploitation_count": 0,
+        "superseded_advisory_count": 0,
+        "vendor_response_timeliness": "source_bound_pending_review",
+        "critical_open_advisory_count": 0,
+        "internet_exposed_asset_count": 0,
+        "open_customer_decision_count": 0
+      },
+      "tenant_id": "diiac.io",
+      "generated_at": "2026-05-26T21:24:16.331Z",
+      "source_bound": true,
+      "vendor_count": 28,
+      "review_required": true,
+      "top_exposed_vendors": []
+    },
+    "compensating_controls_plan.json": {},
+    "patch_prior_usage_manifest.json": {
+      "dry_run_only": true,
+      "prior_set_id": "patchforge-default-v1",
+      "advisory_only": true,
+      "prior_usage_id": "prior-1779830656328",
+      "live_prior_mutation_performed": false
+    },
+    "patch_prior_update_proposal.json": {
+      "dry_run": true,
+      "proposal_id": "not-generated",
+      "live_update_applied": false,
+      "admin_approval_required": true
+    },
+    "patch_risk_acceptance_state.json": {
+      "final_approval_issued": false
+    },
+    "bayesian_patch_risk_snapshot.json": {
+      "boundary": {
+        "no_patch_deployment": true,
+        "no_autonomous_approval": true,
+        "prior_update_dry_run_only": true
+      },
+      "prior_usage": {
+        "dry_run_only": true,
+        "prior_set_id": "patchforge-default-v1",
+        "advisory_only": true,
+        "prior_usage_id": "prior-1779830636109",
+        "live_prior_mutation_performed": false
+      },
+      "generated_at": "2026-05-26T21:23:56.109Z",
+      "advisory_only": true,
+      "assessment_id": "bayes-1779830636109",
+      "change_risk_posterior": 0.52,
+      "final_approval_issued": false,
+      "deferral_risk_posterior": 0.585,
+      "business_impact_posterior": 0.35,
+      "can_close_hard_gates_alone": false,
+      "patch_feasibility_posterior": 0.67,
+      "exploit_probability_posterior": 0.62,
+      "recommended_governance_posture": "defer_pending_evidence"
+    },
+    "patch_feasibility_assessment.json": {},
+    "vendor_intelligence_snapshot.json": {
+      "available": false,
+      "source_bound": true,
+      "review_required": true,
+      "can_close_hard_gates_alone": false
+    },
+    "vulnerability_intelligence_snapshot.json": {
+      "tags": [],
+      "title": "Orion Gateway critical known-exploited exposure",
+      "sources": [
+        {
+          "actor_oid": "2d2f273d-a815-4a19-a258-c48c858252f3",
+          "actor_upn": "n.bailey@diiac.io",
+          "tenant_id": "diiac.io",
+          "source_url": "https://patchforge.diiac.io/live-validation",
+          "actor_roles": [
+            "PatchForge.Admin"
+          ],
+          "ingested_at": "2026-05-26T21:21:36.915Z",
+          "reviewed_at": null,
+          "reviewed_by": null,
+          "source_name": "PatchForge live validation operator input",
+          "payload_hash": "3dc6f1468804a1fd165f37365dd9a6dc94f848669edcfc24c288d4a07976ca1c",
+          "review_state": "pending_review",
+          "source_class": "vendor_advisory",
+          "evidence_state": "referenced",
+          "actor_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+          "source_record_id": "src-61584ffd-71ea-4e55-83ee-1d0862f26c07",
+          "tenant_id_source": "token_mapping",
+          "vulnerability_id": "CVE-2026-PF-DEMO-001",
+          "effective_tenant_id": "diiac.io",
+          "requested_tenant_id": "diiac.io",
+          "tenant_override_ignored": false
+        },
+        {
+          "actor_oid": "2d2f273d-a815-4a19-a258-c48c858252f3",
+          "actor_upn": "n.bailey@diiac.io",
+          "tenant_id": "diiac.io",
+          "source_url": "https://patchforge.diiac.io/live-validation",
+          "actor_roles": [
+            "PatchForge.Admin"
+          ],
+          "ingested_at": "2026-05-26T21:22:54.662Z",
+          "reviewed_at": null,
+          "reviewed_by": null,
+          "source_name": "PatchForge live validation operator input",
+          "payload_hash": "3dc6f1468804a1fd165f37365dd9a6dc94f848669edcfc24c288d4a07976ca1c",
+          "review_state": "pending_review",
+          "source_class": "vendor_advisory",
+          "evidence_state": "referenced",
+          "actor_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+          "source_record_id": "src-5d9e179f-3837-4aef-9686-3eb8bf58e97f",
+          "tenant_id_source": "token_mapping",
+          "vulnerability_id": "CVE-2026-PF-DEMO-001",
+          "effective_tenant_id": "diiac.io",
+          "requested_tenant_id": "diiac.io",
+          "tenant_override_ignored": false
+        }
+      ],
+      "severity": "critical",
+      "actor_oid": "2d2f273d-a815-4a19-a258-c48c858252f3",
+      "actor_upn": "n.bailey@diiac.io",
+      "tenant_id": "diiac.io",
+      "created_at": "2026-05-26T21:22:54.662Z",
+      "cvss_score": null,
+      "sla_due_at": null,
+      "updated_at": null,
+      "actor_roles": [
+        "PatchForge.Admin"
+      ],
+      "description": "",
+      "ot_relevant": false,
+      "canonical_id": "CVE-2026-PF-DEMO-001",
+      "patch_status": "patch_available",
+      "review_state": "pending_review",
+      "source_state": "source_bound",
+      "actor_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+      "known_exploited": true,
+      "internet_exposed": true,
+      "tenant_id_source": "token_mapping",
+      "vulnerability_id": "CVE-2026-PF-DEMO-001",
+      "source_record_ids": [
+        "src-5d9e179f-3837-4aef-9686-3eb8bf58e97f"
+      ],
+      "affected_asset_ids": [
+        "orion-gateway-prod-01"
+      ],
+      "effective_tenant_id": "diiac.io",
+      "requested_tenant_id": "diiac.io",
+      "affected_service_ids": [
+        "Orion Gateway"
+      ],
+      "tenant_override_ignored": false,
+      "usable_evidence_sources": []
+    }
+  },
+  "boundary": {
+    "no_scanner": true,
+    "no_exploit_generation": true,
+    "no_patch_deployment": true,
+    "no_production_mutation": true,
+    "no_autonomous_approval": true
+  }
+}

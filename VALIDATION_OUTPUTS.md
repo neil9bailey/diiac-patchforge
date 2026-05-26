@@ -31,4 +31,37 @@ This file records PF-AZ5 validation commands and live rollout evidence. It is up
 
 ## Azure Rollout
 
-Pending final image build, push, deployment update, and live validation.
+- Git push: PASS, commit `8a145e849a2c57fed3bc00440f2f2f8b29585f72`
+- Image tag: `pfaz5-20260526-8a145e8`
+- ACR build/push: PASS for frontend, bridge/API, runtime, SRA, worker, and scheduler images
+- Full Bicep what-if: captured; not applied because it included broader drift/noise than the image rollout required
+- Targeted image-only Container Apps update: PASS
+- Active revisions:
+  - UI: `ca-patchforge-ui-prod--0000007`
+  - Bridge/API: `ca-patchforge-bridge-prod--0000006`
+  - Runtime: `ca-patchforge-runtime-prod--0000005`
+  - SRA: `ca-patchforge-sra-prod--0000004`
+  - Worker: `ca-patchforge-worker-prod--0000004`
+  - Scheduler: `ca-patchforge-scheduler-prod--0000004`
+
+## Live Validation
+
+- UI HTTP 200: PASS
+- API health HTTP 200: PASS
+- API readiness HTTP 200 with `storage=postgresql` and `auth_required=true`: PASS
+- Protected route unauthenticated HTTP 401: PASS
+- Browser/MSAL sign-in as `n.bailey@diiac.io`: PASS
+- Displayed role `PatchForge.Admin`: PASS
+- UI ingest of `CVE-2026-PF-DEMO-001`: PASS
+- SRA exploit-risk advisory source-bound/advisory-only: PASS
+- Bayesian Patch Risk advisory-only: PASS
+- Signed decision pack generated and exported: `PF-20260526-e90d3a02`
+- Pack verification: PASS
+- Key Vault ES256 signing smoke: PASS
+- Final approval remained false with readiness blocked pending evidence/human gates: PASS
+
+Evidence path:
+
+`docs/release/evidence/2026-05-26-patchforge-pfaz5-intelligence-rollout/`
+
+Note: Azure CLI token acquisition for the custom PatchForge API was blocked by AADSTS65001 interactive consent for the Azure CLI client, so the authenticated workflow was validated through the deployed browser/MSAL path.

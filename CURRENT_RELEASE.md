@@ -2,7 +2,7 @@
 
 ## DIIaC PatchForge PF-AZ5
 
-Release state: PF-AZ5 intelligence hardening implementation in progress, with Azure rollout and live UI validation still to be evidenced for this increment
+Release state: PF-AZ5 production intelligence hardening deployed to Azure and validated through the live UI as a signed-in PatchForge Admin user
 
 Date: 2026-05-26
 
@@ -151,7 +151,7 @@ Excluded:
 - SIEM, SOAR, ITSM, CMDB, EDR, XDR, or OT engineering replacement functionality
 - unreviewed AI or agent source truth claims
 
-PF-AZ5 Azure deployment, image tag, active revisions, and live browser validation evidence are recorded after the rollout is applied and verified.
+PF-AZ5 Azure deployment, image tag, active revisions, and live browser validation evidence are recorded under `docs/release/evidence/2026-05-26-patchforge-pfaz5-intelligence-rollout/`.
 
 ## Runtime State
 
@@ -191,13 +191,39 @@ Deployment evidence:
 - `docs/release/evidence/2026-05-26-patchforge-dns-cutover/`
 - `docs/release/evidence/2026-05-26-patchforge-production-hardening/`
 - `docs/release/evidence/2026-05-26-patchforge-live-product/`
+- `docs/release/evidence/2026-05-26-patchforge-pfaz5-intelligence-rollout/`
 
-Latest PF-AZ5 agent-intelligence revisions:
+Latest PF-AZ5 intelligence hardening revisions:
 
-- UI: `ca-patchforge-ui-prod--0000006`
-- Bridge/API: `ca-patchforge-bridge-prod--0000005`
-- Runtime: `ca-patchforge-runtime-prod--0000004`
-- Image tag: `pfaz5-agent-20260526`
+- UI: `ca-patchforge-ui-prod--0000007`
+- Bridge/API: `ca-patchforge-bridge-prod--0000006`
+- Runtime: `ca-patchforge-runtime-prod--0000005`
+- SRA: `ca-patchforge-sra-prod--0000004`
+- Worker: `ca-patchforge-worker-prod--0000004`
+- Scheduler: `ca-patchforge-scheduler-prod--0000004`
+- Image tag: `pfaz5-20260526-8a145e8`
+
+## PF-AZ5 Live Validation
+
+Live UI validation result: PASS
+
+Live API validation result: PASS
+
+Validated user workflow:
+
+- signed in at `https://patchforge.diiac.io` as `n.bailey@diiac.io`
+- confirmed displayed role `PatchForge.Admin`
+- ingested `CVE-2026-PF-DEMO-001` through the deployed UI
+- confirmed the Vulnerability Queue rendered the live record as Critical, known exploited, internet exposed, Orion Gateway, and patch available
+- ran SRA exploit-risk advisory and confirmed advisory-only/source-bound state
+- ran Bayesian Patch Risk advisory and confirmed it cannot close hard gates or approve risk
+- generated and exported signed pack `PF-20260526-e90d3a02`
+- verified the exported pack reports `verified=true`, `manifest_ok=true`, and `signature_ok=true`
+- confirmed `final_approval_issued=false` with readiness blocked pending evidence/human gates
+
+Live evidence path:
+
+- `docs/release/evidence/2026-05-26-patchforge-pfaz5-intelligence-rollout/live-ui/`
 
 ## Trust State
 

@@ -1,0 +1,7 @@
+﻿{
+    "tag":  "pfaz5-20260526-8a145e8",
+    "frontend":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-frontend:pfaz5-20260526-8a145e8",
+    "bridge":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-bridge:pfaz5-20260526-8a145e8",
+    "runtime":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-runtime:pfaz5-20260526-8a145e8",
+    "pushed_at_utc":  "2026-05-26T21:10:12.2146047Z"
+}

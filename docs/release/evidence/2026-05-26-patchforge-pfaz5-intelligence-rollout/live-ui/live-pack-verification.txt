@@ -1,0 +1,12 @@
+﻿Pack ID: PF-20260526-e90d3a02
+Verified: True
+Manifest OK: True
+Signature OK: True
+Signing provider: azure_key_vault
+Final approval issued: False
+Readiness: blocked
+Blockers: affected_asset_scope, human_review_signoff, patch_availability, vulnerability_identity
+Bayesian artefact present: True
+Vendor artefact present: True
+Threat landscape artefact present: True
+SRA artefact present: True

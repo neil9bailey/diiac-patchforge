@@ -11,6 +11,7 @@ PatchForge is live on Azure Container Apps under the DIIaC tenant with:
 - Key Vault production signing path
 - Azure Container Apps revisions for UI, bridge/API, runtime, SRA, worker, and scheduler
 - source-bound evidence and signed pack governance controls
+- PF-AZ5 image tag `pfaz5-20260526-8a145e8` on all PatchForge Container Apps
 
 PF-AZ5 adds production intelligence hardening:
 
@@ -22,9 +23,18 @@ PF-AZ5 adds production intelligence hardening:
 - live API-bound UI surfaces
 - board-grade reports and signed pack intelligence artefacts
 
-## Completion Gate
+## Live Validation
 
-PF-AZ5 is not considered complete until the Azure update and live UI user validation evidence are captured for the current commit and image tag.
+PF-AZ5 Azure update and live UI user validation are complete for the current commit and image tag.
+
+- User: `n.bailey@diiac.io`
+- Role displayed: `PatchForge.Admin`
+- Test vulnerability: `CVE-2026-PF-DEMO-001`
+- Signed pack: `PF-20260526-e90d3a02`
+- Pack verification: PASS
+- Final approval: `false`
+- Readiness state: blocked pending evidence/human gates
+- Evidence path: `docs/release/evidence/2026-05-26-patchforge-pfaz5-intelligence-rollout/live-ui/`
 
 ## Remaining Gaps
 

@@ -1,0 +1,16 @@
+- main [ref=e3]:
+  - complementary "PatchForge product boundary" [ref=e4]:
+    - generic [ref=e5]:
+      - img [ref=e7]
+      - generic [ref=e12]
+    - generic [ref=e15]:
+      - img [ref=e16]
+      - paragraph [ref=e20]: Governance layer only. No scanning, no exploit content, no patch deployment, no autonomous approvals.
+  - generic [ref=e22]:
+    - img [ref=e24]
+    - paragraph [ref=e28]: Production | diiac.io | Entra ID
+    - heading "DIIaC™ PatchForge" [level=2] [ref=e29]
+    - paragraph [ref=e30]: Access is restricted to assigned PatchForge app roles.
+    - button "Sign in with Microsoft" [ref=e31] [cursor=pointer]:
+      - img [ref=e32]
+      - text: Sign in with Microsoft

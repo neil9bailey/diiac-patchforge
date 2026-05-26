@@ -1,0 +1,9 @@
+﻿{
+    "tag":  "pfaz5-20260526-8a145e8",
+    "extra_images":  [
+                         "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-sra-agent:pfaz5-20260526-8a145e8",
+                         "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-ingest-worker:pfaz5-20260526-8a145e8",
+                         "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-scheduler:pfaz5-20260526-8a145e8"
+                     ],
+    "pushed_at_utc":  "2026-05-26T21:12:00.5244118Z"
+}

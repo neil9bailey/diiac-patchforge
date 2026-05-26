@@ -1,0 +1,250 @@
+- main [ref=e3]:
+  - complementary "PatchForge navigation" [ref=e4]:
+    - generic [ref=e5]:
+      - img [ref=e7]
+      - generic [ref=e12]:
+        - paragraph [ref=e13]: DIIaC™
+        - heading "PatchForge" [level=1] [ref=e14]
+    - navigation [ref=e15]:
+      - button "Command Center" [ref=e16] [cursor=pointer]:
+        - img [ref=e17]
+        - generic [ref=e20]: Command Center
+      - button "Guide" [ref=e21] [cursor=pointer]:
+        - img [ref=e22]
+        - generic [ref=e25]: Guide
+      - button "Vulnerability Queue" [ref=e26] [cursor=pointer]:
+        - img [ref=e27]
+        - generic [ref=e28]: Vulnerability Queue
+      - button "Asset & Service Exposure" [ref=e29] [cursor=pointer]:
+        - img [ref=e30]
+        - generic [ref=e35]: Asset & Service Exposure
+      - button "Decision Workbench" [ref=e36] [cursor=pointer]:
+        - img [ref=e37]
+        - generic [ref=e41]: Decision Workbench
+      - button "Emergency Patch" [ref=e42] [cursor=pointer]:
+        - img [ref=e43]
+        - generic [ref=e45]: Emergency Patch
+      - button "Risk Acceptances" [ref=e46] [cursor=pointer]:
+        - img [ref=e47]
+        - generic [ref=e50]: Risk Acceptances
+      - button "Compensating Controls" [ref=e51] [cursor=pointer]:
+        - img [ref=e52]
+        - generic [ref=e55]: Compensating Controls
+      - button "SRA Research" [ref=e56] [cursor=pointer]:
+        - img [ref=e57]
+        - generic [ref=e64]: SRA Research
+      - button "Evidence Catalogue" [ref=e65] [cursor=pointer]:
+        - img [ref=e66]
+        - generic [ref=e69]: Evidence Catalogue
+      - button "Decision Packs" [ref=e70] [cursor=pointer]:
+        - img [ref=e71]
+        - generic [ref=e75]: Decision Packs
+      - button "Vendor & Threat Landscape" [ref=e76] [cursor=pointer]:
+        - img [ref=e77]
+        - generic [ref=e81]: Vendor & Threat Landscape
+      - button "Admin" [active] [ref=e82] [cursor=pointer]:
+        - img [ref=e83]
+        - generic [ref=e84]: Admin
+    - generic [ref=e85]:
+      - img [ref=e86]
+      - paragraph [ref=e90]: Governance layer only. No scanning, no exploit content, no patch deployment, no autonomous approvals.
+  - generic [ref=e91]:
+    - generic [ref=e92]:
+      - button "Toggle navigation" [ref=e93] [cursor=pointer]:
+        - img [ref=e94]
+      - generic [ref=e96]:
+        - paragraph [ref=e97]: Production | diiac.io | Enterprise Strict
+        - heading "Admin" [level=2] [ref=e661]
+      - generic "Runtime trust status" [ref=e99]:
+        - generic [ref=e100]:
+          - img [ref=e101]
+          - text: Entra protected
+        - generic [ref=e104]:
+          - img [ref=e105]
+          - text: Agent-led intake
+        - generic [ref=e112]:
+          - img [ref=e113]
+          - text: Signing trusted
+        - button "Refresh" [ref=e117] [cursor=pointer]:
+          - img [ref=e118]
+          - text: Refresh
+        - button "Sign out" [ref=e123] [cursor=pointer]:
+          - img [ref=e124]
+          - text: Sign out
+    - generic [ref=e127]:
+      - region "Admin" [ref=e662]:
+        - generic [ref=e451]:
+          - img [ref=e452]
+          - text: Decision pack PF-20260526-e90d3a02 export prepared.
+        - generic [ref=e663]:
+          - heading "Admin Control Surfaces" [level=3] [ref=e664]
+          - generic [ref=e665]: Production guarded
+        - generic [ref=e666]:
+          - region "Admin configuration" [ref=e667]:
+            - heading "Tenant Configuration" [level=4] [ref=e668]
+            - generic [ref=e669]:
+              - text: Tenant
+              - textbox "Tenant name" [ref=e670]: diiac.io
+            - generic [ref=e671]:
+              - text: Environment
+              - textbox "Environment" [ref=e672]: Production
+            - generic [ref=e673]:
+              - text: Governance tier
+              - textbox "Governance tier" [ref=e674]: Enterprise Strict
+            - generic [ref=e675]:
+              - generic [ref=e676]: SRA advisory only
+              - strong [ref=e677]: Locked
+            - generic [ref=e678]:
+              - generic [ref=e679]: Live Azure mutation
+              - strong [ref=e680]: Blocked
+            - button "Save Admin Configuration" [ref=e681] [cursor=pointer]:
+              - img [ref=e682]
+              - text: Save Admin Configuration
+          - region "Admin health dashboard" [ref=e685]:
+            - heading "Health Checks" [level=4] [ref=e686]
+            - generic [ref=e687]:
+              - generic [ref=e688]:
+                - generic [ref=e689]: Frontend health
+                - strong [ref=e690]: Ready
+              - generic [ref=e691]:
+                - generic [ref=e692]: Bridge health
+                - strong [ref=e693]: Ready
+              - generic [ref=e694]:
+                - generic [ref=e695]: Runtime health
+                - strong [ref=e696]: Ready
+              - generic [ref=e697]:
+                - generic [ref=e698]: SRA health
+                - strong [ref=e699]: Advisory
+              - generic [ref=e700]:
+                - generic [ref=e701]: MCP agent intake
+                - strong [ref=e702]: Disabled
+              - generic [ref=e703]:
+                - generic [ref=e704]: Worker health
+                - strong [ref=e705]: Planned
+              - generic [ref=e706]:
+                - generic [ref=e707]: Scheduler health
+                - strong [ref=e708]: Planned
+              - generic [ref=e709]:
+                - generic [ref=e710]: Database health
+                - strong [ref=e711]: Ready
+              - generic [ref=e712]:
+                - generic [ref=e713]: Storage health
+                - strong [ref=e714]: Ready
+              - generic [ref=e715]:
+                - generic [ref=e716]: Key Vault health
+                - strong [ref=e717]: Ready
+              - generic [ref=e718]:
+                - generic [ref=e719]: Signing trust
+                - strong [ref=e720]: Key-Vault
+        - generic [ref=e721]:
+          - button "General Settings" [ref=e722] [cursor=pointer]:
+            - img [ref=e723]
+            - generic [ref=e726]: General Settings
+          - button "Tenant Configuration" [ref=e727] [cursor=pointer]:
+            - img [ref=e728]
+            - generic [ref=e731]: Tenant Configuration
+          - button "Entra ID / RBAC" [ref=e732] [cursor=pointer]:
+            - img [ref=e733]
+            - generic [ref=e736]: Entra ID / RBAC
+          - button "SRA Configuration" [ref=e737] [cursor=pointer]:
+            - img [ref=e738]
+            - generic [ref=e741]: SRA Configuration
+          - button "MCP Agent Connectors" [ref=e742] [cursor=pointer]:
+            - img [ref=e743]
+            - generic [ref=e746]: MCP Agent Connectors
+          - button "Mythos / AGI Findings" [ref=e747] [cursor=pointer]:
+            - img [ref=e748]
+            - generic [ref=e751]: Mythos / AGI Findings
+          - button "Agent Finding Rules" [ref=e752] [cursor=pointer]:
+            - img [ref=e753]
+            - generic [ref=e756]: Agent Finding Rules
+          - button "KRA / DIIaC IT Integration" [ref=e757] [cursor=pointer]:
+            - img [ref=e758]
+            - generic [ref=e761]: KRA / DIIaC IT Integration
+          - button "Scanner Integrations" [ref=e762] [cursor=pointer]:
+            - img [ref=e763]
+            - generic [ref=e766]: Scanner Integrations
+          - button "Source Feeds" [ref=e767] [cursor=pointer]:
+            - img [ref=e768]
+            - generic [ref=e771]: Source Feeds
+          - button "Evidence Models" [ref=e772] [cursor=pointer]:
+            - img [ref=e773]
+            - generic [ref=e776]: Evidence Models
+          - button "Policy Packs" [ref=e777] [cursor=pointer]:
+            - img [ref=e778]
+            - generic [ref=e781]: Policy Packs
+          - button "Decision State Rules" [ref=e782] [cursor=pointer]:
+            - img [ref=e783]
+            - generic [ref=e786]: Decision State Rules
+          - button "Risk Acceptance Rules" [ref=e787] [cursor=pointer]:
+            - img [ref=e788]
+            - generic [ref=e791]: Risk Acceptance Rules
+          - button "SLA / Ageing Rules" [ref=e792] [cursor=pointer]:
+            - img [ref=e793]
+            - generic [ref=e796]: SLA / Ageing Rules
+          - button "Signing & Trust" [ref=e797] [cursor=pointer]:
+            - img [ref=e798]
+            - generic [ref=e801]: Signing & Trust
+          - button "Key Vault" [ref=e802] [cursor=pointer]:
+            - img [ref=e803]
+            - generic [ref=e806]: Key Vault
+          - button "Storage" [ref=e807] [cursor=pointer]:
+            - img [ref=e808]
+            - generic [ref=e811]: Storage
+          - button "Database" [ref=e812] [cursor=pointer]:
+            - img [ref=e813]
+            - generic [ref=e816]: Database
+          - button "Telemetry" [ref=e817] [cursor=pointer]:
+            - img [ref=e818]
+            - generic [ref=e821]: Telemetry
+          - button "Health Checks" [ref=e822] [cursor=pointer]:
+            - img [ref=e823]
+            - generic [ref=e826]: Health Checks
+          - button "Audit Logs" [ref=e827] [cursor=pointer]:
+            - img [ref=e828]
+            - generic [ref=e831]: Audit Logs
+          - button "Export Settings" [ref=e832] [cursor=pointer]:
+            - img [ref=e833]
+            - generic [ref=e836]: Export Settings
+          - button "Backup / Restore" [ref=e837] [cursor=pointer]:
+            - img [ref=e838]
+            - generic [ref=e841]: Backup / Restore
+          - button "Data Retention" [ref=e842] [cursor=pointer]:
+            - img [ref=e843]
+            - generic [ref=e846]: Data Retention
+          - button "Feature Flags" [ref=e847] [cursor=pointer]:
+            - img [ref=e848]
+            - generic [ref=e851]: Feature Flags
+      - complementary "PatchForge utility rail" [ref=e211]:
+        - generic [ref=e212]:
+          - heading "Session" [level=3] [ref=e213]
+          - paragraph [ref=e214]:
+            - img [ref=e215]
+            - text: n.bailey@diiac.io
+          - paragraph [ref=e218]:
+            - img [ref=e219]
+            - text: App roles enforced by API
+          - paragraph [ref=e223]:
+            - img [ref=e224]
+            - text: PatchForge.Admin
+        - generic [ref=e227]:
+          - heading "Queue" [level=3] [ref=e228]
+          - generic [ref=e229]:
+            - generic [ref=e230]: Records
+            - strong [ref=e231]: "1"
+          - generic [ref=e232]:
+            - generic [ref=e233]: Pending review
+            - strong [ref=e234]: "1"
+        - generic [ref=e235]:
+          - heading "Signing Trust" [level=3] [ref=e236]
+          - generic [ref=e237]:
+            - generic [ref=e238]: Verifier
+            - strong [ref=e239]: Verified
+          - generic [ref=e240]:
+            - generic [ref=e241]: Trust
+            - strong [ref=e242]: Key-Vault
+        - generic [ref=e243]:
+          - heading "Recent Packs" [level=3] [ref=e244]
+          - paragraph [ref=e447]:
+            - img [ref=e448]
+            - text: PF-20260526-e90d3a02

@@ -1,0 +1,131 @@
+- main [ref=e3]:
+  - complementary "PatchForge navigation" [ref=e4]:
+    - generic [ref=e5]:
+      - img [ref=e7]
+      - generic [ref=e12]:
+        - paragraph [ref=e13]: DIIaC™
+        - heading "PatchForge" [level=1] [ref=e14]
+    - navigation [ref=e15]:
+      - button "Command Center" [ref=e16] [cursor=pointer]:
+        - img [ref=e17]
+        - generic [ref=e20]: Command Center
+      - button "Guide" [ref=e21] [cursor=pointer]:
+        - img [ref=e22]
+        - generic [ref=e25]: Guide
+      - button "Vulnerability Queue" [ref=e26] [cursor=pointer]:
+        - img [ref=e27]
+        - generic [ref=e28]: Vulnerability Queue
+      - button "Asset & Service Exposure" [ref=e29] [cursor=pointer]:
+        - img [ref=e30]
+        - generic [ref=e35]: Asset & Service Exposure
+      - button "Decision Workbench" [ref=e36] [cursor=pointer]:
+        - img [ref=e37]
+        - generic [ref=e41]: Decision Workbench
+      - button "Emergency Patch" [ref=e42] [cursor=pointer]:
+        - img [ref=e43]
+        - generic [ref=e45]: Emergency Patch
+      - button "Risk Acceptances" [ref=e46] [cursor=pointer]:
+        - img [ref=e47]
+        - generic [ref=e50]: Risk Acceptances
+      - button "Compensating Controls" [ref=e51] [cursor=pointer]:
+        - img [ref=e52]
+        - generic [ref=e55]: Compensating Controls
+      - button "SRA Research" [ref=e56] [cursor=pointer]:
+        - img [ref=e57]
+        - generic [ref=e64]: SRA Research
+      - button "Evidence Catalogue" [ref=e65] [cursor=pointer]:
+        - img [ref=e66]
+        - generic [ref=e69]: Evidence Catalogue
+      - button "Decision Packs" [ref=e70] [cursor=pointer]:
+        - img [ref=e71]
+        - generic [ref=e75]: Decision Packs
+      - button "Vendor & Threat Landscape" [ref=e76] [cursor=pointer]:
+        - img [ref=e77]
+        - generic [ref=e81]: Vendor & Threat Landscape
+      - button "Admin" [ref=e82] [cursor=pointer]:
+        - img [ref=e83]
+        - generic [ref=e84]: Admin
+    - generic [ref=e85]:
+      - img [ref=e86]
+      - paragraph [ref=e90]: Governance layer only. No scanning, no exploit content, no patch deployment, no autonomous approvals.
+  - generic [ref=e91]:
+    - generic [ref=e92]:
+      - button "Toggle navigation" [ref=e93] [cursor=pointer]:
+        - img [ref=e94]
+      - generic [ref=e96]:
+        - paragraph [ref=e97]: Production | diiac.io | Enterprise Strict
+        - heading "SRA Research" [level=2] [ref=e328]
+      - generic "Runtime trust status" [ref=e99]:
+        - generic [ref=e100]:
+          - img [ref=e101]
+          - text: Entra protected
+        - generic [ref=e104]:
+          - img [ref=e105]
+          - text: Agent-led intake
+        - generic [ref=e112]:
+          - img [ref=e113]
+          - text: Signing trusted
+        - button "Refresh" [ref=e117] [cursor=pointer]:
+          - img [ref=e118]
+          - text: Refresh
+        - button "Sign out" [ref=e123] [cursor=pointer]:
+          - img [ref=e124]
+          - text: Sign out
+    - generic [ref=e127]:
+      - region "SRA Research" [ref=e329]:
+        - generic [ref=e357]:
+          - img [ref=e358]
+          - text: SRA advisory research returned source-bound output.
+        - generic [ref=e330]:
+          - generic [ref=e331]:
+            - heading "Agent Intelligence" [level=3] [ref=e332]
+            - generic [ref=e333]: Advisory only
+          - generic [ref=e334]:
+            - generic [ref=e335]:
+              - heading "SRA / MCP Controls" [level=3] [ref=e336]
+              - generic [ref=e337]:
+                - generic [ref=e338]: Source state
+                - strong [ref=e339]: Source-bound
+              - generic [ref=e340]:
+                - generic [ref=e341]: Can close hard gates
+                - strong [ref=e342]: "No"
+              - generic [ref=e343]:
+                - generic [ref=e344]: Human review
+                - strong [ref=e345]: Required
+              - button "Run Exploit-Risk Advisory" [active] [ref=e346] [cursor=pointer]:
+                - img [ref=e347]
+                - text: Run Exploit-Risk Advisory
+            - generic [ref=e354]:
+              - heading "Latest Advisory" [level=3] [ref=e355]
+              - generic [ref=e361]: "{ \"tenant_id\": \"diiac.io\", \"tenant_context\": { \"requested_tenant_id\": \"diiac.io\", \"effective_tenant_id\": \"diiac.io\", \"token_tenant_id\": \"67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da\", \"tenant_id_source\": \"token_mapping\", \"tenant_override_ignored\": false }, \"sra\": { \"tool_name\": \"assess_exploit_risk\", \"vulnerability_id\": \"CVE-2026-PF-DEMO-001\", \"advisory_only\": true, \"source_bound\": true, \"review_state\": \"pending_review\", \"can_close_evidence_gates_alone\": false, \"can_risk_accept\": false, \"no_exploit_content\": true, \"no_deployment_action\": true, \"source_refs\": [ \"src-5d9e179f-3837-4aef-9686-3eb8bf58e97f\" ], \"findings\": [ \"CVE-2026-PF-DEMO-001 should be prioritised using known exploitation signals, service exposure, and business impact.\", \"This assessment contains no procedural exploitation detail.\" ], \"contradictions\": [], \"confidence\": \"medium\", \"input_hash\": \"921bf76d8443dc776bdf3642800e60abb872efd3a25b991e89b7908705fec314\", \"output_hash\": \"b491b412a02e701f3449f8968646266e665f556d6cf329aefd09862da3cb3a3a\" } }"
+      - complementary "PatchForge utility rail" [ref=e211]:
+        - generic [ref=e212]:
+          - heading "Session" [level=3] [ref=e213]
+          - paragraph [ref=e214]:
+            - img [ref=e215]
+            - text: n.bailey@diiac.io
+          - paragraph [ref=e218]:
+            - img [ref=e219]
+            - text: App roles enforced by API
+          - paragraph [ref=e223]:
+            - img [ref=e224]
+            - text: PatchForge.Admin
+        - generic [ref=e227]:
+          - heading "Queue" [level=3] [ref=e228]
+          - generic [ref=e229]:
+            - generic [ref=e230]: Records
+            - strong [ref=e231]: "1"
+          - generic [ref=e232]:
+            - generic [ref=e233]: Pending review
+            - strong [ref=e234]: "1"
+        - generic [ref=e235]:
+          - heading "Signing Trust" [level=3] [ref=e236]
+          - generic [ref=e237]:
+            - generic [ref=e238]: Verifier
+            - strong [ref=e239]: Ready
+          - generic [ref=e240]:
+            - generic [ref=e241]: Trust
+            - strong [ref=e242]: Key-Vault
+        - generic [ref=e243]:
+          - heading "Recent Packs" [level=3] [ref=e244]
+          - paragraph [ref=e245]: No packs yet.

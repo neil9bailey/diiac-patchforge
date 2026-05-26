@@ -2,7 +2,9 @@
   "release": "PF-AZ5",
   "date": "2026-05-26",
   "product": "DIIaC PatchForge",
-  "state": "implementation_validation_pending_live_rollout",
+  "state": "azure_live_browser_validated",
+  "image_tag": "pfaz5-20260526-8a145e8",
+  "commit": "8a145e849a2c57fed3bc00440f2f2f8b29585f72",
   "required_live_urls": {
     "ui": "https://patchforge.diiac.io",
     "api": "https://api.patchforge.diiac.io"
@@ -20,12 +22,21 @@
     ]
   },
   "hard_gates": {
-    "local_validation": "pending",
-    "github_push": "pending",
-    "azure_image_push": "pending",
-    "azure_deployment_update": "pending",
-    "live_api_smoke": "pending",
-    "live_ui_user_validation": "pending"
+    "local_validation": "pass",
+    "github_push": "pass",
+    "azure_image_push": "pass",
+    "azure_deployment_update": "pass",
+    "live_api_smoke": "pass",
+    "live_ui_user_validation": "pass"
+  },
+  "live_validation": {
+    "signed_in_user": "n.bailey@diiac.io",
+    "displayed_role": "PatchForge.Admin",
+    "test_vulnerability": "CVE-2026-PF-DEMO-001",
+    "decision_pack_id": "PF-20260526-e90d3a02",
+    "pack_verified": true,
+    "final_approval_issued": false,
+    "evidence_path": "docs/release/evidence/2026-05-26-patchforge-pfaz5-intelligence-rollout/live-ui/"
   },
   "boundary": {
     "no_scanner": true,

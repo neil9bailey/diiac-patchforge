@@ -1,0 +1,29 @@
+﻿{
+    "protected_unauthenticated":  {
+                                      "error":  "The remote server returned an error: (401) Unauthorized.",
+                                      "body":  "{\n  \"error\": \"missing_bearer_token\",\n  \"message\": \"A Microsoft Entra access token is required.\",\n  \"required_roles\": [\n    \"PatchForge.Reader\",\n    \"PatchForge.Auditor\",\n    \"PatchForge.TriageAnalyst\",\n    \"PatchForge.SecurityLead\",\n    \"PatchForge.Admin\"\n  ]\n}\n",
+                                      "status_code":  401
+                                  },
+    "health":  {
+                   "body":  {
+                                "status":  "ok",
+                                "product":  "DIIaC PatchForge",
+                                "boundary":  "governance-only"
+                            },
+                   "status_code":  200
+               },
+    "readiness":  {
+                      "body":  {
+                                   "status":  "ready",
+                                   "storage":  "postgresql",
+                                   "auth_required":  true,
+                                   "tenant_required":  true
+                               },
+                      "status_code":  200
+                  },
+    "ui":  {
+               "status_description":  "OK",
+               "final_uri":  "https://patchforge.diiac.io/",
+               "status_code":  200
+           }
+}

@@ -1,0 +1,44 @@
+﻿[
+    {
+        "activeRevisionsMode":  "Single",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-frontend:pfaz5-agent-20260526",
+        "ingress":  true,
+        "latestRevision":  "ca-patchforge-ui-prod--0000006",
+        "name":  "ca-patchforge-ui-prod"
+    },
+    {
+        "activeRevisionsMode":  "Single",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-bridge:pfaz5-agent-20260526",
+        "ingress":  true,
+        "latestRevision":  "ca-patchforge-bridge-prod--0000005",
+        "name":  "ca-patchforge-bridge-prod"
+    },
+    {
+        "activeRevisionsMode":  "Single",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-runtime:pfaz5-agent-20260526",
+        "ingress":  false,
+        "latestRevision":  "ca-patchforge-runtime-prod--0000004",
+        "name":  "ca-patchforge-runtime-prod"
+    },
+    {
+        "activeRevisionsMode":  "Single",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-sra-agent:pfaz5-20260526",
+        "ingress":  false,
+        "latestRevision":  "ca-patchforge-sra-prod--0000003",
+        "name":  "ca-patchforge-sra-prod"
+    },
+    {
+        "activeRevisionsMode":  "Single",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-ingest-worker:pfaz5-20260526",
+        "ingress":  false,
+        "latestRevision":  "ca-patchforge-worker-prod--0000003",
+        "name":  "ca-patchforge-worker-prod"
+    },
+    {
+        "activeRevisionsMode":  "Single",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-scheduler:pfaz5-20260526",
+        "ingress":  false,
+        "latestRevision":  "ca-patchforge-scheduler-prod--0000003",
+        "name":  "ca-patchforge-scheduler-prod"
+    }
+]

@@ -1,0 +1,18 @@
+﻿{
+    "timestamp_utc":  "2026-05-26T21:27:27.8083485Z",
+    "browser_msal_sign_in":  "PASS",
+    "signed_in_user":  "n.bailey@diiac.io",
+    "displayed_roles":  [
+                            "PatchForge.Admin"
+                        ],
+    "api_calls_token_backed_via_browser":  "PASS",
+    "evidence":  [
+                     "patchforge-live-after-login-depth8.md",
+                     "patchforge-live-after-ingest-2.md",
+                     "patchforge-live-sra-result.md",
+                     "patchforge-live-pack-result.md",
+                     "PF-20260526-e90d3a02.json"
+                 ],
+    "azure_cli_custom_api_token":  "BLOCKED_BY_INTERACTIVE_CONSENT",
+    "azure_cli_note":  "Azure CLI token acquisition for the custom PatchForge API returned AADSTS65001 and was not used; browser/MSAL sign-in succeeded and exercised protected API workflows."
+}

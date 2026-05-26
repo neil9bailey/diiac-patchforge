@@ -1,7 +1,7 @@
 {
   "release": "PF-AZ5",
   "date": "2026-05-26",
-  "status": "pending_live_validation",
+  "status": "pass",
   "gates": [
     { "name": "repo_preflight", "status": "pass" },
     { "name": "azure_context", "status": "pass" },
@@ -11,10 +11,20 @@
     { "name": "bicep_build", "status": "pass" },
     { "name": "docker_build_smoke", "status": "pass" },
     { "name": "local_signed_pack_verification", "status": "pass" },
-    { "name": "github_push", "status": "pending" },
-    { "name": "azure_image_push", "status": "pending" },
-    { "name": "azure_update", "status": "pending" },
-    { "name": "live_api_smoke", "status": "pending" },
-    { "name": "live_ui_user_validation", "status": "pending" }
-  ]
+    { "name": "github_push", "status": "pass", "commit": "8a145e849a2c57fed3bc00440f2f2f8b29585f72" },
+    { "name": "azure_image_push", "status": "pass", "image_tag": "pfaz5-20260526-8a145e8" },
+    { "name": "azure_update", "status": "pass" },
+    { "name": "live_api_smoke", "status": "pass" },
+    { "name": "live_ui_user_validation", "status": "pass" }
+  ],
+  "live_validation": {
+    "ui_url": "https://patchforge.diiac.io/",
+    "api_url": "https://api.patchforge.diiac.io",
+    "signed_in_user": "n.bailey@diiac.io",
+    "displayed_role": "PatchForge.Admin",
+    "decision_pack_id": "PF-20260526-e90d3a02",
+    "pack_verified": true,
+    "final_approval_issued": false,
+    "evidence_path": "docs/release/evidence/2026-05-26-patchforge-pfaz5-intelligence-rollout/"
+  }
 }

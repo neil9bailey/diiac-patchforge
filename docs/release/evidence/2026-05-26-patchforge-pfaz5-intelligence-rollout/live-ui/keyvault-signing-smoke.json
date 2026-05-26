@@ -1,0 +1,16 @@
+﻿{
+    "payload_label":  "pfaz5-intelligence-signing-smoke-2026-05-26",
+    "algorithm":  "ES256",
+    "key_id":  "https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod/2e348fdeaaaf448ebba206130ef86b52",
+    "key_type":  "EC",
+    "curve":  "P-256",
+    "digest_sha256_base64":  "IgEMHU7i+FKgZkq/noaKtcIZPKdwJv9nubNJVoHEH0c=",
+    "sign_key_id":  "https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod/2e348fdeaaaf448ebba206130ef86b52",
+    "signature_length":  88,
+    "verified":  {
+                     "algorithm":  "ES256",
+                     "isValid":  true,
+                     "keyId":  "https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod/2e348fdeaaaf448ebba206130ef86b52"
+                 },
+    "timestamp_utc":  "2026-05-26T21:18:32.8901886Z"
+}

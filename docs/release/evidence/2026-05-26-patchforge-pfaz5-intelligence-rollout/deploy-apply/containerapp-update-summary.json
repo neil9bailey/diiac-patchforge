@@ -1,0 +1,56 @@
+﻿[
+    {
+        "app":  "ca-patchforge-ui-prod",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-frontend:pfaz5-20260526-8a145e8",
+        "latestRevision":  "ca-patchforge-ui-prod--0000007",
+        "activeRevision":  "ca-patchforge-ui-prod--0000007",
+        "runningState":  "Running",
+        "trafficWeight":  100,
+        "provisioningState":  "Succeeded"
+    },
+    {
+        "app":  "ca-patchforge-bridge-prod",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-bridge:pfaz5-20260526-8a145e8",
+        "latestRevision":  "ca-patchforge-bridge-prod--0000006",
+        "activeRevision":  "ca-patchforge-bridge-prod--0000006",
+        "runningState":  "Running",
+        "trafficWeight":  100,
+        "provisioningState":  "Succeeded"
+    },
+    {
+        "app":  "ca-patchforge-runtime-prod",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-runtime:pfaz5-20260526-8a145e8",
+        "latestRevision":  "ca-patchforge-runtime-prod--0000005",
+        "activeRevision":  "ca-patchforge-runtime-prod--0000005",
+        "runningState":  "Running",
+        "trafficWeight":  100,
+        "provisioningState":  "Succeeded"
+    },
+    {
+        "app":  "ca-patchforge-sra-prod",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-sra-agent:pfaz5-20260526-8a145e8",
+        "latestRevision":  "ca-patchforge-sra-prod--0000004",
+        "activeRevision":  "ca-patchforge-sra-prod--0000004",
+        "runningState":  "Running",
+        "trafficWeight":  100,
+        "provisioningState":  "Succeeded"
+    },
+    {
+        "app":  "ca-patchforge-worker-prod",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-ingest-worker:pfaz5-20260526-8a145e8",
+        "latestRevision":  "ca-patchforge-worker-prod--0000004",
+        "activeRevision":  "ca-patchforge-worker-prod--0000004",
+        "runningState":  "Running",
+        "trafficWeight":  100,
+        "provisioningState":  "Succeeded"
+    },
+    {
+        "app":  "ca-patchforge-scheduler-prod",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-scheduler:pfaz5-20260526-8a145e8",
+        "latestRevision":  "ca-patchforge-scheduler-prod--0000004",
+        "activeRevision":  "ca-patchforge-scheduler-prod--0000004",
+        "runningState":  "RunningAtMaxScale",
+        "trafficWeight":  100,
+        "provisioningState":  "Succeeded"
+    }
+]

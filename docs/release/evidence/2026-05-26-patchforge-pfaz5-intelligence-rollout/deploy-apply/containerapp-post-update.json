@@ -1,0 +1,50 @@
+﻿[
+    {
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-frontend:pfaz5-20260526-8a145e8",
+        "ingress":  true,
+        "latestRevision":  "ca-patchforge-ui-prod--0000007",
+        "name":  "ca-patchforge-ui-prod",
+        "provisioningState":  "Succeeded",
+        "runningStatus":  "Running"
+    },
+    {
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-bridge:pfaz5-20260526-8a145e8",
+        "ingress":  true,
+        "latestRevision":  "ca-patchforge-bridge-prod--0000006",
+        "name":  "ca-patchforge-bridge-prod",
+        "provisioningState":  "Succeeded",
+        "runningStatus":  "Running"
+    },
+    {
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-runtime:pfaz5-20260526-8a145e8",
+        "ingress":  false,
+        "latestRevision":  "ca-patchforge-runtime-prod--0000005",
+        "name":  "ca-patchforge-runtime-prod",
+        "provisioningState":  "Succeeded",
+        "runningStatus":  "Running"
+    },
+    {
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-sra-agent:pfaz5-20260526-8a145e8",
+        "ingress":  false,
+        "latestRevision":  "ca-patchforge-sra-prod--0000004",
+        "name":  "ca-patchforge-sra-prod",
+        "provisioningState":  "Succeeded",
+        "runningStatus":  "Running"
+    },
+    {
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-ingest-worker:pfaz5-20260526-8a145e8",
+        "ingress":  false,
+        "latestRevision":  "ca-patchforge-worker-prod--0000004",
+        "name":  "ca-patchforge-worker-prod",
+        "provisioningState":  "Succeeded",
+        "runningStatus":  "Running"
+    },
+    {
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-scheduler:pfaz5-20260526-8a145e8",
+        "ingress":  false,
+        "latestRevision":  "ca-patchforge-scheduler-prod--0000004",
+        "name":  "ca-patchforge-scheduler-prod",
+        "provisioningState":  "Succeeded",
+        "runningStatus":  "Running"
+    }
+]

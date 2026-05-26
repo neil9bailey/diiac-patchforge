@@ -1,0 +1,74 @@
+- main [ref=e3]:
+  - complementary "PatchForge navigation" [ref=e4]:
+    - generic [ref=e5]:
+      - img [ref=e7]
+      - generic [ref=e12]:
+        - paragraph [ref=e13]: DIIaC™
+        - heading "PatchForge" [level=1] [ref=e14]
+    - navigation [ref=e15]:
+      - button "Command Center" [ref=e16] [cursor=pointer]:
+        - img [ref=e17]
+        - generic [ref=e20]: Command Center
+      - button "Guide" [ref=e21] [cursor=pointer]:
+        - img [ref=e22]
+        - generic [ref=e25]: Guide
+      - button "Vulnerability Queue" [ref=e26] [cursor=pointer]:
+        - img [ref=e27]
+        - generic [ref=e28]: Vulnerability Queue
+      - button "Asset & Service Exposure" [ref=e29] [cursor=pointer]:
+        - img [ref=e30]
+        - generic [ref=e35]: Asset & Service Exposure
+      - button "Decision Workbench" [ref=e36] [cursor=pointer]:
+        - img [ref=e37]
+        - generic [ref=e41]: Decision Workbench
+      - button "Emergency Patch" [ref=e42] [cursor=pointer]:
+        - img [ref=e43]
+        - generic [ref=e45]: Emergency Patch
+      - button "Risk Acceptances" [ref=e46] [cursor=pointer]:
+        - img [ref=e47]
+        - generic [ref=e50]: Risk Acceptances
+      - button "Compensating Controls" [ref=e51] [cursor=pointer]:
+        - img [ref=e52]
+        - generic [ref=e55]: Compensating Controls
+      - button "SRA Research" [ref=e56] [cursor=pointer]:
+        - img [ref=e57]
+        - generic [ref=e64]: SRA Research
+      - button "Evidence Catalogue" [ref=e65] [cursor=pointer]:
+        - img [ref=e66]
+        - generic [ref=e69]: Evidence Catalogue
+      - button "Decision Packs" [ref=e70] [cursor=pointer]:
+        - img [ref=e71]
+        - generic [ref=e75]: Decision Packs
+      - button "Vendor & Threat Landscape" [ref=e76] [cursor=pointer]:
+        - img [ref=e77]
+        - generic [ref=e81]: Vendor & Threat Landscape
+      - button "Admin" [ref=e82] [cursor=pointer]:
+        - img [ref=e83]
+        - generic [ref=e84]: Admin
+    - generic [ref=e85]:
+      - img [ref=e86]
+      - paragraph [ref=e90]: Governance layer only. No scanning, no exploit content, no patch deployment, no autonomous approvals.
+  - generic [ref=e91]:
+    - generic [ref=e92]:
+      - button "Toggle navigation" [ref=e93] [cursor=pointer]:
+        - img [ref=e94]
+      - generic [ref=e96]:
+        - paragraph [ref=e97]: Production | diiac.io | Enterprise Strict
+        - heading "Command Center" [level=2] [ref=e98]
+      - generic "Runtime trust status" [ref=e99]:
+        - generic [ref=e100]
+        - generic [ref=e104]
+        - generic [ref=e112]
+        - button "Refresh" [ref=e117] [cursor=pointer]
+        - button "Sign out" [ref=e123] [cursor=pointer]
+    - generic [ref=e127]:
+      - region "Command Center" [ref=e128]:
+        - generic [ref=e129]
+        - generic [ref=e167]
+        - generic [ref=e182]
+        - generic [ref=e200]
+      - complementary "PatchForge utility rail" [ref=e211]:
+        - generic [ref=e212]
+        - generic [ref=e227]
+        - generic [ref=e235]
+        - generic [ref=e243]

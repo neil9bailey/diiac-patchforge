@@ -1,0 +1,73 @@
+﻿{
+    "timestamp_utc":  "2026-05-26T21:27:17.5217840Z",
+    "ui_url":  "https://patchforge.diiac.io/",
+    "api_url":  "https://api.patchforge.diiac.io",
+    "signed_in_user":  "n.bailey@diiac.io",
+    "displayed_roles":  [
+                            "PatchForge.Admin"
+                        ],
+    "ui_http_status":  200,
+    "health_status":  200,
+    "readiness_status":  200,
+    "storage":  "postgresql",
+    "auth_required":  true,
+    "unauthenticated_protected_route_status":  401,
+    "workflow":  [
+                     "Open UI",
+                     "Sign in through Microsoft Entra/MSAL",
+                     "Confirm user and PatchForge.Admin role",
+                     "Ingest CVE-2026-PF-DEMO-001 through UI",
+                     "Confirm queue shows Critical/Known exploited/Internet exposed/Patch Available",
+                     "Run SRA exploit-risk advisory and confirm advisory-only/source-bound",
+                     "Run Bayesian advisory and confirm cannot close hard gates or approve risk",
+                     "Generate and export signed decision pack",
+                     "Verify pack signature/manifest in live export",
+                     "Navigate required product/admin pages"
+                 ],
+    "test_vulnerability":  "CVE-2026-PF-DEMO-001",
+    "decision_pack_id":  "PF-20260526-e90d3a02",
+    "pack_verified":  true,
+    "pack_signature_ok":  true,
+    "signing_provider":  "azure_key_vault",
+    "final_approval_issued":  false,
+    "readiness_state":  "blocked",
+    "active_revisions":  [
+                             {
+                                 "runningState":  "Running",
+                                 "app":  "ca-patchforge-ui-prod",
+                                 "name":  "ca-patchforge-ui-prod--0000007"
+                             },
+                             {
+                                 "runningState":  "Running",
+                                 "app":  "ca-patchforge-bridge-prod",
+                                 "name":  "ca-patchforge-bridge-prod--0000006"
+                             },
+                             {
+                                 "runningState":  "Running",
+                                 "app":  "ca-patchforge-runtime-prod",
+                                 "name":  "ca-patchforge-runtime-prod--0000005"
+                             },
+                             {
+                                 "runningState":  "Running",
+                                 "app":  "ca-patchforge-sra-prod",
+                                 "name":  "ca-patchforge-sra-prod--0000004"
+                             },
+                             {
+                                 "runningState":  "Running",
+                                 "app":  "ca-patchforge-worker-prod",
+                                 "name":  "ca-patchforge-worker-prod--0000004"
+                             },
+                             {
+                                 "runningState":  "RunningAtMaxScale",
+                                 "app":  "ca-patchforge-scheduler-prod",
+                                 "name":  "ca-patchforge-scheduler-prod--0000004"
+                             }
+                         ],
+    "blockers":  [
+                     "affected_asset_scope",
+                     "human_review_signoff",
+                     "patch_availability",
+                     "vulnerability_identity"
+                 ],
+    "result":  "PASS"
+}

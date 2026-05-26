@@ -1,0 +1,74 @@
+﻿[
+    {
+        "app":  "ca-patchforge-ui-prod",
+        "current_image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-frontend:pfaz5-agent-20260526",
+        "target_image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-frontend:pfaz5-20260526-8a145e8",
+        "planned_change":  "image_only_revision_update",
+        "preserve_custom_domains":  true,
+        "preserve_managed_identity":  true,
+        "preserve_env":  true,
+        "preserve_auth_required":  true,
+        "preserve_postgresql":  true,
+        "preserve_keyvault_signing":  true
+    },
+    {
+        "app":  "ca-patchforge-bridge-prod",
+        "current_image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-bridge:pfaz5-agent-20260526",
+        "target_image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-bridge:pfaz5-20260526-8a145e8",
+        "planned_change":  "image_only_revision_update",
+        "preserve_custom_domains":  true,
+        "preserve_managed_identity":  true,
+        "preserve_env":  true,
+        "preserve_auth_required":  true,
+        "preserve_postgresql":  true,
+        "preserve_keyvault_signing":  true
+    },
+    {
+        "app":  "ca-patchforge-runtime-prod",
+        "current_image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-runtime:pfaz5-agent-20260526",
+        "target_image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-runtime:pfaz5-20260526-8a145e8",
+        "planned_change":  "image_only_revision_update",
+        "preserve_custom_domains":  true,
+        "preserve_managed_identity":  true,
+        "preserve_env":  true,
+        "preserve_auth_required":  true,
+        "preserve_postgresql":  true,
+        "preserve_keyvault_signing":  true
+    },
+    {
+        "app":  "ca-patchforge-sra-prod",
+        "current_image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-sra-agent:pfaz5-20260526",
+        "target_image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-sra-agent:pfaz5-20260526-8a145e8",
+        "planned_change":  "image_only_revision_update",
+        "preserve_custom_domains":  true,
+        "preserve_managed_identity":  true,
+        "preserve_env":  true,
+        "preserve_auth_required":  true,
+        "preserve_postgresql":  true,
+        "preserve_keyvault_signing":  true
+    },
+    {
+        "app":  "ca-patchforge-worker-prod",
+        "current_image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-ingest-worker:pfaz5-20260526",
+        "target_image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-ingest-worker:pfaz5-20260526-8a145e8",
+        "planned_change":  "image_only_revision_update",
+        "preserve_custom_domains":  true,
+        "preserve_managed_identity":  true,
+        "preserve_env":  true,
+        "preserve_auth_required":  true,
+        "preserve_postgresql":  true,
+        "preserve_keyvault_signing":  true
+    },
+    {
+        "app":  "ca-patchforge-scheduler-prod",
+        "current_image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-scheduler:pfaz5-20260526",
+        "target_image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-scheduler:pfaz5-20260526-8a145e8",
+        "planned_change":  "image_only_revision_update",
+        "preserve_custom_domains":  true,
+        "preserve_managed_identity":  true,
+        "preserve_env":  true,
+        "preserve_auth_required":  true,
+        "preserve_postgresql":  true,
+        "preserve_keyvault_signing":  true
+    }
+]

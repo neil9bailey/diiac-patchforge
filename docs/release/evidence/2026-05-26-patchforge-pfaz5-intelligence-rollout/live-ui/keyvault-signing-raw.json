@@ -1,0 +1,5 @@
+﻿{
+  "algorithm": "ES256",
+  "keyId": "https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod/2e348fdeaaaf448ebba206130ef86b52",
+  "signature": "ojIUVMnSvwyb7BkZsZdSRgfX0Sw7jKU+DiXGLiARrya2TEZ4y3YLkxNDU6z0MBJmOIaPiaK0WN+uzT24xwdPow=="
+}
