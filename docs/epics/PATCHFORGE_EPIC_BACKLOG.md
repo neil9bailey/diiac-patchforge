@@ -164,6 +164,8 @@ Rules:
 
 ## PF-E8: SRA MCP Advisory Layer
 
+Status: complete
+
 Purpose: add advisory Security Research Agent tooling inside governance controls.
 
 Deliverables:

@@ -20,10 +20,10 @@
 | PF-E5 | Runtime governance and signed packs | Complete | |
 | PF-E6 | Dedicated frontend shell | Complete | |
 | PF-E7 | Full Admin UI | Complete | |
-| PF-E8 | SRA MCP advisory layer | Pending | |
+| PF-E8 | SRA MCP advisory layer | Complete | |
 | PF-E9 | Decision Workbench and DCC | Pending | |
 | PF-E10 | Reports, demos, validation pack | Pending | |
 
 ## Next Epic
 
-PF-E8: Security Research Agent MCP advisory layer.
+PF-E9: Patch decision workbench and Decision Control Center.

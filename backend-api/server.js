@@ -2,6 +2,7 @@ import http from "node:http";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { PatchForgeJsonStorage } from "./patchforge/storage.js";
+import { runSraTool } from "./sra/securityResearchAgent.js";
 
 const DEFAULT_PORT = Number(process.env.PORT || 8080);
 const DEFAULT_TENANT = process.env.PATCHFORGE_DEFAULT_TENANT || "diiac-demo";
@@ -117,6 +118,24 @@ export function createServer(options = {}) {
 
       if (route === "GET /api/patchforge/admin/health") {
         return sendJson(res, 200, await storage.adminHealth(tenantId));
+      }
+
+      const sraRoutes = {
+        "POST /api/sra/research-cve": "research_cve",
+        "POST /api/sra/exploit-risk": "assess_exploit_risk",
+        "POST /api/sra/compensating-controls": "suggest_compensating_controls",
+        "POST /api/sra/patch-feasibility": "assess_patch_feasibility",
+        "POST /api/sra/ot-constraints": "assess_ot_patch_constraints"
+      };
+
+      if (sraRoutes[route]) {
+        const body = await readJson(req);
+        try {
+          const result = runSraTool(sraRoutes[route], { ...body, tenant_id: resolveTenant(req, url, body) });
+          return sendJson(res, 200, { sra: result });
+        } catch (error) {
+          return sendJson(res, 400, { error: "sra_boundary_violation", message: error.message });
+        }
       }
 
       return sendJson(res, 404, {

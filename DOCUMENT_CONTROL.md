@@ -48,6 +48,8 @@ DIIaC™ PatchForge
 | Frontend/src/styles.css | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | Frontend/src/App.test.tsx | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | customer-config/demo/admin_config.json | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| backend-api/sra/securityResearchAgent.js | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| backend-api/sra/securityResearchAgent.test.mjs | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 
 ## Change Control
 

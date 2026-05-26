@@ -1,14 +1,14 @@
 # Current Release
 
-## DIIaC™ PatchForge PF-E7
+## DIIaC™ PatchForge PF-E8
 
-Release state: admin UI and configuration baseline in progress
+Release state: SRA advisory layer baseline in progress
 
 Date: 2026-05-26
 
 ## Scope
 
-PF-E7 adds PatchForge Admin UI configuration surfaces and local admin configuration APIs.
+PF-E8 adds the Security Research Agent advisory layer inside PatchForge governance boundaries.
 
 Included:
 
@@ -59,6 +59,12 @@ Included:
 - read-only admin health API
 - secret masking after save
 - UI health panels and configuration controls
+- SRA advisory tool layer
+- SRA API routes
+- source-bound output hashes
+- pending-review default
+- no exploit or deployment action flags
+- SRA boundary tests
 - release baseline manifest
 - document control register
 
