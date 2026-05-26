@@ -15,11 +15,11 @@ PatchForge has a local baseline through PF-E10:
 - SRA advisory layer
 - Decision Control Center runtime foundation
 - report rendering
-- demo scenarios and validation plan
+- real-data customer demonstration runbook and validation plan
 
 ## Not Yet Production-Live
 
-The baseline has not deployed Azure resources, configured DNS, enabled production signing trust, connected live scanners, or enabled production Entra app roles.
+PatchForge is live on Azure Container Apps with custom DNS, production signing trust, PostgreSQL storage, and Entra app roles. Live scanner ingestion remains an integration task; no seeded or synthetic product data is shipped.
 
 ## Access Needed Later
 
@@ -30,4 +30,3 @@ DNS updates will be needed before `patchforge.diiac.io` and `api.patchforge.diia
 ## Boundary
 
 PatchForge remains a governance product. It does not scan, exploit, deploy patches, mutate production systems, or approve risk without accountable human review.
-

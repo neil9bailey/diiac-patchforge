@@ -1,0 +1,35 @@
+﻿{
+    "date":  "2026-05-26",
+    "ui":  {
+               "url":  "https://patchforge.diiac.io/?v=pfaz5-agent",
+               "status":  200,
+               "has_config":  true
+           },
+    "api_health":  {
+                       "status":  "ok",
+                       "product":  "DIIaC PatchForge",
+                       "boundary":  "governance-only"
+                   },
+    "api_readiness":  {
+                          "status":  "ready",
+                          "storage":  "postgresql",
+                          "auth_required":  true,
+                          "tenant_required":  true
+                      },
+    "protected_route_without_token":  {
+                                          "status":  401,
+                                          "error":  "missing_bearer_token",
+                                          "required_roles":  [
+                                                                 "PatchForge.Reader",
+                                                                 "PatchForge.Auditor",
+                                                                 "PatchForge.TriageAnalyst",
+                                                                 "PatchForge.SecurityLead",
+                                                                 "PatchForge.Admin"
+                                                             ]
+                                      },
+    "agent_intake_cors":  {
+                              "status":  204,
+                              "allow_origin":  "https://patchforge.diiac.io",
+                              "allow_methods":  "GET,POST,PUT,OPTIONS"
+                          }
+}

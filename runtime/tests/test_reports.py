@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 
 from runtime.governance_runtime import create_signed_decision_pack
@@ -6,15 +5,15 @@ from runtime.reports import REPORT_SECTIONS, REPORT_TYPES, render_all_reports, r
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEMO_SEEDS = REPO_ROOT / "docs" / "release" / "evidence" / "patchforge-demo-pack" / "demo_scenarios.json"
+FORBIDDEN_SEED_FILE = REPO_ROOT / "docs" / "release" / "evidence" / "patchforge-customer-demonstration" / "demo_scenarios.json"
 
 
 def test_reports_render_required_sections():
     report = render_report(
         "cab_patch_decision_report",
         {
-            "vulnerability_id": "CVE-2026-10421",
-            "service": "Orion Gateway",
+            "vulnerability_id": "REAL-RECORD-1",
+            "service": "Customer Service",
             "decision_posture": "emergency_change_required",
         },
     )
@@ -25,8 +24,8 @@ def test_reports_render_required_sections():
 
 def test_all_report_types_render_without_boundary_violations():
     reports = render_all_reports({
-        "vulnerability_id": "CVE-2026-10421",
-        "service": "Orion Gateway",
+        "vulnerability_id": "REAL-RECORD-1",
+        "service": "Customer Service",
         "decision_posture": "patch_required",
     })
     assert set(reports) == set(REPORT_TYPES)
@@ -37,14 +36,14 @@ def test_all_report_types_render_without_boundary_violations():
     assert "does not scan" in combined
 
 
-def test_signed_pack_verifies_for_demo_report_context(tmp_path):
+def test_signed_pack_verifies_for_report_context(tmp_path):
     result = create_signed_decision_pack(
-        output_dir=tmp_path / "demo-pack",
+        output_dir=tmp_path / "pack",
         vulnerability={
             "tenant_id": "tenant-a",
-            "vulnerability_id": "CVE-2026-10421",
-            "canonical_id": "CVE-2026-10421",
-            "title": "Orion Gateway critical exposure",
+            "vulnerability_id": "REAL-RECORD-1",
+            "canonical_id": "REAL-RECORD-1",
+            "title": "Customer supplied critical exposure",
             "severity": "critical",
             "known_exploited": True,
             "internet_exposed": True,
@@ -85,16 +84,5 @@ def test_signed_pack_verifies_for_demo_report_context(tmp_path):
     assert result["verification"]["verified"] is True
 
 
-def test_demo_scenarios_parse():
-    with DEMO_SEEDS.open("r", encoding="utf-8") as handle:
-        scenarios = json.load(handle)
-
-    assert len(scenarios["scenarios"]) == 5
-    assert {scenario["id"] for scenario in scenarios["scenarios"]} == {
-        "critical-exploited-orion-gateway",
-        "emergency-patch-rollback-uncertainty",
-        "ot-controller-patch-deferral",
-        "service-transition-known-exploited-block",
-        "msp-monthly-customer-pack",
-    }
-
+def test_no_demo_seed_file_is_shipped():
+    assert not FORBIDDEN_SEED_FILE.exists()

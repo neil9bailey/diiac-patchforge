@@ -8,6 +8,7 @@ const COLLECTIONS = [
   "assets",
   "services",
   "reviews",
+  "decision_packs",
   "audit_events"
 ];
 
@@ -17,11 +18,12 @@ const COLLECTION_ID_FIELDS = {
   assets: "asset_id",
   services: "service_id",
   reviews: "review_id",
+  decision_packs: "decision_pack_id",
   audit_events: "audit_id"
 };
 
 const DEFAULT_ADMIN_CONFIG = {
-  tenant_id: "diiac-demo",
+  tenant_id: "diiac.io",
   general: {
     product_name: "DIIaC PatchForge",
     target_url: "https://patchforge.diiac.io",
@@ -46,6 +48,16 @@ const DEFAULT_ADMIN_CONFIG = {
     advisory_only: true,
     review_required: true,
     can_close_hard_gates_alone: false
+  },
+  agent_intelligence: {
+    intake_model: "agent_led_human_approved",
+    mcp_agent_findings_enabled: true,
+    mythos_findings_enabled: true,
+    agi_agent_findings_enabled: true,
+    advisory_only: true,
+    review_required: true,
+    can_close_hard_gates_alone: false,
+    existing_llm_keys_only: true
   },
   integrations: {
     diiac_it_enabled: false,
@@ -82,7 +94,7 @@ export function hashObject(value) {
 }
 
 export class PatchForgeJsonStorage {
-  constructor(rootDir = path.resolve("customer-config/demo/patchforge")) {
+  constructor(rootDir = path.resolve("customer-config/default/patchforge")) {
     this.rootDir = rootDir;
     this.storageMode = "local-json";
   }
@@ -134,7 +146,7 @@ export class PatchForgeJsonStorage {
       if (error.code !== "ENOENT") {
         throw error;
       }
-      const initial = { "diiac-demo": DEFAULT_ADMIN_CONFIG };
+      const initial = { "diiac.io": DEFAULT_ADMIN_CONFIG };
       await writeFile(file, `${JSON.stringify(initial, null, 2)}\n`, "utf8");
       return initial;
     }
@@ -388,7 +400,8 @@ export class PatchForgeJsonStorage {
       }).length,
       pending_review: vulnerabilities.filter((item) => item.review_state === "pending_review").length,
       accepted_positive_evidence_sources: sources.filter((source) => isPositiveEvidence(source)).length,
-      rejected_sources: sources.filter((source) => source.review_state === "rejected" || source.evidence_state === "rejected").length
+      rejected_sources: sources.filter((source) => source.review_state === "rejected" || source.evidence_state === "rejected").length,
+      signed_packs: (await this.list("decision_packs", tenantId)).filter((pack) => pack.verification?.verified === true).length
     };
   }
 
@@ -437,6 +450,7 @@ export class PatchForgeJsonStorage {
         { name: "Bridge health", status: "ready", mode: this.storageMode || "local-json" },
         { name: "Runtime health", status: "ready", mode: "local" },
         { name: "SRA health", status: config.sra?.advisory_only ? "advisory" : "disabled", mode: "advisory-only" },
+        { name: "MCP agent intake", status: config.agent_intelligence?.review_required ? "governed" : "disabled", mode: "agent-led-human-approved" },
         { name: "Worker health", status: "planned", mode: "not-deployed" },
         { name: "Scheduler health", status: "planned", mode: "not-deployed" },
         {
@@ -601,7 +615,7 @@ export function createPatchForgeStorage(options = {}) {
       ...options
     });
   }
-  return new PatchForgeJsonStorage(options.storageRoot);
+  return new PatchForgeJsonStorage(options.storageRoot || process.env.PATCHFORGE_STORAGE_ROOT);
 }
 
 export function isPositiveEvidence(source) {

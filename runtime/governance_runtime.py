@@ -15,6 +15,7 @@ from urllib.parse import urlparse
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 EVIDENCE_MODELS_PATH = REPO_ROOT / "contracts" / "evidence_models.json"
+ADVISORY_SOURCE_CLASSES = {"sra_trace", "mcp_agent_finding", "mythos_finding", "agi_agent_finding"}
 
 DECISION_POSTURES = {
     "patch_required",
@@ -159,7 +160,7 @@ def build_evidence_register(evidence_items: list[dict[str, Any]]) -> dict[str, A
 
         if review_state == "rejected" or evidence_state == "rejected":
             register["rejected_refs"].append(evidence_ref)
-        if source_class == "sra_trace" or item.get("advisory_only") is True:
+        if source_class in ADVISORY_SOURCE_CLASSES or item.get("advisory_only") is True:
             register["advisory_only_refs"].append(evidence_ref)
 
     return register

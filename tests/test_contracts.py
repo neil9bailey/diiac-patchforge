@@ -106,20 +106,24 @@ def test_evidence_models_load_and_include_required_classes():
     assert expected_models == set(evidence_models["models"])
 
 
-def test_raw_sra_or_scanner_output_cannot_close_hard_gates_alone():
+def test_raw_sra_scanner_and_agent_output_cannot_close_hard_gates_alone():
     evidence_models = load_json(EVIDENCE_MODELS)
     blocked = set(evidence_models["hard_gate_sources_disallowed_alone"])
-    assert {"scanner_output", "sra_trace"} <= blocked
+    agent_sources = {"mcp_agent_finding", "mythos_finding", "agi_agent_finding"}
+    assert {"scanner_output", "sra_trace", *agent_sources} <= blocked
 
     source_defaults = evidence_models["source_defaults"]
     assert source_defaults["scanner_output"]["can_close_hard_gate_alone"] is False
     assert source_defaults["sra_trace"]["can_close_hard_gate_alone"] is False
     assert source_defaults["sra_trace"]["advisory_only"] is True
     assert source_defaults["sra_trace"]["initial_review_state"] == "pending_review"
+    for source in agent_sources:
+        assert source_defaults[source]["can_close_hard_gate_alone"] is False
+        assert source_defaults[source]["advisory_only"] is True
+        assert source_defaults[source]["initial_review_state"] == "pending_review"
 
 
 def test_ot_model_requires_safety_window_and_vendor_support():
     evidence_models = load_json(EVIDENCE_MODELS)
     ot_required = set(evidence_models["models"]["ot_vuln_patch_governance"]["required_evidence_classes"])
     assert {"safety_impact", "maintenance_window", "vendor_support"} <= ot_required
-

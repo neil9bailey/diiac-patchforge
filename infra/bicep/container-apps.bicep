@@ -20,10 +20,13 @@ param databaseName string
 param databaseUser string = 'patchforgeadmin'
 param databasePasswordSecretName string = 'patchforge-postgres-admin-password'
 param storageMode string = 'postgresql'
+param defaultTenant string = 'diiac.io'
 param entraTenantId string = '67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da'
 param entraAudience string = 'api://ec30b0eb-cfc4-48cc-a5f2-2a1345d96736'
 param authRequired bool = true
 param keyVaultSigningKeyId string = ''
+param runtimeInternalUrl string = 'http://ca-patchforge-runtime-prod'
+param allowedOrigins string = 'https://patchforge.diiac.io'
 param uiCustomDomain string = 'patchforge.diiac.io'
 param apiCustomDomain string = 'api.patchforge.diiac.io'
 param uiManagedCertificateName string = 'mc-acae-diiac-pat-patchforge-diiac-9158'
@@ -42,6 +45,10 @@ var commonEnv = [
   {
     name: 'PATCHFORGE_STORAGE_ACCOUNT'
     value: storageAccountName
+  }
+  {
+    name: 'PATCHFORGE_DEFAULT_TENANT'
+    value: defaultTenant
   }
   {
     name: 'PATCHFORGE_KEYVAULT_URI'
@@ -82,6 +89,14 @@ var commonEnv = [
   {
     name: 'PATCHFORGE_KEYVAULT_SIGNING_KEY_ID'
     value: keyVaultSigningKeyId
+  }
+  {
+    name: 'PATCHFORGE_RUNTIME_URL'
+    value: runtimeInternalUrl
+  }
+  {
+    name: 'PATCHFORGE_ALLOWED_ORIGINS'
+    value: allowedOrigins
   }
 ]
 

@@ -1,8 +1,8 @@
 # Current Release
 
-## DIIaC PatchForge PF-AZ4
+## DIIaC PatchForge PF-AZ5
 
-Release state: Azure bootstrap live with identity, signing, database, DNS cutover, API RBAC, PostgreSQL storage, and runtime Key Vault signing gates completed
+Release state: Azure production demo gate with Entra-protected live UI workflows, PostgreSQL-backed tenant records, and runtime signed pack generation from real ingested data only
 
 Date: 2026-05-26
 
@@ -35,7 +35,7 @@ Included:
 - evidence models for IT, emergency patch, risk acceptance, service transition, and OT patch governance
 - contract tests for schema loading, required fields, SRA advisory-only state, final approval defaults, and hard gate controls
 - Node Backend API with health, readiness, vulnerability, asset, service, exposure, and dashboard metrics endpoints
-- local JSON storage abstraction under customer-config/demo/patchforge
+- local JSON storage abstraction under customer-config/default/patchforge
 - API tests for tenant isolation, review events, rejected evidence exclusion, metrics, and boundary endpoints
 - deterministic governance runtime
 - evidence register and evidence model evaluation
@@ -43,11 +43,15 @@ Included:
 - patch decision context construction
 - local signed decision pack generation and verification
 - runtime tests for rejected evidence, SRA/scanner hard-gate limits, emergency approval blockers, pack verification, and boundary rejection
-- React/Vite PatchForge UI
+- React/Vite PatchForge UI with Microsoft Entra sign-in
+- live protected API client
+- no static vulnerability queue or seeded product data
 - Command Center
 - Vulnerability Queue
+- real record ingest form
 - Asset & Service Exposure
 - Decision Workbench
+- runtime signed decision-pack generation from ingested records
 - Emergency Patch
 - Risk Acceptances
 - Compensating Controls
@@ -76,11 +80,10 @@ Included:
 - post-patch validation event handling
 - DCC tests
 - report renderer for CAB, board, customer, risk acceptance, and OT reports
-- demo runbook
-- demo scenario seeds
+- customer demonstration runbook for real operator-supplied data only
 - validation plan
 - readiness summary
-- report and demo tests
+- report and no-seed validation tests
 - GitHub Actions CI
 - deployment readiness docs
 - Azure access checklist
@@ -119,15 +122,25 @@ Included:
 - Runtime Azure Key Vault ES256 signing integration
 - live runtime Key Vault signing smoke against `pf-pack-signing-prod`
 - Bicep-managed custom-domain certificate bindings to prevent future deployment drift
-- image tag `pfaz4-20260526` deployed to all PatchForge Container Apps
+- image tag `pfaz5-20260526` deployed to all PatchForge Container Apps
+- image tag `pfaz5-agent-20260526` deployed to UI, bridge/API, and runtime for the Guide and agent-intelligence increment
+- bridge-to-runtime internal Container Apps service discovery using the runtime app name
+- decision-pack archive API
+- Guide page for agent-led, human-approved PatchForge operation
+- protected agent-finding intake API for MCP, Mythos, AGI-agent, and SRA advisory sources
+- evidence model controls preventing agent findings from closing hard gates alone
+- no demo seed pack or synthetic scenario data shipped
+- live PF-AZ5 release evidence in `docs/release/evidence/2026-05-26-patchforge-live-product/`
 
 Excluded:
 
-- UI sign-in flow and client-side MSAL role UX
+- seeded demo data
+- synthetic vulnerability data
 - vulnerability scanning
 - exploit generation
 - patch deployment
 - SIEM, SOAR, ITSM, CMDB, EDR, XDR, or OT engineering replacement functionality
+- unreviewed AI or agent source truth claims
 
 ## Runtime State
 
@@ -166,6 +179,14 @@ Deployment evidence:
 - `docs/release/evidence/2026-05-26-patchforge-gates/`
 - `docs/release/evidence/2026-05-26-patchforge-dns-cutover/`
 - `docs/release/evidence/2026-05-26-patchforge-production-hardening/`
+- `docs/release/evidence/2026-05-26-patchforge-live-product/`
+
+Latest PF-AZ5 agent-intelligence revisions:
+
+- UI: `ca-patchforge-ui-prod--0000006`
+- Bridge/API: `ca-patchforge-bridge-prod--0000005`
+- Runtime: `ca-patchforge-runtime-prod--0000004`
+- Image tag: `pfaz5-agent-20260526`
 
 ## Trust State
 

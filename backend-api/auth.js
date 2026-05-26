@@ -1,4 +1,5 @@
 const DEFAULT_TENANT_ID = "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da";
+const DEFAULT_API_CLIENT_ID = "ec30b0eb-cfc4-48cc-a5f2-2a1345d96736";
 const DEFAULT_AUDIENCE = "api://ec30b0eb-cfc4-48cc-a5f2-2a1345d96736";
 const ADMIN_ROLE = "PatchForge.Admin";
 
@@ -10,6 +11,7 @@ const ROUTE_ROLES = [
   { method: "POST", pattern: /^\/api\/patchforge\/vulnerabilities\/[^/]+\/review$/, roles: ["PatchForge.SecurityLead", "PatchForge.Admin"] },
   { method: "POST", pattern: /^\/api\/patchforge\/assets\/ingest$/, roles: ["PatchForge.TriageAnalyst", "PatchForge.Admin"] },
   { method: "POST", pattern: /^\/api\/patchforge\/services\/ingest$/, roles: ["PatchForge.TriageAnalyst", "PatchForge.Admin"] },
+  { method: "POST", pattern: /^\/api\/patchforge\/decision-packs\/generate$/, roles: ["PatchForge.SecurityLead", "PatchForge.CABApprover", "PatchForge.Admin"] },
   { method: "POST", pattern: /^\/api\/sra\//, roles: ["PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.Admin"] },
   { method: "GET", pattern: /^\/api\//, roles: ["PatchForge.Reader", "PatchForge.Auditor", "PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.Admin"] },
   { method: "POST", pattern: /^\/api\//, roles: ["PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.Admin"] }
@@ -18,11 +20,16 @@ const ROUTE_ROLES = [
 export function createAuthConfigFromEnv() {
   const tenantId = process.env.PATCHFORGE_ENTRA_TENANT_ID || DEFAULT_TENANT_ID;
   const audience = process.env.PATCHFORGE_ENTRA_AUDIENCE || DEFAULT_AUDIENCE;
+  const audiences = (process.env.PATCHFORGE_ENTRA_AUDIENCES || `${audience},${DEFAULT_API_CLIENT_ID}`)
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
   const issuer = process.env.PATCHFORGE_ENTRA_ISSUER || `https://login.microsoftonline.com/${tenantId}/v2.0`;
   return {
     required: parseBoolean(process.env.PATCHFORGE_AUTH_REQUIRED, false),
     tenantId,
     audience,
+    audiences,
     issuer,
     jwksUri: process.env.PATCHFORGE_ENTRA_JWKS_URI || `https://login.microsoftonline.com/${tenantId}/discovery/v2.0/keys`
   };
@@ -95,7 +102,7 @@ async function verifyEntraJwt(token, authConfig) {
   const jwks = createRemoteJWKSet(new URL(authConfig.jwksUri));
   const { payload } = await jwtVerify(token, jwks, {
     issuer: authConfig.issuer,
-    audience: authConfig.audience,
+    audience: authConfig.audiences || authConfig.audience,
     clockTolerance: "2 minutes"
   });
   if (authConfig.tenantId && payload.tid !== authConfig.tenantId) {

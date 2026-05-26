@@ -120,7 +120,22 @@ Production hardening state as of PF-AZ4 on 2026-05-26:
 - Custom domains are now represented in Bicep using existing managed certificate names
 - Production hardening evidence: `docs/release/evidence/2026-05-26-patchforge-production-hardening/`
 
-The UI remains a public static command-centre shell. Protected API data requires Entra bearer tokens with PatchForge app roles.
+PF-AZ5 direction from the user: no demo data, no seeded data, and no synthetic vulnerability records. Customer demonstrations must run from real operator-supplied tenant records ingested through the protected UI/API.
+
+PF-AZ5 agent-intelligence direction from the user: PatchForge should be agent-led and human-approved. MCP agents, SRA, Mythos, scanners, advisory feeds, and other AGI-agent sources should minimise human typing by researching, correlating, source-mapping, and drafting context. Human users review, approve, reject, own risk, and sign off. Agent findings are source-bound, advisory, pending review, and cannot close hard gates or accept risk alone.
+
+Reference: `docs/architecture/PATCHFORGE_MCP_AGENT_INTELLIGENCE.md`.
+
+PF-AZ5 live state:
+
+- Deployed image tag: `pfaz5-20260526`
+- UI is an Entra-protected live workflow, not a static vulnerability queue.
+- API CORS allows `https://patchforge.diiac.io`.
+- Bridge calls runtime by Container Apps app name: `http://ca-patchforge-runtime-prod`.
+- Protected API data requires Entra bearer tokens with PatchForge app roles.
+- Live smoke evidence: `docs/release/evidence/2026-05-26-patchforge-live-product/`
+- Protected agent-finding intake path: `POST /api/patchforge/agent-findings/ingest`
+- Agent source classes: `mcp_agent_finding`, `mythos_finding`, `agi_agent_finding`, `sra_trace`
 
 Tell the user before:
 
@@ -145,6 +160,6 @@ Build the governance cage first:
 8. PF-E7 admin UI
 9. PF-E8 SRA advisory layer
 10. PF-E9 Decision Workbench and DCC
-11. PF-E10 reports, demos, validation pack
+11. PF-E10 reports and validation pack
 
-Do not build SRA first. SRA must live inside the governance boundary.
+Do not build SRA first. SRA must live inside the governance boundary. Do not add seed/demo data unless the user explicitly reverses the no-demo-data instruction.

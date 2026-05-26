@@ -16,9 +16,9 @@ from runtime.governance_runtime import (
 def sample_vulnerability(**overrides):
     base = {
         "tenant_id": "tenant-a",
-        "vulnerability_id": "CVE-2026-10421",
-        "canonical_id": "CVE-2026-10421",
-        "title": "Orion Gateway critical exposure",
+        "vulnerability_id": "REAL-RECORD-1",
+        "canonical_id": "REAL-RECORD-1",
+        "title": "Customer supplied critical exposure",
         "severity": "critical",
         "known_exploited": True,
         "internet_exposed": True,
@@ -76,6 +76,35 @@ def test_sra_and_scanner_output_cannot_close_hard_gates_alone():
     assert "vulnerability_identity" in evaluation.blockers
     assert "affected_asset_scope" in evaluation.blockers
     assert "sra-vuln-id" in evaluation.advisory_only_refs
+
+
+def test_agent_findings_are_advisory_and_cannot_close_hard_gates_alone():
+    evidence = [
+        {
+            "evidence_ref": "mythos-vuln-id",
+            "evidence_class": "vulnerability_identity",
+            "source_class": "mythos_finding",
+            "review_state": "reviewed",
+            "evidence_state": "accepted_positive_evidence",
+        },
+        {
+            "evidence_ref": "mcp-asset-scope",
+            "evidence_class": "affected_asset_scope",
+            "source_class": "mcp_agent_finding",
+            "review_state": "reviewed",
+            "evidence_state": "accepted_positive_evidence",
+        },
+        {
+            "evidence_ref": "agi-patch",
+            "evidence_class": "patch_availability",
+            "source_class": "agi_agent_finding",
+            "review_state": "reviewed",
+            "evidence_state": "accepted_positive_evidence",
+        },
+    ]
+    evaluation = apply_evidence_model("vuln_patch_governance", build_evidence_register(evidence))
+    assert {"vulnerability_identity", "affected_asset_scope", "patch_availability"} <= set(evaluation.blockers)
+    assert {"mythos-vuln-id", "mcp-asset-scope", "agi-patch"} <= set(evaluation.advisory_only_refs)
 
 
 def test_final_approval_false_by_default_for_emergency_patch():

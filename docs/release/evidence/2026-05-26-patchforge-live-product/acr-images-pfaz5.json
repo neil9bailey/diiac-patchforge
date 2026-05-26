@@ -1,0 +1,50 @@
+﻿[
+    {
+        "repository":  "diiac/patchforge-frontend",
+        "has_pfaz5":  true,
+        "tags":  [
+                     "pfaz4-20260526",
+                     "pfaz5-20260526"
+                 ]
+    },
+    {
+        "repository":  "diiac/patchforge-bridge",
+        "has_pfaz5":  true,
+        "tags":  [
+                     "pfaz4-20260526",
+                     "pfaz5-20260526"
+                 ]
+    },
+    {
+        "repository":  "diiac/patchforge-runtime",
+        "has_pfaz5":  true,
+        "tags":  [
+                     "pfaz4-20260526",
+                     "pfaz5-20260526"
+                 ]
+    },
+    {
+        "repository":  "diiac/patchforge-sra-agent",
+        "has_pfaz5":  true,
+        "tags":  [
+                     "pfaz4-20260526",
+                     "pfaz5-20260526"
+                 ]
+    },
+    {
+        "repository":  "diiac/patchforge-ingest-worker",
+        "has_pfaz5":  true,
+        "tags":  [
+                     "pfaz4-20260526",
+                     "pfaz5-20260526"
+                 ]
+    },
+    {
+        "repository":  "diiac/patchforge-scheduler",
+        "has_pfaz5":  true,
+        "tags":  [
+                     "pfaz4-20260526",
+                     "pfaz5-20260526"
+                 ]
+    }
+]

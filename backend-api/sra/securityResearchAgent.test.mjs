@@ -4,6 +4,7 @@ import {
   assessExploitRisk,
   assessOtPatchConstraints,
   assessPatchFeasibility,
+  governAgentFinding,
   researchCve,
   runSraTool,
   suggestCompensatingControls
@@ -12,7 +13,7 @@ import {
 test("SRA outputs provenance hashes and advisory boundary flags", () => {
   const output = researchCve({
     tenant_id: "tenant-a",
-    vulnerability_id: "CVE-2026-10421",
+    vulnerability_id: "REAL-RECORD-1",
     source_refs: ["vendor-advisory-1"]
   });
 
@@ -27,10 +28,10 @@ test("SRA outputs provenance hashes and advisory boundary flags", () => {
 
 test("SRA tools do not produce procedural exploit or deployment actions", () => {
   const outputs = [
-    assessExploitRisk({ vulnerability_id: "CVE-2026-10421", source_refs: ["kev"] }),
-    suggestCompensatingControls({ vulnerability_id: "CVE-2026-10421", service_name: "Orion Gateway" }),
-    assessPatchFeasibility({ vulnerability_id: "CVE-2026-10421", service_name: "Orion Gateway" }),
-    assessOtPatchConstraints({ vulnerability_id: "OT-ADV-2026-017", asset_name: "Line Controller" })
+    assessExploitRisk({ vulnerability_id: "REAL-RECORD-1", source_refs: ["kev"] }),
+    suggestCompensatingControls({ vulnerability_id: "REAL-RECORD-1", service_name: "Customer Service" }),
+    assessPatchFeasibility({ vulnerability_id: "REAL-RECORD-1", service_name: "Customer Service" }),
+    assessOtPatchConstraints({ vulnerability_id: "REAL-OT-1", asset_name: "Line Controller" })
   ];
 
   for (const output of outputs) {
@@ -55,3 +56,16 @@ test("SRA refuses prohibited procedural or deployment-oriented requests", () => 
   );
 });
 
+test("SRA governs external agent findings as advisory review inputs", () => {
+  const output = governAgentFinding({
+    vulnerability_id: "MYTHOS-REAL-1",
+    source_refs: ["mythos-trace-1"],
+    source_class: "mythos_finding"
+  });
+
+  assert.equal(output.tool_name, "govern_agent_finding");
+  assert.equal(output.advisory_only, true);
+  assert.equal(output.source_bound, true);
+  assert.equal(output.can_close_evidence_gates_alone, false);
+  assert.equal(output.can_risk_accept, false);
+});

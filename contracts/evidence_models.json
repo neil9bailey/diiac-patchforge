@@ -13,6 +13,24 @@
       "advisory_only": true,
       "can_close_hard_gate_alone": false
     },
+    "mcp_agent_finding": {
+      "initial_evidence_state": "referenced",
+      "initial_review_state": "pending_review",
+      "advisory_only": true,
+      "can_close_hard_gate_alone": false
+    },
+    "mythos_finding": {
+      "initial_evidence_state": "referenced",
+      "initial_review_state": "pending_review",
+      "advisory_only": true,
+      "can_close_hard_gate_alone": false
+    },
+    "agi_agent_finding": {
+      "initial_evidence_state": "referenced",
+      "initial_review_state": "pending_review",
+      "advisory_only": true,
+      "can_close_hard_gate_alone": false
+    },
     "human_review": {
       "initial_evidence_state": "reviewed",
       "initial_review_state": "reviewed",
@@ -21,7 +39,10 @@
   },
   "hard_gate_sources_disallowed_alone": [
     "scanner_output",
-    "sra_trace"
+    "sra_trace",
+    "mcp_agent_finding",
+    "mythos_finding",
+    "agi_agent_finding"
   ],
   "common_required_evidence_classes": [
     "vulnerability_identity",
@@ -155,4 +176,3 @@
     }
   }
 }
-

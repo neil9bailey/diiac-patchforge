@@ -166,13 +166,14 @@ Rules:
 
 Status: complete
 
-Purpose: add advisory Security Research Agent tooling inside governance controls.
+Purpose: add advisory Security Research Agent and MCP/agent-intelligence tooling inside governance controls.
 
 Deliverables:
 
 - SRA service
 - advisory research functions
 - source-bound outputs
+- MCP, Mythos, and AGI-agent finding intake
 - provenance and hashes
 - SRA APIs
 - tests
@@ -185,6 +186,7 @@ Rules:
 - no deployment action
 - cannot close hard gates alone
 - cannot risk accept
+- human review and approval remains mandatory
 
 ## PF-E9: Decision Workbench And DCC
 
@@ -209,7 +211,7 @@ Rules:
 - source and current state separated
 - no autonomous approval
 
-## PF-E10: Reports, Demos, Validation Pack
+## PF-E10: Reports and Validation Pack
 
 Status: complete
 
@@ -222,7 +224,7 @@ Deliverables:
 - Customer Patch Governance Pack
 - Risk Acceptance Report
 - OT Patch Deferral Report
-- demo scenarios
+- real-data customer demonstration runbook
 - validation plan
 - readiness summary
 
@@ -231,7 +233,7 @@ Rules:
 - no exploit instructions
 - no autonomous patch approval
 - signed pack verifies
-- demo seeds parse
+- no seeded or synthetic product data is shipped
 
 ## PF-E11: Deployment Readiness And CI/CD Hardening
 

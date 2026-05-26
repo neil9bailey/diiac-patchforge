@@ -4,13 +4,13 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=8080
-ENV PATCHFORGE_DEFAULT_TENANT=diiac-demo
+ENV PATCHFORGE_DEFAULT_TENANT=diiac.io
 
 COPY package*.json ./
 RUN npm ci --omit=dev
 
 COPY . ./backend-api
-COPY customer-config-demo ./customer-config/demo
+COPY customer-config-default ./customer-config/default
 
 EXPOSE 8080
 

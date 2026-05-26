@@ -8,7 +8,8 @@ const TOOL_SUMMARIES = {
   assess_patch_feasibility: "Assesses patch feasibility, change constraints, and rollback readiness.",
   summarise_vendor_advisory: "Summarises vendor advisory information with source references.",
   assess_ot_patch_constraints: "Assesses OT safety, vendor, and maintenance-window constraints.",
-  build_patch_decision_context: "Builds an advisory draft context for deterministic governance compilation."
+  build_patch_decision_context: "Builds an advisory draft context for deterministic governance compilation.",
+  govern_agent_finding: "Normalises MCP, Mythos, and AGI-agent findings into reviewable governance context."
 };
 
 const BLOCKED_INPUT_PATTERNS = [
@@ -89,6 +90,10 @@ export function buildPatchDecisionContext(input) {
   return runSraTool("build_patch_decision_context", input);
 }
 
+export function governAgentFinding(input) {
+  return runSraTool("govern_agent_finding", input);
+}
+
 function buildFindings(toolName, input) {
   const service = input.service_name || input.service_id || "affected service";
   const asset = input.asset_name || input.asset_id || "affected asset";
@@ -135,6 +140,11 @@ function buildFindings(toolName, input) {
         "Draft context should be compiled by the deterministic runtime before pack generation.",
         "Final approval remains false until an explicit human approval event exists."
       ];
+    case "govern_agent_finding":
+      return [
+        "External agent findings should be tracked as source-bound intelligence with provenance and review state.",
+        "Agent findings can enrich prioritisation but cannot approve risk, close hard gates alone, or mutate systems."
+      ];
     default:
       return [TOOL_SUMMARIES[toolName]];
   }
@@ -151,4 +161,3 @@ function assertBoundarySafe(input) {
 function hashJson(value) {
   return createHash("sha256").update(JSON.stringify(value, Object.keys(value).sort())).digest("hex");
 }
-

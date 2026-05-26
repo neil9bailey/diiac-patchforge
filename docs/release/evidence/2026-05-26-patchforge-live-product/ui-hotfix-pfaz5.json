@@ -1,0 +1,16 @@
+﻿{
+    "captured_at_utc":  "2026-05-26T19:51:05.9912535Z",
+    "ui_hotfix_image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-frontend:pfaz5-ui-20260526",
+    "latest_revision":  "ca-patchforge-ui-prod--0000004",
+    "running":  "Running",
+    "provisioning":  "Succeeded",
+    "ui_status":  200,
+    "css_asset":  "assets/index-3HDn-eQS.css",
+    "css_status":  200,
+    "layout_checks":  {
+                          "two_row_top_rail":  true,
+                          "responsive_viewport_height":  true,
+                          "auto_fit_metrics":  true,
+                          "sticky_nav":  true
+                      }
+}

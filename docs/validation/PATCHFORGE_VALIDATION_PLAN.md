@@ -15,7 +15,7 @@ This plan validates the local PatchForge baseline through PF-E10.
 7. SRA advisory tests pass.
 8. Decision Control Center tests pass.
 9. Report rendering tests pass.
-10. Demo seed data parses.
+10. No demo seed data is shipped; customer demonstrations use real operator-supplied tenant records only.
 
 ## Commands
 
@@ -30,4 +30,3 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate_iac.ps1
 ## Azure Gate
 
 Do not run deployment create/apply commands until the user confirms Azure tenant, subscription, target region, signing approach, and DNS plan.
-

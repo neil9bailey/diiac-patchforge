@@ -1,0 +1,27 @@
+﻿{
+    "captured_at_utc":  "2026-05-26T19:43:38.4660034Z",
+    "ui_status":  200,
+    "ui_title_configured":  true,
+    "config_status":  200,
+    "config_has_api_scope":  true,
+    "api_health":  {
+                       "status":  "ok",
+                       "product":  "DIIaC PatchForge",
+                       "boundary":  "governance-only"
+                   },
+    "api_readiness":  {
+                          "status":  "ready",
+                          "storage":  "postgresql",
+                          "auth_required":  true,
+                          "tenant_required":  true
+                      },
+    "protected_without_token":  {
+                                    "expected":  true,
+                                    "status":  401
+                                },
+    "cors":  {
+                 "status":  204,
+                 "allow_headers":  "authorization,content-type,x-tenant-id",
+                 "allow_origin":  "https://patchforge.diiac.io"
+             }
+}

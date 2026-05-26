@@ -1,6 +1,6 @@
 {
-  "diiac-demo": {
-    "tenant_id": "diiac-demo",
+  "diiac.io": {
+    "tenant_id": "diiac.io",
     "general": {
       "product_name": "DIIaC PatchForge",
       "target_url": "https://patchforge.diiac.io",
@@ -25,6 +25,16 @@
       "advisory_only": true,
       "review_required": true,
       "can_close_hard_gates_alone": false
+    },
+    "agent_intelligence": {
+      "intake_model": "agent_led_human_approved",
+      "mcp_agent_findings_enabled": true,
+      "mythos_findings_enabled": true,
+      "agi_agent_findings_enabled": true,
+      "advisory_only": true,
+      "review_required": true,
+      "can_close_hard_gates_alone": false,
+      "existing_llm_keys_only": true
     },
     "integrations": {
       "diiac_it_enabled": false,

@@ -8,6 +8,14 @@ The DIIaC IT Services build is mature enough to support PatchForge as a sibling/
 
 PatchForge should own the missing layer: governed, evidence-bound, human-reviewable patch and protection decisions for IT and OT assets.
 
+## Agent-Led Human-Approved Direction
+
+PatchForge should minimise manual human input. MCP agents, SRA, Mythos, scanner connectors, advisory feeds, and other AGI-agent sources should perform research, correlation, contradiction detection, source mapping, and draft decision-context work wherever possible.
+
+The human role is accountable review and approval: accept or reject sources, confirm service impact, own risk rationale, approve CAB/security decisions, and sign off final posture.
+
+Agent findings are source-bound advisory inputs. They can prioritise and enrich decisions, but they cannot close hard evidence gates alone, accept risk, approve CAB decisions, deploy patches, mutate production systems, or claim source truth without review.
+
 ## Product Identity
 
 Product name: DIIaC™ PatchForge
@@ -185,11 +193,10 @@ The first MVP should include PF-E0 through PF-E6:
 - deterministic patch governance decision
 - signed patch pack
 - basic admin
-- demo seed data
+- no seeded or synthetic product data
 
 The MVP excludes live scanner ingestion and SRA automation.
 
 ## Operational Rule For This Repo
 
 Always keep local and remote synced after completed milestones. Do not deploy Azure resources until explicitly instructed. When Azure access or DNS changes become necessary, notify the user with the exact resource or record required.
-

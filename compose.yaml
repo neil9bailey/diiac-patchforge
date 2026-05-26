@@ -7,7 +7,8 @@ services:
       dockerfile: Dockerfile
     environment:
       PORT: "8080"
-      PATCHFORGE_DEFAULT_TENANT: diiac-demo
+      PATCHFORGE_DEFAULT_TENANT: diiac.io
+      PATCHFORGE_RUNTIME_URL: http://patchforge-runtime:8080
     ports:
       - "8080:8080"
 
@@ -29,4 +30,3 @@ services:
     depends_on:
       - patchforge-api
       - patchforge-runtime
-

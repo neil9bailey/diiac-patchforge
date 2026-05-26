@@ -1,0 +1,10 @@
+﻿{
+    "captured_at_utc":  "2026-05-26T19:43:38.5402390Z",
+    "api_health":  "ok",
+    "runtime_readiness":  "ready",
+    "ingested":  "REAL-SMOKE-1",
+    "pack_id_prefix":  "PF-20260526",
+    "pack_verified":  true,
+    "source_pack_immutable":  true,
+    "storage_scope":  "temporary local smoke store removed after test"
+}

@@ -20,7 +20,7 @@ The programme starts with the governance cage first, then adds automation and ad
 | PF-E7 | Full Admin UI | Add enterprise configuration and health surfaces. |
 | PF-E8 | SRA MCP advisory agent | Add source-bound advisory research inside the governance boundary. |
 | PF-E9 | Decision Workbench and DCC | Add decision compilation, evidence resolution, approvals, and current-state overlay. |
-| PF-E10 | Reports, demos, validation pack | Add CAB, board, customer, risk acceptance, OT reports, demos, and validation evidence. |
+| PF-E10 | Reports and validation pack | Add CAB, board, customer, risk acceptance, OT reports, real-data demonstration guidance, and validation evidence. |
 
 ## First MVP Scope
 
@@ -33,7 +33,7 @@ The first working MVP should include PF-E0 through PF-E6:
 - deterministic patch governance decision
 - signed patch pack
 - basic admin
-- demo seed data
+- no seeded or synthetic product data
 
 The MVP excludes live scanner ingestion, SRA automation, autonomous approval, and patch deployment.
 

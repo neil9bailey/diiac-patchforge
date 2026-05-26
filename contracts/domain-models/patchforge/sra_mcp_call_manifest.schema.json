@@ -28,7 +28,8 @@
         "assess_patch_feasibility",
         "summarise_vendor_advisory",
         "assess_ot_patch_constraints",
-        "build_patch_decision_context"
+        "build_patch_decision_context",
+        "govern_agent_finding"
       ]
     },
     "advisory_only": { "type": "boolean", "const": true },
@@ -44,4 +45,3 @@
     "no_deployment_action": { "type": "boolean", "const": true }
   }
 }
-

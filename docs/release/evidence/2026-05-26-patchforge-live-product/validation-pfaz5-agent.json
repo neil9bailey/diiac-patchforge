@@ -1,0 +1,44 @@
+﻿{
+    "date":  "2026-05-26",
+    "checks":  [
+                   {
+                       "result":  "pass",
+                       "command":  "node --check backend-api/server.js"
+                   },
+                   {
+                       "result":  "pass",
+                       "command":  "node --check backend-api/sra/securityResearchAgent.js"
+                   },
+                   {
+                       "result":  "pass",
+                       "command":  "node --check backend-api/auth.js"
+                   },
+                   {
+                       "result":  "pass",
+                       "command":  "git diff --check"
+                   },
+                   {
+                       "tests":  "15 backend/SRA tests",
+                       "command":  "npm test",
+                       "result":  "pass"
+                   },
+                   {
+                       "tests":  "23 runtime/contract tests",
+                       "command":  "python -m pytest -q --basetemp .pytest_tmp",
+                       "result":  "pass"
+                   },
+                   {
+                       "tests":  "7 frontend tests",
+                       "command":  "npm --prefix Frontend test",
+                       "result":  "pass"
+                   },
+                   {
+                       "result":  "pass",
+                       "command":  "npm --prefix Frontend run build"
+                   },
+                   {
+                       "result":  "pass",
+                       "command":  "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate_iac.ps1"
+                   }
+               ]
+}
