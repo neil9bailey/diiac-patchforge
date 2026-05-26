@@ -43,6 +43,10 @@ DIIaC™ PatchForge
 | backend-api/patchforge-api.test.mjs | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | runtime/governance_runtime.py | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | runtime/tests/test_governance_runtime.py | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| Frontend/package.json | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| Frontend/src/App.tsx | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| Frontend/src/styles.css | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| Frontend/src/App.test.tsx | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 
 ## Change Control
 

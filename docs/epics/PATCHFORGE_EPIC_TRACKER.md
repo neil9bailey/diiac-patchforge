@@ -18,7 +18,7 @@
 | PF-E3 | Schemas and evidence models | Complete | |
 | PF-E4 | Backend API and storage | Complete | |
 | PF-E5 | Runtime governance and signed packs | Complete | |
-| PF-E6 | Dedicated frontend shell | Pending | |
+| PF-E6 | Dedicated frontend shell | Complete | |
 | PF-E7 | Full Admin UI | Pending | |
 | PF-E8 | SRA MCP advisory layer | Pending | |
 | PF-E9 | Decision Workbench and DCC | Pending | |
@@ -26,4 +26,4 @@
 
 ## Next Epic
 
-PF-E6: Dedicated PatchForge enterprise UI shell.
+PF-E7: PatchForge Admin UI and configuration surfaces.

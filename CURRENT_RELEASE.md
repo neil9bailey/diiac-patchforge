@@ -1,14 +1,14 @@
 # Current Release
 
-## DIIaC™ PatchForge PF-E5
+## DIIaC™ PatchForge PF-E6
 
-Release state: runtime governance and signed packs baseline in progress
+Release state: dedicated frontend shell baseline in progress
 
 Date: 2026-05-26
 
 ## Scope
 
-PF-E5 adds the deterministic PatchForge runtime and local signed decision pack generation.
+PF-E6 adds the dedicated PatchForge enterprise frontend shell.
 
 Included:
 
@@ -41,6 +41,19 @@ Included:
 - patch decision context construction
 - local signed decision pack generation and verification
 - runtime tests for rejected evidence, SRA/scanner hard-gate limits, emergency approval blockers, pack verification, and boundary rejection
+- React/Vite PatchForge UI
+- Command Center
+- Vulnerability Queue
+- Asset & Service Exposure
+- Decision Workbench
+- Emergency Patch
+- Risk Acceptances
+- Compensating Controls
+- SRA Research
+- Evidence Catalogue
+- Decision Packs
+- Admin route
+- frontend tests and production build
 - release baseline manifest
 - document control register
 
