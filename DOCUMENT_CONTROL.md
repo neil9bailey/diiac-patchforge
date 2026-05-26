@@ -15,8 +15,15 @@ DIIaC™ PatchForge
 | docs/product/PATCHFORGE_MASTER_WORKING_BRIEF.md | DIIaC | Active | 0.1.0 | 2026-05-26 |
 | docs/product/PATCHFORGE_PRODUCT_POSITIONING.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | docs/product/PATCHFORGE_PRODUCT_BOUNDARY.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| docs/product/PATCHFORGE_INTENDED_USE.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| docs/product/PATCHFORGE_CLAIMS_MATRIX.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| docs/product/PATCHFORGE_BOUNDARY_MATRIX.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| docs/architecture/PATCHFORGE_ARCHITECTURE.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| docs/architecture/PATCHFORGE_AZURE_ARCHITECTURE.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| docs/architecture/PATCHFORGE_SECURITY_MODEL.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | docs/epics/PATCHFORGE_IMPLEMENTATION_PROGRAMME.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | docs/epics/PATCHFORGE_EPIC_TRACKER.md | DIIaC | Active | 0.1.0 | 2026-05-26 |
+| docs/epics/PATCHFORGE_EPIC_BACKLOG.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 
 ## Change Control
 

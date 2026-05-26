@@ -13,7 +13,7 @@
 | Epic | Name | Status | Commit |
 | --- | --- | --- | --- |
 | PF-E0 | Repository bootstrap | Complete | `04bf579` |
-| PF-E1 | Product identity and architecture | Pending | |
+| PF-E1 | Product identity and architecture | Complete | |
 | PF-E2 | Azure IaC baseline | Pending | |
 | PF-E3 | Schemas and evidence models | Pending | |
 | PF-E4 | Backend API and storage | Pending | |
@@ -26,5 +26,4 @@
 
 ## Next Epic
 
-PF-E1: Product identity, programme, and executive architecture docs.
-
+PF-E2: Dedicated Azure infrastructure-as-code baseline.
