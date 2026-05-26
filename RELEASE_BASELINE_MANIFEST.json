@@ -1,0 +1,40 @@
+{
+  "product": "DIIaC™ PatchForge",
+  "baseline_id": "PF-E0",
+  "baseline_name": "bootstrap DIIaC PatchForge repository",
+  "baseline_date": "2026-05-26",
+  "target_url": "https://patchforge.diiac.io",
+  "remote_target": "neil9bailey/diiac-patchforge",
+  "release_state": "bootstrap_baseline",
+  "deployment_performed": false,
+  "azure_resources_created": false,
+  "capabilities_created": [
+    "repository_skeleton",
+    "product_positioning_document",
+    "product_boundary_document",
+    "implementation_programme_document",
+    "document_control",
+    "release_manifest"
+  ],
+  "excluded_capabilities": [
+    "vulnerability_scanner",
+    "exploit_generation",
+    "patch_deployment",
+    "production_mutation",
+    "siem_soar_replacement",
+    "itsm_replacement",
+    "cmdb_replacement",
+    "edr_xdr_replacement",
+    "ot_engineering_replacement",
+    "autonomous_cab",
+    "autonomous_risk_acceptance"
+  ],
+  "planned_azure_architecture": {
+    "identity": "diiac.io Microsoft Entra ID",
+    "compute": "Azure Container Apps",
+    "secrets_and_keys": "Azure Key Vault",
+    "storage": "Azure Storage",
+    "database": "PostgreSQL or Azure SQL",
+    "infrastructure_as_code": true
+  }
+}

@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.pytest_tmp/
+.venv/
+venv/
+
+# Node
+node_modules/
+dist/
+coverage/
+npm-debug.log*
+
+# Local environment
+.env
+.env.*
+!.env.example
+
+# OS and editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Build and export artefacts
+artifacts/generated/
+artifacts/tmp/
