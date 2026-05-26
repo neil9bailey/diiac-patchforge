@@ -11,6 +11,7 @@ from runtime.governance_runtime import (
     create_signed_decision_pack,
     verify_pack_locally,
 )
+from runtime.bayesian_patch_risk import assess_patch_risk, propose_prior_update
 
 
 def sample_vulnerability(**overrides):
@@ -107,6 +108,33 @@ def test_agent_findings_are_advisory_and_cannot_close_hard_gates_alone():
     assert {"mythos-vuln-id", "mcp-asset-scope", "agi-patch"} <= set(evaluation.advisory_only_refs)
 
 
+def test_bayesian_patch_risk_is_deterministic_and_advisory_only():
+    inputs = {
+        "cvss": 9.8,
+        "epss": 0.82,
+        "known_exploited": True,
+        "internet_exposed": True,
+        "patch_status": "patch_available",
+        "customer_facing": True,
+        "service_tier": "tier_1",
+        "rollback_evidence": False,
+    }
+    first = assess_patch_risk(inputs)
+    second = assess_patch_risk(inputs)
+    assert first["exploit_probability_posterior"] == second["exploit_probability_posterior"]
+    assert first["recommended_governance_posture"] == "emergency_change_required"
+    assert first["advisory_only"] is True
+    assert first["can_close_hard_gates_alone"] is False
+    assert first["final_approval_issued"] is False
+
+
+def test_prior_update_is_proposal_only():
+    proposal = propose_prior_update([{"posture": "patch_required", "outcome": "successful"}])
+    assert proposal["dry_run"] is True
+    assert proposal["live_update_applied"] is False
+    assert proposal["admin_approval_required"] is True
+
+
 def test_final_approval_false_by_default_for_emergency_patch():
     context = build_patch_decision_context(
         vulnerability=sample_vulnerability(),
@@ -133,6 +161,17 @@ def test_generate_and_verify_signed_decision_pack(tmp_path: Path):
             accepted("human-review", "human_review_signoff"),
         ],
         patch_availability={"status": "patch_available"},
+        bayesian_snapshot=assess_patch_risk({
+            "known_exploited": True,
+            "internet_exposed": True,
+            "patch_status": "patch_available",
+        }),
+        vendor_intelligence_snapshot={
+            "source_bound": True,
+            "review_required": True,
+            "can_close_hard_gates_alone": False,
+            "vendor_id": "microsoft",
+        },
         approval_events=[
             {"approval_type": "final", "approval_state": "approved", "approver": "cab-chair"}
         ],
@@ -154,6 +193,12 @@ def test_generate_and_verify_signed_decision_pack(tmp_path: Path):
         "patch_change_readiness.json",
         "patch_risk_acceptance_state.json",
         "human_review_state.json",
+        "bayesian_patch_risk_snapshot.json",
+        "patch_prior_usage_manifest.json",
+        "patch_prior_update_proposal.json",
+        "vendor_intelligence_snapshot.json",
+        "threat_landscape_snapshot.json",
+        "sra_trace.json",
         "governance_manifest.json",
         "verification_manifest.json",
         "signed_export.sigmeta.json",

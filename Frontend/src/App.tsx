@@ -31,10 +31,13 @@ import {
   AdminConfig,
   AdminHealth,
   AssetRecord,
+  BayesianAssessment,
   DecisionPackRecord,
   PatchForgeApi,
   PatchForgeMetrics,
   ServiceRecord,
+  ThreatLandscapeSummary,
+  VendorProfile,
   VulnerabilityRecord,
   createPatchForgeApi,
   getPatchForgeConfig
@@ -53,6 +56,7 @@ type PageKey =
   | "SRA Research"
   | "Evidence Catalogue"
   | "Decision Packs"
+  | "Vendor & Threat Landscape"
   | "Admin";
 
 type NavItem = {
@@ -72,6 +76,9 @@ type LiveState = {
   assets: AssetRecord[];
   services: ServiceRecord[];
   decisionPacks: DecisionPackRecord[];
+  bayesian: BayesianAssessment | null;
+  threatSummary: ThreatLandscapeSummary | null;
+  vendors: VendorProfile[];
   adminHealth: AdminHealth | null;
   adminConfig: AdminConfig;
 };
@@ -91,6 +98,7 @@ const navItems: NavItem[] = [
   { label: "SRA Research", icon: Radar },
   { label: "Evidence Catalogue", icon: Archive },
   { label: "Decision Packs", icon: FileCheck2 },
+  { label: "Vendor & Threat Landscape", icon: Layers3 },
   { label: "Admin", icon: SlidersHorizontal }
 ];
 
@@ -164,6 +172,14 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
   const [selectedPosture, setSelectedPosture] = useState("defer_pending_evidence");
   const [adminEnvironment, setAdminEnvironment] = useState(config.environmentLabel);
   const [adminTier, setAdminTier] = useState("Enterprise Strict");
+  const [sraResult, setSraResult] = useState<Record<string, unknown> | null>(null);
+  const canWrite = hasAnyRole(session.roles, ["PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.Admin"]);
+  const isAdmin = hasAnyRole(session.roles, ["PatchForge.Admin"]);
+  const canReadAdmin = hasAnyRole(session.roles, ["PatchForge.Admin", "PatchForge.Auditor"]);
+  const visibleNav = useMemo(
+    () => navItems.filter((item) => item.label !== "Admin" || isAdmin),
+    [isAdmin]
+  );
 
   const loadLiveState = useCallback(async () => {
     if (session.status !== "authenticated") {
@@ -172,16 +188,18 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
     setRefreshing(true);
     setOperationError(null);
     try {
-      const [metrics, vulnerabilities, assets, services, decisionPacks, adminHealth, adminConfig] = await Promise.all([
+      const [metrics, vulnerabilities, assets, services, decisionPacks, threatSummary, vendors, adminHealth, adminConfig] = await Promise.all([
         liveApi.metrics(tenantId),
         liveApi.listVulnerabilities(tenantId),
         liveApi.listAssets(tenantId),
         liveApi.listServices(tenantId),
         liveApi.listDecisionPacks(tenantId),
-        liveApi.adminHealth(tenantId),
-        liveApi.adminConfig(tenantId)
+        liveApi.threatLandscapeSummary(tenantId),
+        liveApi.listVendors(tenantId),
+        canReadAdmin ? liveApi.adminHealth(tenantId) : Promise.resolve(null),
+        canReadAdmin ? liveApi.adminConfig(tenantId) : Promise.resolve({} as AdminConfig)
       ]);
-      setState({ metrics, vulnerabilities, assets, services, decisionPacks, adminHealth, adminConfig });
+      setState({ metrics, vulnerabilities, assets, services, decisionPacks, threatSummary, vendors, bayesian: null, adminHealth, adminConfig });
       setSelectedVulnerabilityId((current) => current || vulnerabilities[0]?.vulnerability_id || "");
       const general = adminConfig.general as { environment?: string; governance_tier?: string } | undefined;
       setAdminEnvironment(general?.environment || config.environmentLabel);
@@ -191,7 +209,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
     } finally {
       setRefreshing(false);
     }
-  }, [liveApi, session.status, tenantId]);
+  }, [canReadAdmin, liveApi, session.status, tenantId]);
 
   useEffect(() => {
     void loadLiveState();
@@ -249,13 +267,54 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
     try {
       const pack = await liveApi.generateDecisionPack(tenantId, {
         vulnerability_id: selectedVulnerabilityId,
-        requested_posture: selectedPosture
+        requested_posture: selectedPosture,
+        bayesian_snapshot: state.bayesian
       });
       setOperationMessage(`Signed decision pack ${pack.pack_id} generated.`);
       await loadLiveState();
       setActivePage("Decision Packs");
     } catch (error) {
       setOperationError(error instanceof Error ? error.message : "Decision pack generation failed.");
+    }
+  }
+
+  async function handleBayesianAssess() {
+    setOperationMessage(null);
+    setOperationError(null);
+    const vulnerability = state.vulnerabilities.find((item) => item.vulnerability_id === selectedVulnerabilityId) || state.vulnerabilities[0];
+    if (!vulnerability) {
+      setOperationError("Select or ingest a vulnerability before running Bayesian advisory assessment.");
+      return;
+    }
+    try {
+      const bayesian = await liveApi.assessBayesianRisk(tenantId, {
+        vulnerability,
+        ...vulnerability
+      });
+      setState((current) => ({ ...current, bayesian }));
+      setOperationMessage(`Bayesian advisory recommends ${humanize(bayesian.recommended_governance_posture)}.`);
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : "Bayesian assessment failed.");
+    }
+  }
+
+  async function handleSraResearch() {
+    setOperationMessage(null);
+    setOperationError(null);
+    const vulnerability = state.vulnerabilities.find((item) => item.vulnerability_id === selectedVulnerabilityId) || state.vulnerabilities[0];
+    if (!vulnerability) {
+      setOperationError("Select or ingest a vulnerability before running SRA advisory research.");
+      return;
+    }
+    try {
+      const result = await liveApi.sraResearch(tenantId, "/api/sra/exploit-risk", {
+        vulnerability_id: vulnerability.vulnerability_id,
+        source_refs: vulnerability.source_record_ids || []
+      });
+      setSraResult(result);
+      setOperationMessage("SRA advisory research returned source-bound output.");
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : "SRA advisory request failed.");
     }
   }
 
@@ -297,7 +356,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
       <aside className="side-nav" aria-label="PatchForge navigation">
         <BrandLockup />
         <nav>
-          {navItems.map(({ label, icon: Icon }) => (
+          {visibleNav.map(({ label, icon: Icon }) => (
             <button
               key={label}
               className={activePage === label ? "nav-button active" : "nav-button"}
@@ -342,6 +401,8 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 metrics={state.metrics}
                 vulnerabilities={state.vulnerabilities}
                 decisionPacks={state.decisionPacks}
+                bayesian={state.bayesian}
+                threatSummary={state.threatSummary}
                 setActivePage={setActivePage}
               />
             )}
@@ -352,6 +413,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 form={vulnerabilityForm}
                 setForm={setVulnerabilityForm}
                 onIngest={handleIngest}
+                canWrite={canWrite}
               />
             )}
             {activePage === "Asset & Service Exposure" && <AssetExposure assets={state.assets} services={state.services} />}
@@ -363,16 +425,20 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 selectedPosture={selectedPosture}
                 setSelectedPosture={setSelectedPosture}
                 onGenerate={handleGeneratePack}
+                onBayesianAssess={handleBayesianAssess}
+                bayesian={state.bayesian}
+                canWrite={canWrite}
               />
             )}
             {activePage === "Emergency Patch" && <EmergencyPatch vulnerabilities={state.vulnerabilities} />}
             {activePage === "Risk Acceptances" && <RiskAcceptances decisionPacks={state.decisionPacks} />}
             {activePage === "Compensating Controls" && <CompensatingControls />}
-            {activePage === "SRA Research" && <SraResearch />}
+            {activePage === "SRA Research" && <SraResearch onRun={handleSraResearch} result={sraResult} canWrite={canWrite} />}
             {activePage === "Evidence Catalogue" && <EvidenceCatalogue vulnerabilities={state.vulnerabilities} />}
             {activePage === "Decision Packs" && <DecisionPacks decisionPacks={state.decisionPacks} onExportPack={handleExportPack} />}
+            {activePage === "Vendor & Threat Landscape" && <VendorThreatLandscape vendors={state.vendors} threatSummary={state.threatSummary} />}
             {activePage === "Admin" && (
-              <Admin
+              isAdmin ? <Admin
                 tenantId={tenantId}
                 setTenantId={setTenantId}
                 adminEnvironment={adminEnvironment}
@@ -381,7 +447,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 setAdminTier={setAdminTier}
                 adminHealth={state.adminHealth}
                 onSave={handleSaveAdmin}
-              />
+              /> : <PageBand icon={LockKeyhole} title="Admin" lines={["PatchForge.Admin role required", "Admin controls are hidden for reader users", "API app roles are enforced server-side"]} />
             )}
           </section>
 
@@ -452,11 +518,15 @@ function CommandCenter({
   metrics,
   vulnerabilities,
   decisionPacks,
+  bayesian,
+  threatSummary,
   setActivePage
 }: {
   metrics: PatchForgeMetrics;
   vulnerabilities: VulnerabilityRecord[];
   decisionPacks: DecisionPackRecord[];
+  bayesian: BayesianAssessment | null;
+  threatSummary: ThreatLandscapeSummary | null;
   setActivePage: (page: PageKey) => void;
 }) {
   const metricCards = [
@@ -465,7 +535,7 @@ function CommandCenter({
     { label: "Patch overdue", value: metrics.patch_overdue, tone: "warning", icon: Clock3 },
     { label: "Pending review", value: metrics.pending_review, tone: "steel", icon: ListFilter },
     { label: "Signed packs", value: metrics.signed_packs, tone: "trust", icon: FileCheck2 },
-    { label: "Rejected sources", value: metrics.rejected_sources, tone: "teal", icon: Archive }
+    { label: "Threat signals", value: threatSummary?.metrics?.active_exploitation_count || 0, tone: "teal", icon: Radar }
   ];
   const topQueue = vulnerabilities.slice(0, 3);
 
@@ -522,6 +592,16 @@ function CommandCenter({
           {!decisionPacks.length && <p className="muted-copy">No signed packs have been generated for this tenant.</p>}
         </section>
       </div>
+      <section className="wide-band">
+        <div className="section-title">
+          <h3>Bayesian Advisory</h3>
+          <span className="pill teal">Advisory only</span>
+        </div>
+        <div className="split-grid">
+          <StatusLine label="Recommended posture" value={bayesian ? humanize(bayesian.recommended_governance_posture) : "Awaiting assessment"} tone="teal" />
+          <StatusLine label="Deferral risk posterior" value={bayesian ? String(bayesian.deferral_risk_posterior) : "Not assessed"} tone="amber" />
+        </div>
+      </section>
     </>
   );
 }
@@ -596,12 +676,14 @@ function VulnerabilityQueue({
   vulnerabilities,
   form,
   setForm,
-  onIngest
+  onIngest,
+  canWrite
 }: {
   vulnerabilities: VulnerabilityRecord[];
   form: typeof emptyForm;
   setForm: (next: typeof emptyForm) => void;
   onIngest: (event: FormEvent<HTMLFormElement>) => void;
+  canWrite: boolean;
 }) {
   return (
     <>
@@ -645,7 +727,7 @@ function VulnerabilityQueue({
         {!vulnerabilities.length && <EmptyState title="Queue is empty" detail="Use the ingest form below or the protected API to submit real tenant records." />}
       </div>
 
-      <section className="wide-band">
+      {canWrite ? <section className="wide-band">
         <div className="section-title">
           <h3>Manual Exception Ingest</h3>
           <span className="pill amber">Agent/API intake preferred</span>
@@ -704,7 +786,7 @@ function VulnerabilityQueue({
             <Upload size={16} aria-hidden /> Ingest Record
           </button>
         </form>
-      </section>
+      </section> : <EmptyState title="Read-only role" detail="Write actions are hidden unless your token includes a PatchForge triage, security lead, or admin role." />}
     </>
   );
 }
@@ -736,7 +818,10 @@ function DecisionWorkbench({
   setSelectedVulnerabilityId,
   selectedPosture,
   setSelectedPosture,
-  onGenerate
+  onGenerate,
+  onBayesianAssess,
+  bayesian,
+  canWrite
 }: {
   vulnerabilities: VulnerabilityRecord[];
   selectedVulnerabilityId: string;
@@ -744,6 +829,9 @@ function DecisionWorkbench({
   selectedPosture: string;
   setSelectedPosture: (value: string) => void;
   onGenerate: () => void;
+  onBayesianAssess: () => void;
+  bayesian: BayesianAssessment | null;
+  canWrite: boolean;
 }) {
   return (
     <section className="wide-band">
@@ -767,11 +855,29 @@ function DecisionWorkbench({
             {postures.map((posture) => <option key={posture} value={posture}>{humanize(posture)}</option>)}
           </select>
         </label>
-        <button type="button" className="action-button" onClick={onGenerate} disabled={!selectedVulnerabilityId}>
+        <button type="button" className="action-button" onClick={onBayesianAssess} disabled={!selectedVulnerabilityId || !canWrite}>
+          <Radar size={16} aria-hidden /> Run Bayesian Advisory
+        </button>
+        <button type="button" className="action-button" onClick={onGenerate} disabled={!selectedVulnerabilityId || !canWrite}>
           <FileCheck2 size={16} aria-hidden /> Generate Signed Pack
         </button>
       </div>
+      <div className="split-grid">
+        <section className="data-band">
+          <h3>Bayesian Patch Risk</h3>
+          <StatusLine label="Exploit probability" value={bayesian ? String(bayesian.exploit_probability_posterior) : "Not assessed"} tone="amber" />
+          <StatusLine label="Patch feasibility" value={bayesian ? String(bayesian.patch_feasibility_posterior) : "Not assessed"} tone="teal" />
+          <StatusLine label="Recommended posture" value={bayesian ? humanize(bayesian.recommended_governance_posture) : "Awaiting assessment"} tone="trust" />
+        </section>
+        <section className="data-band">
+          <h3>Advisory Boundary</h3>
+          <StatusLine label="Can close hard gates" value="No" tone="amber" />
+          <StatusLine label="Can approve risk" value="No" tone="amber" />
+          <StatusLine label="Human approval" value="Required" tone="trust" />
+        </section>
+      </div>
       {!vulnerabilities.length && <EmptyState title="No record available for compile" detail="Decision packs require a real ingested vulnerability record." />}
+      {!canWrite && <EmptyState title="Read-only role" detail="Decision compile actions require an assigned PatchForge write role." />}
     </section>
   );
 }
@@ -800,13 +906,82 @@ function CompensatingControls() {
   return <PageBand icon={Wrench} title="Compensating Controls" lines={["Controls are evidence records", "Accepted controls require human review", "Controls do not mutate production systems"]} />;
 }
 
-function SraResearch() {
-  return <PageBand icon={Radar} title="Agent Intelligence" lines={["MCP, SRA, Mythos, and AGI-agent findings are source-bound", "Agents enrich and prioritise; humans review and approve", "Cannot close hard gates alone"]} />;
+function SraResearch({ onRun, result, canWrite }: { onRun: () => void; result: Record<string, unknown> | null; canWrite: boolean }) {
+  return (
+    <section className="wide-band">
+      <div className="section-title">
+        <h3>Agent Intelligence</h3>
+        <span className="pill teal">Advisory only</span>
+      </div>
+      <div className="split-grid">
+        <section className="data-band">
+          <h3>SRA / MCP Controls</h3>
+          <StatusLine label="Source state" value="Source-bound" tone="amber" />
+          <StatusLine label="Can close hard gates" value="No" tone="amber" />
+          <StatusLine label="Human review" value="Required" tone="trust" />
+          <button type="button" className="action-button" onClick={onRun} disabled={!canWrite}>
+            <Radar size={16} aria-hidden /> Run Exploit-Risk Advisory
+          </button>
+        </section>
+        <section className="data-band">
+          <h3>Latest Advisory</h3>
+          {result ? <pre className="json-preview">{JSON.stringify(result, null, 2)}</pre> : <p className="muted-copy">No SRA advisory has been run in this session.</p>}
+        </section>
+      </div>
+    </section>
+  );
 }
 
 function EvidenceCatalogue({ vulnerabilities }: { vulnerabilities: VulnerabilityRecord[] }) {
   const sourceCount = vulnerabilities.reduce((total, item) => total + (item.source_record_ids?.length || item.sources?.length || 0), 0);
   return <PageBand icon={BookOpenCheck} title="Evidence Catalogue" lines={[`${sourceCount} source-bound evidence references`, "Scanner, SRA, MCP, Mythos, and AGI-agent output require review", "Rejected sources cannot count as positive evidence"]} />;
+}
+
+function VendorThreatLandscape({ vendors, threatSummary }: { vendors: VendorProfile[]; threatSummary: ThreatLandscapeSummary | null }) {
+  return (
+    <>
+      <div className="section-title">
+        <h3>Vendor & Threat Landscape</h3>
+        <span className="pill amber">Source-bound pending review</span>
+      </div>
+      <div className="split-grid">
+        <section className="data-band">
+          <h3>Landscape Metrics</h3>
+          <StatusLine label="Tracked vendors" value={String(threatSummary?.vendor_count || vendors.length)} tone="steel" />
+          <StatusLine label="Active exploitation" value={String(threatSummary?.metrics?.active_exploitation_count || 0)} tone="danger" />
+          <StatusLine label="Critical advisories" value={String(threatSummary?.metrics?.critical_open_advisory_count || 0)} tone="amber" />
+          <StatusLine label="Patch maturity" value={humanize(threatSummary?.metrics?.patch_maturity || "unknown")} tone="teal" />
+        </section>
+        <section className="data-band">
+          <h3>Top Exposed Vendors</h3>
+          {(threatSummary?.top_exposed_vendors || []).map((vendor) => (
+            <StatusLine key={vendor.vendor_id} label={humanize(vendor.vendor_id)} value={`${vendor.active_exploitation_count} exploited`} tone="amber" />
+          ))}
+          {!threatSummary?.top_exposed_vendors?.length && <p className="muted-copy">No reviewed vendor exposure records are present yet.</p>}
+        </section>
+      </div>
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Vendor</th>
+              <th>Category</th>
+              <th>Review</th>
+            </tr>
+          </thead>
+          <tbody>
+            {vendors.map((vendor) => (
+              <tr key={vendor.vendor_id}>
+                <td>{vendor.vendor_name}</td>
+                <td>{humanize(vendor.category)}</td>
+                <td>{humanize(vendor.review_state || "pending_review")}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
 }
 
 function DecisionPacks({ decisionPacks, onExportPack }: { decisionPacks: DecisionPackRecord[]; onExportPack: (packId: string) => void }) {
@@ -969,6 +1144,7 @@ function UtilityRail({
         <h3>Session</h3>
         <p className="rail-note"><BadgeCheck size={15} aria-hidden /> {session.accountName || "Signed in"}</p>
         <p className="rail-note"><LockKeyhole size={15} aria-hidden /> App roles enforced by API</p>
+        <p className="rail-note"><KeyRound size={15} aria-hidden /> {session.roles.length ? session.roles.join(", ") : "No PatchForge role in token"}</p>
       </section>
       <section className="rail-section">
         <h3>Queue</h3>
@@ -1018,6 +1194,9 @@ function emptyLiveState(tenantId: string): LiveState {
     assets: [],
     services: [],
     decisionPacks: [],
+    bayesian: null,
+    threatSummary: null,
+    vendors: [],
     adminHealth: null,
     adminConfig: {}
   };
@@ -1042,6 +1221,10 @@ function severityTone(severity = "") {
     return "steel";
   }
   return "teal";
+}
+
+function hasAnyRole(actual: string[], required: string[]) {
+  return actual.some((role) => required.includes(role));
 }
 
 function healthTone(status = "") {

@@ -15,6 +15,13 @@ def test_reports_render_required_sections():
             "vulnerability_id": "REAL-RECORD-1",
             "service": "Customer Service",
             "decision_posture": "emergency_change_required",
+            "bayesian_patch_risk_snapshot": {
+                "recommended_governance_posture": "emergency_change_required",
+                "exploit_probability_posterior": 0.82,
+            },
+            "vendor_intelligence_snapshot": {"vendor_id": "microsoft"},
+            "threat_landscape_snapshot": {"metrics": {"active_exploitation_count": 1}},
+            "signed_pack": {"pack_id": "PF-TEST", "verified": True},
         },
     )
     assert "# CAB Patch Decision Report" in report
@@ -32,8 +39,9 @@ def test_all_report_types_render_without_boundary_violations():
     combined = "\n".join(reports.values()).lower()
     assert "exploit instructions" not in combined
     assert "autonomous patch approval" not in combined
-    assert "deploy patches" in combined
+    assert "does not" in combined
     assert "does not scan" in combined
+    assert "source-pack state" in combined
 
 
 def test_signed_pack_verifies_for_report_context(tmp_path):
@@ -80,8 +88,21 @@ def test_signed_pack_verifies_for_report_context(tmp_path):
             },
         ],
         approval_events=[{"approval_type": "final", "approval_state": "approved", "approver": "cab-chair"}],
+        bayesian_snapshot={
+            "advisory_only": True,
+            "can_close_hard_gates_alone": False,
+            "recommended_governance_posture": "patch_required",
+        },
+        vendor_intelligence_snapshot={
+            "source_bound": True,
+            "review_required": True,
+            "can_close_hard_gates_alone": False,
+        },
     )
     assert result["verification"]["verified"] is True
+    pack_dir = Path(result["pack_dir"])
+    assert (pack_dir / "bayesian_patch_risk_snapshot.json").exists()
+    assert (pack_dir / "vendor_intelligence_snapshot.json").exists()
 
 
 def test_no_demo_seed_file_is_shipped():

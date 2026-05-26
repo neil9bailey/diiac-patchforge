@@ -2,30 +2,38 @@
 
 ## Current Readiness
 
-PatchForge has a local baseline through PF-E10:
+PatchForge is live on Azure Container Apps under the DIIaC tenant with:
 
-- repository and working memory
-- product identity and boundary docs
-- Azure IaC baseline
-- domain schemas and evidence models
-- backend API and local JSON storage
-- deterministic governance runtime
-- signed local decision packs
-- frontend shell and admin UI
-- SRA advisory layer
-- Decision Control Center runtime foundation
-- report rendering
-- real-data customer demonstration runbook and validation plan
+- custom UI domain `https://patchforge.diiac.io`
+- custom API domain `https://api.patchforge.diiac.io`
+- Entra app registrations and PatchForge app roles
+- PostgreSQL-backed tenant state
+- Key Vault production signing path
+- Azure Container Apps revisions for UI, bridge/API, runtime, SRA, worker, and scheduler
+- source-bound evidence and signed pack governance controls
 
-## Not Yet Production-Live
+PF-AZ5 adds production intelligence hardening:
 
-PatchForge is live on Azure Container Apps with custom DNS, production signing trust, PostgreSQL storage, and Entra app roles. Live scanner ingestion remains an integration task; no seeded or synthetic product data is shipped.
+- fail-closed production auth checks
+- token/config-derived tenant context in production
+- actor and tenant lineage on write actions
+- Bayesian Patch Risk Inference
+- vendor and threat landscape intelligence
+- live API-bound UI surfaces
+- board-grade reports and signed pack intelligence artefacts
 
-## Access Needed Later
+## Completion Gate
 
-Azure access will be needed before resource deployment or what-if against the real subscription.
+PF-AZ5 is not considered complete until the Azure update and live UI user validation evidence are captured for the current commit and image tag.
 
-DNS updates will be needed before `patchforge.diiac.io` and `api.patchforge.diiac.io` can point at production ingress.
+## Remaining Gaps
+
+- live scanner integrations are not implemented
+- patch deployment is not implemented and remains prohibited
+- exploit generation is not implemented and remains prohibited
+- Bayesian prior updates are dry-run/proposal-only
+- vendor and threat intelligence remains source-bound until reviewed
+- no third-party customer production validation is claimed
 
 ## Boundary
 

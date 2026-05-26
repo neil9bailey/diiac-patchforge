@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/vendor_intelligence_snapshot.schema.json",
+  "title": "PatchForge Vendor Intelligence Snapshot",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["source_bound", "review_required", "can_close_hard_gates_alone"],
+  "properties": {
+    "source_bound": { "type": "boolean", "const": true },
+    "review_required": { "type": "boolean", "const": true },
+    "can_close_hard_gates_alone": { "type": "boolean", "const": false }
+  }
+}

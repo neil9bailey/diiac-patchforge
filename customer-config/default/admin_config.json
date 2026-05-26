@@ -36,6 +36,20 @@
       "can_close_hard_gates_alone": false,
       "existing_llm_keys_only": true
     },
+    "bayesian": {
+      "enabled": true,
+      "prior_set": "patchforge-default-v1",
+      "dry_run_prior_update": true,
+      "live_prior_update_enabled": false,
+      "advisory_only": true,
+      "can_close_hard_gates_alone": false
+    },
+    "vendor_intelligence": {
+      "enabled": true,
+      "source_bound": true,
+      "review_required": true,
+      "can_close_hard_gates_alone": false
+    },
     "integrations": {
       "diiac_it_enabled": false,
       "scanner_integrations": [],

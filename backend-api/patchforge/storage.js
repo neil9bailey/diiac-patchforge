@@ -9,6 +9,10 @@ const COLLECTIONS = [
   "services",
   "reviews",
   "decision_packs",
+  "bayesian_assessments",
+  "vendors",
+  "vendor_advisories",
+  "threat_signals",
   "audit_events"
 ];
 
@@ -19,6 +23,10 @@ const COLLECTION_ID_FIELDS = {
   services: "service_id",
   reviews: "review_id",
   decision_packs: "decision_pack_id",
+  bayesian_assessments: "assessment_id",
+  vendors: "vendor_id",
+  vendor_advisories: "advisory_id",
+  threat_signals: "signal_id",
   audit_events: "audit_id"
 };
 
@@ -58,6 +66,20 @@ const DEFAULT_ADMIN_CONFIG = {
     review_required: true,
     can_close_hard_gates_alone: false,
     existing_llm_keys_only: true
+  },
+  bayesian: {
+    enabled: true,
+    prior_set: "patchforge-default-v1",
+    dry_run_prior_update: true,
+    live_prior_update_enabled: false,
+    advisory_only: true,
+    can_close_hard_gates_alone: false
+  },
+  vendor_intelligence: {
+    enabled: true,
+    source_bound: true,
+    review_required: true,
+    can_close_hard_gates_alone: false
   },
   integrations: {
     diiac_it_enabled: false,
@@ -205,7 +227,8 @@ export class PatchForgeJsonStorage {
         review_state: source.review_state || "pending_review",
         evidence_state: source.evidence_state || "referenced",
         reviewed_by: null,
-        reviewed_at: null
+        reviewed_at: null,
+        ...lineageFromPayload(payload)
       };
       sourceRecordIds.push(sourceRecord.source_record_id);
       await this.append("sources", sourceRecord);
@@ -230,6 +253,7 @@ export class PatchForgeJsonStorage {
       review_state: payload.review_state || "pending_review",
       source_record_ids: sourceRecordIds,
       tags: payload.tags || [],
+      ...lineageFromPayload(payload),
       created_at: now,
       updated_at: null
     };
@@ -273,6 +297,7 @@ export class PatchForgeJsonStorage {
       review_state: payload.review_state || "reviewed",
       evidence_state: payload.evidence_state || null,
       notes: payload.notes || "",
+      ...lineageFromPayload(payload),
       created_at: now
     };
 
@@ -329,6 +354,7 @@ export class PatchForgeJsonStorage {
       criticality: payload.criticality || "unknown",
       review_state: payload.review_state || "pending_review",
       source_state: "source_bound",
+      ...lineageFromPayload(payload),
       created_at: new Date().toISOString()
     };
     await this.append("assets", record);
@@ -348,6 +374,7 @@ export class PatchForgeJsonStorage {
       vulnerability_ids: payload.vulnerability_ids || [],
       review_state: payload.review_state || "pending_review",
       source_state: "source_bound",
+      ...lineageFromPayload(payload),
       created_at: new Date().toISOString()
     };
     await this.append("services", record);
@@ -620,6 +647,19 @@ export function createPatchForgeStorage(options = {}) {
 
 export function isPositiveEvidence(source) {
   return source.review_state !== "rejected" && source.evidence_state === "accepted_positive_evidence";
+}
+
+function lineageFromPayload(payload = {}) {
+  return {
+    actor_oid: payload.actor_oid || null,
+    actor_upn: payload.actor_upn || null,
+    actor_roles: Array.isArray(payload.actor_roles) ? payload.actor_roles : [],
+    actor_tenant_id: payload.actor_tenant_id || null,
+    effective_tenant_id: payload.effective_tenant_id || null,
+    requested_tenant_id: payload.requested_tenant_id || null,
+    tenant_id_source: payload.tenant_id_source || null,
+    tenant_override_ignored: Boolean(payload.tenant_override_ignored)
+  };
 }
 
 export function maskSecretValues(value) {

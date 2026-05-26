@@ -46,6 +46,40 @@ function createApi(overrides: Partial<PatchForgeApi> = {}): PatchForgeApi {
       pack_id: "PF-TEST-0001",
       source_pack_immutable: true
     })),
+    assessBayesianRisk: vi.fn(async () => ({
+      advisory_only: true,
+      can_close_hard_gates_alone: false,
+      exploit_probability_posterior: 0.82,
+      business_impact_posterior: 0.71,
+      patch_feasibility_posterior: 0.64,
+      change_risk_posterior: 0.42,
+      deferral_risk_posterior: 0.76,
+      recommended_governance_posture: "emergency_change_required"
+    })),
+    bayesianPriors: vi.fn(async () => ({ live_prior_update_enabled: false })),
+    threatLandscapeSummary: vi.fn(async () => ({
+      tenant_id: "diiac.io",
+      source_bound: true,
+      review_required: true,
+      vendor_count: 28,
+      metrics: {
+        active_exploitation_count: 0,
+        critical_open_advisory_count: 0,
+        patch_available_rate: 0,
+        known_exploited_rate: 0,
+        customer_estate_exposure: 0,
+        internet_exposed_asset_count: 0,
+        ot_relevance: 0,
+        patch_maturity: "unknown",
+        vendor_response_timeliness: "source_bound_pending_review",
+        superseded_advisory_count: 0,
+        false_positive_history: 0,
+        open_customer_decision_count: 0
+      },
+      top_exposed_vendors: []
+    })),
+    listVendors: vi.fn(async () => [{ vendor_id: "microsoft", vendor_name: "Microsoft", category: "identity_endpoint_cloud", review_state: "reference_catalogue" }]),
+    sraResearch: vi.fn(async () => ({ sra: { advisory_only: true, can_close_evidence_gates_alone: false } })),
     adminHealth: vi.fn(async () => ({
       tenant_id: "diiac.io",
       live_azure_mutation_enabled: false,
@@ -106,6 +140,38 @@ describe("PatchForge shell", () => {
     expect(screen.getByRole("button", { name: "Generate Signed Pack" })).toBeDisabled();
   });
 
+  it("renders vendor threat landscape from API-bound state", async () => {
+    render(<App auth={auth} api={createApi()} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Vendor & Threat Landscape" }));
+    expect(screen.getAllByRole("heading", { name: "Vendor & Threat Landscape" }).length).toBeGreaterThan(0);
+    expect(screen.getByText("Microsoft")).toBeInTheDocument();
+    expect(screen.getByText("Source-bound pending review")).toBeInTheDocument();
+  });
+
+  it("runs Bayesian advisory from the decision workbench", async () => {
+    const api = createApi({
+      listVulnerabilities: vi.fn(async () => [{
+        tenant_id: "diiac.io",
+        vulnerability_id: "REAL-RECORD-1",
+        severity: "critical",
+        patch_status: "patch_available"
+      }])
+    });
+    render(<App auth={auth} api={api} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Decision Workbench" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Run Bayesian Advisory" }));
+    await waitFor(() => expect(api.assessBayesianRisk).toHaveBeenCalled());
+    expect(await screen.findByText("Bayesian advisory recommends Emergency Change Required.")).toBeInTheDocument();
+  });
+
+  it("hides admin navigation and write actions without privileged roles", async () => {
+    render(<App auth={{ ...auth, roles: ["PatchForge.Reader"] }} api={createApi()} />);
+    expect(screen.queryByRole("button", { name: "Admin" })).not.toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: "Vulnerability Queue" }));
+    expect(screen.queryByRole("button", { name: "Ingest Record" })).not.toBeInTheDocument();
+    expect(screen.getByText("Read-only role")).toBeInTheDocument();
+  });
+
   it("renders the admin route and avoids prohibited wording", async () => {
     const { container } = render(<App auth={auth} api={createApi()} />);
     fireEvent.click(await screen.findByRole("button", { name: "Admin" }));
@@ -119,5 +185,10 @@ describe("PatchForge shell", () => {
   it("shows the Entra sign-in gate when unauthenticated", () => {
     render(<App auth={{ ...auth, status: "unauthenticated", accountName: null }} api={createApi()} />);
     expect(screen.getByRole("button", { name: "Sign in with Microsoft" })).toBeInTheDocument();
+  });
+
+  it("renders API auth errors clearly", async () => {
+    render(<App auth={auth} api={createApi({ metrics: vi.fn(async () => { throw new Error("insufficient_patchforge_role"); }) })} />);
+    expect(await screen.findByText("insufficient_patchforge_role")).toBeInTheDocument();
   });
 });

@@ -19,6 +19,46 @@ export type PatchForgeMetrics = {
   signed_packs: number;
 };
 
+export type BayesianAssessment = {
+  advisory_only: boolean;
+  can_close_hard_gates_alone: boolean;
+  exploit_probability_posterior: number;
+  business_impact_posterior: number;
+  patch_feasibility_posterior: number;
+  change_risk_posterior: number;
+  deferral_risk_posterior: number;
+  recommended_governance_posture: string;
+};
+
+export type ThreatLandscapeSummary = {
+  tenant_id: string;
+  source_bound: boolean;
+  review_required: boolean;
+  vendor_count: number;
+  metrics: {
+    active_exploitation_count: number;
+    critical_open_advisory_count: number;
+    patch_available_rate: number;
+    known_exploited_rate: number;
+    customer_estate_exposure: number;
+    internet_exposed_asset_count: number;
+    ot_relevance: number;
+    patch_maturity: string;
+    vendor_response_timeliness: string;
+    superseded_advisory_count: number;
+    false_positive_history: number;
+    open_customer_decision_count: number;
+  };
+  top_exposed_vendors: Array<{ vendor_id: string; open_customer_decision_count: number; active_exploitation_count: number }>;
+};
+
+export type VendorProfile = {
+  vendor_id: string;
+  vendor_name: string;
+  category: string;
+  review_state?: string;
+};
+
 export type VulnerabilityRecord = {
   tenant_id?: string;
   vulnerability_id: string;
@@ -110,6 +150,11 @@ export type PatchForgeApi = {
   listDecisionPacks(tenantId: string): Promise<DecisionPackRecord[]>;
   generateDecisionPack(tenantId: string, payload: Record<string, unknown>): Promise<DecisionPackRecord>;
   exportDecisionPack(tenantId: string, packId: string): Promise<Record<string, unknown>>;
+  assessBayesianRisk(tenantId: string, payload: Record<string, unknown>): Promise<BayesianAssessment>;
+  bayesianPriors(tenantId: string): Promise<Record<string, unknown>>;
+  threatLandscapeSummary(tenantId: string): Promise<ThreatLandscapeSummary>;
+  listVendors(tenantId: string): Promise<VendorProfile[]>;
+  sraResearch(tenantId: string, path: string, payload: Record<string, unknown>): Promise<Record<string, unknown>>;
   adminHealth(tenantId: string): Promise<AdminHealth>;
   adminConfig(tenantId: string): Promise<AdminConfig>;
   saveAdminConfig(tenantId: string, payload: AdminConfig): Promise<AdminConfig>;
@@ -131,8 +176,17 @@ const DEFAULT_CONFIG: PatchForgeRuntimeConfig = {
 };
 
 export function getPatchForgeConfig(): PatchForgeRuntimeConfig {
+  const viteConfig = {
+    tenantId: import.meta.env.VITE_PATCHFORGE_ENTRA_TENANT_ID,
+    clientId: import.meta.env.VITE_PATCHFORGE_ENTRA_CLIENT_ID,
+    apiBaseUrl: import.meta.env.VITE_PATCHFORGE_API_BASE_URL,
+    apiScope: import.meta.env.VITE_PATCHFORGE_API_SCOPE || import.meta.env.VITE_PATCHFORGE_API_AUDIENCE,
+    tenantHeader: import.meta.env.VITE_PATCHFORGE_TENANT_HEADER,
+    environmentLabel: import.meta.env.VITE_PATCHFORGE_ENVIRONMENT_LABEL
+  };
   return {
     ...DEFAULT_CONFIG,
+    ...Object.fromEntries(Object.entries(viteConfig).filter(([, value]) => Boolean(value))),
     ...(typeof window !== "undefined" ? window.PATCHFORGE_CONFIG || {} : {})
   };
 }
@@ -193,6 +247,29 @@ export function createPatchForgeApi(getAccessToken: () => Promise<string>, confi
     },
     async exportDecisionPack(tenantId, packId) {
       return request<Record<string, unknown>>(`/api/patchforge/decision-packs/${encodeURIComponent(packId)}/export`, tenantId);
+    },
+    async assessBayesianRisk(tenantId, payload) {
+      const body = await request<{ bayesian: BayesianAssessment }>("/api/patchforge/bayesian/assess", tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return body.bayesian;
+    },
+    async bayesianPriors(tenantId) {
+      return request<Record<string, unknown>>("/api/patchforge/bayesian/priors", tenantId);
+    },
+    async threatLandscapeSummary(tenantId) {
+      return request<ThreatLandscapeSummary>("/api/patchforge/threat-landscape/summary", tenantId);
+    },
+    async listVendors(tenantId) {
+      const body = await request<{ vendors: VendorProfile[] }>("/api/patchforge/vendors", tenantId);
+      return body.vendors || [];
+    },
+    async sraResearch(tenantId, path, payload) {
+      return request<Record<string, unknown>>(path, tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
     },
     async adminHealth(tenantId) {
       return request<AdminHealth>("/api/patchforge/admin/health", tenantId);

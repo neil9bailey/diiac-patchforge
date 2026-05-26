@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/product_profile.schema.json",
+  "title": "PatchForge Product Profile",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["tenant_id", "product_id", "vendor_id", "product_name", "review_state"],
+  "properties": {
+    "tenant_id": { "type": "string", "minLength": 1 },
+    "product_id": { "type": "string", "minLength": 1 },
+    "vendor_id": { "type": "string", "minLength": 1 },
+    "product_name": { "type": "string", "minLength": 1 },
+    "review_state": { "type": "string", "default": "pending_review" }
+  }
+}

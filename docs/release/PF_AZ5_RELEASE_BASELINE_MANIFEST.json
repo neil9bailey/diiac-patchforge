@@ -1,0 +1,38 @@
+{
+  "release": "PF-AZ5",
+  "date": "2026-05-26",
+  "product": "DIIaC PatchForge",
+  "state": "implementation_validation_pending_live_rollout",
+  "required_live_urls": {
+    "ui": "https://patchforge.diiac.io",
+    "api": "https://api.patchforge.diiac.io"
+  },
+  "azure": {
+    "tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+    "resource_group": "rg-diiac-patchforge-prod",
+    "container_apps": [
+      "ca-patchforge-ui-prod",
+      "ca-patchforge-bridge-prod",
+      "ca-patchforge-runtime-prod",
+      "ca-patchforge-sra-prod",
+      "ca-patchforge-worker-prod",
+      "ca-patchforge-scheduler-prod"
+    ]
+  },
+  "hard_gates": {
+    "local_validation": "pending",
+    "github_push": "pending",
+    "azure_image_push": "pending",
+    "azure_deployment_update": "pending",
+    "live_api_smoke": "pending",
+    "live_ui_user_validation": "pending"
+  },
+  "boundary": {
+    "no_scanner": true,
+    "no_exploit_generation": true,
+    "no_patch_deployment": true,
+    "no_production_mutation": true,
+    "no_autonomous_approval": true,
+    "no_autonomous_risk_acceptance": true
+  }
+}

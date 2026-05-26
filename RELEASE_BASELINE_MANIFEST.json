@@ -1,40 +1,46 @@
 {
-  "product": "DIIaC™ PatchForge",
-  "baseline_id": "PF-E0",
-  "baseline_name": "bootstrap DIIaC PatchForge repository",
+  "product": "DIIaC PatchForge",
+  "baseline_id": "PF-AZ5",
+  "baseline_name": "PatchForge production intelligence hardening and live UI binding",
   "baseline_date": "2026-05-26",
   "target_url": "https://patchforge.diiac.io",
+  "api_url": "https://api.patchforge.diiac.io",
   "remote_target": "neil9bailey/diiac-patchforge",
-  "release_state": "bootstrap_baseline",
-  "deployment_performed": false,
-  "azure_resources_created": false,
+  "release_state": "implementation_validation_pending_live_rollout",
+  "deployment_performed": true,
+  "pfaz5_intelligence_deployment_performed": false,
+  "azure_resources_created": true,
+  "azure_resource_group": "rg-diiac-patchforge-prod",
+  "azure_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+  "storage_state": "postgresql",
+  "auth_state": "entra_rbac_required",
+  "signing_state": "azure_key_vault_required_for_production_runtime",
   "capabilities_created": [
     "repository_skeleton",
-    "product_positioning_document",
-    "product_boundary_document",
-    "implementation_programme_document",
-    "document_control",
-    "release_manifest"
+    "azure_container_apps_deployment",
+    "entra_msal_ui_sign_in",
+    "token_backed_api_calls",
+    "tenant_context_hardening",
+    "actor_tenant_lineage",
+    "bayesian_patch_risk_inference",
+    "vendor_threat_landscape_intelligence",
+    "source_bound_agent_finding_intake",
+    "runtime_signed_decision_packs",
+    "board_grade_reports",
+    "release_evidence_scaffold"
   ],
   "excluded_capabilities": [
     "vulnerability_scanner",
     "exploit_generation",
     "patch_deployment",
-    "production_mutation",
+    "production_mutation_from_ui",
     "siem_soar_replacement",
     "itsm_replacement",
     "cmdb_replacement",
     "edr_xdr_replacement",
     "ot_engineering_replacement",
     "autonomous_cab",
-    "autonomous_risk_acceptance"
-  ],
-  "planned_azure_architecture": {
-    "identity": "diiac.io Microsoft Entra ID",
-    "compute": "Azure Container Apps",
-    "secrets_and_keys": "Azure Key Vault",
-    "storage": "Azure Storage",
-    "database": "PostgreSQL or Azure SQL",
-    "infrastructure_as_code": true
-  }
+    "autonomous_risk_acceptance",
+    "unreviewed_agent_source_truth"
+  ]
 }

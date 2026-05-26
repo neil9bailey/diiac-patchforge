@@ -1,0 +1,20 @@
+{
+  "release": "PF-AZ5",
+  "date": "2026-05-26",
+  "status": "pending_live_validation",
+  "gates": [
+    { "name": "repo_preflight", "status": "pass" },
+    { "name": "azure_context", "status": "pass" },
+    { "name": "local_tests", "status": "pass" },
+    { "name": "frontend_build", "status": "pass" },
+    { "name": "iac_validation", "status": "pass" },
+    { "name": "bicep_build", "status": "pass" },
+    { "name": "docker_build_smoke", "status": "pass" },
+    { "name": "local_signed_pack_verification", "status": "pass" },
+    { "name": "github_push", "status": "pending" },
+    { "name": "azure_image_push", "status": "pending" },
+    { "name": "azure_update", "status": "pending" },
+    { "name": "live_api_smoke", "status": "pending" },
+    { "name": "live_ui_user_validation", "status": "pending" }
+  ]
+}

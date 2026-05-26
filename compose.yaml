@@ -6,6 +6,8 @@ services:
       context: ./backend-api
       dockerfile: Dockerfile
     environment:
+      NODE_ENV: development
+      PATCHFORGE_ENV: development
       PORT: "8080"
       PATCHFORGE_DEFAULT_TENANT: diiac.io
       PATCHFORGE_RUNTIME_URL: http://patchforge-runtime:8080
@@ -17,6 +19,7 @@ services:
       context: .
       dockerfile: runtime/Dockerfile
     environment:
+      PATCHFORGE_ENV: development
       PORT: "8080"
     ports:
       - "8081:8080"

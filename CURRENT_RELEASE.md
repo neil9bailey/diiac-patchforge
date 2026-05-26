@@ -2,13 +2,13 @@
 
 ## DIIaC PatchForge PF-AZ5
 
-Release state: Azure production demo gate with Entra-protected live UI workflows, PostgreSQL-backed tenant records, and runtime signed pack generation from real ingested data only
+Release state: PF-AZ5 intelligence hardening implementation in progress, with Azure rollout and live UI validation still to be evidenced for this increment
 
 Date: 2026-05-26
 
 ## Scope
 
-PF-AZ4 records the current dedicated PatchForge Azure production state in the DIIaC tenant using the new PatchForge resource group.
+PF-AZ5 extends the current dedicated PatchForge Azure production state in the DIIaC tenant using the PatchForge resource group.
 
 Included:
 
@@ -131,6 +131,15 @@ Included:
 - evidence model controls preventing agent findings from closing hard gates alone
 - no demo seed pack or synthetic scenario data shipped
 - live PF-AZ5 release evidence in `docs/release/evidence/2026-05-26-patchforge-live-product/`
+- production auth fail-closed guard in application code
+- production tenant context derived from verified Entra token/configured tenant mapping
+- actor and tenant lineage on write actions
+- Bayesian Patch Risk Inference as advisory-only governance intelligence
+- vendor and threat landscape intelligence with source-bound review states
+- live API-bound UI surfaces for metrics, vulnerabilities, assets, services, admin health/config, SRA, Bayesian, and vendor intelligence
+- Microsoft Entra role UX in the frontend, including admin-control visibility gates
+- board-grade report sections for signed pack metadata, Bayesian advisory, vendor/threat context, source-pack/current-state separation, blockers, and boundary controls
+- signed decision-pack support for Bayesian, prior usage, prior proposal, vendor, threat landscape, and SRA artefacts
 
 Excluded:
 
@@ -141,6 +150,8 @@ Excluded:
 - patch deployment
 - SIEM, SOAR, ITSM, CMDB, EDR, XDR, or OT engineering replacement functionality
 - unreviewed AI or agent source truth claims
+
+PF-AZ5 Azure deployment, image tag, active revisions, and live browser validation evidence are recorded after the rollout is applied and verified.
 
 ## Runtime State
 

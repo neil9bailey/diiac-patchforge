@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/vendor_profile.schema.json",
+  "title": "PatchForge Vendor Profile",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["tenant_id", "vendor_id", "vendor_name", "category", "review_state"],
+  "properties": {
+    "tenant_id": { "type": "string", "minLength": 1 },
+    "vendor_id": { "type": "string", "minLength": 1 },
+    "vendor_name": { "type": "string", "minLength": 1 },
+    "category": {
+      "type": "string",
+      "enum": ["infrastructure_networking", "identity_endpoint_cloud", "virtualization_platform", "enterprise_apps", "ot_industrial"]
+    },
+    "review_state": { "type": "string" }
+  }
+}

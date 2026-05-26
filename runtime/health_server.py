@@ -73,6 +73,12 @@ class PatchForgeRuntimeHandler(BaseHTTPRequestHandler):
             risk_acceptance=_dict_or_none(payload.get("risk_acceptance")),
             approval_events=_list_payload(payload.get("approval_events")),
             requested_posture=_optional_str(payload.get("requested_posture")),
+            bayesian_snapshot=_dict_or_none(payload.get("bayesian_snapshot")),
+            patch_prior_usage_manifest=_dict_or_none(payload.get("patch_prior_usage_manifest")),
+            patch_prior_update_proposal=_dict_or_none(payload.get("patch_prior_update_proposal")),
+            vendor_intelligence_snapshot=_dict_or_none(payload.get("vendor_intelligence_snapshot")),
+            threat_landscape_snapshot=_dict_or_none(payload.get("threat_landscape_snapshot")),
+            sra_trace=_dict_or_none(payload.get("sra_trace")),
             key_vault_key_id=key_vault_key_id,
             dev_mode=dev_mode,
         )
@@ -134,10 +140,16 @@ def _read_pack_artefacts(pack_dir: Path) -> dict[str, object]:
 
 
 def main() -> None:
+    if _production_runtime() and not os.environ.get("PATCHFORGE_KEYVAULT_SIGNING_KEY_ID"):
+        raise RuntimeError("PatchForge production runtime startup blocked: PATCHFORGE_KEYVAULT_SIGNING_KEY_ID is required.")
     port = int(os.environ.get("PORT", "8080"))
     server = ThreadingHTTPServer(("0.0.0.0", port), PatchForgeRuntimeHandler)
     print(f"PatchForge runtime health server listening on {port}", flush=True)
     server.serve_forever()
+
+
+def _production_runtime() -> bool:
+    return (os.environ.get("APP_ENV") or os.environ.get("PATCHFORGE_ENV") or os.environ.get("PATCHFORGE_ENVIRONMENT") or "").lower() in {"prod", "production"}
 
 
 if __name__ == "__main__":

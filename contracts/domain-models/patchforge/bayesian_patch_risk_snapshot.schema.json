@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/bayesian_patch_risk_snapshot.schema.json",
+  "title": "PatchForge Bayesian Patch Risk Snapshot",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "advisory_only",
+    "can_close_hard_gates_alone",
+    "exploit_probability_posterior",
+    "business_impact_posterior",
+    "patch_feasibility_posterior",
+    "change_risk_posterior",
+    "deferral_risk_posterior",
+    "recommended_governance_posture"
+  ],
+  "properties": {
+    "advisory_only": { "type": "boolean", "const": true },
+    "can_close_hard_gates_alone": { "type": "boolean", "const": false },
+    "final_approval_issued": { "type": "boolean", "default": false },
+    "exploit_probability_posterior": { "type": "number", "minimum": 0, "maximum": 1 },
+    "business_impact_posterior": { "type": "number", "minimum": 0, "maximum": 1 },
+    "patch_feasibility_posterior": { "type": "number", "minimum": 0, "maximum": 1 },
+    "change_risk_posterior": { "type": "number", "minimum": 0, "maximum": 1 },
+    "deferral_risk_posterior": { "type": "number", "minimum": 0, "maximum": 1 },
+    "recommended_governance_posture": { "type": "string" }
+  }
+}

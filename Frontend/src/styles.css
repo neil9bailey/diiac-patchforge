@@ -628,6 +628,19 @@ select {
   color: #c8d2cf;
 }
 
+.json-preview {
+  max-height: 320px;
+  overflow: auto;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid rgba(149, 163, 160, 0.18);
+  border-radius: 8px;
+  background: #0b1113;
+  color: #c8d2cf;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
 .guide-flow {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));

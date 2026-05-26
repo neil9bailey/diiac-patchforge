@@ -35,6 +35,14 @@ param environmentLabel string = 'prod'
 
 var commonEnv = [
   {
+    name: 'APP_ENV'
+    value: 'production'
+  }
+  {
+    name: 'PATCHFORGE_ENV'
+    value: 'production'
+  }
+  {
     name: 'PATCHFORGE_ENVIRONMENT'
     value: environmentLabel
   }

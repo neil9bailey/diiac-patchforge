@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/patch_prior_usage_manifest.schema.json",
+  "title": "PatchForge Patch Prior Usage Manifest",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["prior_set_id", "advisory_only", "dry_run_only", "live_prior_mutation_performed"],
+  "properties": {
+    "prior_set_id": { "type": "string", "minLength": 1 },
+    "advisory_only": { "type": "boolean", "const": true },
+    "dry_run_only": { "type": "boolean", "const": true },
+    "live_prior_mutation_performed": { "type": "boolean", "const": false }
+  }
+}

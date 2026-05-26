@@ -35,17 +35,25 @@ PatchForge does not scan environments, exploit vulnerabilities, deploy patches, 
 - State services: PostgreSQL or Azure SQL, Azure Storage
 - Governance: infrastructure as code, evidence ledger, audit logs, policy packs, replayable signed exports
 
-## Initial Repository Scope
+## Current Product Scope
 
-This repository starts with the PF-E0 baseline only:
+This repository now contains the PF-AZ5 production-demo product line for PatchForge:
 
 - product identity
 - product boundary
-- implementation programme
-- release control placeholders
-- skeleton directories for backend, runtime, frontend, contracts, infrastructure, scripts, tests, customer configuration, and artefacts
+- implementation programme and release control
+- Azure Container Apps infrastructure as code
+- Entra-protected backend API
+- PostgreSQL-backed tenant storage
+- deterministic runtime governance and signed decision packs
+- Azure Key Vault production signing path
+- Microsoft Entra sign-in and token-backed frontend API use
+- Bayesian patch-risk advisory inference
+- vendor and threat landscape intelligence
+- source-bound SRA and agent finding intake
+- board-grade reports and validation evidence
 
-No Azure resources are deployed by this baseline. No scanner, exploit, or patch-deployment capability is created.
+No scanner, exploit, or patch-deployment capability is created. PatchForge remains a governance and assurance product only.
 
 ## Local Validation
 
@@ -79,7 +87,7 @@ Local URLs:
 
 ## Deployment Gate
 
-Azure deployment and DNS changes require explicit approval. Before Azure what-if or deployment, confirm tenant, subscription, region, signing strategy, and DNS plan.
+Azure deployment uses the dedicated `rg-diiac-patchforge-prod` resource group in the `diiac.io` tenant. Run a plan/what-if before applying changes, preserve custom domains and managed certificates, and do not disable `PATCHFORGE_AUTH_REQUIRED` in production.
 
 ## Repository Layout
 
@@ -101,9 +109,7 @@ patchforge/
 └── artifacts/
 ```
 
-## Remote Target
-
-Planned GitHub repository:
+## Remote
 
 ```text
 neil9bailey/diiac-patchforge

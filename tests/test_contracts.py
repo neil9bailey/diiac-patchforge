@@ -23,6 +23,15 @@ EXPECTED_SCHEMAS = {
     "sra_mcp_call_manifest.schema.json",
     "sra_research_trace.schema.json",
     "patch_decision_pack_manifest.schema.json",
+    "bayesian_patch_risk_snapshot.schema.json",
+    "patch_prior_usage_manifest.schema.json",
+    "patch_prior_update_proposal.schema.json",
+    "patch_learning_telemetry_snapshot.schema.json",
+    "vendor_profile.schema.json",
+    "product_profile.schema.json",
+    "vendor_advisory.schema.json",
+    "threat_landscape_signal.schema.json",
+    "vendor_intelligence_snapshot.schema.json",
 }
 
 COMMON_REQUIRED_CLASSES = {
@@ -110,10 +119,12 @@ def test_raw_sra_scanner_and_agent_output_cannot_close_hard_gates_alone():
     evidence_models = load_json(EVIDENCE_MODELS)
     blocked = set(evidence_models["hard_gate_sources_disallowed_alone"])
     agent_sources = {"mcp_agent_finding", "mythos_finding", "agi_agent_finding"}
-    assert {"scanner_output", "sra_trace", *agent_sources} <= blocked
+    assert {"scanner_output", "scanner_finding", "vendor_advisory", "threat_intel_report", "sra_trace", *agent_sources} <= blocked
 
     source_defaults = evidence_models["source_defaults"]
     assert source_defaults["scanner_output"]["can_close_hard_gate_alone"] is False
+    assert source_defaults["scanner_finding"]["can_close_hard_gate_alone"] is False
+    assert source_defaults["vendor_advisory"]["can_close_hard_gate_alone"] is False
     assert source_defaults["sra_trace"]["can_close_hard_gate_alone"] is False
     assert source_defaults["sra_trace"]["advisory_only"] is True
     assert source_defaults["sra_trace"]["initial_review_state"] == "pending_review"

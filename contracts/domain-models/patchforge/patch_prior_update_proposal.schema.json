@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/patch_prior_update_proposal.schema.json",
+  "title": "PatchForge Patch Prior Update Proposal",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["proposal_id", "dry_run", "live_update_applied", "admin_approval_required"],
+  "properties": {
+    "proposal_id": { "type": "string", "minLength": 1 },
+    "dry_run": { "type": "boolean", "const": true },
+    "live_update_applied": { "type": "boolean", "const": false },
+    "admin_approval_required": { "type": "boolean", "const": true }
+  }
+}

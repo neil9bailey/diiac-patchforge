@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/patch_learning_telemetry_snapshot.schema.json",
+  "title": "PatchForge Patch Learning Telemetry Snapshot",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["snapshot_id", "dry_run_only", "live_prior_mutation_performed"],
+  "properties": {
+    "snapshot_id": { "type": "string", "minLength": 1 },
+    "dry_run_only": { "type": "boolean", "const": true },
+    "live_prior_mutation_performed": { "type": "boolean", "const": false }
+  }
+}

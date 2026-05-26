@@ -7,6 +7,22 @@
       "initial_review_state": "pending_review",
       "can_close_hard_gate_alone": false
     },
+    "scanner_finding": {
+      "initial_evidence_state": "referenced",
+      "initial_review_state": "pending_review",
+      "can_close_hard_gate_alone": false
+    },
+    "vendor_advisory": {
+      "initial_evidence_state": "referenced",
+      "initial_review_state": "pending_review",
+      "can_close_hard_gate_alone": false
+    },
+    "threat_intel_report": {
+      "initial_evidence_state": "referenced",
+      "initial_review_state": "pending_review",
+      "advisory_only": true,
+      "can_close_hard_gate_alone": false
+    },
     "sra_trace": {
       "initial_evidence_state": "referenced",
       "initial_review_state": "pending_review",
@@ -39,6 +55,13 @@
   },
   "hard_gate_sources_disallowed_alone": [
     "scanner_output",
+    "scanner_finding",
+    "vendor_advisory",
+    "threat_intel_report",
+    "vendor_patch_note",
+    "exploitability_report",
+    "cloud_provider_advisory",
+    "ot_vendor_notice",
     "sra_trace",
     "mcp_agent_finding",
     "mythos_finding",

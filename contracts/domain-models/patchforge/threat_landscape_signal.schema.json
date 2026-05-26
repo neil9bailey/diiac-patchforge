@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/threat_landscape_signal.schema.json",
+  "title": "PatchForge Threat Landscape Signal",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["tenant_id", "signal_id", "source_class", "review_state", "evidence_state"],
+  "properties": {
+    "tenant_id": { "type": "string", "minLength": 1 },
+    "signal_id": { "type": "string", "minLength": 1 },
+    "source_class": { "type": "string", "minLength": 1 },
+    "review_state": { "type": "string", "default": "pending_review" },
+    "evidence_state": { "type": "string", "default": "referenced" },
+    "source_bound": { "type": "boolean", "default": true }
+  }
+}

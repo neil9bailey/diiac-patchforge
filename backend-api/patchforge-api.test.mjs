@@ -21,14 +21,17 @@ async function withApi(run) {
   }
 }
 
-async function withAuthenticatedApi(run, verifier) {
+async function withAuthenticatedApi(run, verifier, authOverrides = {}) {
   const storageRoot = await mkdtemp(path.join(os.tmpdir(), "patchforge-auth-api-"));
   const storage = new PatchForgeJsonStorage(storageRoot);
   const server = createServer({
     storage,
     auth: {
       required: true,
-      verifier
+      verifier,
+      defaultTenant: "diiac.io",
+      tenantMappings: { "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da": "diiac.io" },
+      ...authOverrides
     },
     runtimeClient: fakeRuntimeClient()
   });
@@ -52,6 +55,29 @@ async function request(baseUrl, pathName, options = {}) {
   });
   const body = await response.json();
   return { response, body };
+}
+
+async function withEnv(values, run) {
+  const previous = {};
+  for (const [key, value] of Object.entries(values)) {
+    previous[key] = process.env[key];
+    if (value === undefined || value === null) {
+      delete process.env[key];
+    } else {
+      process.env[key] = String(value);
+    }
+  }
+  try {
+    await run();
+  } finally {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+  }
 }
 
 test("health and readiness endpoints respond", async () => {
@@ -245,6 +271,93 @@ test("asset service exposure and dashboard metrics work", async () => {
   });
 });
 
+test("Bayesian advisory endpoints are deterministic and proposal-only", async () => {
+  await withApi(async (baseUrl) => {
+    const assessment = await request(baseUrl, "/api/patchforge/bayesian/assess", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        cvss: 9.8,
+        epss: 0.82,
+        known_exploited: true,
+        internet_exposed: true,
+        patch_status: "patch_available",
+        customer_facing: true
+      })
+    });
+    assert.equal(assessment.response.status, 200);
+    assert.equal(assessment.body.bayesian.advisory_only, true);
+    assert.equal(assessment.body.bayesian.can_close_hard_gates_alone, false);
+    assert.equal(assessment.body.bayesian.final_approval_issued, false);
+    assert.equal(assessment.body.bayesian.recommended_governance_posture, "emergency_change_required");
+
+    const priors = await request(baseUrl, "/api/patchforge/bayesian/priors", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(priors.response.status, 200);
+    assert.equal(priors.body.live_prior_update_enabled, false);
+
+    const proposal = await request(baseUrl, "/api/patchforge/bayesian/prior-update-dry-run", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ observed_outcomes: [{ outcome: "successful" }] })
+    });
+    assert.equal(proposal.response.status, 200);
+    assert.equal(proposal.body.proposal.dry_run, true);
+    assert.equal(proposal.body.proposal.live_update_applied, false);
+
+    const blocked = await request(baseUrl, "/api/patchforge/bayesian/prior-update-dry-run", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ live_update: true })
+    });
+    assert.equal(blocked.response.status, 400);
+    assert.equal(blocked.body.error, "live_prior_update_locked");
+  });
+});
+
+test("vendor and threat landscape intelligence remains source-bound", async () => {
+  await withApi(async (baseUrl) => {
+    const vendors = await request(baseUrl, "/api/patchforge/vendors", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(vendors.response.status, 200);
+    assert.ok(vendors.body.vendors.some((vendor) => vendor.vendor_name === "Microsoft"));
+
+    const advisory = await request(baseUrl, "/api/patchforge/vendors/microsoft/advisories/ingest", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        advisory_id: "MS-ADV-REAL-1",
+        source_class: "vendor_advisory",
+        title: "Reviewed vendor advisory",
+        severity: "critical",
+        known_exploited: true,
+        patch_available: true,
+        superseded_by: "MS-ADV-REAL-2"
+      })
+    });
+    assert.equal(advisory.response.status, 201);
+    assert.equal(advisory.body.advisory.review_state, "pending_review");
+    assert.equal(advisory.body.advisory.evidence_state, "referenced");
+    assert.equal(advisory.body.advisory.superseded, true);
+
+    const landscape = await request(baseUrl, "/api/patchforge/vendors/microsoft/threat-landscape", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(landscape.response.status, 200);
+    assert.equal(landscape.body.metrics.active_exploitation_count, 1);
+    assert.equal(landscape.body.metrics.superseded_advisory_count, 1);
+
+    const summary = await request(baseUrl, "/api/patchforge/threat-landscape/summary", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(summary.response.status, 200);
+    assert.equal(summary.body.source_bound, true);
+    assert.equal(summary.body.review_required, true);
+  });
+});
+
 test("no exploit or patch deployment endpoints exist", async () => {
   await withApi(async (baseUrl) => {
     const deploy = await request(baseUrl, "/api/patchforge/patches/deploy", {
@@ -433,4 +546,55 @@ test("auth config accepts both API identifier URI and API client ID audiences", 
   const config = createAuthConfigFromEnv();
   assert.ok(config.audiences.includes("api://ec30b0eb-cfc4-48cc-a5f2-2a1345d96736"));
   assert.ok(config.audiences.includes("ec30b0eb-cfc4-48cc-a5f2-2a1345d96736"));
+});
+
+test("production auth fails closed when auth is not explicitly required", async () => {
+  await withEnv({ PATCHFORGE_ENV: "production", PATCHFORGE_AUTH_REQUIRED: "false", NODE_ENV: undefined }, async () => {
+    assert.throws(() => createAuthConfigFromEnv(), /production startup blocked/i);
+  });
+});
+
+test("production tenant context ignores normal user header override and records lineage", async () => {
+  await withAuthenticatedApi(async (baseUrl) => {
+    const ingest = await request(baseUrl, "/api/patchforge/vulnerabilities/ingest", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-b", authorization: "Bearer triage" },
+      body: JSON.stringify({ vulnerability_id: "REAL-TENANT-1", title: "Tenant guarded record" })
+    });
+    assert.equal(ingest.response.status, 201);
+    assert.equal(ingest.body.vulnerability.tenant_id, "diiac.io");
+    assert.equal(ingest.body.vulnerability.requested_tenant_id, "tenant-b");
+    assert.equal(ingest.body.vulnerability.tenant_override_ignored, true);
+    assert.equal(ingest.body.vulnerability.actor_upn, "triage@diiac.io");
+
+    const tenantB = await request(baseUrl, "/api/patchforge/vulnerabilities", {
+      headers: { "x-tenant-id": "tenant-b", authorization: "Bearer reader" }
+    });
+    assert.equal(tenantB.body.tenant_id, "diiac.io");
+    assert.equal(tenantB.body.vulnerabilities.length, 1);
+  }, async (token) => {
+    if (token === "triage") {
+      return { roles: ["PatchForge.TriageAnalyst"], tid: "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da", oid: "triage-oid", upn: "triage@diiac.io" };
+    }
+    return { roles: ["PatchForge.Reader"], tid: "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da", oid: "reader-oid", upn: "reader@diiac.io" };
+  }, { production: true, allowTenantOverride: false, adminDiagnosticTenantOverride: false });
+});
+
+test("admin diagnostic tenant override works only when explicitly enabled", async () => {
+  await withAuthenticatedApi(async (baseUrl) => {
+    const ingest = await request(baseUrl, "/api/patchforge/vulnerabilities/ingest", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-diagnostic", authorization: "Bearer admin" },
+      body: JSON.stringify({ vulnerability_id: "REAL-DIAG-1" })
+    });
+    assert.equal(ingest.response.status, 201);
+    assert.equal(ingest.body.vulnerability.tenant_id, "tenant-diagnostic");
+    assert.equal(ingest.body.vulnerability.tenant_id_source, "admin_diagnostic_override");
+    assert.equal(ingest.body.vulnerability.tenant_override_ignored, false);
+  }, async () => ({
+    roles: ["PatchForge.Admin"],
+    tid: "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+    oid: "admin-oid",
+    upn: "admin@diiac.io"
+  }), { production: true, allowTenantOverride: true, adminDiagnosticTenantOverride: true });
 });

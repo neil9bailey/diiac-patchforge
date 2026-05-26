@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useCallback, useContext, useMemo } from "react";
+import { createContext, ReactNode, useCallback, useContext, useMemo, useState } from "react";
 import { InteractionRequiredAuthError, InteractionStatus } from "@azure/msal-browser";
 import { useAccount, useMsal } from "@azure/msal-react";
 import { getPatchForgeConfig } from "./api";
@@ -35,6 +35,7 @@ export function MsalPatchForgeAuthProvider({ children }: { children: ReactNode }
   const { instance, accounts, inProgress } = useMsal();
   const account = useAccount(accounts[0] || null);
   const config = getPatchForgeConfig();
+  const [accessTokenRoles, setAccessTokenRoles] = useState<string[]>([]);
   const loginRequest = useMemo(() => ({ scopes: [config.apiScope] }), [config.apiScope]);
   const status: PatchForgeAuthStatus = inProgress !== InteractionStatus.None
     ? "loading"
@@ -62,6 +63,7 @@ export function MsalPatchForgeAuthProvider({ children }: { children: ReactNode }
         ...loginRequest,
         account
       });
+      setAccessTokenRoles(normalizeRoles(decodeJwtPayload(response.accessToken)?.roles));
       return response.accessToken;
     } catch (error) {
       if (error instanceof InteractionRequiredAuthError) {
@@ -77,11 +79,11 @@ export function MsalPatchForgeAuthProvider({ children }: { children: ReactNode }
   const session = useMemo<PatchForgeAuthSession>(() => ({
     status,
     accountName: account?.username || account?.name || null,
-    roles: normalizeRoles(account?.idTokenClaims?.roles),
+    roles: Array.from(new Set([...normalizeRoles(account?.idTokenClaims?.roles), ...accessTokenRoles])),
     signIn,
     signOut,
     getAccessToken
-  }), [account, getAccessToken, signIn, signOut, status]);
+  }), [accessTokenRoles, account, getAccessToken, signIn, signOut, status]);
 
   return (
     <PatchForgeAuthContext.Provider value={session}>
@@ -98,4 +100,18 @@ function normalizeRoles(roles: unknown): string[] {
     return roles.map((role) => String(role));
   }
   return String(roles).split(",").map((role) => role.trim()).filter(Boolean);
+}
+
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  const payload = token.split(".")[1];
+  if (!payload) {
+    return null;
+  }
+  try {
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+    return JSON.parse(atob(padded));
+  } catch {
+    return null;
+  }
 }

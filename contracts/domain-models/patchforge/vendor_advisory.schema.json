@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/vendor_advisory.schema.json",
+  "title": "PatchForge Vendor Advisory",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["tenant_id", "advisory_id", "vendor_id", "source_class", "review_state", "evidence_state"],
+  "properties": {
+    "tenant_id": { "type": "string", "minLength": 1 },
+    "advisory_id": { "type": "string", "minLength": 1 },
+    "vendor_id": { "type": "string", "minLength": 1 },
+    "source_class": {
+      "type": "string",
+      "enum": [
+        "vendor_advisory",
+        "cve_record",
+        "kev_signal",
+        "epss_signal",
+        "scanner_finding",
+        "threat_intel_report",
+        "vendor_patch_note",
+        "exploitability_report",
+        "customer_asset_match",
+        "service_exposure_match",
+        "ot_vendor_notice",
+        "cloud_provider_advisory",
+        "sra_trace"
+      ]
+    },
+    "review_state": { "type": "string", "default": "pending_review" },
+    "evidence_state": { "type": "string", "default": "referenced" },
+    "superseded": { "type": "boolean", "default": false }
+  }
+}

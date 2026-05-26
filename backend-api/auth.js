@@ -11,6 +11,9 @@ const ROUTE_ROLES = [
   { method: "POST", pattern: /^\/api\/patchforge\/vulnerabilities\/[^/]+\/review$/, roles: ["PatchForge.SecurityLead", "PatchForge.Admin"] },
   { method: "POST", pattern: /^\/api\/patchforge\/assets\/ingest$/, roles: ["PatchForge.TriageAnalyst", "PatchForge.Admin"] },
   { method: "POST", pattern: /^\/api\/patchforge\/services\/ingest$/, roles: ["PatchForge.TriageAnalyst", "PatchForge.Admin"] },
+  { method: "POST", pattern: /^\/api\/patchforge\/agent-findings\/ingest$/, roles: ["PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.Admin"] },
+  { method: "POST", pattern: /^\/api\/patchforge\/bayesian\//, roles: ["PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.Admin"] },
+  { method: "POST", pattern: /^\/api\/patchforge\/vendors/, roles: ["PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.Admin"] },
   { method: "POST", pattern: /^\/api\/patchforge\/decision-packs\/generate$/, roles: ["PatchForge.SecurityLead", "PatchForge.CABApprover", "PatchForge.Admin"] },
   { method: "POST", pattern: /^\/api\/sra\//, roles: ["PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.Admin"] },
   { method: "GET", pattern: /^\/api\//, roles: ["PatchForge.Reader", "PatchForge.Auditor", "PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.Admin"] },
@@ -20,18 +23,28 @@ const ROUTE_ROLES = [
 export function createAuthConfigFromEnv() {
   const tenantId = process.env.PATCHFORGE_ENTRA_TENANT_ID || DEFAULT_TENANT_ID;
   const audience = process.env.PATCHFORGE_ENTRA_AUDIENCE || DEFAULT_AUDIENCE;
+  const production = isProductionEnvironment();
+  const required = parseBoolean(process.env.PATCHFORGE_AUTH_REQUIRED, false);
+  if (production && !required) {
+    throw new Error("PatchForge production startup blocked: PATCHFORGE_AUTH_REQUIRED=true is mandatory when APP_ENV/PATCHFORGE_ENV/NODE_ENV is production.");
+  }
   const audiences = (process.env.PATCHFORGE_ENTRA_AUDIENCES || `${audience},${DEFAULT_API_CLIENT_ID}`)
     .split(",")
     .map((value) => value.trim())
     .filter(Boolean);
   const issuer = process.env.PATCHFORGE_ENTRA_ISSUER || `https://login.microsoftonline.com/${tenantId}/v2.0`;
   return {
-    required: parseBoolean(process.env.PATCHFORGE_AUTH_REQUIRED, false),
+    required,
+    production,
     tenantId,
     audience,
     audiences,
     issuer,
-    jwksUri: process.env.PATCHFORGE_ENTRA_JWKS_URI || `https://login.microsoftonline.com/${tenantId}/discovery/v2.0/keys`
+    jwksUri: process.env.PATCHFORGE_ENTRA_JWKS_URI || `https://login.microsoftonline.com/${tenantId}/discovery/v2.0/keys`,
+    defaultTenant: process.env.PATCHFORGE_DEFAULT_TENANT || "diiac.io",
+    tenantMappings: parseTenantMappings(process.env.PATCHFORGE_TENANT_MAPPINGS, tenantId),
+    allowTenantOverride: parseBoolean(process.env.PATCHFORGE_ALLOW_TENANT_OVERRIDE, false),
+    adminDiagnosticTenantOverride: parseBoolean(process.env.PATCHFORGE_ADMIN_DIAGNOSTIC_TENANT_OVERRIDE, false)
   };
 }
 
@@ -133,4 +146,25 @@ function parseBoolean(value, fallback) {
     return fallback;
   }
   return ["1", "true", "yes", "on"].includes(String(value).toLowerCase());
+}
+
+export function isProductionEnvironment() {
+  return ["production", "prod"].includes(String(process.env.APP_ENV || "").toLowerCase())
+    || ["production", "prod"].includes(String(process.env.PATCHFORGE_ENV || "").toLowerCase())
+    || ["production", "prod"].includes(String(process.env.PATCHFORGE_ENVIRONMENT || "").toLowerCase())
+    || String(process.env.NODE_ENV || "").toLowerCase() === "production";
+}
+
+function parseTenantMappings(raw, tenantId) {
+  if (!raw) {
+    return { [tenantId]: "diiac.io" };
+  }
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? parsed
+      : { [tenantId]: "diiac.io" };
+  } catch {
+    return { [tenantId]: "diiac.io" };
+  }
 }
