@@ -343,13 +343,78 @@ function DecisionPacks() {
 }
 
 function Admin() {
+  const [tenantName, setTenantName] = useState("diiac.io");
+  const [secretPreview, setSecretPreview] = useState("");
+  const [saved, setSaved] = useState(false);
+  const healthChecks = [
+    ["Frontend health", "Ready", "trust"],
+    ["Bridge health", "Ready", "trust"],
+    ["Runtime health", "Ready", "trust"],
+    ["SRA health", "Advisory", "teal"],
+    ["Worker health", "Planned", "steel"],
+    ["Scheduler health", "Planned", "steel"],
+    ["Database health", "Local JSON", "amber"],
+    ["Storage health", "Ready", "trust"],
+    ["Key Vault health", "No live access", "steel"],
+    ["Signing trust", "Dev local", "amber"]
+  ];
+
   return (
     <>
       <div className="section-title">
         <h3>Admin Control Surfaces</h3>
         <span className="pill trust">Read-only Azure phase</span>
       </div>
-      <div className="admin-grid">
+
+      <div className="admin-layout">
+        <section className="config-panel" aria-label="Admin configuration">
+          <h4>Tenant Configuration</h4>
+          <label>
+            Tenant
+            <input value={tenantName} onChange={(event) => setTenantName(event.target.value)} aria-label="Tenant name" />
+          </label>
+          <label>
+            Webhook signing secret
+            <input
+              value={secretPreview}
+              onChange={(event) => setSecretPreview(event.target.value)}
+              aria-label="Webhook signing secret"
+              type="password"
+              placeholder="Stored separately in production"
+            />
+          </label>
+          <div className="toggle-row">
+            <span>SRA advisory only</span>
+            <strong className="pill teal">Locked</strong>
+          </div>
+          <div className="toggle-row">
+            <span>Live Azure mutation</span>
+            <strong className="pill amber">Blocked</strong>
+          </div>
+          <button
+            type="button"
+            className="action-button"
+            onClick={() => {
+              setSecretPreview(secretPreview ? "********" : "");
+              setSaved(true);
+            }}
+          >
+            <CheckCircle2 size={16} aria-hidden /> Save Admin Configuration
+          </button>
+          {saved && <p className="save-note">Configuration saved locally. Secret values masked after save.</p>}
+        </section>
+
+        <section className="config-panel" aria-label="Admin health dashboard">
+          <h4>Health Checks</h4>
+          <div className="health-list">
+            {healthChecks.map(([label, value, tone]) => (
+              <StatusLine key={label} label={label} value={value} tone={tone} />
+            ))}
+          </div>
+        </section>
+      </div>
+
+      <div className="admin-grid admin-section-grid">
         {adminSections.map((section) => (
           <button className="admin-tile" type="button" key={section}>
             <KeyRound size={17} aria-hidden />

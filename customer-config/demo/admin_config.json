@@ -1,0 +1,58 @@
+{
+  "diiac-demo": {
+    "tenant_id": "diiac-demo",
+    "general": {
+      "product_name": "DIIaC PatchForge",
+      "target_url": "https://patchforge.diiac.io",
+      "environment": "Production",
+      "governance_tier": "Enterprise Strict"
+    },
+    "entra": {
+      "tenant_domain": "diiac.io",
+      "app_roles_enabled": true,
+      "required_roles": [
+        "PatchForge.Reader",
+        "PatchForge.TriageAnalyst",
+        "PatchForge.SecurityLead",
+        "PatchForge.ServiceOwner",
+        "PatchForge.CABApprover",
+        "PatchForge.RiskOwner",
+        "PatchForge.Admin",
+        "PatchForge.Auditor"
+      ]
+    },
+    "sra": {
+      "advisory_only": true,
+      "review_required": true,
+      "can_close_hard_gates_alone": false
+    },
+    "integrations": {
+      "diiac_it_enabled": false,
+      "scanner_integrations": [],
+      "source_feeds": []
+    },
+    "signing": {
+      "trust_state": "dev-local",
+      "key_vault_uri": "https://kv-diiac-patchforge-prod.vault.azure.net/",
+      "production_signing_enabled": false
+    },
+    "storage": {
+      "mode": "local-json",
+      "account_name": "stdiiacpatchforgeprod01"
+    },
+    "telemetry": {
+      "health_checks_read_only": true,
+      "azure_mutation_enabled": false
+    },
+    "retention": {
+      "evidence_days": 2555,
+      "audit_days": 2555
+    },
+    "feature_flags": {
+      "sra_enabled": false,
+      "live_scanner_ingest_enabled": false,
+      "azure_mutation_enabled": false
+    },
+    "updated_at": null
+  }
+}

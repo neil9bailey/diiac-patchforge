@@ -47,6 +47,7 @@ DIIaC™ PatchForge
 | Frontend/src/App.tsx | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | Frontend/src/styles.css | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | Frontend/src/App.test.tsx | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| customer-config/demo/admin_config.json | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 
 ## Change Control
 

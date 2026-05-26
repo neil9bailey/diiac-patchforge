@@ -11,6 +11,63 @@ const COLLECTIONS = [
   "audit_events"
 ];
 
+const DEFAULT_ADMIN_CONFIG = {
+  tenant_id: "diiac-demo",
+  general: {
+    product_name: "DIIaC PatchForge",
+    target_url: "https://patchforge.diiac.io",
+    environment: "Production",
+    governance_tier: "Enterprise Strict"
+  },
+  entra: {
+    tenant_domain: "diiac.io",
+    app_roles_enabled: true,
+    required_roles: [
+      "PatchForge.Reader",
+      "PatchForge.TriageAnalyst",
+      "PatchForge.SecurityLead",
+      "PatchForge.ServiceOwner",
+      "PatchForge.CABApprover",
+      "PatchForge.RiskOwner",
+      "PatchForge.Admin",
+      "PatchForge.Auditor"
+    ]
+  },
+  sra: {
+    advisory_only: true,
+    review_required: true,
+    can_close_hard_gates_alone: false
+  },
+  integrations: {
+    diiac_it_enabled: false,
+    scanner_integrations: [],
+    source_feeds: []
+  },
+  signing: {
+    trust_state: "dev-local",
+    key_vault_uri: "https://kv-diiac-patchforge-prod.vault.azure.net/",
+    production_signing_enabled: false
+  },
+  storage: {
+    mode: "local-json",
+    account_name: "stdiiacpatchforgeprod01"
+  },
+  telemetry: {
+    health_checks_read_only: true,
+    azure_mutation_enabled: false
+  },
+  retention: {
+    evidence_days: 2555,
+    audit_days: 2555
+  },
+  feature_flags: {
+    sra_enabled: false,
+    live_scanner_ingest_enabled: false,
+    azure_mutation_enabled: false
+  },
+  updated_at: null
+};
+
 export function hashObject(value) {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex");
 }
@@ -51,6 +108,33 @@ export class PatchForgeJsonStorage {
     const file = this.#file(collection);
     const tmp = `${file}.${process.pid}.${Date.now()}.tmp`;
     await writeFile(tmp, `${JSON.stringify(records, null, 2)}\n`, "utf8");
+    await rename(tmp, file);
+  }
+
+  #adminConfigFile() {
+    return path.join(this.rootDir, "admin_config.json");
+  }
+
+  async #readAdminConfigFile() {
+    await this.ensureReady();
+    const file = this.#adminConfigFile();
+    try {
+      return JSON.parse(await readFile(file, "utf8"));
+    } catch (error) {
+      if (error.code !== "ENOENT") {
+        throw error;
+      }
+      const initial = { "diiac-demo": DEFAULT_ADMIN_CONFIG };
+      await writeFile(file, `${JSON.stringify(initial, null, 2)}\n`, "utf8");
+      return initial;
+    }
+  }
+
+  async #writeAdminConfigFile(config) {
+    await this.ensureReady();
+    const file = this.#adminConfigFile();
+    const tmp = `${file}.${process.pid}.${Date.now()}.tmp`;
+    await writeFile(tmp, `${JSON.stringify(config, null, 2)}\n`, "utf8");
     await rename(tmp, file);
   }
 
@@ -298,6 +382,61 @@ export class PatchForgeJsonStorage {
     };
   }
 
+  async readAdminConfig(tenantId) {
+    const allConfig = await this.#readAdminConfigFile();
+    const config = allConfig[tenantId] || { ...DEFAULT_ADMIN_CONFIG, tenant_id: tenantId };
+    return maskSecretValues(config);
+  }
+
+  async saveAdminConfig(tenantId, payload) {
+    const allConfig = await this.#readAdminConfigFile();
+    const previous = allConfig[tenantId] || { ...DEFAULT_ADMIN_CONFIG, tenant_id: tenantId };
+    const next = {
+      ...previous,
+      ...payload,
+      tenant_id: tenantId,
+      telemetry: {
+        ...(previous.telemetry || {}),
+        ...(payload.telemetry || {}),
+        health_checks_read_only: true,
+        azure_mutation_enabled: false
+      },
+      feature_flags: {
+        ...(previous.feature_flags || {}),
+        ...(payload.feature_flags || {}),
+        azure_mutation_enabled: false
+      },
+      updated_at: new Date().toISOString()
+    };
+
+    const sanitized = maskSecretValues(next);
+    allConfig[tenantId] = sanitized;
+    await this.#writeAdminConfigFile(allConfig);
+    await this.audit(tenantId, "admin_config_updated", { sections: Object.keys(payload) });
+    return sanitized;
+  }
+
+  async adminHealth(tenantId) {
+    await this.ensureReady();
+    const config = await this.readAdminConfig(tenantId);
+    return {
+      tenant_id: tenantId,
+      live_azure_mutation_enabled: false,
+      checks: [
+        { name: "Frontend health", status: "ready", mode: "read-only" },
+        { name: "Bridge health", status: "ready", mode: "local-json" },
+        { name: "Runtime health", status: "ready", mode: "local" },
+        { name: "SRA health", status: config.sra?.advisory_only ? "advisory" : "disabled", mode: "advisory-only" },
+        { name: "Worker health", status: "planned", mode: "not-deployed" },
+        { name: "Scheduler health", status: "planned", mode: "not-deployed" },
+        { name: "Database health", status: "placeholder", mode: config.storage?.mode || "local-json" },
+        { name: "Storage health", status: "ready", mode: config.storage?.mode || "local-json" },
+        { name: "Key Vault health", status: "planned", mode: "no-live-access" },
+        { name: "Signing trust", status: config.signing?.trust_state || "dev-local", mode: "no-production-key" }
+      ]
+    };
+  }
+
   async audit(tenantId, eventType, details) {
     return this.append("audit_events", {
       tenant_id: tenantId,
@@ -313,3 +452,23 @@ export function isPositiveEvidence(source) {
   return source.review_state !== "rejected" && source.evidence_state === "accepted_positive_evidence";
 }
 
+export function maskSecretValues(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => maskSecretValues(item));
+  }
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, nested]) => {
+        if (isSecretKey(key) && nested) {
+          return [key, "********"];
+        }
+        return [key, maskSecretValues(nested)];
+      })
+    );
+  }
+  return value;
+}
+
+function isSecretKey(key) {
+  return /(^|_)(password|token|secret|apiKey|api_key|clientSecret|client_secret|signingSecret|signing_secret)$/i.test(key);
+}

@@ -19,11 +19,11 @@
 | PF-E4 | Backend API and storage | Complete | |
 | PF-E5 | Runtime governance and signed packs | Complete | |
 | PF-E6 | Dedicated frontend shell | Complete | |
-| PF-E7 | Full Admin UI | Pending | |
+| PF-E7 | Full Admin UI | Complete | |
 | PF-E8 | SRA MCP advisory layer | Pending | |
 | PF-E9 | Decision Workbench and DCC | Pending | |
 | PF-E10 | Reports, demos, validation pack | Pending | |
 
 ## Next Epic
 
-PF-E7: PatchForge Admin UI and configuration surfaces.
+PF-E8: Security Research Agent MCP advisory layer.

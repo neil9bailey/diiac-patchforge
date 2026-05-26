@@ -94,6 +94,31 @@ export function createServer(options = {}) {
         return sendJson(res, 200, await storage.dashboardMetrics(tenantId));
       }
 
+      if (route === "GET /api/patchforge/admin/config") {
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          config: await storage.readAdminConfig(tenantId)
+        });
+      }
+
+      if (route === "PUT /api/patchforge/admin/config") {
+        const body = await readJson(req);
+        if (body.live_azure_mutation_enabled === true || body.feature_flags?.azure_mutation_enabled === true) {
+          return sendJson(res, 400, {
+            error: "live_azure_mutation_blocked",
+            message: "Admin configuration cannot enable live Azure mutation in this phase."
+          });
+        }
+        return sendJson(res, 200, {
+          tenant_id: resolveTenant(req, url, body),
+          config: await storage.saveAdminConfig(resolveTenant(req, url, body), body)
+        });
+      }
+
+      if (route === "GET /api/patchforge/admin/health") {
+        return sendJson(res, 200, await storage.adminHealth(tenantId));
+      }
+
       return sendJson(res, 404, {
         error: "not_found",
         boundary: "No scanner, exploit, patch deployment, or production mutation endpoint exists."
@@ -139,4 +164,3 @@ if (isMain) {
     console.log(`DIIaC PatchForge API listening on ${DEFAULT_PORT}`);
   });
 }
-

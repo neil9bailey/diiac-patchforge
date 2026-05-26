@@ -34,6 +34,18 @@ describe("PatchForge shell", () => {
     expect(screen.getByRole("heading", { name: "Admin" })).toBeInTheDocument();
     expect(screen.getByText("Entra ID / RBAC")).toBeInTheDocument();
     expect(screen.getByText("Signing & Trust")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Health Checks" })).toBeInTheDocument();
+  });
+
+  it("masks admin secret values after save", () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Admin" }));
+    fireEvent.change(screen.getByLabelText("Webhook signing secret"), {
+      target: { value: "super-secret-value" }
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Save Admin Configuration/i }));
+    expect(screen.getByDisplayValue("********")).toBeInTheDocument();
+    expect(screen.getByText(/Secret values masked after save/i)).toBeInTheDocument();
   });
 
   it("labels SRA as advisory only and avoids prohibited wording", () => {
@@ -43,4 +55,3 @@ describe("PatchForge shell", () => {
     expect(container.textContent?.toLowerCase()).not.toContain("exploit generation");
   });
 });
-

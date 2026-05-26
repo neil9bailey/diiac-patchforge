@@ -174,3 +174,41 @@ test("no exploit or patch deployment endpoints exist", async () => {
   });
 });
 
+test("admin config saves locally, masks secrets, and blocks live Azure mutation", async () => {
+  await withApi(async (baseUrl) => {
+    const save = await request(baseUrl, "/api/patchforge/admin/config", {
+      method: "PUT",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        general: { environment: "Production", governance_tier: "Enterprise Strict" },
+        integrations: {
+          scanner_integrations: [
+            { name: "Demo Scanner", client_secret: "super-secret-value" }
+          ]
+        }
+      })
+    });
+    assert.equal(save.response.status, 200);
+    assert.equal(save.body.config.integrations.scanner_integrations[0].client_secret, "********");
+
+    const config = await request(baseUrl, "/api/patchforge/admin/config", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(config.body.config.integrations.scanner_integrations[0].client_secret, "********");
+
+    const health = await request(baseUrl, "/api/patchforge/admin/health", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(health.response.status, 200);
+    assert.equal(health.body.live_azure_mutation_enabled, false);
+    assert.ok(health.body.checks.some((check) => check.name === "Key Vault health"));
+
+    const blocked = await request(baseUrl, "/api/patchforge/admin/config", {
+      method: "PUT",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ feature_flags: { azure_mutation_enabled: true } })
+    });
+    assert.equal(blocked.response.status, 400);
+    assert.equal(blocked.body.error, "live_azure_mutation_blocked");
+  });
+});

@@ -133,6 +133,8 @@ Deliverables:
 
 ## PF-E7: Full Admin UI
 
+Status: complete
+
 Purpose: add enterprise-grade configuration surfaces.
 
 Deliverables:

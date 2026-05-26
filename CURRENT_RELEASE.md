@@ -1,14 +1,14 @@
 # Current Release
 
-## DIIaC™ PatchForge PF-E6
+## DIIaC™ PatchForge PF-E7
 
-Release state: dedicated frontend shell baseline in progress
+Release state: admin UI and configuration baseline in progress
 
 Date: 2026-05-26
 
 ## Scope
 
-PF-E6 adds the dedicated PatchForge enterprise frontend shell.
+PF-E7 adds PatchForge Admin UI configuration surfaces and local admin configuration APIs.
 
 Included:
 
@@ -54,6 +54,11 @@ Included:
 - Decision Packs
 - Admin route
 - frontend tests and production build
+- local admin config file
+- admin config read/write API
+- read-only admin health API
+- secret masking after save
+- UI health panels and configuration controls
 - release baseline manifest
 - document control register
 
