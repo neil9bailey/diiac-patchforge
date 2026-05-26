@@ -1,0 +1,17 @@
+﻿[
+    {
+        "url":  "https://ca-patchforge-ui-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io/",
+        "statusCode":  200,
+        "ok":  true
+    },
+    {
+        "url":  "https://ca-patchforge-bridge-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io/health",
+        "statusCode":  200,
+        "ok":  true
+    },
+    {
+        "url":  "https://ca-patchforge-bridge-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io/readiness",
+        "statusCode":  200,
+        "ok":  true
+    }
+]

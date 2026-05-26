@@ -6,15 +6,14 @@ Track PatchForge deployment readiness, live Azure bootstrap state, and remaining
 
 ## Current Gate
 
-PatchForge Azure bootstrap is live in a dedicated production resource group.
+PatchForge Azure bootstrap is live in a dedicated production resource group. The identity, production signing key, and PostgreSQL resource gates are also completed.
 
 PatchForge is not yet ready for full production cutover until the user confirms:
 
-- Entra app registration and role assignment plan
-- Key Vault signing strategy
 - DNS ownership and cutover plan
-- PostgreSQL/database deployment plan
 - custom domain and TLS binding plan
+- runtime managed identity signing integration
+- application storage migration from local JSON to PostgreSQL
 
 Known non-secret tenant planning values are recorded in `docs/deployment/PATCHFORGE_DIIAC_TENANT_REFERENCE.md`:
 
@@ -69,11 +68,10 @@ Allowed without a new approval:
 
 Requires fresh user approval:
 
-- additional resource creation
+- additional resource creation outside the current PatchForge gate plan
 - role assignment mutation outside the existing IaC baseline
 - Key Vault mutation
 - DNS changes
-- production signing key creation
 - Container Apps revision deployment
 
 ## Live Azure URLs
@@ -81,6 +79,21 @@ Requires fresh user approval:
 - UI: `https://ca-patchforge-ui-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io/`
 - Bridge health: `https://ca-patchforge-bridge-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io/health`
 - Bridge readiness: `https://ca-patchforge-bridge-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io/readiness`
+
+## Live Identity And Data Gates
+
+- API app ID: `ec30b0eb-cfc4-48cc-a5f2-2a1345d96736`
+- UI app ID: `c4dfca53-14a5-4688-817d-6c6c7dd47407`
+- PostgreSQL server: `psql-diiac-patchforge-prod.postgres.database.azure.com`
+- PostgreSQL database: `patchforge_prod`
+- Key Vault signing key: `pf-pack-signing-prod`
+- Gate evidence: `docs/release/evidence/2026-05-26-patchforge-gates/`
+
+HTTP smoke after gates:
+
+- UI: 200
+- Bridge health: 200
+- Bridge readiness: 200
 
 ## Local URLs
 

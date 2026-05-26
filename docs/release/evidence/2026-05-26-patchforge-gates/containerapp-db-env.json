@@ -1,0 +1,18 @@
+﻿{
+    "name":  "ca-patchforge-bridge-prod",
+    "latestRevisionName":  "ca-patchforge-bridge-prod--0000001",
+    "provisioningState":  "Succeeded",
+    "runningStatus":  "Running",
+    "env":  [
+                {
+                    "name":  "PATCHFORGE_DATABASE_HOST",
+                    "value":  "psql-diiac-patchforge-prod.postgres.database.azure.com",
+                    "secretRef":  null
+                },
+                {
+                    "name":  "PATCHFORGE_DATABASE_NAME",
+                    "value":  "patchforge_prod",
+                    "secretRef":  null
+                }
+            ]
+}

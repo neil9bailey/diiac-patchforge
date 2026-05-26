@@ -1,0 +1,44 @@
+﻿[
+    {
+        "ingressFqdn":  "ca-patchforge-ui-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io",
+        "latestRevisionName":  "ca-patchforge-ui-prod--0000001",
+        "name":  "ca-patchforge-ui-prod",
+        "provisioningState":  "Succeeded",
+        "runningStatus":  "Running"
+    },
+    {
+        "ingressFqdn":  "ca-patchforge-bridge-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io",
+        "latestRevisionName":  "ca-patchforge-bridge-prod--0000001",
+        "name":  "ca-patchforge-bridge-prod",
+        "provisioningState":  "Succeeded",
+        "runningStatus":  "Running"
+    },
+    {
+        "ingressFqdn":  "ca-patchforge-runtime-prod.internal.lemonpebble-11b2e331.uksouth.azurecontainerapps.io",
+        "latestRevisionName":  "ca-patchforge-runtime-prod--0000001",
+        "name":  "ca-patchforge-runtime-prod",
+        "provisioningState":  "Succeeded",
+        "runningStatus":  "Running"
+    },
+    {
+        "ingressFqdn":  "ca-patchforge-sra-prod.internal.lemonpebble-11b2e331.uksouth.azurecontainerapps.io",
+        "latestRevisionName":  "ca-patchforge-sra-prod--0000001",
+        "name":  "ca-patchforge-sra-prod",
+        "provisioningState":  "Succeeded",
+        "runningStatus":  "Running"
+    },
+    {
+        "ingressFqdn":  "ca-patchforge-worker-prod.internal.lemonpebble-11b2e331.uksouth.azurecontainerapps.io",
+        "latestRevisionName":  "ca-patchforge-worker-prod--0000001",
+        "name":  "ca-patchforge-worker-prod",
+        "provisioningState":  "Succeeded",
+        "runningStatus":  "Running"
+    },
+    {
+        "ingressFqdn":  "ca-patchforge-scheduler-prod.internal.lemonpebble-11b2e331.uksouth.azurecontainerapps.io",
+        "latestRevisionName":  "ca-patchforge-scheduler-prod--0000001",
+        "name":  "ca-patchforge-scheduler-prod",
+        "provisioningState":  "Succeeded",
+        "runningStatus":  "Running"
+    }
+]

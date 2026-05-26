@@ -1,8 +1,8 @@
 # Current Release
 
-## DIIaC™ PatchForge PF-AZ1
+## DIIaC PatchForge PF-AZ2
 
-Release state: Azure bootstrap live
+Release state: Azure bootstrap live with identity, signing, and database gates completed
 
 Date: 2026-05-26
 
@@ -102,14 +102,20 @@ Included:
 - live Key Vault, Storage, Log Analytics, and managed identities
 - bootstrap images pushed to ACR
 - HTTP smoke evidence for public UI, bridge health, and bridge readiness
+- Entra app registrations for `DIIaC PatchForge API` and `DIIaC PatchForge UI`
+- PatchForge app roles and initial group assignments
+- DIIaC admin group membership evidence for `n.bailey@diiac.io` and `nbailey@diiac.io`
+- production Key Vault signing key `pf-pack-signing-prod`
+- ES256 Key Vault signing smoke verification
+- Azure Database for PostgreSQL Flexible Server `psql-diiac-patchforge-prod`
+- PostgreSQL database `patchforge_prod`
 
 Excluded:
 
 - DNS cutover
 - custom domain binding
-- production PostgreSQL creation
-- production signing key creation
-- Entra app registration automation
+- live application database migration from local JSON storage to PostgreSQL
+- runtime managed identity signing integration
 - vulnerability scanning
 - exploit generation
 - patch deployment
@@ -146,7 +152,36 @@ Target:
 Deployment evidence:
 
 - `docs/release/evidence/2026-05-26-patchforge-azure-bootstrap/`
+- `docs/release/evidence/2026-05-26-patchforge-gates/`
 
 ## Trust State
 
-Signed pack generation is implemented locally with a development/test signature path. Azure Key Vault is deployed, but production signing keys have not yet been created or bound.
+Signed pack generation is implemented locally with a development/test signature path. Azure Key Vault production signing key `pf-pack-signing-prod` now exists and passed an ES256 sign/verify smoke test.
+
+Runtime signing integration is still pending. The runtime must use managed identity and the Key Vault key before production decision packs rely on the production trust path.
+
+## Identity State
+
+PatchForge dedicated Entra app registrations exist in tenant `67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da`:
+
+- API app ID: `ec30b0eb-cfc4-48cc-a5f2-2a1345d96736`
+- UI app ID: `c4dfca53-14a5-4688-817d-6c6c7dd47407`
+
+App roles are present for reader, triage analyst, security lead, service owner, CAB approver, risk owner, admin, and auditor.
+
+The requested users `n.bailey@diiac.io` and `nbailey@diiac.io` were checked against all DIIaC admin groups discovered in the tenant and were already present.
+
+## Database State
+
+PostgreSQL is live:
+
+- Server: `psql-diiac-patchforge-prod.postgres.database.azure.com`
+- Database: `patchforge_prod`
+- Version: PostgreSQL 16
+- State: Ready
+
+The bridge has database host/name environment references. Application storage remains local JSON-backed until the storage abstraction is migrated to PostgreSQL in a later implementation gate.
+
+## DNS State
+
+`patchforge.diiac.io` and `api.patchforge.diiac.io` are pending external DNS updates at Porkbun. Required CNAME and TXT records are recorded in `docs/deployment/PATCHFORGE_DNS_CUTOVER_CHECKLIST.md`.

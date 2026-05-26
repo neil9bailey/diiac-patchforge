@@ -1,0 +1,10 @@
+﻿{
+    "administratorLogin":  "patchforgeadmin",
+    "fullyQualifiedDomainName":  "psql-diiac-patchforge-prod.postgres.database.azure.com",
+    "location":  "UK South",
+    "name":  "psql-diiac-patchforge-prod",
+    "publicNetworkAccess":  "Enabled",
+    "resourceGroup":  "rg-diiac-patchforge-prod",
+    "state":  "Ready",
+    "version":  "16"
+}

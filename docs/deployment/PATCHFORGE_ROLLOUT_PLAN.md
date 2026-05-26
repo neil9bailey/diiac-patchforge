@@ -48,7 +48,7 @@ Recommended before production:
 
 ## Phase 4: Production Deployment
 
-Status: bootstrap complete on 2026-05-26.
+Status: bootstrap plus identity, signing, and database gates complete on 2026-05-26.
 
 Created:
 
@@ -61,14 +61,23 @@ Created:
 - Container Apps environment
 - UI, bridge, runtime, SRA, worker, and scheduler apps
 
+Completed after bootstrap:
+
+- dedicated PatchForge Entra app registrations
+- PatchForge app roles and initial group assignments
+- DIIaC admin membership check for `n.bailey@diiac.io` and `nbailey@diiac.io`
+- production Key Vault signing key and ES256 smoke verification
+- PostgreSQL Flexible Server `psql-diiac-patchforge-prod`
+- PostgreSQL database `patchforge_prod`
+
 Still pending:
 
-- production PostgreSQL
-- Entra app registration and role enforcement hardening
-- production signing key creation
+- role enforcement hardening inside the Bridge/API and UI
+- runtime managed identity signing integration
+- application storage migration from local JSON to PostgreSQL
 - custom domains and TLS binding
 - DNS cutover
 
 ## Phase 5: DNS Cutover
 
-Update DNS only after custom domain binding and TLS are validated.
+Update Porkbun DNS first, then bind custom domains and managed certificates in Azure Container Apps once public DNS validation records resolve.

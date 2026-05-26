@@ -80,7 +80,30 @@ Azure bootstrap live state as of 2026-05-26:
 - Bridge health URL: `https://ca-patchforge-bridge-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io/health`
 - Evidence: `docs/release/evidence/2026-05-26-patchforge-azure-bootstrap/`
 
-DNS is still pending for `patchforge.diiac.io` and `api.patchforge.diiac.io`.
+PatchForge gate state as of 2026-05-26:
+
+- Entra API app: `DIIaC PatchForge API`, app ID `ec30b0eb-cfc4-48cc-a5f2-2a1345d96736`
+- Entra UI app: `DIIaC PatchForge UI`, app ID `c4dfca53-14a5-4688-817d-6c6c7dd47407`
+- PatchForge API identifier URI: `api://ec30b0eb-cfc4-48cc-a5f2-2a1345d96736`
+- Production signing key: `https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod/2e348fdeaaaf448ebba206130ef86b52`
+- PostgreSQL server: `psql-diiac-patchforge-prod.postgres.database.azure.com`
+- PostgreSQL database: `patchforge_prod`
+- Admin membership evidence: `docs/release/evidence/2026-05-26-patchforge-gates/admin-group-membership.json`
+- Gate evidence: `docs/release/evidence/2026-05-26-patchforge-gates/`
+
+`n.bailey@diiac.io` and `nbailey@diiac.io` are confirmed as members of all DIIaC admin groups discovered in the tenant:
+
+- `DIIAC-ITServices-Admins`
+- `DIIAC-Pharma-Admins`
+
+DNS is still pending for `patchforge.diiac.io` and `api.patchforge.diiac.io`. The `diiac.io` DNS zone is hosted at Porkbun, not Azure DNS.
+
+Required DNS records:
+
+- CNAME `patchforge` -> `ca-patchforge-ui-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io`
+- TXT `asuid.patchforge` -> `D815E8B3470ADCCFE09104F6B9557CC8DC05A4BF8DFED6FC65F27D87B54195E5`
+- CNAME `api.patchforge` -> `ca-patchforge-bridge-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io`
+- TXT `asuid.api.patchforge` -> `D815E8B3470ADCCFE09104F6B9557CC8DC05A4BF8DFED6FC65F27D87B54195E5`
 
 Tell the user before:
 

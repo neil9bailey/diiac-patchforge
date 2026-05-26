@@ -25,7 +25,8 @@
 | PF-E10 | Reports, demos, validation pack | Complete | |
 | PF-E11 | Deployment readiness and CI/CD hardening | Complete | |
 | PF-AZ1 | Dedicated Azure bootstrap deployment | Complete | |
+| PF-AZ2 | Identity, signing, database, and admin membership gates | Complete | |
 
 ## Next Epic
 
-Post-PF-AZ1: bind custom domains, complete Entra RBAC, decide PostgreSQL cutover, and create production signing keys after explicit user approval.
+Post-PF-AZ2: update Porkbun DNS, bind Azure Container Apps custom domains, add runtime Key Vault signing integration, and migrate application storage from local JSON to PostgreSQL.

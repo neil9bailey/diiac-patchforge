@@ -1,0 +1,48 @@
+﻿{
+    "timestamp_utc":  "2026-05-26T16:40:56.6625941Z",
+    "users":  [
+                  {
+                      "requested":  "n.bailey@diiac.io",
+                      "object_id":  "2d2f273d-a815-4a19-a258-c48c858252f3",
+                      "resolved_upn":  "n.bailey@diiac.io"
+                  },
+                  {
+                      "requested":  "nbailey@diiac.io",
+                      "object_id":  "679e8bda-91c0-46fe-b7ee-3bb456f01e8e",
+                      "resolved_upn":  "nbailey_diiac.io#EXT#@nbaileydiiac.onmicrosoft.com",
+                      "other_mail":  "nbailey@diiac.io"
+                  }
+              ],
+    "admin_groups":  [
+                         {
+                             "display_name":  "DIIAC-ITServices-Admins",
+                             "group_id":  "8a75c082-61b1-433a-9f2b-1ad6fc60540a"
+                         },
+                         {
+                             "display_name":  "DIIAC-Pharma-Admins",
+                             "group_id":  "515dd9f7-83ae-412d-a6b3-ae6c35c76a97"
+                         }
+                     ],
+    "results":  [
+                    {
+                        "group":  "DIIAC-ITServices-Admins",
+                        "user":  "n.bailey@diiac.io",
+                        "status":  "already_present"
+                    },
+                    {
+                        "group":  "DIIAC-ITServices-Admins",
+                        "user":  "nbailey@diiac.io",
+                        "status":  "already_present"
+                    },
+                    {
+                        "group":  "DIIAC-Pharma-Admins",
+                        "user":  "n.bailey@diiac.io",
+                        "status":  "already_present"
+                    },
+                    {
+                        "group":  "DIIAC-Pharma-Admins",
+                        "user":  "nbailey@diiac.io",
+                        "status":  "already_present"
+                    }
+                ]
+}

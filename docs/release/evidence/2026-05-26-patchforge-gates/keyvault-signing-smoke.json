@@ -1,0 +1,18 @@
+﻿{
+    "timestamp_utc":  "2026-05-26T16:43:09.7495765Z",
+    "key":  {
+                "crv":  "P-256",
+                "enabled":  true,
+                "keyOps":  [
+                               "sign",
+                               "verify"
+                           ],
+                "kid":  "https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod/2e348fdeaaaf448ebba206130ef86b52",
+                "kty":  "EC"
+            },
+    "algorithm":  "ES256",
+    "digest_base64":  "NpHgdtjobywV7S1EEjAePsa3dqConIpixDvTbO5Zv3U=",
+    "verify_result":  true,
+    "signature_recorded":  false,
+    "signature_length":  88
+}

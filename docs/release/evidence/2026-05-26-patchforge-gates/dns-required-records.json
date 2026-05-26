@@ -1,0 +1,30 @@
+﻿{
+    "status":  "pending_external_dns_update",
+    "dnsProvider":  "Porkbun",
+    "zone":  "diiac.io",
+    "requiredRecords":  [
+                            {
+                                "type":  "CNAME",
+                                "host":  "patchforge",
+                                "value":  "ca-patchforge-ui-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io"
+                            },
+                            {
+                                "type":  "TXT",
+                                "host":  "asuid.patchforge",
+                                "value":  "D815E8B3470ADCCFE09104F6B9557CC8DC05A4BF8DFED6FC65F27D87B54195E5"
+                            },
+                            {
+                                "type":  "CNAME",
+                                "host":  "api.patchforge",
+                                "value":  "ca-patchforge-bridge-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io"
+                            },
+                            {
+                                "type":  "TXT",
+                                "host":  "asuid.api.patchforge",
+                                "value":  "D815E8B3470ADCCFE09104F6B9557CC8DC05A4BF8DFED6FC65F27D87B54195E5"
+                            }
+                        ],
+    "containerAppsEnvironmentDomain":  "lemonpebble-11b2e331.uksouth.azurecontainerapps.io",
+    "staticIp":  "4.250.136.215",
+    "note":  "Custom hostnames can be bound only after these external DNS records exist and propagate."
+}

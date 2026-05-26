@@ -1,0 +1,94 @@
+﻿{
+    "timestamp_utc":  "2026-05-26T16:36:04.8267983Z",
+    "tenant_id":  "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+    "api_app":  {
+                    "display_name":  "DIIaC PatchForge API",
+                    "app_id":  "ec30b0eb-cfc4-48cc-a5f2-2a1345d96736",
+                    "object_id":  "cd95d1e1-c1b5-4e4e-bbb3-c4133424c872",
+                    "service_principal_id":  "549b5962-5815-4b8b-a26e-96a2b2526f1f",
+                    "identifier_uri":  "api://ec30b0eb-cfc4-48cc-a5f2-2a1345d96736",
+                    "access_scope":  "PatchForge.Access",
+                    "access_scope_id":  "3bec314e-34ab-4e19-b209-dfdb3e057e24"
+                },
+    "ui_app":  {
+                   "display_name":  "DIIaC PatchForge UI",
+                   "app_id":  "c4dfca53-14a5-4688-817d-6c6c7dd47407",
+                   "object_id":  "481f87a7-d3b2-4564-aa87-da83fc65a7b1",
+                   "service_principal_id":  "9c3b6748-782c-4919-a4b7-2994a5e1e99d",
+                   "redirect_uris":  [
+                                         "https://ca-patchforge-ui-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io/auth/callback",
+                                         "https://patchforge.diiac.io/auth/callback",
+                                         "http://localhost:5173/auth/callback"
+                                     ]
+               },
+    "app_roles":  [
+                      {
+                          "value":  "PatchForge.Reader",
+                          "display_name":  "PatchForge Reader",
+                          "id":  "10632fba-8231-4b78-a31d-df652da97f55"
+                      },
+                      {
+                          "value":  "PatchForge.TriageAnalyst",
+                          "display_name":  "PatchForge Triage Analyst",
+                          "id":  "430704a8-870e-40c7-b4de-4283c62607d1"
+                      },
+                      {
+                          "value":  "PatchForge.SecurityLead",
+                          "display_name":  "PatchForge Security Lead",
+                          "id":  "eb0c14a2-5fc3-4bd7-8636-3eb7adb52c76"
+                      },
+                      {
+                          "value":  "PatchForge.ServiceOwner",
+                          "display_name":  "PatchForge Service Owner",
+                          "id":  "2649a57c-6fba-43ae-8186-b47f97cd9524"
+                      },
+                      {
+                          "value":  "PatchForge.CABApprover",
+                          "display_name":  "PatchForge CAB Approver",
+                          "id":  "682d9b0e-1c5d-46d9-88ed-a279c58c603c"
+                      },
+                      {
+                          "value":  "PatchForge.RiskOwner",
+                          "display_name":  "PatchForge Risk Owner",
+                          "id":  "06687056-bb28-4cac-b68d-ab3dde96e097"
+                      },
+                      {
+                          "value":  "PatchForge.Admin",
+                          "display_name":  "PatchForge Admin",
+                          "id":  "99a124f9-128f-43ae-b54a-f50aa7578259"
+                      },
+                      {
+                          "value":  "PatchForge.Auditor",
+                          "display_name":  "PatchForge Auditor",
+                          "id":  "613541e3-6973-42d8-a26d-e3492612cd13"
+                      }
+                  ],
+    "assignments":  [
+                        {
+                            "servicePrincipalId":  "549b5962-5815-4b8b-a26e-96a2b2526f1f",
+                            "groupId":  "8a75c082-61b1-433a-9f2b-1ad6fc60540a",
+                            "role":  "PatchForge.Admin",
+                            "status":  "already_present"
+                        },
+                        {
+                            "servicePrincipalId":  "549b5962-5815-4b8b-a26e-96a2b2526f1f",
+                            "groupId":  "8d989893-378e-45e0-ac67-3d1a3acee7c4",
+                            "role":  "PatchForge.Reader",
+                            "status":  "already_present"
+                        },
+                        {
+                            "servicePrincipalId":  "9c3b6748-782c-4919-a4b7-2994a5e1e99d",
+                            "groupId":  "8a75c082-61b1-433a-9f2b-1ad6fc60540a",
+                            "role":  "PatchForge.Admin",
+                            "status":  "already_present"
+                        },
+                        {
+                            "servicePrincipalId":  "9c3b6748-782c-4919-a4b7-2994a5e1e99d",
+                            "groupId":  "8d989893-378e-45e0-ac67-3d1a3acee7c4",
+                            "role":  "PatchForge.Reader",
+                            "status":  "already_present"
+                        }
+                    ],
+    "admin_consent":  "granted_or_already_present",
+    "executed":  true
+}
