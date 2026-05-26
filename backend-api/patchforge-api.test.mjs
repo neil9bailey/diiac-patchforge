@@ -5,14 +5,19 @@ import path from "node:path";
 import test from "node:test";
 import { createServer } from "./server.js";
 import { PatchForgeJsonStorage } from "./patchforge/storage.js";
+import { createSourceFeedClient } from "./patchforge/sourceFeeds.js";
 import { createAuthConfigFromEnv } from "./auth.js";
 
-async function withApi(run) {
+async function withApi(run, options = {}) {
   const storageRoot = await mkdtemp(path.join(os.tmpdir(), "patchforge-api-"));
   const storage = new PatchForgeJsonStorage(storageRoot);
-  const server = createServer({ storage, auth: { required: false }, runtimeClient: fakeRuntimeClient() });
-  await new Promise((resolve) => server.listen(0, resolve));
-  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const server = createServer({
+    storage,
+    auth: { required: false },
+    runtimeClient: fakeRuntimeClient(),
+    sourceFeedClient: options.sourceFeedClient
+  });
+  const baseUrl = await listenOnFetchSafePort(server);
   try {
     await run(baseUrl);
   } finally {
@@ -35,14 +40,42 @@ async function withAuthenticatedApi(run, verifier, authOverrides = {}) {
     },
     runtimeClient: fakeRuntimeClient()
   });
-  await new Promise((resolve) => server.listen(0, resolve));
-  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const baseUrl = await listenOnFetchSafePort(server);
   try {
     await run(baseUrl);
   } finally {
     await new Promise((resolve) => server.close(resolve));
     await rm(storageRoot, { recursive: true, force: true });
   }
+}
+
+async function listenOnFetchSafePort(server) {
+  let lastError = null;
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const port = 49152 + Math.floor(Math.random() * 12000);
+    try {
+      await new Promise((resolve, reject) => {
+        const onError = (error) => {
+          server.off("listening", onListening);
+          reject(error);
+        };
+        const onListening = () => {
+          server.off("error", onError);
+          resolve();
+        };
+        server.once("error", onError);
+        server.once("listening", onListening);
+        server.listen(port, "127.0.0.1");
+      });
+      return `http://127.0.0.1:${port}`;
+    } catch (error) {
+      lastError = error;
+      if (error.code !== "EADDRINUSE") {
+        throw error;
+      }
+    }
+  }
+  throw lastError || new Error("Unable to allocate a local PatchForge API test port.");
 }
 
 async function request(baseUrl, pathName, options = {}) {
@@ -358,6 +391,117 @@ test("vendor and threat landscape intelligence remains source-bound", async () =
   });
 });
 
+test("public source feeds ingest CISA KEV as source-bound pending-review intelligence", async () => {
+  const sourceFeedClient = createSourceFeedClient({
+    fetchImpl: async (url) => {
+      assert.match(String(url), /known_exploited_vulnerabilities\.json/);
+      return jsonResponse({
+        catalogVersion: "2026.05.26",
+        dateReleased: "2026-05-26T17:02:17Z",
+        vulnerabilities: [{
+          cveID: "CVE-2026-PF-LIVE-001",
+          vendorProject: "Microsoft",
+          product: "Example Gateway",
+          vulnerabilityName: "Microsoft Example Gateway Authentication Bypass Vulnerability",
+          dateAdded: "2026-05-26",
+          shortDescription: "Example gateway contains an authentication bypass vulnerability.",
+          requiredAction: "Apply mitigations per vendor instructions or discontinue use if mitigations are unavailable.",
+          dueDate: "2026-05-29",
+          knownRansomwareCampaignUse: "Unknown",
+          notes: "https://example.invalid/advisory"
+        }]
+      });
+    }
+  });
+
+  await withApi(async (baseUrl) => {
+    const list = await request(baseUrl, "/api/patchforge/source-feeds", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(list.response.status, 200);
+    assert.ok(list.body.feeds.some((feed) => feed.feed_id === "cisa-kev" && feed.source_bound === true));
+
+    const refresh = await request(baseUrl, "/api/patchforge/source-feeds/refresh", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ feed_id: "cisa-kev", limit: 1 })
+    });
+    assert.equal(refresh.response.status, 202);
+    assert.equal(refresh.body.source_feed_run.records_ingested, 1);
+    assert.equal(refresh.body.source_feed_run.can_close_hard_gates_alone, false);
+
+    const detail = await request(baseUrl, "/api/patchforge/vulnerabilities/CVE-2026-PF-LIVE-001", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(detail.response.status, 200);
+    assert.equal(detail.body.vulnerability.known_exploited, true);
+    assert.equal(detail.body.vulnerability.review_state, "pending_review");
+    assert.equal(detail.body.vulnerability.sources[0].source_class, "kev_record");
+    assert.equal(detail.body.vulnerability.usable_evidence_sources.length, 0);
+
+    const landscape = await request(baseUrl, "/api/patchforge/threat-landscape/summary", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(landscape.body.metrics.active_exploitation_count, 1);
+  }, { sourceFeedClient });
+});
+
+test("FIRST EPSS source feed enriches existing CVEs without approving gates", async () => {
+  const sourceFeedClient = createSourceFeedClient({
+    fetchImpl: async (url) => {
+      assert.match(String(url), /api\.first\.org\/data\/v1\/epss/);
+      assert.match(String(url), /CVE-2026-PF-LIVE-002/);
+      return jsonResponse({
+        status: "OK",
+        total: 1,
+        data: [{
+          cve: "CVE-2026-PF-LIVE-002",
+          epss: "0.944320000",
+          percentile: "0.999860000",
+          date: "2026-05-26"
+        }]
+      });
+    }
+  });
+
+  await withApi(async (baseUrl) => {
+    await request(baseUrl, "/api/patchforge/vulnerabilities/ingest", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        vulnerability_id: "CVE-2026-PF-LIVE-002",
+        title: "Existing real queue CVE",
+        severity: "high",
+        sources: [{ source_record_id: "src-vendor-existing", source_class: "vendor_advisory", source_name: "vendor" }]
+      })
+    });
+
+    const refresh = await request(baseUrl, "/api/patchforge/source-feeds/refresh", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ feed_id: "first-epss", cve: "CVE-2026-PF-LIVE-002" })
+    });
+    assert.equal(refresh.response.status, 202);
+    assert.equal(refresh.body.source_feed_run.records_enriched, 1);
+    assert.equal(refresh.body.source_feed_run.review_required, true);
+
+    const detail = await request(baseUrl, "/api/patchforge/vulnerabilities/CVE-2026-PF-LIVE-002", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(detail.response.status, 200);
+    assert.ok(detail.body.vulnerability.sources.some((source) => source.source_class === "epss_signal"));
+    assert.equal(detail.body.vulnerability.usable_evidence_sources.length, 0);
+
+    const blocked = await request(baseUrl, "/api/patchforge/source-feeds/refresh", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ feed_id: "unknown-feed" })
+    });
+    assert.equal(blocked.response.status, 400);
+    assert.equal(blocked.body.error, "unsupported_source_feed");
+  }, { sourceFeedClient });
+});
+
 test("no exploit or patch deployment endpoints exist", async () => {
   await withApi(async (baseUrl) => {
     const deploy = await request(baseUrl, "/api/patchforge/patches/deploy", {
@@ -512,6 +656,16 @@ function fakeRuntimeClient() {
         },
         boundary: { no_patch_deployment: true, no_exploit_generation: true }
       };
+    }
+  };
+}
+
+function jsonResponse(body, status = 200) {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    async json() {
+      return body;
     }
   };
 }

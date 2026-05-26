@@ -1,0 +1,37 @@
+{
+  "product": "DIIaC PatchForge",
+  "baseline_id": "PF-AZ6",
+  "baseline_name": "Live public source intelligence and final Azure UI validation",
+  "baseline_date": "2026-05-26",
+  "target_url": "https://patchforge.diiac.io",
+  "api_url": "https://api.patchforge.diiac.io",
+  "remote_target": "neil9bailey/diiac-patchforge",
+  "release_state": "local_validated_pending_azure_update",
+  "azure_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+  "azure_resource_group": "rg-diiac-patchforge-prod",
+  "storage_state": "postgresql",
+  "auth_state": "entra_rbac_required",
+  "features": [
+    "CISA KEV public feed refresh",
+    "FIRST EPSS public feed enrichment",
+    "source-feed run ledger",
+    "source-bound pending-review evidence controls",
+    "Source Feeds UI page",
+    "Command Center source-feed status"
+  ],
+  "boundaries": {
+    "no_scanning": true,
+    "no_exploit_generation": true,
+    "no_patch_deployment": true,
+    "no_production_mutation_from_ui": true,
+    "no_autonomous_approval": true,
+    "no_autonomous_risk_acceptance": true
+  },
+  "validation": {
+    "local_tests": "pass",
+    "frontend_build": "pass",
+    "docker_build_smoke": "pass",
+    "azure_deployment": "pending",
+    "live_ui_validation": "pending"
+  }
+}

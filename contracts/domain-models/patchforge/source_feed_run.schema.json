@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/source_feed_run.schema.json",
+  "title": "PatchForge Source Feed Run",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "tenant_id",
+    "run_id",
+    "feed_id",
+    "feed_name",
+    "status",
+    "source_bound",
+    "review_required",
+    "advisory_only",
+    "can_close_hard_gates_alone",
+    "no_autonomous_approval",
+    "no_patch_deployment"
+  ],
+  "properties": {
+    "tenant_id": { "type": "string" },
+    "run_id": { "type": "string" },
+    "feed_id": { "type": "string" },
+    "feed_name": { "type": "string" },
+    "status": { "type": "string", "enum": ["completed", "blocked", "failed"] },
+    "source_url": { "type": "string" },
+    "records_seen": { "type": "integer", "minimum": 0 },
+    "records_matched": { "type": "integer", "minimum": 0 },
+    "records_ingested": { "type": "integer", "minimum": 0 },
+    "records_enriched": { "type": "integer", "minimum": 0 },
+    "source_bound": { "const": true },
+    "review_required": { "const": true },
+    "advisory_only": { "const": true },
+    "can_close_hard_gates_alone": { "const": false },
+    "no_autonomous_approval": { "const": true },
+    "no_patch_deployment": { "const": true },
+    "started_at": { "type": "string" },
+    "completed_at": { "type": "string" }
+  }
+}

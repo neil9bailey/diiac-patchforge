@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { authorizeRequest, createAuthConfigFromEnv } from "./auth.js";
 import { createPatchForgeStorage } from "./patchforge/storage.js";
+import { createSourceFeedClient } from "./patchforge/sourceFeeds.js";
 import { runSraTool } from "./sra/securityResearchAgent.js";
 
 const DEFAULT_PORT = Number(process.env.PORT || 8080);
@@ -51,6 +52,7 @@ export function createServer(options = {}) {
   const storage = options.storage || createPatchForgeStorage({ storageRoot: options.storageRoot });
   const authConfig = options.auth || createAuthConfigFromEnv();
   const runtimeClient = options.runtimeClient || createRuntimeClientFromEnv();
+  const sourceFeedClient = options.sourceFeedClient || createSourceFeedClient();
   const corsConfig = options.cors || createCorsConfigFromEnv();
 
   return http.createServer(async (req, res) => {
@@ -186,6 +188,47 @@ export function createServer(options = {}) {
 
       if (route === "GET /api/patchforge/dashboard/metrics") {
         return sendJson(res, 200, { ...(await storage.dashboardMetrics(tenantId)), tenant_context: baseTenantContext });
+      }
+
+      if (route === "GET /api/patchforge/source-feeds") {
+        const runs = await storage.list("source_feed_runs", tenantId);
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          feeds: sourceFeedClient.listFeeds(),
+          recent_runs: runs.slice(-20).reverse(),
+          boundary: {
+            source_bound: true,
+            review_required: true,
+            can_close_hard_gates_alone: false,
+            no_autonomous_approval: true,
+            no_scanner: true,
+            no_patch_deployment: true
+          }
+        });
+      }
+
+      if (route === "POST /api/patchforge/source-feeds/refresh") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        try {
+          const run = await sourceFeedClient.refresh({
+            storage,
+            tenantId: tenantContext.effective_tenant_id,
+            body: withLineage(body, tenantContext, authorization)
+          });
+          return sendJson(res, 202, {
+            tenant_id: tenantContext.effective_tenant_id,
+            tenant_context: tenantContext,
+            source_feed_run: run
+          });
+        } catch (error) {
+          return sendJson(res, error.code === "unsupported_source_feed" ? 400 : 502, {
+            error: error.code || "source_feed_refresh_failed",
+            message: error.message,
+            allowed_feeds: error.allowedFeeds || sourceFeedClient.listFeeds().map((feed) => feed.feed_id)
+          });
+        }
       }
 
       if (route === "GET /api/patchforge/decision-packs") {

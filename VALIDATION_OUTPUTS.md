@@ -1,8 +1,16 @@
-# PF-AZ5 Validation Outputs
+# PF-AZ6 Validation Outputs
 
 Date: 2026-05-26
 
-This file records PF-AZ5 validation commands and live rollout evidence. It is updated again after Azure deployment and live UI validation.
+This file records PF-AZ6 validation commands and rollout evidence. It will be updated again after Azure deployment and live UI validation.
+
+## PF-AZ6 Scope
+
+- Live CISA KEV public source feed refresh.
+- Live FIRST EPSS public source feed enrichment.
+- Source-feed run ledger.
+- UI Source Feeds page bound to protected live APIs.
+- Source-bound, pending-review, advisory-only controls for public intelligence.
 
 ## Pre-Flight
 
@@ -17,17 +25,18 @@ This file records PF-AZ5 validation commands and live rollout evidence. It is up
 - `node --check backend-api/auth.js`: PASS
 - `node --check backend-api/sra/securityResearchAgent.js`: PASS
 - `python -m pytest -q --basetemp .pytest_tmp`: PASS, 25 tests
-- `npm --prefix backend-api test`: PASS, 20 tests
-- `npm test`: PASS, 20 backend/SRA tests
-- `npm --prefix Frontend test`: PASS, 11 tests
+- `npm --prefix backend-api test`: PASS, 22 tests
+- `npm test`: PASS, 22 backend/SRA tests
+- `npm --prefix Frontend test`: PASS, 12 tests
 - `npm --prefix Frontend run build`: PASS
 - `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate_iac.ps1`: PASS
 - `az bicep build --file infra/bicep/main.bicep`: PASS
-- `docker build -f Frontend/Dockerfile -t diiac/patchforge-frontend:local Frontend`: PASS
-- `docker build -f backend-api/Dockerfile -t diiac/patchforge-bridge:local backend-api`: PASS
-- `docker build -f runtime/Dockerfile -t diiac/patchforge-runtime:local .`: PASS
-- Local signed pack verification: PASS
-- Local signed pack path: `F:\code\diiac\patchforge\artifacts\pfaz5-validation-pack`
+- `docker build -f Frontend/Dockerfile -t diiac/patchforge-frontend:pfaz6-local Frontend`: PASS
+- `docker build -f backend-api/Dockerfile -t diiac/patchforge-bridge:pfaz6-local backend-api`: PASS
+- `docker build -f runtime/Dockerfile -t diiac/patchforge-runtime:pfaz6-local .`: PASS
+- Local signed pack verification: not rerun in the PF-AZ6 pre-Azure gate; runtime signing path is unchanged from PF-AZ5 and live pack verification will be rerun after Azure rollout.
+
+PF-AZ6 Azure rollout status: pending after implementation commit and image push.
 
 ## Azure Rollout
 

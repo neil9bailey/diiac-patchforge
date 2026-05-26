@@ -12,6 +12,7 @@ const ROUTE_ROLES = [
   { method: "POST", pattern: /^\/api\/patchforge\/assets\/ingest$/, roles: ["PatchForge.TriageAnalyst", "PatchForge.Admin"] },
   { method: "POST", pattern: /^\/api\/patchforge\/services\/ingest$/, roles: ["PatchForge.TriageAnalyst", "PatchForge.Admin"] },
   { method: "POST", pattern: /^\/api\/patchforge\/agent-findings\/ingest$/, roles: ["PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.Admin"] },
+  { method: "POST", pattern: /^\/api\/patchforge\/source-feeds\/refresh$/, roles: ["PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.Admin"] },
   { method: "POST", pattern: /^\/api\/patchforge\/bayesian\//, roles: ["PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.Admin"] },
   { method: "POST", pattern: /^\/api\/patchforge\/vendors/, roles: ["PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.Admin"] },
   { method: "POST", pattern: /^\/api\/patchforge\/decision-packs\/generate$/, roles: ["PatchForge.SecurityLead", "PatchForge.CABApprover", "PatchForge.Admin"] },

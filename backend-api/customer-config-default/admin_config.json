@@ -36,6 +36,26 @@
       "review_required": true,
       "can_close_hard_gates_alone": false
     },
+    "integrations": {
+      "diiac_it_enabled": false,
+      "scanner_integrations": [],
+      "source_feeds": [
+        {
+          "feed_id": "cisa-kev",
+          "provider": "CISA",
+          "mode": "public_source_bound",
+          "enabled": true,
+          "review_required": true
+        },
+        {
+          "feed_id": "first-epss",
+          "provider": "FIRST",
+          "mode": "public_source_bound",
+          "enabled": true,
+          "review_required": true
+        }
+      ]
+    },
     "telemetry": {
       "health_checks_read_only": true,
       "azure_mutation_enabled": false

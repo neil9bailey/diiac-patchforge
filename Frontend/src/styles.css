@@ -341,6 +341,10 @@ nav {
   font-size: 1rem;
 }
 
+.compact-title {
+  margin-bottom: 8px;
+}
+
 .toolbar {
   display: flex;
   gap: 8px;
@@ -558,6 +562,12 @@ select {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 8px;
+}
+
+.source-feed-panel {
+  display: grid;
+  align-content: start;
+  gap: 8px;
 }
 
 .decision-tile,

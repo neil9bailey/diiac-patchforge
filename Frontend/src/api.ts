@@ -17,6 +17,8 @@ export type PatchForgeMetrics = {
   accepted_positive_evidence_sources: number;
   rejected_sources: number;
   signed_packs: number;
+  source_feed_runs?: number;
+  last_source_feed_run_at?: string | null;
 };
 
 export type BayesianAssessment = {
@@ -57,6 +59,40 @@ export type VendorProfile = {
   vendor_name: string;
   category: string;
   review_state?: string;
+};
+
+export type SourceFeed = {
+  feed_id: string;
+  feed_name: string;
+  source_class: string;
+  source_url: string;
+  provider: string;
+  authentication: string;
+  source_bound: boolean;
+  review_required: boolean;
+  can_close_hard_gates_alone: boolean;
+};
+
+export type SourceFeedRun = {
+  run_id: string;
+  feed_id: string;
+  feed_name: string;
+  status: string;
+  source_url?: string;
+  records_seen?: number;
+  records_matched?: number;
+  records_ingested?: number;
+  records_enriched?: number;
+  message?: string;
+  completed_at?: string;
+  source_bound?: boolean;
+  review_required?: boolean;
+  can_close_hard_gates_alone?: boolean;
+};
+
+export type SourceFeedState = {
+  feeds: SourceFeed[];
+  recent_runs: SourceFeedRun[];
 };
 
 export type VulnerabilityRecord = {
@@ -154,6 +190,8 @@ export type PatchForgeApi = {
   bayesianPriors(tenantId: string): Promise<Record<string, unknown>>;
   threatLandscapeSummary(tenantId: string): Promise<ThreatLandscapeSummary>;
   listVendors(tenantId: string): Promise<VendorProfile[]>;
+  sourceFeeds(tenantId: string): Promise<SourceFeedState>;
+  refreshSourceFeed(tenantId: string, payload: Record<string, unknown>): Promise<SourceFeedRun>;
   sraResearch(tenantId: string, path: string, payload: Record<string, unknown>): Promise<Record<string, unknown>>;
   adminHealth(tenantId: string): Promise<AdminHealth>;
   adminConfig(tenantId: string): Promise<AdminConfig>;
@@ -264,6 +302,20 @@ export function createPatchForgeApi(getAccessToken: () => Promise<string>, confi
     async listVendors(tenantId) {
       const body = await request<{ vendors: VendorProfile[] }>("/api/patchforge/vendors", tenantId);
       return body.vendors || [];
+    },
+    async sourceFeeds(tenantId) {
+      const body = await request<SourceFeedState>("/api/patchforge/source-feeds", tenantId);
+      return {
+        feeds: body.feeds || [],
+        recent_runs: body.recent_runs || []
+      };
+    },
+    async refreshSourceFeed(tenantId, payload) {
+      const body = await request<{ source_feed_run: SourceFeedRun }>("/api/patchforge/source-feeds/refresh", tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return body.source_feed_run;
     },
     async sraResearch(tenantId, path, payload) {
       return request<Record<string, unknown>>(path, tenantId, {

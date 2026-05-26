@@ -1,10 +1,12 @@
 # Current Release
 
-## DIIaC PatchForge PF-AZ5
+## DIIaC PatchForge PF-AZ6
 
-Release state: PF-AZ5 production intelligence hardening deployed to Azure and validated through the live UI as a signed-in PatchForge Admin user
+Release state: PF-AZ6 live public source intelligence implementation locally validated; Azure image rollout and final live UI validation pending
 
 Date: 2026-05-26
+
+PF-AZ5 remains the currently deployed Azure baseline until the PF-AZ6 images are pushed and Container Apps are updated.
 
 ## Scope
 
@@ -140,6 +142,13 @@ Included:
 - Microsoft Entra role UX in the frontend, including admin-control visibility gates
 - board-grade report sections for signed pack metadata, Bayesian advisory, vendor/threat context, source-pack/current-state separation, blockers, and boundary controls
 - signed decision-pack support for Bayesian, prior usage, prior proposal, vendor, threat landscape, and SRA artefacts
+- live public source intelligence feed API for CISA Known Exploited Vulnerabilities
+- live public source intelligence feed API for FIRST EPSS enrichment
+- source-feed run ledger with source-bound, pending-review, advisory-only controls
+- source-feed schemas for feed manifests and feed runs
+- source-feed UI page bound to live protected API calls
+- Command Center and utility rail source-feed status
+- backend and frontend tests for public source intelligence
 
 Excluded:
 
@@ -152,6 +161,8 @@ Excluded:
 - unreviewed AI or agent source truth claims
 
 PF-AZ5 Azure deployment, image tag, active revisions, and live browser validation evidence are recorded under `docs/release/evidence/2026-05-26-patchforge-pfaz5-intelligence-rollout/`.
+
+PF-AZ6 Azure rollout evidence will be recorded under `docs/release/evidence/2026-05-26-patchforge-pfaz6-live-source-intelligence/` after deployment.
 
 ## Runtime State
 

@@ -13,6 +13,7 @@ const COLLECTIONS = [
   "vendors",
   "vendor_advisories",
   "threat_signals",
+  "source_feed_runs",
   "audit_events"
 ];
 
@@ -27,6 +28,7 @@ const COLLECTION_ID_FIELDS = {
   vendors: "vendor_id",
   vendor_advisories: "advisory_id",
   threat_signals: "signal_id",
+  source_feed_runs: "run_id",
   audit_events: "audit_id"
 };
 
@@ -84,7 +86,22 @@ const DEFAULT_ADMIN_CONFIG = {
   integrations: {
     diiac_it_enabled: false,
     scanner_integrations: [],
-    source_feeds: []
+    source_feeds: [
+      {
+        feed_id: "cisa-kev",
+        provider: "CISA",
+        mode: "public_source_bound",
+        enabled: true,
+        review_required: true
+      },
+      {
+        feed_id: "first-epss",
+        provider: "FIRST",
+        mode: "public_source_bound",
+        enabled: true,
+        review_required: true
+      }
+    ]
   },
   signing: {
     trust_state: "dev-local",
@@ -189,7 +206,16 @@ export class PatchForgeJsonStorage {
 
   async append(collection, record) {
     const records = await this._read(collection);
-    records.push(record);
+    const idField = COLLECTION_ID_FIELDS[collection];
+    const recordId = idField ? record[idField] || record.id : null;
+    const existingIndex = recordId
+      ? records.findIndex((item) => item.tenant_id === record.tenant_id && String(item[idField] || item.id) === String(recordId))
+      : -1;
+    if (existingIndex >= 0) {
+      records[existingIndex] = record;
+    } else {
+      records.push(record);
+    }
     await this._write(collection, records);
     return record;
   }
@@ -411,6 +437,7 @@ export class PatchForgeJsonStorage {
     const vulnerabilities = await this.list("vulnerabilities", tenantId);
     const sources = await this.list("sources", tenantId);
     const now = Date.now();
+    const sourceFeedRuns = await this.list("source_feed_runs", tenantId);
 
     return {
       tenant_id: tenantId,
@@ -428,7 +455,9 @@ export class PatchForgeJsonStorage {
       pending_review: vulnerabilities.filter((item) => item.review_state === "pending_review").length,
       accepted_positive_evidence_sources: sources.filter((source) => isPositiveEvidence(source)).length,
       rejected_sources: sources.filter((source) => source.review_state === "rejected" || source.evidence_state === "rejected").length,
-      signed_packs: (await this.list("decision_packs", tenantId)).filter((pack) => pack.verification?.verified === true).length
+      signed_packs: (await this.list("decision_packs", tenantId)).filter((pack) => pack.verification?.verified === true).length,
+      source_feed_runs: sourceFeedRuns.length,
+      last_source_feed_run_at: sourceFeedRuns[sourceFeedRuns.length - 1]?.completed_at || null
     };
   }
 
@@ -478,6 +507,7 @@ export class PatchForgeJsonStorage {
         { name: "Runtime health", status: "ready", mode: "local" },
         { name: "SRA health", status: config.sra?.advisory_only ? "advisory" : "disabled", mode: "advisory-only" },
         { name: "MCP agent intake", status: config.agent_intelligence?.review_required ? "governed" : "disabled", mode: "agent-led-human-approved" },
+        { name: "Public source feeds", status: config.vendor_intelligence?.enabled ? "ready" : "disabled", mode: "CISA KEV / FIRST EPSS" },
         { name: "Worker health", status: "planned", mode: "not-deployed" },
         { name: "Scheduler health", status: "planned", mode: "not-deployed" },
         {

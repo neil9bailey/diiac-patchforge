@@ -5,6 +5,7 @@ Date: 2026-05-26
 | Gap | Status | Notes |
 | --- | --- | --- |
 | Live scanner integrations | Open | Product remains governance-only; no scanner connector is live unless separately integrated. |
+| Public source intelligence feeds | PF-AZ6 local validated, Azure rollout pending | CISA KEV and FIRST EPSS public feeds are implemented as source-bound pending-review inputs. Live Azure browser validation is pending. |
 | Patch deployment | Permanently excluded | PatchForge does not deploy patches or mutate production systems. |
 | Exploit generation | Permanently excluded | PatchForge does not generate exploit code or procedural exploit steps. |
 | Live prior mutation | Locked | Bayesian prior updates are dry-run/proposal-only. |

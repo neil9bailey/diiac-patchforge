@@ -36,6 +36,7 @@ import {
   PatchForgeApi,
   PatchForgeMetrics,
   ServiceRecord,
+  SourceFeedState,
   ThreatLandscapeSummary,
   VendorProfile,
   VulnerabilityRecord,
@@ -56,6 +57,7 @@ type PageKey =
   | "SRA Research"
   | "Evidence Catalogue"
   | "Decision Packs"
+  | "Source Feeds"
   | "Vendor & Threat Landscape"
   | "Admin";
 
@@ -79,6 +81,7 @@ type LiveState = {
   bayesian: BayesianAssessment | null;
   threatSummary: ThreatLandscapeSummary | null;
   vendors: VendorProfile[];
+  sourceFeedState: SourceFeedState;
   adminHealth: AdminHealth | null;
   adminConfig: AdminConfig;
 };
@@ -98,6 +101,7 @@ const navItems: NavItem[] = [
   { label: "SRA Research", icon: Radar },
   { label: "Evidence Catalogue", icon: Archive },
   { label: "Decision Packs", icon: FileCheck2 },
+  { label: "Source Feeds", icon: RefreshCw },
   { label: "Vendor & Threat Landscape", icon: Layers3 },
   { label: "Admin", icon: SlidersHorizontal }
 ];
@@ -188,7 +192,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
     setRefreshing(true);
     setOperationError(null);
     try {
-      const [metrics, vulnerabilities, assets, services, decisionPacks, threatSummary, vendors, adminHealth, adminConfig] = await Promise.all([
+      const [metrics, vulnerabilities, assets, services, decisionPacks, threatSummary, vendors, sourceFeedState, adminHealth, adminConfig] = await Promise.all([
         liveApi.metrics(tenantId),
         liveApi.listVulnerabilities(tenantId),
         liveApi.listAssets(tenantId),
@@ -196,10 +200,11 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         liveApi.listDecisionPacks(tenantId),
         liveApi.threatLandscapeSummary(tenantId),
         liveApi.listVendors(tenantId),
+        liveApi.sourceFeeds(tenantId),
         canReadAdmin ? liveApi.adminHealth(tenantId) : Promise.resolve(null),
         canReadAdmin ? liveApi.adminConfig(tenantId) : Promise.resolve({} as AdminConfig)
       ]);
-      setState({ metrics, vulnerabilities, assets, services, decisionPacks, threatSummary, vendors, bayesian: null, adminHealth, adminConfig });
+      setState({ metrics, vulnerabilities, assets, services, decisionPacks, threatSummary, vendors, sourceFeedState, bayesian: null, adminHealth, adminConfig });
       setSelectedVulnerabilityId((current) => current || vulnerabilities[0]?.vulnerability_id || "");
       const general = adminConfig.general as { environment?: string; governance_tier?: string } | undefined;
       setAdminEnvironment(general?.environment || config.environmentLabel);
@@ -318,6 +323,22 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
     }
   }
 
+  async function handleRefreshSourceFeed(feedId: string) {
+    setOperationMessage(null);
+    setOperationError(null);
+    try {
+      const payload: Record<string, unknown> = feedId === "cisa-kev"
+        ? { feed_id: feedId, limit: 5 }
+        : { feed_id: feedId, cve: selectedVulnerabilityId || state.vulnerabilities[0]?.vulnerability_id };
+      const run = await liveApi.refreshSourceFeed(tenantId, payload);
+      setOperationMessage(`${run.feed_name} ${run.status}: ${run.message || "source-bound refresh recorded."}`);
+      await loadLiveState();
+      setActivePage("Source Feeds");
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : "Source feed refresh failed.");
+    }
+  }
+
   async function handleExportPack(packId: string) {
     setOperationMessage(null);
     setOperationError(null);
@@ -403,6 +424,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 decisionPacks={state.decisionPacks}
                 bayesian={state.bayesian}
                 threatSummary={state.threatSummary}
+                sourceFeedState={state.sourceFeedState}
                 setActivePage={setActivePage}
               />
             )}
@@ -436,6 +458,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
             {activePage === "SRA Research" && <SraResearch onRun={handleSraResearch} result={sraResult} canWrite={canWrite} />}
             {activePage === "Evidence Catalogue" && <EvidenceCatalogue vulnerabilities={state.vulnerabilities} />}
             {activePage === "Decision Packs" && <DecisionPacks decisionPacks={state.decisionPacks} onExportPack={handleExportPack} />}
+            {activePage === "Source Feeds" && <SourceFeeds sourceFeedState={state.sourceFeedState} onRefresh={handleRefreshSourceFeed} canWrite={canWrite} />}
             {activePage === "Vendor & Threat Landscape" && <VendorThreatLandscape vendors={state.vendors} threatSummary={state.threatSummary} />}
             {activePage === "Admin" && (
               isAdmin ? <Admin
@@ -452,7 +475,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
           </section>
 
           <aside className="utility-rail" aria-label="PatchForge utility rail">
-            <UtilityRail session={session} metrics={state.metrics} decisionPacks={state.decisionPacks} adminHealth={state.adminHealth} />
+            <UtilityRail session={session} metrics={state.metrics} decisionPacks={state.decisionPacks} sourceFeedState={state.sourceFeedState} adminHealth={state.adminHealth} />
           </aside>
         </div>
       </section>
@@ -520,6 +543,7 @@ function CommandCenter({
   decisionPacks,
   bayesian,
   threatSummary,
+  sourceFeedState,
   setActivePage
 }: {
   metrics: PatchForgeMetrics;
@@ -527,6 +551,7 @@ function CommandCenter({
   decisionPacks: DecisionPackRecord[];
   bayesian: BayesianAssessment | null;
   threatSummary: ThreatLandscapeSummary | null;
+  sourceFeedState: SourceFeedState;
   setActivePage: (page: PageKey) => void;
 }) {
   const metricCards = [
@@ -535,7 +560,7 @@ function CommandCenter({
     { label: "Patch overdue", value: metrics.patch_overdue, tone: "warning", icon: Clock3 },
     { label: "Pending review", value: metrics.pending_review, tone: "steel", icon: ListFilter },
     { label: "Signed packs", value: metrics.signed_packs, tone: "trust", icon: FileCheck2 },
-    { label: "Threat signals", value: threatSummary?.metrics?.active_exploitation_count || 0, tone: "teal", icon: Radar }
+    { label: "Live source runs", value: metrics.source_feed_runs ?? sourceFeedState.recent_runs.length, tone: "teal", icon: RefreshCw }
   ];
   const topQueue = vulnerabilities.slice(0, 3);
 
@@ -554,9 +579,14 @@ function CommandCenter({
       <section className="wide-band">
         <div className="section-title">
           <h3>Top Governed Actions</h3>
-          <button type="button" className="action-button" onClick={() => setActivePage("Decision Workbench")}>
-            <ClipboardCheck size={16} aria-hidden /> Create Patch Decision
-          </button>
+          <div className="toolbar">
+            <button type="button" className="action-button" onClick={() => setActivePage("Source Feeds")}>
+              <RefreshCw size={16} aria-hidden /> Refresh Intelligence
+            </button>
+            <button type="button" className="action-button" onClick={() => setActivePage("Decision Workbench")}>
+              <ClipboardCheck size={16} aria-hidden /> Create Patch Decision
+            </button>
+          </div>
         </div>
         {topQueue.length ? (
           <ol className="action-list">
@@ -600,6 +630,17 @@ function CommandCenter({
         <div className="split-grid">
           <StatusLine label="Recommended posture" value={bayesian ? humanize(bayesian.recommended_governance_posture) : "Awaiting assessment"} tone="teal" />
           <StatusLine label="Deferral risk posterior" value={bayesian ? String(bayesian.deferral_risk_posterior) : "Not assessed"} tone="amber" />
+        </div>
+      </section>
+      <section className="wide-band">
+        <div className="section-title">
+          <h3>Live Source Intelligence</h3>
+          <span className="pill amber">Source-bound pending review</span>
+        </div>
+        <div className="split-grid">
+          <StatusLine label="Configured public feeds" value={String(sourceFeedState.feeds.length)} tone="steel" />
+          <StatusLine label="Known exploited advisories" value={String(threatSummary?.metrics?.active_exploitation_count || 0)} tone="amber" />
+          <StatusLine label="Latest refresh" value={sourceFeedState.recent_runs[0]?.completed_at ? new Date(sourceFeedState.recent_runs[0].completed_at).toLocaleString() : "No run yet"} tone="teal" />
         </div>
       </section>
     </>
@@ -937,6 +978,84 @@ function EvidenceCatalogue({ vulnerabilities }: { vulnerabilities: Vulnerability
   return <PageBand icon={BookOpenCheck} title="Evidence Catalogue" lines={[`${sourceCount} source-bound evidence references`, "Scanner, SRA, MCP, Mythos, and AGI-agent output require review", "Rejected sources cannot count as positive evidence"]} />;
 }
 
+function SourceFeeds({
+  sourceFeedState,
+  onRefresh,
+  canWrite
+}: {
+  sourceFeedState: SourceFeedState;
+  onRefresh: (feedId: string) => void;
+  canWrite: boolean;
+}) {
+  return (
+    <>
+      <div className="section-title">
+        <h3>Public Source Intelligence</h3>
+        <span className="pill amber">Live feeds, source-bound</span>
+      </div>
+
+      <div className="split-grid">
+        {sourceFeedState.feeds.map((feed) => (
+          <section className="data-band source-feed-panel" key={feed.feed_id}>
+            <div className="section-title compact-title">
+              <h3>{feed.feed_name}</h3>
+              <span className="pill steel">{feed.provider}</span>
+            </div>
+            <StatusLine label="Source class" value={humanize(feed.source_class)} tone="steel" />
+            <StatusLine label="Authentication" value={humanize(feed.authentication)} tone="teal" />
+            <StatusLine label="Review required" value={feed.review_required ? "Yes" : "No"} tone="amber" />
+            <StatusLine label="Can close gates" value={feed.can_close_hard_gates_alone ? "Yes" : "No"} tone="amber" />
+            <button type="button" className="action-button" onClick={() => onRefresh(feed.feed_id)} disabled={!canWrite}>
+              <RefreshCw size={16} aria-hidden /> Refresh {feed.provider}
+            </button>
+          </section>
+        ))}
+      </div>
+
+      <section className="wide-band">
+        <div className="section-title">
+          <h3>Recent Feed Runs</h3>
+          <span className="pill teal">{sourceFeedState.recent_runs.length} recorded</span>
+        </div>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Run</th>
+                <th>Feed</th>
+                <th>Status</th>
+                <th>Seen</th>
+                <th>Ingested</th>
+                <th>Enriched</th>
+                <th>Completed</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sourceFeedState.recent_runs.map((run) => (
+                <tr key={run.run_id}>
+                  <td>
+                    <strong>{run.run_id}</strong>
+                    <small>{run.message || "Source-bound refresh"}</small>
+                  </td>
+                  <td>{run.feed_name}</td>
+                  <td><span className={`pill ${run.status === "completed" ? "trust" : "amber"}`}>{humanize(run.status)}</span></td>
+                  <td>{run.records_seen ?? 0}</td>
+                  <td>{run.records_ingested ?? 0}</td>
+                  <td>{run.records_enriched ?? 0}</td>
+                  <td>{run.completed_at ? new Date(run.completed_at).toLocaleString() : "Not recorded"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {!sourceFeedState.recent_runs.length && <EmptyState title="No live source feed runs" detail="Refresh CISA KEV or FIRST EPSS to pull real public intelligence into the governed queue." />}
+        </div>
+      </section>
+
+      {!canWrite && <EmptyState title="Read-only role" detail="Source refresh actions require a PatchForge triage, security lead, or admin role." />}
+    </>
+  );
+}
+
 function VendorThreatLandscape({ vendors, threatSummary }: { vendors: VendorProfile[]; threatSummary: ThreatLandscapeSummary | null }) {
   return (
     <>
@@ -1130,11 +1249,13 @@ function UtilityRail({
   session,
   metrics,
   decisionPacks,
+  sourceFeedState,
   adminHealth
 }: {
   session: PatchForgeAuthSession;
   metrics: PatchForgeMetrics;
   decisionPacks: DecisionPackRecord[];
+  sourceFeedState: SourceFeedState;
   adminHealth: AdminHealth | null;
 }) {
   const signing = adminHealth?.checks?.find((check) => check.name === "Signing trust");
@@ -1150,6 +1271,11 @@ function UtilityRail({
         <h3>Queue</h3>
         <StatusLine label="Records" value={String(metrics.vulnerability_count)} tone="steel" />
         <StatusLine label="Pending review" value={String(metrics.pending_review)} tone="amber" />
+      </section>
+      <section className="rail-section">
+        <h3>Source Feeds</h3>
+        <StatusLine label="Feeds" value={String(sourceFeedState.feeds.length)} tone="steel" />
+        <StatusLine label="Runs" value={String(sourceFeedState.recent_runs.length)} tone="teal" />
       </section>
       <section className="rail-section">
         <h3>Signing Trust</h3>
@@ -1197,6 +1323,7 @@ function emptyLiveState(tenantId: string): LiveState {
     bayesian: null,
     threatSummary: null,
     vendors: [],
+    sourceFeedState: { feeds: [], recent_runs: [] },
     adminHealth: null,
     adminConfig: {}
   };

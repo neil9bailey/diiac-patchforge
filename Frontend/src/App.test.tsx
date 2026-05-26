@@ -79,6 +79,42 @@ function createApi(overrides: Partial<PatchForgeApi> = {}): PatchForgeApi {
       top_exposed_vendors: []
     })),
     listVendors: vi.fn(async () => [{ vendor_id: "microsoft", vendor_name: "Microsoft", category: "identity_endpoint_cloud", review_state: "reference_catalogue" }]),
+    sourceFeeds: vi.fn(async () => ({
+      feeds: [{
+        feed_id: "cisa-kev",
+        feed_name: "CISA Known Exploited Vulnerabilities Catalog",
+        source_class: "kev_record",
+        source_url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+        provider: "CISA",
+        authentication: "public",
+        source_bound: true,
+        review_required: true,
+        can_close_hard_gates_alone: false
+      }, {
+        feed_id: "first-epss",
+        feed_name: "FIRST Exploit Prediction Scoring System",
+        source_class: "epss_signal",
+        source_url: "https://api.first.org/data/v1/epss",
+        provider: "FIRST",
+        authentication: "public",
+        source_bound: true,
+        review_required: true,
+        can_close_hard_gates_alone: false
+      }],
+      recent_runs: []
+    })),
+    refreshSourceFeed: vi.fn(async () => ({
+      run_id: "run-cisa-kev-test",
+      feed_id: "cisa-kev",
+      feed_name: "CISA Known Exploited Vulnerabilities Catalog",
+      status: "completed",
+      records_seen: 1,
+      records_ingested: 1,
+      records_enriched: 0,
+      message: "1 CISA KEV records ingested as source-bound pending-review intelligence.",
+      completed_at: "2026-05-26T22:00:00Z",
+      can_close_hard_gates_alone: false
+    })),
     sraResearch: vi.fn(async () => ({ sra: { advisory_only: true, can_close_evidence_gates_alone: false } })),
     adminHealth: vi.fn(async () => ({
       tenant_id: "diiac.io",
@@ -146,6 +182,18 @@ describe("PatchForge shell", () => {
     expect(screen.getAllByRole("heading", { name: "Vendor & Threat Landscape" }).length).toBeGreaterThan(0);
     expect(screen.getByText("Microsoft")).toBeInTheDocument();
     expect(screen.getByText("Source-bound pending review")).toBeInTheDocument();
+  });
+
+  it("renders source feeds from API-bound state and refreshes live intelligence", async () => {
+    const api = createApi();
+    render(<App auth={auth} api={api} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Source Feeds" }));
+    expect(screen.getAllByRole("heading", { name: "Public Source Intelligence" }).length).toBeGreaterThan(0);
+    expect(screen.getByText("CISA Known Exploited Vulnerabilities Catalog")).toBeInTheDocument();
+    expect(screen.getByText("FIRST Exploit Prediction Scoring System")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Refresh CISA" }));
+    await waitFor(() => expect(api.refreshSourceFeed).toHaveBeenCalledWith("diiac.io", expect.objectContaining({ feed_id: "cisa-kev", limit: 5 })));
+    expect(await screen.findByText(/source-bound pending-review intelligence/)).toBeInTheDocument();
   });
 
   it("runs Bayesian advisory from the decision workbench", async () => {

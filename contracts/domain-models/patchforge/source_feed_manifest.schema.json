@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/source_feed_manifest.schema.json",
+  "title": "PatchForge Source Feed Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "feed_id",
+    "feed_name",
+    "source_class",
+    "source_url",
+    "provider",
+    "authentication",
+    "source_bound",
+    "review_required",
+    "can_close_hard_gates_alone"
+  ],
+  "properties": {
+    "feed_id": { "type": "string" },
+    "feed_name": { "type": "string" },
+    "source_class": {
+      "type": "string",
+      "enum": ["kev_record", "epss_signal", "vendor_advisory", "threat_intel_report"]
+    },
+    "source_url": { "type": "string", "format": "uri" },
+    "provider": { "type": "string" },
+    "authentication": { "type": "string", "enum": ["public", "configured_secret", "managed_identity"] },
+    "source_bound": { "const": true },
+    "review_required": { "const": true },
+    "can_close_hard_gates_alone": { "const": false }
+  }
+}
