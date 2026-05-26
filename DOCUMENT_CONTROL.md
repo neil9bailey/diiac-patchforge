@@ -11,9 +11,12 @@ DIIaC™ PatchForge
 | README.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | CURRENT_RELEASE.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | RELEASE_BASELINE_MANIFEST.json | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| CODEX_WORKING_MEMORY.md | DIIaC | Active | 0.1.0 | 2026-05-26 |
+| docs/product/PATCHFORGE_MASTER_WORKING_BRIEF.md | DIIaC | Active | 0.1.0 | 2026-05-26 |
 | docs/product/PATCHFORGE_PRODUCT_POSITIONING.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | docs/product/PATCHFORGE_PRODUCT_BOUNDARY.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | docs/epics/PATCHFORGE_IMPLEMENTATION_PROGRAMME.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| docs/epics/PATCHFORGE_EPIC_TRACKER.md | DIIaC | Active | 0.1.0 | 2026-05-26 |
 
 ## Change Control
 
