@@ -10,13 +10,17 @@ PatchForge is ready for deployment planning, container build smoke checks, CI va
 
 PatchForge is not yet ready for live production deployment until the user confirms:
 
-- Azure tenant ID
-- Azure subscription ID
-- target Azure region
+- final approval to use the discovered DIIaC tenant and subscription reference
 - production/non-production rollout order
 - Entra app registration and role assignment plan
 - Key Vault signing strategy
 - DNS ownership and cutover plan
+
+Known non-secret tenant planning values are recorded in `docs/deployment/PATCHFORGE_DIIAC_TENANT_REFERENCE.md`:
+
+- tenant ID: `67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da`
+- subscription ID: `9ae9da49-de67-443b-af55-ce9db33ed8f4`
+- region: `uksouth`
 
 ## Required Validation Before Deployment
 

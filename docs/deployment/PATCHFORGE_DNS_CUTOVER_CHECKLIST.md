@@ -11,6 +11,13 @@ Optional:
 - `api.patchforge.diiac.io`
 - `admin.patchforge.diiac.io`
 
+Observed sibling product domains:
+
+- `itservices.diiac.io`
+- `itservices-sim.diiac.io`
+
+Use these only as DNS operating references. PatchForge needs its own Container Apps custom domain bindings and certificates.
+
 ## Before DNS Update
 
 Confirm:
@@ -34,4 +41,3 @@ The exact records depend on the final Azure ingress model:
 - Azure Front Door endpoint with WAF
 
 Do not create these records until the production ingress target exists and has been validated.
-

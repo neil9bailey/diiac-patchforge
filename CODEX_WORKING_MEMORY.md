@@ -59,6 +59,17 @@ Keep local and remote in sync:
 
 Do not deploy Azure resources without explicit user instruction.
 
+Known non-secret DIIaC tenant reference:
+
+- Domain: `diiac.io`
+- Entra tenant ID: `67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da`
+- Azure subscription ID: `9ae9da49-de67-443b-af55-ce9db33ed8f4`
+- Azure subscription name: `Azure subscription 1`
+- Primary region: `uksouth`
+- Tenant reference doc: `docs/deployment/PATCHFORGE_DIIAC_TENANT_REFERENCE.md`
+
+PatchForge should keep dedicated resources in the same tenant/subscription unless the user directs otherwise. Do not reuse IT Services resource names, Key Vaults, or app registrations by default.
+
 Tell the user before:
 
 - Azure authentication or subscription access is required
@@ -85,4 +96,3 @@ Build the governance cage first:
 11. PF-E10 reports, demos, validation pack
 
 Do not build SRA first. SRA must live inside the governance boundary.
-

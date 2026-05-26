@@ -4,6 +4,13 @@
 
 Create or confirm an Entra app registration for PatchForge.
 
+Known DIIaC tenant:
+
+- domain: `diiac.io`
+- tenant ID: `67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da`
+
+IT Services currently records app ID `5d144b76-b9d4-4db7-af10-00c7c98037b9` for both API and UI configuration. PatchForge should use dedicated app registrations and app roles unless the user explicitly approves reuse.
+
 Recommended app roles:
 
 - `PatchForge.Reader`
@@ -40,4 +47,3 @@ Least privilege:
 ## Boundary
 
 No Entra role should grant autonomous risk acceptance or autonomous CAB approval.
-

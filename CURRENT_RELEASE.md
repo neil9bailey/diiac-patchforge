@@ -82,6 +82,7 @@ Included:
 - GitHub Actions CI
 - deployment readiness docs
 - Azure access checklist
+- DIIaC tenant and Azure subscription reference captured from IT Services repo
 - DNS cutover checklist
 - Entra RBAC checklist
 - production signing strategy
