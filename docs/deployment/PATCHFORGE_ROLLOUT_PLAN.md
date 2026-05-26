@@ -26,16 +26,14 @@ PF-E11 adds:
 
 ## Phase 2: Azure What-If
 
-Run only after tenant/subscription/region confirmation.
+Status: complete for production bootstrap on 2026-05-26.
 
-Expected command:
+Executed against:
 
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/plan_azure_deployment.ps1 `
-  -SubscriptionId <subscription-id> `
-  -TenantId <tenant-id> `
-  -RunWhatIf
-```
+- tenant ID `67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da`
+- subscription ID `9ae9da49-de67-443b-af55-ce9db33ed8f4`
+- region `uksouth`
+- resource group `rg-diiac-patchforge-prod`
 
 ## Phase 3: Non-Production Deployment
 
@@ -50,9 +48,27 @@ Recommended before production:
 
 ## Phase 4: Production Deployment
 
-Production deployment requires explicit approval.
+Status: bootstrap complete on 2026-05-26.
+
+Created:
+
+- dedicated resource group
+- managed identities
+- ACR
+- Storage containers
+- Key Vault
+- Log Analytics
+- Container Apps environment
+- UI, bridge, runtime, SRA, worker, and scheduler apps
+
+Still pending:
+
+- production PostgreSQL
+- Entra app registration and role enforcement hardening
+- production signing key creation
+- custom domains and TLS binding
+- DNS cutover
 
 ## Phase 5: DNS Cutover
 
-Update DNS only after production ingress and TLS are validated.
-
+Update DNS only after custom domain binding and TLS are validated.

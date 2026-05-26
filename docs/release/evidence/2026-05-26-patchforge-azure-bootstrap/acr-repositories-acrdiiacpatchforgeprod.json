@@ -1,0 +1,8 @@
+﻿[
+  "diiac/patchforge-bridge",
+  "diiac/patchforge-frontend",
+  "diiac/patchforge-ingest-worker",
+  "diiac/patchforge-runtime",
+  "diiac/patchforge-scheduler",
+  "diiac/patchforge-sra-agent"
+]

@@ -1,0 +1,18 @@
+﻿{
+    "timestamp_utc":  "2026-05-26T16:14:09.0407011Z",
+    "ui":  {
+               "url":  "https://ca-patchforge-ui-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io/",
+               "status_code":  200,
+               "content_length":  405
+           },
+    "bridge_health":  {
+                          "url":  "https://ca-patchforge-bridge-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io/health",
+                          "status_code":  200,
+                          "body":  "{\n  \"status\": \"ok\",\n  \"product\": \"DIIaC PatchForge\",\n  \"boundary\": \"governance-only\"\n}\n"
+                      },
+    "bridge_readiness":  {
+                             "url":  "https://ca-patchforge-bridge-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io/readiness",
+                             "status_code":  200,
+                             "body":  "{\n  \"status\": \"ready\",\n  \"storage\": \"local-json\",\n  \"tenant_required\": true\n}\n"
+                         }
+}

@@ -1,0 +1,530 @@
+﻿[
+  {
+    "changedTime": "2026-05-26T16:12:29.031026+00:00",
+    "createdTime": "2026-05-26T16:02:28.968088+00:00",
+    "extendedLocation": null,
+    "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-sra-prod",
+    "identity": null,
+    "kind": null,
+    "location": "uksouth",
+    "managedBy": null,
+    "name": "id-patchforge-sra-prod",
+    "plan": null,
+    "properties": null,
+    "provisioningState": "Succeeded",
+    "resourceGroup": "rg-diiac-patchforge-prod",
+    "sku": null,
+    "tags": {
+      "boundary": "governance-only",
+      "environment": "prod",
+      "managedBy": "bicep",
+      "owner": "DIIaC",
+      "product": "DIIaC PatchForge"
+    },
+    "type": "Microsoft.ManagedIdentity/userAssignedIdentities"
+  },
+  {
+    "changedTime": "2026-05-26T16:12:29.797942+00:00",
+    "createdTime": "2026-05-26T16:02:28.975536+00:00",
+    "extendedLocation": null,
+    "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-worker-prod",
+    "identity": null,
+    "kind": null,
+    "location": "uksouth",
+    "managedBy": null,
+    "name": "id-patchforge-worker-prod",
+    "plan": null,
+    "properties": null,
+    "provisioningState": "Succeeded",
+    "resourceGroup": "rg-diiac-patchforge-prod",
+    "sku": null,
+    "tags": {
+      "boundary": "governance-only",
+      "environment": "prod",
+      "managedBy": "bicep",
+      "owner": "DIIaC",
+      "product": "DIIaC PatchForge"
+    },
+    "type": "Microsoft.ManagedIdentity/userAssignedIdentities"
+  },
+  {
+    "changedTime": "2026-05-26T16:12:29.077905+00:00",
+    "createdTime": "2026-05-26T16:02:28.973502+00:00",
+    "extendedLocation": null,
+    "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-runtime-prod",
+    "identity": null,
+    "kind": null,
+    "location": "uksouth",
+    "managedBy": null,
+    "name": "id-patchforge-runtime-prod",
+    "plan": null,
+    "properties": null,
+    "provisioningState": "Succeeded",
+    "resourceGroup": "rg-diiac-patchforge-prod",
+    "sku": null,
+    "tags": {
+      "boundary": "governance-only",
+      "environment": "prod",
+      "managedBy": "bicep",
+      "owner": "DIIaC",
+      "product": "DIIaC PatchForge"
+    },
+    "type": "Microsoft.ManagedIdentity/userAssignedIdentities"
+  },
+  {
+    "changedTime": "2026-05-26T16:12:29.166416+00:00",
+    "createdTime": "2026-05-26T16:02:28.987901+00:00",
+    "extendedLocation": null,
+    "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-bridge-prod",
+    "identity": null,
+    "kind": null,
+    "location": "uksouth",
+    "managedBy": null,
+    "name": "id-patchforge-bridge-prod",
+    "plan": null,
+    "properties": null,
+    "provisioningState": "Succeeded",
+    "resourceGroup": "rg-diiac-patchforge-prod",
+    "sku": null,
+    "tags": {
+      "boundary": "governance-only",
+      "environment": "prod",
+      "managedBy": "bicep",
+      "owner": "DIIaC",
+      "product": "DIIaC PatchForge"
+    },
+    "type": "Microsoft.ManagedIdentity/userAssignedIdentities"
+  },
+  {
+    "changedTime": "2026-05-26T16:12:29.673563+00:00",
+    "createdTime": "2026-05-26T16:02:29.032813+00:00",
+    "extendedLocation": null,
+    "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-ui-prod",
+    "identity": null,
+    "kind": null,
+    "location": "uksouth",
+    "managedBy": null,
+    "name": "id-patchforge-ui-prod",
+    "plan": null,
+    "properties": null,
+    "provisioningState": "Succeeded",
+    "resourceGroup": "rg-diiac-patchforge-prod",
+    "sku": null,
+    "tags": {
+      "boundary": "governance-only",
+      "environment": "prod",
+      "managedBy": "bicep",
+      "owner": "DIIaC",
+      "product": "DIIaC PatchForge"
+    },
+    "type": "Microsoft.ManagedIdentity/userAssignedIdentities"
+  },
+  {
+    "changedTime": "2026-05-26T16:10:37.257999+00:00",
+    "createdTime": "2026-05-26T16:02:29.325921+00:00",
+    "extendedLocation": null,
+    "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.OperationalInsights/workspaces/law-diiac-patchforge-prod",
+    "identity": null,
+    "kind": null,
+    "location": "uksouth",
+    "managedBy": null,
+    "name": "law-diiac-patchforge-prod",
+    "plan": null,
+    "properties": null,
+    "provisioningState": "Succeeded",
+    "resourceGroup": "rg-diiac-patchforge-prod",
+    "sku": null,
+    "tags": {
+      "boundary": "governance-only",
+      "environment": "prod",
+      "managedBy": "bicep",
+      "owner": "DIIaC",
+      "product": "DIIaC PatchForge"
+    },
+    "type": "Microsoft.OperationalInsights/workspaces"
+  },
+  {
+    "changedTime": "2026-05-26T16:10:21.226678+00:00",
+    "createdTime": "2026-05-26T16:02:34.298484+00:00",
+    "extendedLocation": null,
+    "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01",
+    "identity": null,
+    "kind": "StorageV2",
+    "location": "uksouth",
+    "managedBy": null,
+    "name": "stdiiacpatchforgeprod01",
+    "plan": null,
+    "properties": null,
+    "provisioningState": "Succeeded",
+    "resourceGroup": "rg-diiac-patchforge-prod",
+    "sku": {
+      "capacity": null,
+      "family": null,
+      "model": null,
+      "name": "Standard_LRS",
+      "size": null,
+      "tier": "Standard"
+    },
+    "tags": {
+      "boundary": "governance-only",
+      "environment": "prod",
+      "managedBy": "bicep",
+      "owner": "DIIaC",
+      "product": "DIIaC PatchForge"
+    },
+    "type": "Microsoft.Storage/storageAccounts"
+  },
+  {
+    "changedTime": "2026-05-26T16:12:35.037278+00:00",
+    "createdTime": "2026-05-26T16:02:34.725691+00:00",
+    "extendedLocation": null,
+    "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.KeyVault/vaults/kv-diiac-patchforge-prod",
+    "identity": null,
+    "kind": null,
+    "location": "uksouth",
+    "managedBy": null,
+    "name": "kv-diiac-patchforge-prod",
+    "plan": null,
+    "properties": null,
+    "provisioningState": "Succeeded",
+    "resourceGroup": "rg-diiac-patchforge-prod",
+    "sku": null,
+    "tags": {
+      "boundary": "governance-only",
+      "environment": "prod",
+      "managedBy": "bicep",
+      "owner": "DIIaC",
+      "product": "DIIaC PatchForge"
+    },
+    "type": "Microsoft.KeyVault/vaults"
+  },
+  {
+    "changedTime": "2026-05-26T16:10:21.796867+00:00",
+    "createdTime": "2026-05-26T16:06:47.743864+00:00",
+    "extendedLocation": null,
+    "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ContainerRegistry/registries/acrdiiacpatchforgeprod",
+    "identity": null,
+    "kind": null,
+    "location": "uksouth",
+    "managedBy": null,
+    "name": "acrdiiacpatchforgeprod",
+    "plan": null,
+    "properties": null,
+    "provisioningState": "Succeeded",
+    "resourceGroup": "rg-diiac-patchforge-prod",
+    "sku": {
+      "capacity": null,
+      "family": null,
+      "model": null,
+      "name": "Basic",
+      "size": null,
+      "tier": "Basic"
+    },
+    "systemData": {
+      "createdAt": "2026-05-26T16:06:47.7643985Z",
+      "createdBy": "nbailey@diiac.io",
+      "createdByType": "User",
+      "lastModifiedAt": "2026-05-26T16:10:21.5156533Z",
+      "lastModifiedBy": "nbailey@diiac.io",
+      "lastModifiedByType": "User"
+    },
+    "tags": {
+      "boundary": "governance-only",
+      "environment": "prod",
+      "managedBy": "bicep",
+      "owner": "DIIaC",
+      "product": "DIIaC PatchForge"
+    },
+    "type": "Microsoft.ContainerRegistry/registries"
+  },
+  {
+    "changedTime": "2026-05-26T16:11:34.188296+00:00",
+    "createdTime": "2026-05-26T16:10:42.149624+00:00",
+    "extendedLocation": null,
+    "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/managedEnvironments/acae-diiac-patchforge-prod",
+    "identity": null,
+    "kind": null,
+    "location": "uksouth",
+    "managedBy": null,
+    "name": "acae-diiac-patchforge-prod",
+    "plan": null,
+    "properties": null,
+    "provisioningState": "Succeeded",
+    "resourceGroup": "rg-diiac-patchforge-prod",
+    "sku": null,
+    "systemData": {
+      "createdAt": "2026-05-26T16:10:42.1718773Z",
+      "createdBy": "nbailey@diiac.io",
+      "createdByType": "User",
+      "lastModifiedAt": "2026-05-26T16:10:42.1718773Z",
+      "lastModifiedBy": "nbailey@diiac.io",
+      "lastModifiedByType": "User"
+    },
+    "tags": {
+      "boundary": "governance-only",
+      "environment": "prod",
+      "managedBy": "bicep",
+      "owner": "DIIaC",
+      "product": "DIIaC PatchForge"
+    },
+    "type": "Microsoft.App/managedEnvironments"
+  },
+  {
+    "changedTime": "2026-05-26T16:11:49.922777+00:00",
+    "createdTime": "2026-05-26T16:11:33.983882+00:00",
+    "extendedLocation": null,
+    "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/containerApps/ca-patchforge-worker-prod",
+    "identity": {
+      "principalId": null,
+      "tenantId": null,
+      "type": "UserAssigned",
+      "userAssignedIdentities": {
+        "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourcegroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-worker-prod": {
+          "clientId": "51ed854c-bc9a-403b-b452-38cb074eea46",
+          "principalId": "845bb434-c6c9-4cef-90ca-736d723a11b7"
+        }
+      }
+    },
+    "kind": null,
+    "location": "uksouth",
+    "managedBy": null,
+    "name": "ca-patchforge-worker-prod",
+    "plan": null,
+    "properties": null,
+    "provisioningState": "Succeeded",
+    "resourceGroup": "rg-diiac-patchforge-prod",
+    "sku": null,
+    "systemData": {
+      "createdAt": "2026-05-26T16:11:33.9966324Z",
+      "createdBy": "nbailey@diiac.io",
+      "createdByType": "User",
+      "lastModifiedAt": "2026-05-26T16:11:33.9966324Z",
+      "lastModifiedBy": "nbailey@diiac.io",
+      "lastModifiedByType": "User"
+    },
+    "tags": {
+      "boundary": "governance-only",
+      "component": "ingest-export-worker",
+      "environment": "prod",
+      "managedBy": "bicep",
+      "owner": "DIIaC",
+      "product": "DIIaC PatchForge"
+    },
+    "type": "Microsoft.App/containerApps"
+  },
+  {
+    "changedTime": "2026-05-26T16:11:49.772810+00:00",
+    "createdTime": "2026-05-26T16:11:33.984111+00:00",
+    "extendedLocation": null,
+    "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/containerApps/ca-patchforge-bridge-prod",
+    "identity": {
+      "principalId": null,
+      "tenantId": null,
+      "type": "UserAssigned",
+      "userAssignedIdentities": {
+        "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourcegroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-bridge-prod": {
+          "clientId": "5d6d92eb-e3da-41cb-951d-5bbe852f870f",
+          "principalId": "811fac36-db22-409c-be1e-3754e02318cc"
+        }
+      }
+    },
+    "kind": null,
+    "location": "uksouth",
+    "managedBy": null,
+    "name": "ca-patchforge-bridge-prod",
+    "plan": null,
+    "properties": null,
+    "provisioningState": "Succeeded",
+    "resourceGroup": "rg-diiac-patchforge-prod",
+    "sku": null,
+    "systemData": {
+      "createdAt": "2026-05-26T16:11:33.9966324Z",
+      "createdBy": "nbailey@diiac.io",
+      "createdByType": "User",
+      "lastModifiedAt": "2026-05-26T16:11:33.9966324Z",
+      "lastModifiedBy": "nbailey@diiac.io",
+      "lastModifiedByType": "User"
+    },
+    "tags": {
+      "boundary": "governance-only",
+      "component": "bridge-api",
+      "environment": "prod",
+      "managedBy": "bicep",
+      "owner": "DIIaC",
+      "product": "DIIaC PatchForge"
+    },
+    "type": "Microsoft.App/containerApps"
+  },
+  {
+    "changedTime": "2026-05-26T16:11:49.508857+00:00",
+    "createdTime": "2026-05-26T16:11:33.985232+00:00",
+    "extendedLocation": null,
+    "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/containerApps/ca-patchforge-ui-prod",
+    "identity": {
+      "principalId": null,
+      "tenantId": null,
+      "type": "UserAssigned",
+      "userAssignedIdentities": {
+        "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourcegroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-ui-prod": {
+          "clientId": "bfe97bcf-de61-4349-844f-d1fee1403d42",
+          "principalId": "178e6987-cc7a-445f-8020-0f2424e79b45"
+        }
+      }
+    },
+    "kind": null,
+    "location": "uksouth",
+    "managedBy": null,
+    "name": "ca-patchforge-ui-prod",
+    "plan": null,
+    "properties": null,
+    "provisioningState": "Succeeded",
+    "resourceGroup": "rg-diiac-patchforge-prod",
+    "sku": null,
+    "systemData": {
+      "createdAt": "2026-05-26T16:11:34.0122591Z",
+      "createdBy": "nbailey@diiac.io",
+      "createdByType": "User",
+      "lastModifiedAt": "2026-05-26T16:11:34.0122591Z",
+      "lastModifiedBy": "nbailey@diiac.io",
+      "lastModifiedByType": "User"
+    },
+    "tags": {
+      "boundary": "governance-only",
+      "component": "frontend",
+      "environment": "prod",
+      "managedBy": "bicep",
+      "owner": "DIIaC",
+      "product": "DIIaC PatchForge"
+    },
+    "type": "Microsoft.App/containerApps"
+  },
+  {
+    "changedTime": "2026-05-26T16:11:49.835311+00:00",
+    "createdTime": "2026-05-26T16:11:33.998576+00:00",
+    "extendedLocation": null,
+    "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/containerApps/ca-patchforge-scheduler-prod",
+    "identity": {
+      "principalId": null,
+      "tenantId": null,
+      "type": "UserAssigned",
+      "userAssignedIdentities": {
+        "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourcegroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-worker-prod": {
+          "clientId": "51ed854c-bc9a-403b-b452-38cb074eea46",
+          "principalId": "845bb434-c6c9-4cef-90ca-736d723a11b7"
+        }
+      }
+    },
+    "kind": null,
+    "location": "uksouth",
+    "managedBy": null,
+    "name": "ca-patchforge-scheduler-prod",
+    "plan": null,
+    "properties": null,
+    "provisioningState": "Succeeded",
+    "resourceGroup": "rg-diiac-patchforge-prod",
+    "sku": null,
+    "systemData": {
+      "createdAt": "2026-05-26T16:11:34.0122591Z",
+      "createdBy": "nbailey@diiac.io",
+      "createdByType": "User",
+      "lastModifiedAt": "2026-05-26T16:11:34.0122591Z",
+      "lastModifiedBy": "nbailey@diiac.io",
+      "lastModifiedByType": "User"
+    },
+    "tags": {
+      "boundary": "governance-only",
+      "component": "scheduler",
+      "environment": "prod",
+      "managedBy": "bicep",
+      "owner": "DIIaC",
+      "product": "DIIaC PatchForge"
+    },
+    "type": "Microsoft.App/containerApps"
+  },
+  {
+    "changedTime": "2026-05-26T16:11:50.841348+00:00",
+    "createdTime": "2026-05-26T16:11:34.014761+00:00",
+    "extendedLocation": null,
+    "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/containerApps/ca-patchforge-sra-prod",
+    "identity": {
+      "principalId": null,
+      "tenantId": null,
+      "type": "UserAssigned",
+      "userAssignedIdentities": {
+        "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourcegroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-sra-prod": {
+          "clientId": "6631a621-19e7-4629-bcf5-2ec99d5f0676",
+          "principalId": "ddabbaaa-dd6f-4786-985b-c7df7585ad7a"
+        }
+      }
+    },
+    "kind": null,
+    "location": "uksouth",
+    "managedBy": null,
+    "name": "ca-patchforge-sra-prod",
+    "plan": null,
+    "properties": null,
+    "provisioningState": "Succeeded",
+    "resourceGroup": "rg-diiac-patchforge-prod",
+    "sku": null,
+    "systemData": {
+      "createdAt": "2026-05-26T16:11:34.0278835Z",
+      "createdBy": "nbailey@diiac.io",
+      "createdByType": "User",
+      "lastModifiedAt": "2026-05-26T16:11:34.0278835Z",
+      "lastModifiedBy": "nbailey@diiac.io",
+      "lastModifiedByType": "User"
+    },
+    "tags": {
+      "boundary": "governance-only",
+      "component": "sra-advisory-only",
+      "environment": "prod",
+      "managedBy": "bicep",
+      "owner": "DIIaC",
+      "product": "DIIaC PatchForge"
+    },
+    "type": "Microsoft.App/containerApps"
+  },
+  {
+    "changedTime": "2026-05-26T16:11:50.360481+00:00",
+    "createdTime": "2026-05-26T16:11:34.028682+00:00",
+    "extendedLocation": null,
+    "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/containerApps/ca-patchforge-runtime-prod",
+    "identity": {
+      "principalId": null,
+      "tenantId": null,
+      "type": "UserAssigned",
+      "userAssignedIdentities": {
+        "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourcegroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-runtime-prod": {
+          "clientId": "c149eac8-fce9-4ab4-ad23-9f5348f3a673",
+          "principalId": "12b0c001-518d-4b6f-95f7-9865c1731f59"
+        }
+      }
+    },
+    "kind": null,
+    "location": "uksouth",
+    "managedBy": null,
+    "name": "ca-patchforge-runtime-prod",
+    "plan": null,
+    "properties": null,
+    "provisioningState": "Succeeded",
+    "resourceGroup": "rg-diiac-patchforge-prod",
+    "sku": null,
+    "systemData": {
+      "createdAt": "2026-05-26T16:11:34.0435101Z",
+      "createdBy": "nbailey@diiac.io",
+      "createdByType": "User",
+      "lastModifiedAt": "2026-05-26T16:11:34.0435101Z",
+      "lastModifiedBy": "nbailey@diiac.io",
+      "lastModifiedByType": "User"
+    },
+    "tags": {
+      "boundary": "governance-only",
+      "component": "runtime-governance",
+      "environment": "prod",
+      "managedBy": "bicep",
+      "owner": "DIIaC",
+      "product": "DIIaC PatchForge"
+    },
+    "type": "Microsoft.App/containerApps"
+  }
+]

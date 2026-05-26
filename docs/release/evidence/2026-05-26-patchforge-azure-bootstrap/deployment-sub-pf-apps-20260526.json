@@ -1,0 +1,620 @@
+﻿{
+  "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/providers/Microsoft.Resources/deployments/pf-apps-20260526",
+  "location": "uksouth",
+  "name": "pf-apps-20260526",
+  "properties": {
+    "correlationId": "04a36d1f-4d23-45fe-aa2a-e1eb22cb4438",
+    "debugSetting": null,
+    "dependencies": [
+      {
+        "dependsOn": [
+          {
+            "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod",
+            "resourceName": "rg-diiac-patchforge-prod",
+            "resourceType": "Microsoft.Resources/resourceGroups"
+          }
+        ],
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Resources/deployments/patchforge-identities",
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceName": "patchforge-identities",
+        "resourceType": "Microsoft.Resources/deployments"
+      },
+      {
+        "dependsOn": [
+          {
+            "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod",
+            "resourceName": "rg-diiac-patchforge-prod",
+            "resourceType": "Microsoft.Resources/resourceGroups"
+          }
+        ],
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Resources/deployments/patchforge-monitoring",
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceName": "patchforge-monitoring",
+        "resourceType": "Microsoft.Resources/deployments"
+      },
+      {
+        "dependsOn": [
+          {
+            "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Resources/deployments/patchforge-identities",
+            "resourceGroup": "rg-diiac-patchforge-prod",
+            "resourceName": "patchforge-identities",
+            "resourceType": "Microsoft.Resources/deployments"
+          },
+          {
+            "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod",
+            "resourceName": "rg-diiac-patchforge-prod",
+            "resourceType": "Microsoft.Resources/resourceGroups"
+          }
+        ],
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Resources/deployments/patchforge-registry",
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceName": "patchforge-registry",
+        "resourceType": "Microsoft.Resources/deployments"
+      },
+      {
+        "dependsOn": [
+          {
+            "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Resources/deployments/patchforge-identities",
+            "resourceGroup": "rg-diiac-patchforge-prod",
+            "resourceName": "patchforge-identities",
+            "resourceType": "Microsoft.Resources/deployments"
+          },
+          {
+            "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod",
+            "resourceName": "rg-diiac-patchforge-prod",
+            "resourceType": "Microsoft.Resources/resourceGroups"
+          }
+        ],
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Resources/deployments/patchforge-storage",
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceName": "patchforge-storage",
+        "resourceType": "Microsoft.Resources/deployments"
+      },
+      {
+        "dependsOn": [
+          {
+            "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Resources/deployments/patchforge-identities",
+            "resourceGroup": "rg-diiac-patchforge-prod",
+            "resourceName": "patchforge-identities",
+            "resourceType": "Microsoft.Resources/deployments"
+          },
+          {
+            "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod",
+            "resourceName": "rg-diiac-patchforge-prod",
+            "resourceType": "Microsoft.Resources/resourceGroups"
+          }
+        ],
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Resources/deployments/patchforge-keyvault",
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceName": "patchforge-keyvault",
+        "resourceType": "Microsoft.Resources/deployments"
+      },
+      {
+        "dependsOn": [
+          {
+            "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod",
+            "resourceName": "rg-diiac-patchforge-prod",
+            "resourceType": "Microsoft.Resources/resourceGroups"
+          }
+        ],
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Resources/deployments/patchforge-database",
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceName": "patchforge-database",
+        "resourceType": "Microsoft.Resources/deployments"
+      },
+      {
+        "dependsOn": [
+          {
+            "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Resources/deployments/patchforge-database",
+            "resourceGroup": "rg-diiac-patchforge-prod",
+            "resourceName": "patchforge-database",
+            "resourceType": "Microsoft.Resources/deployments"
+          },
+          {
+            "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Resources/deployments/patchforge-identities",
+            "resourceGroup": "rg-diiac-patchforge-prod",
+            "resourceName": "patchforge-identities",
+            "resourceType": "Microsoft.Resources/deployments"
+          },
+          {
+            "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Resources/deployments/patchforge-keyvault",
+            "resourceGroup": "rg-diiac-patchforge-prod",
+            "resourceName": "patchforge-keyvault",
+            "resourceType": "Microsoft.Resources/deployments"
+          },
+          {
+            "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Resources/deployments/patchforge-monitoring",
+            "resourceGroup": "rg-diiac-patchforge-prod",
+            "resourceName": "patchforge-monitoring",
+            "resourceType": "Microsoft.Resources/deployments"
+          },
+          {
+            "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod",
+            "resourceName": "rg-diiac-patchforge-prod",
+            "resourceType": "Microsoft.Resources/resourceGroups"
+          },
+          {
+            "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Resources/deployments/patchforge-registry",
+            "resourceGroup": "rg-diiac-patchforge-prod",
+            "resourceName": "patchforge-registry",
+            "resourceType": "Microsoft.Resources/deployments"
+          },
+          {
+            "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Resources/deployments/patchforge-storage",
+            "resourceGroup": "rg-diiac-patchforge-prod",
+            "resourceName": "patchforge-storage",
+            "resourceType": "Microsoft.Resources/deployments"
+          },
+          {
+            "actionName": "listOutputsWithSecureValues",
+            "apiVersion": "2025-04-01",
+            "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Resources/deployments/patchforge-monitoring",
+            "resourceGroup": "rg-diiac-patchforge-prod",
+            "resourceName": "patchforge-monitoring",
+            "resourceType": "Microsoft.Resources/deployments"
+          }
+        ],
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Resources/deployments/patchforge-container-apps",
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceName": "patchforge-container-apps",
+        "resourceType": "Microsoft.Resources/deployments"
+      }
+    ],
+    "diagnostics": null,
+    "duration": "PT1M38.4675977S",
+    "error": null,
+    "extensions": [],
+    "mode": "Incremental",
+    "onErrorDeployment": null,
+    "outputResources": [
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod",
+        "identifiers": null,
+        "resourceType": "Microsoft.Resources/resourceGroups"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/containerApps/ca-patchforge-bridge-prod",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.App/containerApps"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/containerApps/ca-patchforge-runtime-prod",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.App/containerApps"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/containerApps/ca-patchforge-scheduler-prod",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.App/containerApps"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/containerApps/ca-patchforge-sra-prod",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.App/containerApps"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/containerApps/ca-patchforge-ui-prod",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.App/containerApps"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/containerApps/ca-patchforge-worker-prod",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.App/containerApps"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/managedEnvironments/acae-diiac-patchforge-prod",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.App/managedEnvironments"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ContainerRegistry/registries/acrdiiacpatchforgeprod",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.ContainerRegistry/registries"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ContainerRegistry/registries/acrdiiacpatchforgeprod/providers/Microsoft.Authorization/roleAssignments/1f417c2c-6bad-50c2-b3dc-60d04727b767",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.Authorization/roleAssignments"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ContainerRegistry/registries/acrdiiacpatchforgeprod/providers/Microsoft.Authorization/roleAssignments/25a61e19-6893-51a7-8c10-aafd6a79f989",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.Authorization/roleAssignments"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ContainerRegistry/registries/acrdiiacpatchforgeprod/providers/Microsoft.Authorization/roleAssignments/6349ea05-05cf-51f6-abcb-a56773e6e1a2",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.Authorization/roleAssignments"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ContainerRegistry/registries/acrdiiacpatchforgeprod/providers/Microsoft.Authorization/roleAssignments/74ae04d8-0243-581f-8381-c90e93edcbd3",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.Authorization/roleAssignments"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ContainerRegistry/registries/acrdiiacpatchforgeprod/providers/Microsoft.Authorization/roleAssignments/97ae3ce3-266e-5b58-ac05-044059317ac5",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.Authorization/roleAssignments"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.KeyVault/vaults/kv-diiac-patchforge-prod",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.KeyVault/vaults"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.KeyVault/vaults/kv-diiac-patchforge-prod/providers/Microsoft.Authorization/roleAssignments/6dada84e-d689-5b6e-9f4d-e2359d7e7be5",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.Authorization/roleAssignments"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.KeyVault/vaults/kv-diiac-patchforge-prod/providers/Microsoft.Authorization/roleAssignments/b9e31b5c-669b-5ee9-861d-6ab2cde377fb",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.Authorization/roleAssignments"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.KeyVault/vaults/kv-diiac-patchforge-prod/providers/Microsoft.Authorization/roleAssignments/ba3ff4b5-fa1d-574b-bcd3-5f6bc92fe473",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.Authorization/roleAssignments"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.KeyVault/vaults/kv-diiac-patchforge-prod/providers/Microsoft.Authorization/roleAssignments/d85bd67f-37c9-5546-98c3-179b2a7e95ee",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.Authorization/roleAssignments"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-bridge-prod",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.ManagedIdentity/userAssignedIdentities"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-runtime-prod",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.ManagedIdentity/userAssignedIdentities"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-sra-prod",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.ManagedIdentity/userAssignedIdentities"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-ui-prod",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.ManagedIdentity/userAssignedIdentities"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-worker-prod",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.ManagedIdentity/userAssignedIdentities"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.OperationalInsights/workspaces/law-diiac-patchforge-prod",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.OperationalInsights/workspaces"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.Storage/storageAccounts"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01/blobServices/default",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.Storage/storageAccounts/blobServices"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01/blobServices/default/containers/audit-slices",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.Storage/storageAccounts/blobServices/containers"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01/blobServices/default/containers/decision-packs",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.Storage/storageAccounts/blobServices/containers"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01/blobServices/default/containers/evidence-artifacts",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.Storage/storageAccounts/blobServices/containers"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01/blobServices/default/containers/import-batches",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.Storage/storageAccounts/blobServices/containers"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01/blobServices/default/containers/logs-slices",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.Storage/storageAccounts/blobServices/containers"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01/blobServices/default/containers/raw-vulnerability-sources",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.Storage/storageAccounts/blobServices/containers"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01/blobServices/default/containers/replay-certificates",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.Storage/storageAccounts/blobServices/containers"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01/blobServices/default/containers/signed-exports",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.Storage/storageAccounts/blobServices/containers"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01/blobServices/default/containers/sra-traces",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.Storage/storageAccounts/blobServices/containers"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01/providers/Microsoft.Authorization/roleAssignments/36080860-e3d9-5cb1-9faa-8a7f83bfa2f5",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.Authorization/roleAssignments"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01/providers/Microsoft.Authorization/roleAssignments/53b455ee-ec87-5293-ba8f-98ef340648c1",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.Authorization/roleAssignments"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01/providers/Microsoft.Authorization/roleAssignments/75150497-7ebb-5896-ba88-66b082893a4c",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.Authorization/roleAssignments"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01/providers/Microsoft.Authorization/roleAssignments/7a87cc4c-0b1b-553e-8081-bb645da8ee0c",
+        "identifiers": null,
+        "resourceGroup": "rg-diiac-patchforge-prod",
+        "resourceType": "Microsoft.Authorization/roleAssignments"
+      }
+    ],
+    "outputs": {
+      "acrLoginServer": {
+        "type": "String",
+        "value": "acrdiiacpatchforgeprod.azurecr.io"
+      },
+      "apiUrlPlaceholder": {
+        "type": "String",
+        "value": "https://api.patchforge.diiac.io"
+      },
+      "containerAppsEnvironmentId": {
+        "type": "String",
+        "value": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/managedEnvironments/acae-diiac-patchforge-prod"
+      },
+      "frontendUrlPlaceholder": {
+        "type": "String",
+        "value": "https://patchforge.diiac.io"
+      },
+      "keyVaultUri": {
+        "type": "String",
+        "value": "https://kv-diiac-patchforge-prod.vault.azure.net/"
+      },
+      "resourceGroup": {
+        "type": "String",
+        "value": "rg-diiac-patchforge-prod"
+      },
+      "storageAccountName": {
+        "type": "String",
+        "value": "stdiiacpatchforgeprod01"
+      }
+    },
+    "parameters": {
+      "acrSku": {
+        "type": "String",
+        "value": "Basic"
+      },
+      "bridgeExternalIngress": {
+        "type": "Bool",
+        "value": true
+      },
+      "createPostgres": {
+        "type": "Bool",
+        "value": false
+      },
+      "deployContainerApps": {
+        "type": "Bool",
+        "value": true
+      },
+      "environmentName": {
+        "type": "String",
+        "value": "prod"
+      },
+      "imageTag": {
+        "type": "String",
+        "value": "bootstrap"
+      },
+      "location": {
+        "type": "String",
+        "value": "uksouth"
+      },
+      "postgresAdministratorLogin": {
+        "type": "String",
+        "value": "patchforgeadmin"
+      },
+      "postgresAdministratorPassword": {
+        "type": "SecureString"
+      },
+      "resourceGroupName": {
+        "type": "String",
+        "value": "rg-diiac-patchforge-prod"
+      },
+      "tags": {
+        "type": "Object",
+        "value": {
+          "boundary": "governance-only",
+          "environment": "prod",
+          "managedBy": "bicep",
+          "owner": "DIIaC",
+          "product": "DIIaC PatchForge"
+        }
+      }
+    },
+    "parametersLink": null,
+    "providers": [
+      {
+        "id": null,
+        "namespace": "Microsoft.Resources",
+        "providerAuthorizationConsentState": null,
+        "registrationPolicy": null,
+        "registrationState": null,
+        "resourceTypes": [
+          {
+            "aliases": null,
+            "apiProfiles": null,
+            "apiVersions": null,
+            "capabilities": null,
+            "defaultApiVersion": null,
+            "locationMappings": null,
+            "locations": [
+              "uksouth"
+            ],
+            "properties": null,
+            "resourceType": "resourceGroups",
+            "zoneMappings": null
+          },
+          {
+            "aliases": null,
+            "apiProfiles": null,
+            "apiVersions": null,
+            "capabilities": null,
+            "defaultApiVersion": null,
+            "locationMappings": null,
+            "locations": [
+              null
+            ],
+            "properties": null,
+            "resourceType": "deployments",
+            "zoneMappings": null
+          }
+        ]
+      }
+    ],
+    "provisioningState": "Succeeded",
+    "templateHash": "8329713678725164564",
+    "templateLink": null,
+    "timestamp": "2026-05-26T16:11:51.753756+00:00",
+    "validatedResources": null,
+    "validationLevel": null
+  },
+  "tags": null,
+  "type": "Microsoft.Resources/deployments"
+}

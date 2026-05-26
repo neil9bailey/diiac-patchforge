@@ -70,6 +70,18 @@ Known non-secret DIIaC tenant reference:
 
 PatchForge should keep dedicated resources in the same tenant/subscription unless the user directs otherwise. Do not reuse IT Services resource names, Key Vaults, or app registrations by default.
 
+Azure bootstrap live state as of 2026-05-26:
+
+- Resource group: `rg-diiac-patchforge-prod`
+- ACR: `acrdiiacpatchforgeprod.azurecr.io`
+- ACA environment: `acae-diiac-patchforge-prod`
+- ACA default domain: `lemonpebble-11b2e331.uksouth.azurecontainerapps.io`
+- UI URL: `https://ca-patchforge-ui-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io/`
+- Bridge health URL: `https://ca-patchforge-bridge-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io/health`
+- Evidence: `docs/release/evidence/2026-05-26-patchforge-azure-bootstrap/`
+
+DNS is still pending for `patchforge.diiac.io` and `api.patchforge.diiac.io`.
+
 Tell the user before:
 
 - Azure authentication or subscription access is required

@@ -12,6 +12,9 @@ param environmentName string = 'prod'
 @description('Whether the bridge/API should use public ingress. Set false for private-only deployments.')
 param bridgeExternalIngress bool = true
 
+@description('Whether to deploy Container Apps. Set false for the first infrastructure pass so ACR can be created and images pushed before app revisions are created.')
+param deployContainerApps bool = true
+
 @description('Whether to create PostgreSQL Flexible Server. Keep false until a secure administrator password and network model are confirmed.')
 param createPostgres bool = false
 
@@ -24,6 +27,14 @@ param postgresAdministratorPassword string = ''
 
 @description('Container image tag used for initial container app placeholders.')
 param imageTag string = 'bootstrap'
+
+@allowed([
+  'Basic'
+  'Standard'
+  'Premium'
+])
+@description('Azure Container Registry SKU. Basic is used for bootstrap compatibility; raise to Premium later if private endpoint or advanced registry features are required.')
+param acrSku string = 'Basic'
 
 @description('Common tags for PatchForge resources.')
 param tags object = {
@@ -84,6 +95,7 @@ module registry 'container-registry.bicep' = {
     location: location
     tags: tags
     registryName: names.acr
+    registrySku: acrSku
     pullPrincipalIds: [
       identities.outputs.principalIds.ui
       identities.outputs.principalIds.bridge
@@ -142,7 +154,7 @@ module database 'postgres-or-sql.bicep' = {
   }
 }
 
-module containerApps 'container-apps.bicep' = {
+module containerApps 'container-apps.bicep' = if (deployContainerApps) {
   name: 'patchforge-container-apps'
   scope: patchForgeResourceGroup
   params: {
@@ -170,5 +182,4 @@ output apiUrlPlaceholder string = 'https://api.patchforge.diiac.io'
 output acrLoginServer string = registry.outputs.loginServer
 output storageAccountName string = storage.outputs.storageAccountName
 output keyVaultUri string = keyVault.outputs.vaultUri
-output containerAppsEnvironmentId string = containerApps.outputs.environmentId
-
+output containerAppsEnvironmentId string = deployContainerApps ? containerApps!.outputs.environmentId : ''

@@ -2,19 +2,19 @@
 
 ## Purpose
 
-PF-E11 prepares DIIaC™ PatchForge for controlled deployment without creating or mutating Azure resources.
+Track PatchForge deployment readiness, live Azure bootstrap state, and remaining cutover gates.
 
 ## Current Gate
 
-PatchForge is ready for deployment planning, container build smoke checks, CI validation, and Azure what-if preparation.
+PatchForge Azure bootstrap is live in a dedicated production resource group.
 
-PatchForge is not yet ready for live production deployment until the user confirms:
+PatchForge is not yet ready for full production cutover until the user confirms:
 
-- final approval to use the discovered DIIaC tenant and subscription reference
-- production/non-production rollout order
 - Entra app registration and role assignment plan
 - Key Vault signing strategy
 - DNS ownership and cutover plan
+- PostgreSQL/database deployment plan
+- custom domain and TLS binding plan
 
 Known non-secret tenant planning values are recorded in `docs/deployment/PATCHFORGE_DIIAC_TENANT_REFERENCE.md`:
 
@@ -56,24 +56,31 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start_local_dev.ps1
 
 ## Deployment Boundary
 
-Do not run Azure deployment create/apply commands until the deployment gate is explicitly opened.
+The Azure bootstrap deployment gate was opened by user instruction on 2026-05-26.
 
-Allowed before approval:
+Allowed without a new approval:
 
 - local tests
 - local builds
 - local Docker builds
 - Bicep build
-- Azure what-if after tenant/subscription confirmation
+- Azure read-only inspection
+- Azure what-if
 
-Not allowed before approval:
+Requires fresh user approval:
 
-- resource creation
-- role assignment mutation
+- additional resource creation
+- role assignment mutation outside the existing IaC baseline
 - Key Vault mutation
 - DNS changes
 - production signing key creation
 - Container Apps revision deployment
+
+## Live Azure URLs
+
+- UI: `https://ca-patchforge-ui-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io/`
+- Bridge health: `https://ca-patchforge-bridge-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io/health`
+- Bridge readiness: `https://ca-patchforge-bridge-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io/readiness`
 
 ## Local URLs
 

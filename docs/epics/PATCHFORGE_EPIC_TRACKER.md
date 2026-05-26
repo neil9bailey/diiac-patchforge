@@ -24,7 +24,8 @@
 | PF-E9 | Decision Workbench and DCC | Complete | |
 | PF-E10 | Reports, demos, validation pack | Complete | |
 | PF-E11 | Deployment readiness and CI/CD hardening | Complete | |
+| PF-AZ1 | Dedicated Azure bootstrap deployment | Complete | |
 
 ## Next Epic
 
-Post-PF-E11: run Azure what-if only after tenant, subscription, and region are confirmed.
+Post-PF-AZ1: bind custom domains, complete Entra RBAC, decide PostgreSQL cutover, and create production signing keys after explicit user approval.

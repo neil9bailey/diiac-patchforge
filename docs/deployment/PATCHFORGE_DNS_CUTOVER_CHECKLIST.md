@@ -18,6 +18,17 @@ Observed sibling product domains:
 
 Use these only as DNS operating references. PatchForge needs its own Container Apps custom domain bindings and certificates.
 
+## Current Azure Ingress
+
+| Surface | Current target |
+| --- | --- |
+| ACA environment default domain | `lemonpebble-11b2e331.uksouth.azurecontainerapps.io` |
+| ACA static IP | `4.250.136.215` |
+| UI | `ca-patchforge-ui-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io` |
+| Bridge/API | `ca-patchforge-bridge-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io` |
+
+The public UI and bridge are live on default Azure Container Apps hostnames. DNS has not been updated.
+
 ## Before DNS Update
 
 Confirm:
@@ -41,3 +52,8 @@ The exact records depend on the final Azure ingress model:
 - Azure Front Door endpoint with WAF
 
 Do not create these records until the production ingress target exists and has been validated.
+
+If using direct Container Apps custom domains, prepare to map:
+
+- `patchforge.diiac.io` to the UI app
+- `api.patchforge.diiac.io` to the bridge/API app
