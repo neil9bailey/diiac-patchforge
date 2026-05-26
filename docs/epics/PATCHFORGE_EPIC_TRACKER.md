@@ -26,7 +26,8 @@
 | PF-E11 | Deployment readiness and CI/CD hardening | Complete | |
 | PF-AZ1 | Dedicated Azure bootstrap deployment | Complete | |
 | PF-AZ2 | Identity, signing, database, and admin membership gates | Complete | |
+| PF-AZ3 | DNS cutover and custom-domain TLS binding | Complete | |
 
 ## Next Epic
 
-Post-PF-AZ2: update Porkbun DNS, bind Azure Container Apps custom domains, add runtime Key Vault signing integration, and migrate application storage from local JSON to PostgreSQL.
+Post-PF-AZ3: add runtime Key Vault signing integration, enforce Entra app roles in the Bridge/API and UI, and migrate application storage from local JSON to PostgreSQL.

@@ -1,0 +1,17 @@
+﻿[
+    {
+        "url":  "https://patchforge.diiac.io/",
+        "statusCode":  200,
+        "ok":  true
+    },
+    {
+        "url":  "https://api.patchforge.diiac.io/health",
+        "statusCode":  200,
+        "ok":  true
+    },
+    {
+        "url":  "https://api.patchforge.diiac.io/readiness",
+        "statusCode":  200,
+        "ok":  true
+    }
+]

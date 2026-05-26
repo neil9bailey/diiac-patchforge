@@ -6,12 +6,10 @@ Track PatchForge deployment readiness, live Azure bootstrap state, and remaining
 
 ## Current Gate
 
-PatchForge Azure bootstrap is live in a dedicated production resource group. The identity, production signing key, and PostgreSQL resource gates are also completed.
+PatchForge Azure bootstrap is live in a dedicated production resource group. The identity, production signing key, PostgreSQL resource, and DNS custom-domain gates are also completed.
 
 PatchForge is not yet ready for full production cutover until the user confirms:
 
-- DNS ownership and cutover plan
-- custom domain and TLS binding plan
 - runtime managed identity signing integration
 - application storage migration from local JSON to PostgreSQL
 
@@ -80,6 +78,12 @@ Requires fresh user approval:
 - Bridge health: `https://ca-patchforge-bridge-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io/health`
 - Bridge readiness: `https://ca-patchforge-bridge-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io/readiness`
 
+Live custom-domain URLs:
+
+- UI: `https://patchforge.diiac.io/`
+- API health: `https://api.patchforge.diiac.io/health`
+- API readiness: `https://api.patchforge.diiac.io/readiness`
+
 ## Live Identity And Data Gates
 
 - API app ID: `ec30b0eb-cfc4-48cc-a5f2-2a1345d96736`
@@ -88,12 +92,19 @@ Requires fresh user approval:
 - PostgreSQL database: `patchforge_prod`
 - Key Vault signing key: `pf-pack-signing-prod`
 - Gate evidence: `docs/release/evidence/2026-05-26-patchforge-gates/`
+- DNS cutover evidence: `docs/release/evidence/2026-05-26-patchforge-dns-cutover/`
 
 HTTP smoke after gates:
 
 - UI: 200
 - Bridge health: 200
 - Bridge readiness: 200
+
+HTTPS smoke after DNS cutover:
+
+- Custom-domain UI: 200
+- Custom-domain API health: 200
+- Custom-domain API readiness: 200
 
 ## Local URLs
 

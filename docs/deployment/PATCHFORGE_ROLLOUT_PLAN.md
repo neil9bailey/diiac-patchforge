@@ -48,7 +48,7 @@ Recommended before production:
 
 ## Phase 4: Production Deployment
 
-Status: bootstrap plus identity, signing, and database gates complete on 2026-05-26.
+Status: bootstrap plus identity, signing, database, and DNS custom-domain gates complete on 2026-05-26.
 
 Created:
 
@@ -75,9 +75,15 @@ Still pending:
 - role enforcement hardening inside the Bridge/API and UI
 - runtime managed identity signing integration
 - application storage migration from local JSON to PostgreSQL
-- custom domains and TLS binding
-- DNS cutover
 
 ## Phase 5: DNS Cutover
 
-Update Porkbun DNS first, then bind custom domains and managed certificates in Azure Container Apps once public DNS validation records resolve.
+Status: complete on 2026-05-26.
+
+Live:
+
+- `https://patchforge.diiac.io/`
+- `https://api.patchforge.diiac.io/health`
+- `https://api.patchforge.diiac.io/readiness`
+
+Managed certificates are issued and bound with SNI enabled.

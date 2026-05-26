@@ -96,14 +96,16 @@ PatchForge gate state as of 2026-05-26:
 - `DIIAC-ITServices-Admins`
 - `DIIAC-Pharma-Admins`
 
-DNS is still pending for `patchforge.diiac.io` and `api.patchforge.diiac.io`. The `diiac.io` DNS zone is hosted at Porkbun, not Azure DNS.
+DNS is live for `patchforge.diiac.io` and `api.patchforge.diiac.io`. The `diiac.io` DNS zone is hosted at Porkbun, not Azure DNS.
 
-Required DNS records:
+Custom-domain live state:
 
-- CNAME `patchforge` -> `ca-patchforge-ui-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io`
-- TXT `asuid.patchforge` -> `D815E8B3470ADCCFE09104F6B9557CC8DC05A4BF8DFED6FC65F27D87B54195E5`
-- CNAME `api.patchforge` -> `ca-patchforge-bridge-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io`
-- TXT `asuid.api.patchforge` -> `D815E8B3470ADCCFE09104F6B9557CC8DC05A4BF8DFED6FC65F27D87B54195E5`
+- UI: `https://patchforge.diiac.io/`
+- API health: `https://api.patchforge.diiac.io/health`
+- API readiness: `https://api.patchforge.diiac.io/readiness`
+- UI certificate: `mc-acae-diiac-pat-patchforge-diiac-9158`
+- API certificate: `mc-acae-diiac-pat-api-patchforge-d-1628`
+- DNS cutover evidence: `docs/release/evidence/2026-05-26-patchforge-dns-cutover/`
 
 Tell the user before:
 

@@ -1,8 +1,8 @@
 # Current Release
 
-## DIIaC PatchForge PF-AZ2
+## DIIaC PatchForge PF-AZ3
 
-Release state: Azure bootstrap live with identity, signing, and database gates completed
+Release state: Azure bootstrap live with identity, signing, database, and DNS cutover gates completed
 
 Date: 2026-05-26
 
@@ -109,11 +109,12 @@ Included:
 - ES256 Key Vault signing smoke verification
 - Azure Database for PostgreSQL Flexible Server `psql-diiac-patchforge-prod`
 - PostgreSQL database `patchforge_prod`
+- custom domains `patchforge.diiac.io` and `api.patchforge.diiac.io`
+- Azure Container Apps managed certificates for both PatchForge custom domains
+- HTTPS smoke evidence for custom-domain UI, bridge health, and bridge readiness
 
 Excluded:
 
-- DNS cutover
-- custom domain binding
 - live application database migration from local JSON storage to PostgreSQL
 - runtime managed identity signing integration
 - vulnerability scanning
@@ -127,6 +128,9 @@ PatchForge bootstrap services are live in Azure Container Apps.
 
 Public endpoints:
 
+- UI custom domain: `https://patchforge.diiac.io/`
+- API health custom domain: `https://api.patchforge.diiac.io/health`
+- API readiness custom domain: `https://api.patchforge.diiac.io/readiness`
 - UI: `https://ca-patchforge-ui-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io/`
 - Bridge health: `https://ca-patchforge-bridge-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io/health`
 - Bridge readiness: `https://ca-patchforge-bridge-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io/readiness`
@@ -153,6 +157,7 @@ Deployment evidence:
 
 - `docs/release/evidence/2026-05-26-patchforge-azure-bootstrap/`
 - `docs/release/evidence/2026-05-26-patchforge-gates/`
+- `docs/release/evidence/2026-05-26-patchforge-dns-cutover/`
 
 ## Trust State
 
@@ -184,4 +189,10 @@ The bridge has database host/name environment references. Application storage re
 
 ## DNS State
 
-`patchforge.diiac.io` and `api.patchforge.diiac.io` are pending external DNS updates at Porkbun. Required CNAME and TXT records are recorded in `docs/deployment/PATCHFORGE_DNS_CUTOVER_CHECKLIST.md`.
+`patchforge.diiac.io` and `api.patchforge.diiac.io` are live and bound to Azure Container Apps with managed certificates.
+
+Live custom-domain endpoints:
+
+- UI: `https://patchforge.diiac.io/`
+- API health: `https://api.patchforge.diiac.io/health`
+- API readiness: `https://api.patchforge.diiac.io/readiness`

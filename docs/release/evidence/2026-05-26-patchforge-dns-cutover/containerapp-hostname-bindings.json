@@ -1,0 +1,23 @@
+﻿{
+    "timestamp_utc":  "2026-05-26T18:16:57.9208248Z",
+    "ui":  {
+               "app":  "ca-patchforge-ui-prod",
+               "customDomains":  [
+                                     {
+                                         "bindingType":  "SniEnabled",
+                                         "certificateId":  "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/managedEnvironments/acae-diiac-patchforge-prod/managedCertificates/mc-acae-diiac-pat-patchforge-diiac-9158",
+                                         "name":  "patchforge.diiac.io"
+                                     }
+                                 ]
+           },
+    "api":  {
+                "app":  "ca-patchforge-bridge-prod",
+                "customDomains":  [
+                                      {
+                                          "bindingType":  "SniEnabled",
+                                          "certificateId":  "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/managedEnvironments/acae-diiac-patchforge-prod/managedCertificates/mc-acae-diiac-pat-api-patchforge-d-1628",
+                                          "name":  "api.patchforge.diiac.io"
+                                      }
+                                  ]
+            }
+}

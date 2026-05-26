@@ -1,0 +1,44 @@
+﻿[
+    {
+        "id":  "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/managedEnvironments/acae-diiac-patchforge-prod/managedCertificates/mc-acae-diiac-pat-patchforge-diiac-9158",
+        "location":  "UK South",
+        "name":  "mc-acae-diiac-pat-patchforge-diiac-9158",
+        "properties":  {
+                           "domainControlValidation":  "CNAME",
+                           "provisioningState":  "Succeeded",
+                           "subjectName":  "patchforge.diiac.io",
+                           "validationMethod":  "CNAME"
+                       },
+        "resourceGroup":  "rg-diiac-patchforge-prod",
+        "systemData":  {
+                           "createdAt":  "2026-05-26T18:02:19.2781318",
+                           "createdBy":  "nbailey@diiac.io",
+                           "createdByType":  "User",
+                           "lastModifiedAt":  "2026-05-26T18:02:19.2781318",
+                           "lastModifiedBy":  "nbailey@diiac.io",
+                           "lastModifiedByType":  "User"
+                       },
+        "type":  "Microsoft.App/managedEnvironments/managedCertificates"
+    },
+    {
+        "id":  "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/managedEnvironments/acae-diiac-patchforge-prod/managedCertificates/mc-acae-diiac-pat-api-patchforge-d-1628",
+        "location":  "UK South",
+        "name":  "mc-acae-diiac-pat-api-patchforge-d-1628",
+        "properties":  {
+                           "domainControlValidation":  "CNAME",
+                           "provisioningState":  "Succeeded",
+                           "subjectName":  "api.patchforge.diiac.io",
+                           "validationMethod":  "CNAME"
+                       },
+        "resourceGroup":  "rg-diiac-patchforge-prod",
+        "systemData":  {
+                           "createdAt":  "2026-05-26T18:07:37.5322054",
+                           "createdBy":  "nbailey@diiac.io",
+                           "createdByType":  "User",
+                           "lastModifiedAt":  "2026-05-26T18:07:37.5322054",
+                           "lastModifiedBy":  "nbailey@diiac.io",
+                           "lastModifiedByType":  "User"
+                       },
+        "type":  "Microsoft.App/managedEnvironments/managedCertificates"
+    }
+]
