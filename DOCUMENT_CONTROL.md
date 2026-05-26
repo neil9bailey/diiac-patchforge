@@ -93,6 +93,9 @@ DIIaC™ PatchForge
 | docs/release/evidence/2026-05-26-patchforge-pfaz5-intelligence-rollout/** | DIIaC | Evidence | 0.1.0 | 2026-05-26 |
 | docs/release/PF_AZ5_RELEASE_BASELINE_MANIFEST.json | DIIaC | Active | 0.1.0 | 2026-05-26 |
 | docs/release/PF_AZ5_PRODUCTION_READINESS_SUMMARY.md | DIIaC | Active | 0.1.0 | 2026-05-26 |
+| docs/release/PF_AZ6_RELEASE_BASELINE_MANIFEST.json | DIIaC | Active | 0.1.0 | 2026-05-26 |
+| docs/release/PF_AZ6_PRODUCTION_READINESS_SUMMARY.md | DIIaC | Active | 0.1.0 | 2026-05-26 |
+| docs/release/evidence/2026-05-26-patchforge-pfaz6-live-source-intelligence/** | DIIaC | Evidence | 0.1.0 | 2026-05-26 |
 | runtime/bayesian_patch_risk.py | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | contracts/domain-models/patchforge/bayesian_patch_risk_snapshot.schema.json | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | contracts/domain-models/patchforge/patch_prior_usage_manifest.schema.json | DIIaC | Baseline | 0.1.0 | 2026-05-26 |

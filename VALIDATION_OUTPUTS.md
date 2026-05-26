@@ -36,9 +36,50 @@ This file records PF-AZ6 validation commands and rollout evidence. It will be up
 - `docker build -f runtime/Dockerfile -t diiac/patchforge-runtime:pfaz6-local .`: PASS
 - Local signed pack verification: not rerun in the PF-AZ6 pre-Azure gate; runtime signing path is unchanged from PF-AZ5 and live pack verification will be rerun after Azure rollout.
 
-PF-AZ6 Azure rollout status: pending after implementation commit and image push.
+PF-AZ6 Azure rollout status: PASS.
 
 ## Azure Rollout
+
+- Git push: PASS, commit `473b055005cb2bb212e47f46aaf4e660faeb7d3a`
+- Image tag: `pfaz6-20260526-473b055`
+- ACR build/push: PASS for frontend, bridge/API, runtime, SRA, worker, and scheduler images
+- ACR tag verification: PASS for all six repositories
+- Full Bicep what-if: captured; not applied because it included broader drift/noise than the image rollout required
+- Targeted image-only Container Apps update: PASS
+- Active revisions:
+  - UI: `ca-patchforge-ui-prod--0000008`
+  - Bridge/API: `ca-patchforge-bridge-prod--0000007`
+  - Runtime: `ca-patchforge-runtime-prod--0000006`
+  - SRA: `ca-patchforge-sra-prod--0000005`
+  - Worker: `ca-patchforge-worker-prod--0000005`
+  - Scheduler: `ca-patchforge-scheduler-prod--0000005`
+
+## Live Validation
+
+- UI HTTP 200: PASS
+- API health HTTP 200: PASS
+- API readiness HTTP 200 with `storage=postgresql` and `auth_required=true`: PASS
+- Protected vulnerability route unauthenticated HTTP 401: PASS
+- Protected source-feed route unauthenticated HTTP 401: PASS
+- Browser/MSAL sign-in as `n.bailey@diiac.io`: PASS
+- Displayed role `PatchForge.Admin`: PASS
+- CISA KEV feed refresh: PASS, 1603 records seen, 5 ingested
+- FIRST EPSS feed refresh: PASS, `CVE-2026-48172` enriched
+- Real CISA records observed in queue: `CVE-2026-48172`, `CVE-2026-9082`, `CVE-2025-34291`, `CVE-2026-34926`, `CVE-2008-4250`
+- Bayesian Patch Risk advisory on `CVE-2026-48172`: PASS
+- Signed decision pack generated and exported: `PF-20260526-8312f908`
+- Pack verification: PASS
+- Key Vault signing smoke: PASS through live pack export with `signing_provider=azure_key_vault`
+- PostgreSQL readiness: PASS
+- Production no-demo-data cleanup: PASS, old PF-AZ5 synthetic validation record `CVE-2026-PF-DEMO-001` and linked records removed
+- Temporary PostgreSQL firewall rule cleanup: PASS, only `AllowAzureServices` remained after validation
+- Final approval remained false: PASS
+
+Evidence path:
+
+`docs/release/evidence/2026-05-26-patchforge-pfaz6-live-source-intelligence/`
+
+## PF-AZ5 Historical Validation
 
 - Git push: PASS, commit `8a145e849a2c57fed3bc00440f2f2f8b29585f72`
 - Image tag: `pfaz5-20260526-8a145e8`

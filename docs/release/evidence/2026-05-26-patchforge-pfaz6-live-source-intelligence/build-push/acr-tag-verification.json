@@ -1,0 +1,26 @@
+[
+    {
+        "repository":  "diiac/patchforge-frontend",
+        "tag_present":  true
+    },
+    {
+        "repository":  "diiac/patchforge-bridge",
+        "tag_present":  true
+    },
+    {
+        "repository":  "diiac/patchforge-runtime",
+        "tag_present":  true
+    },
+    {
+        "repository":  "diiac/patchforge-sra-agent",
+        "tag_present":  true
+    },
+    {
+        "repository":  "diiac/patchforge-ingest-worker",
+        "tag_present":  true
+    },
+    {
+        "repository":  "diiac/patchforge-scheduler",
+        "tag_present":  true
+    }
+]

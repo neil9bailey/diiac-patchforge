@@ -1,0 +1,50 @@
+[
+  {
+    "activeRevisionsMode": "Single",
+    "image": "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-bridge:pfaz6-20260526-473b055",
+    "latestRevisionName": "ca-patchforge-bridge-prod--0000007",
+    "name": "ca-patchforge-bridge-prod",
+    "provisioningState": "Succeeded",
+    "runningStatus": "Running"
+  },
+  {
+    "activeRevisionsMode": "Single",
+    "image": "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-frontend:pfaz6-20260526-473b055",
+    "latestRevisionName": "ca-patchforge-ui-prod--0000008",
+    "name": "ca-patchforge-ui-prod",
+    "provisioningState": "Succeeded",
+    "runningStatus": "Running"
+  },
+  {
+    "activeRevisionsMode": "Single",
+    "image": "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-sra-agent:pfaz6-20260526-473b055",
+    "latestRevisionName": "ca-patchforge-sra-prod--0000005",
+    "name": "ca-patchforge-sra-prod",
+    "provisioningState": "Succeeded",
+    "runningStatus": "Running"
+  },
+  {
+    "activeRevisionsMode": "Single",
+    "image": "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-ingest-worker:pfaz6-20260526-473b055",
+    "latestRevisionName": "ca-patchforge-worker-prod--0000005",
+    "name": "ca-patchforge-worker-prod",
+    "provisioningState": "Succeeded",
+    "runningStatus": "Running"
+  },
+  {
+    "activeRevisionsMode": "Single",
+    "image": "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-scheduler:pfaz6-20260526-473b055",
+    "latestRevisionName": "ca-patchforge-scheduler-prod--0000005",
+    "name": "ca-patchforge-scheduler-prod",
+    "provisioningState": "Succeeded",
+    "runningStatus": "Running"
+  },
+  {
+    "activeRevisionsMode": "Single",
+    "image": "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-runtime:pfaz6-20260526-473b055",
+    "latestRevisionName": "ca-patchforge-runtime-prod--0000006",
+    "name": "ca-patchforge-runtime-prod",
+    "provisioningState": "Succeeded",
+    "runningStatus": "Running"
+  }
+]

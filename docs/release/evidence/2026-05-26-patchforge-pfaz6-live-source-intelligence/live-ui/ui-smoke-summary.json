@@ -1,0 +1,64 @@
+{
+    "release":  "PF-AZ6",
+    "validation_time":  "2026-05-26T23:13:34.6604662Z",
+    "ui_url":  "https://patchforge.diiac.io/",
+    "api_url":  "https://api.patchforge.diiac.io",
+    "signed_in_user":  "n.bailey@diiac.io",
+    "displayed_role":  "PatchForge.Admin",
+    "source_feed_workflow":  {
+                                 "cisa_kev":  {
+                                                  "status":  "pass",
+                                                  "run_id":  "run-cisa-kev-1779836966722-fefdf8bf",
+                                                  "records_seen":  1603,
+                                                  "records_ingested":  5,
+                                                  "source_bound":  true,
+                                                  "review_required":  true,
+                                                  "can_close_hard_gates_alone":  false
+                                              },
+                                 "first_epss":  {
+                                                    "status":  "pass",
+                                                    "run_id":  "run-first-epss-1779837020321-aa510dc4",
+                                                    "records_seen":  1,
+                                                    "records_enriched":  1,
+                                                    "cve":  "CVE-2026-48172",
+                                                    "source_bound":  true,
+                                                    "review_required":  true,
+                                                    "can_close_hard_gates_alone":  false
+                                                }
+                             },
+    "real_cisa_cves_observed":  [
+                                    "CVE-2026-48172",
+                                    "CVE-2026-9082",
+                                    "CVE-2025-34291",
+                                    "CVE-2026-34926",
+                                    "CVE-2008-4250"
+                                ],
+    "bayesian_advisory":  {
+                              "status":  "pass",
+                              "cve":  "CVE-2026-48172",
+                              "advisory_only":  true,
+                              "recommended_posture":  "defer_pending_evidence"
+                          },
+    "signed_pack":  {
+                        "status":  "pass",
+                        "pack_id":  "PF-20260526-8312f908",
+                        "vulnerability_id":  "CVE-2026-48172",
+                        "verified":  true,
+                        "signing_provider":  "azure_key_vault",
+                        "final_approval_issued":  false,
+                        "source_pack_immutable":  true
+                    },
+    "boundary":  {
+                     "no_scanner":  true,
+                     "no_exploit_generation":  true,
+                     "no_patch_deployment":  true,
+                     "no_production_mutation":  true,
+                     "no_autonomous_approval":  true
+                 },
+    "screenshots":  [
+                        "browser-screenshots/pfaz6-source-feeds-before.png",
+                        "browser-screenshots/pfaz6-source-feeds-after-cisa.png",
+                        "browser-screenshots/pfaz6-source-feeds-after-epss.png",
+                        "browser-screenshots/pfaz6-decision-pack-real-cisa.png"
+                    ]
+}

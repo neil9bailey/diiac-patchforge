@@ -1,0 +1,6 @@
+{
+    "plan":  "targeted image-only update after what-if capture; preserve custom domains, auth, identity, Key Vault, and PostgreSQL settings",
+    "image_tag":  "pfaz6-20260526-473b055",
+    "commit":  "473b055005cb2bb212e47f46aaf4e660faeb7d3a",
+    "release":  "PF-AZ6"
+}

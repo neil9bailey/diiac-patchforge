@@ -1,0 +1,7 @@
+{
+    "smoke":  "pass",
+    "readiness_url":  "https://api.patchforge.diiac.io/readiness",
+    "storage":  "postgresql",
+    "release":  "PF-AZ6",
+    "auth_required":  true
+}

@@ -6,7 +6,7 @@
   "target_url": "https://patchforge.diiac.io",
   "api_url": "https://api.patchforge.diiac.io",
   "remote_target": "neil9bailey/diiac-patchforge",
-  "release_state": "local_validated_pending_azure_update",
+  "release_state": "azure_live_browser_validated",
   "azure_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
   "azure_resource_group": "rg-diiac-patchforge-prod",
   "storage_state": "postgresql",
@@ -31,7 +31,15 @@
     "local_tests": "pass",
     "frontend_build": "pass",
     "docker_build_smoke": "pass",
-    "azure_deployment": "pending",
-    "live_ui_validation": "pending"
+    "azure_deployment": "pass",
+    "live_api_smoke": "pass",
+    "live_ui_validation": "pass",
+    "validated_user": "n.bailey@diiac.io",
+    "validated_role": "PatchForge.Admin",
+    "validated_real_cve": "CVE-2026-48172",
+    "decision_pack_id": "PF-20260526-8312f908",
+    "pack_verified": true,
+    "production_no_demo_data_cleanup": "pass",
+    "removed_synthetic_validation_scope": "CVE-2026-PF-DEMO-001"
   }
 }

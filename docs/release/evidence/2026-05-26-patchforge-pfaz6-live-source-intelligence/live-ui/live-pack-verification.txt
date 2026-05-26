@@ -1,0 +1,8 @@
+PF-AZ6 live pack verification PASS
+Pack: PF-20260526-8312f908
+Vulnerability: CVE-2026-48172
+Signing provider: azure_key_vault
+Verified: true
+Final approval issued: false
+Source pack immutable: true
+

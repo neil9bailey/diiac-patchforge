@@ -1,0 +1,8 @@
+{
+    "smoke":  "pass_via_live_signed_pack_export",
+    "signing_provider":  "azure_key_vault",
+    "release":  "PF-AZ6",
+    "key":  "pf-pack-signing-prod",
+    "pack_id":  "PF-20260526-8312f908",
+    "verified":  true
+}

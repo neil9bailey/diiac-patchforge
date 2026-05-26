@@ -1,0 +1,105 @@
+[
+  {
+    "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/containerApps/ca-patchforge-runtime-prod/revisions/ca-patchforge-runtime-prod--0000006",
+    "name": "ca-patchforge-runtime-prod--0000006",
+    "properties": {
+      "active": true,
+      "createdTime": "2026-05-26T23:05:50+00:00",
+      "fqdn": "ca-patchforge-runtime-prod--0000006.internal.lemonpebble-11b2e331.uksouth.azurecontainerapps.io",
+      "healthState": "Healthy",
+      "provisioningState": "Provisioned",
+      "replicas": 1,
+      "runningState": "Running",
+      "template": {
+        "containers": [
+          {
+            "env": [
+              {
+                "name": "PATCHFORGE_ENVIRONMENT",
+                "value": "prod"
+              },
+              {
+                "name": "PATCHFORGE_BOUNDARY",
+                "value": "governance-only-no-scanner-no-exploit-no-deployment"
+              },
+              {
+                "name": "PATCHFORGE_STORAGE_ACCOUNT",
+                "value": "stdiiacpatchforgeprod01"
+              },
+              {
+                "name": "PATCHFORGE_KEYVAULT_URI",
+                "value": "https://kv-diiac-patchforge-prod.vault.azure.net/"
+              },
+              {
+                "name": "PATCHFORGE_DATABASE_HOST",
+                "value": "psql-diiac-patchforge-prod.postgres.database.azure.com"
+              },
+              {
+                "name": "PATCHFORGE_DATABASE_NAME",
+                "value": "patchforge_prod"
+              },
+              {
+                "name": "PATCHFORGE_DATABASE_USER",
+                "value": "patchforgeadmin"
+              },
+              {
+                "name": "PATCHFORGE_DATABASE_PASSWORD_SECRET_NAME",
+                "value": "patchforge-postgres-admin-password"
+              },
+              {
+                "name": "PATCHFORGE_STORAGE_MODE",
+                "value": "postgresql"
+              },
+              {
+                "name": "PATCHFORGE_ENTRA_TENANT_ID",
+                "value": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da"
+              },
+              {
+                "name": "PATCHFORGE_ENTRA_AUDIENCE",
+                "value": "api://ec30b0eb-cfc4-48cc-a5f2-2a1345d96736"
+              },
+              {
+                "name": "PATCHFORGE_AUTH_REQUIRED",
+                "value": "True"
+              },
+              {
+                "name": "PATCHFORGE_KEYVAULT_SIGNING_KEY_ID",
+                "value": "https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod"
+              },
+              {
+                "name": "AZURE_CLIENT_ID",
+                "value": "c149eac8-fce9-4ab4-ad23-9f5348f3a673"
+              },
+              {
+                "name": "PATCHFORGE_COMPONENT",
+                "value": "runtime-governance"
+              }
+            ],
+            "image": "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-runtime:pfaz6-20260526-473b055",
+            "name": "patchforge-runtime",
+            "probes": [],
+            "resources": {
+              "cpu": 0.5,
+              "memory": "1Gi"
+            }
+          }
+        ],
+        "initContainers": null,
+        "revisionSuffix": null,
+        "scale": {
+          "cooldownPeriod": null,
+          "maxReplicas": 3,
+          "minReplicas": 1,
+          "pollingInterval": null,
+          "rules": null
+        },
+        "serviceBinds": null,
+        "terminationGracePeriodSeconds": null,
+        "volumes": null
+      },
+      "trafficWeight": 100
+    },
+    "resourceGroup": "rg-diiac-patchforge-prod",
+    "type": "Microsoft.App/containerapps/revisions"
+  }
+]

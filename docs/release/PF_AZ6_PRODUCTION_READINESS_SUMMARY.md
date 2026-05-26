@@ -26,19 +26,33 @@ PF-AZ6 adds live public vulnerability intelligence feeds to PatchForge while ret
 
 ## Azure Readiness
 
-Azure rollout is pending for this baseline. PF-AZ5 remains the active deployed production image set until PF-AZ6 images are pushed to ACR and Container Apps are updated.
+Azure rollout completed for this baseline. PF-AZ6 is active on all PatchForge Container Apps with image tag `pfaz6-20260526-473b055`.
+
+Active revisions:
+
+- UI: `ca-patchforge-ui-prod--0000008`
+- Bridge/API: `ca-patchforge-bridge-prod--0000007`
+- Runtime: `ca-patchforge-runtime-prod--0000006`
+- SRA: `ca-patchforge-sra-prod--0000005`
+- Worker: `ca-patchforge-worker-prod--0000005`
+- Scheduler: `ca-patchforge-scheduler-prod--0000005`
 
 ## Boundaries
 
 PatchForge remains a governance product only. PF-AZ6 does not add scanning, exploit generation, patch deployment, production mutation, autonomous CAB approval, or autonomous risk acceptance.
 
-## Final Validation Required
+## Final Validation
 
-PF-AZ6 is not final until:
+PF-AZ6 live validation passed:
 
-- GitHub push succeeds.
-- PF-AZ6 images are built and pushed to ACR.
-- Azure Container Apps are updated.
-- Live API smoke passes.
-- Browser/MSAL live UI validation passes at `https://patchforge.diiac.io`.
-- A real CISA/FIRST source-feed workflow is validated through the deployed UI.
+- GitHub push succeeded.
+- PF-AZ6 images were built and pushed to ACR.
+- Azure Container Apps were updated.
+- Live API smoke passed.
+- Browser/MSAL live UI validation passed at `https://patchforge.diiac.io`.
+- CISA KEV and FIRST EPSS source-feed workflows were validated through the deployed UI.
+- Signed pack `PF-20260526-8312f908` for `CVE-2026-48172` verified with Azure Key Vault signing.
+- The earlier PF-AZ5 synthetic validation record `CVE-2026-PF-DEMO-001` and linked production PostgreSQL records were removed.
+- The temporary PostgreSQL firewall rule used for cleanup was removed after verification.
+
+Evidence: `docs/release/evidence/2026-05-26-patchforge-pfaz6-live-source-intelligence/`

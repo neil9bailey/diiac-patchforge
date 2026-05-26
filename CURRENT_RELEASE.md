@@ -2,15 +2,15 @@
 
 ## DIIaC PatchForge PF-AZ6
 
-Release state: PF-AZ6 live public source intelligence implementation locally validated; Azure image rollout and final live UI validation pending
+Release state: PF-AZ6 live public source intelligence deployed to Azure and validated through the live UI as a signed-in PatchForge Admin user
 
 Date: 2026-05-26
 
-PF-AZ5 remains the currently deployed Azure baseline until the PF-AZ6 images are pushed and Container Apps are updated.
+PF-AZ6 is the currently deployed Azure baseline.
 
 ## Scope
 
-PF-AZ5 extends the current dedicated PatchForge Azure production state in the DIIaC tenant using the PatchForge resource group.
+PF-AZ6 extends the current dedicated PatchForge Azure production state in the DIIaC tenant using the PatchForge resource group.
 
 Included:
 
@@ -162,7 +162,7 @@ Excluded:
 
 PF-AZ5 Azure deployment, image tag, active revisions, and live browser validation evidence are recorded under `docs/release/evidence/2026-05-26-patchforge-pfaz5-intelligence-rollout/`.
 
-PF-AZ6 Azure rollout evidence will be recorded under `docs/release/evidence/2026-05-26-patchforge-pfaz6-live-source-intelligence/` after deployment.
+PF-AZ6 Azure rollout and live browser validation evidence is recorded under `docs/release/evidence/2026-05-26-patchforge-pfaz6-live-source-intelligence/`.
 
 ## Runtime State
 
@@ -203,16 +203,44 @@ Deployment evidence:
 - `docs/release/evidence/2026-05-26-patchforge-production-hardening/`
 - `docs/release/evidence/2026-05-26-patchforge-live-product/`
 - `docs/release/evidence/2026-05-26-patchforge-pfaz5-intelligence-rollout/`
+- `docs/release/evidence/2026-05-26-patchforge-pfaz6-live-source-intelligence/`
 
-Latest PF-AZ5 intelligence hardening revisions:
+Latest PF-AZ6 live source intelligence revisions:
 
-- UI: `ca-patchforge-ui-prod--0000007`
-- Bridge/API: `ca-patchforge-bridge-prod--0000006`
-- Runtime: `ca-patchforge-runtime-prod--0000005`
-- SRA: `ca-patchforge-sra-prod--0000004`
-- Worker: `ca-patchforge-worker-prod--0000004`
-- Scheduler: `ca-patchforge-scheduler-prod--0000004`
-- Image tag: `pfaz5-20260526-8a145e8`
+- UI: `ca-patchforge-ui-prod--0000008`
+- Bridge/API: `ca-patchforge-bridge-prod--0000007`
+- Runtime: `ca-patchforge-runtime-prod--0000006`
+- SRA: `ca-patchforge-sra-prod--0000005`
+- Worker: `ca-patchforge-worker-prod--0000005`
+- Scheduler: `ca-patchforge-scheduler-prod--0000005`
+- Image tag: `pfaz6-20260526-473b055`
+
+## PF-AZ6 Live Validation
+
+Live UI validation result: PASS
+
+Live API validation result: PASS
+
+Validated user workflow:
+
+- signed in at `https://patchforge.diiac.io` as `n.bailey@diiac.io`
+- confirmed displayed role `PatchForge.Admin`
+- refreshed the live CISA Known Exploited Vulnerabilities public feed
+- ingested five real CISA KEV records as source-bound pending-review intelligence
+- confirmed real CVEs including `CVE-2026-48172` appeared in Vulnerability Queue
+- refreshed FIRST EPSS for `CVE-2026-48172`
+- confirmed FIRST EPSS enrichment remained source-bound and unable to close hard gates alone
+- ran Bayesian Patch Risk advisory on `CVE-2026-48172`
+- generated signed pack `PF-20260526-8312f908`
+- verified the exported pack reports `verified=true`, `signing_provider=azure_key_vault`, and `source_pack_immutable=true`
+- confirmed `final_approval_issued=false`
+- removed the earlier PF-AZ5 synthetic validation record `CVE-2026-PF-DEMO-001`, its linked source records, signed pack, and audit references from production PostgreSQL
+- confirmed no production record still references `CVE-2026-PF-DEMO-001`
+- confirmed the temporary PostgreSQL firewall rule used for cleanup was deleted
+
+Live evidence path:
+
+- `docs/release/evidence/2026-05-26-patchforge-pfaz6-live-source-intelligence/live-ui/`
 
 ## PF-AZ5 Live Validation
 

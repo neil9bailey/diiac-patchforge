@@ -1,0 +1,10 @@
+{
+    "displayed_roles":  [
+                            "PatchForge.Admin"
+                        ],
+    "auth_state":  "browser_msal_authenticated",
+    "protected_api_calls_from_ui":  "pass",
+    "release":  "PF-AZ6",
+    "token_not_persisted_to_evidence":  true,
+    "signed_in_user":  "n.bailey@diiac.io"
+}
