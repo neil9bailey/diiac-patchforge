@@ -24,6 +24,16 @@ DIIaC™ PatchForge
 | docs/epics/PATCHFORGE_IMPLEMENTATION_PROGRAMME.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | docs/epics/PATCHFORGE_EPIC_TRACKER.md | DIIaC | Active | 0.1.0 | 2026-05-26 |
 | docs/epics/PATCHFORGE_EPIC_BACKLOG.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| infra/bicep/main.bicep | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| infra/bicep/container-apps.bicep | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| infra/bicep/storage.bicep | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| infra/bicep/keyvault.bicep | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| infra/bicep/postgres-or-sql.bicep | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| infra/bicep/monitoring.bicep | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| infra/parameters/prod.bicepparam | DIIaC | Placeholder | 0.1.0 | 2026-05-26 |
+| scripts/validate_iac.ps1 | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| scripts/plan_azure_deployment.ps1 | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| scripts/build_push_images.ps1 | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 
 ## Change Control
 

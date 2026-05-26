@@ -1,14 +1,14 @@
 # Current Release
 
-## DIIaC™ PatchForge PF-E1
+## DIIaC™ PatchForge PF-E2
 
-Release state: product identity and architecture baseline in progress
+Release state: Azure IaC baseline in progress
 
 Date: 2026-05-26
 
 ## Scope
 
-PF-E1 extends the initial repository baseline with product identity, intended-use, claims control, boundary control, architecture, Azure architecture, security model, and epic backlog documents for DIIaC™ PatchForge.
+PF-E2 adds a dedicated Azure infrastructure-as-code baseline for DIIaC™ PatchForge without deploying any Azure resources.
 
 Included:
 
@@ -24,6 +24,11 @@ Included:
 - Azure architecture
 - security model
 - epic backlog
+- Bicep modules for resource group, managed identities, monitoring, ACR, storage, Key Vault, PostgreSQL placeholder, and Container Apps
+- production Bicep parameter placeholders
+- IaC validation script
+- Azure deployment planning script
+- image build/push planning script
 - release baseline manifest
 - document control register
 
@@ -46,4 +51,4 @@ No deployment has been performed.
 
 ## Trust State
 
-Signed pack generation is planned for later epics and is not implemented in PF-E1.
+Signed pack generation is planned for later epics and is not implemented in PF-E2.

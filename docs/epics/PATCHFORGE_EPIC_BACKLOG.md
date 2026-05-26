@@ -28,6 +28,8 @@ Acceptance:
 
 ## PF-E2: Azure IaC Baseline
 
+Status: complete
+
 Purpose: create dedicated Azure infrastructure-as-code for PatchForge without deployment.
 
 Deliverables:

@@ -1,0 +1,211 @@
+targetScope = 'resourceGroup'
+
+param location string = resourceGroup().location
+param tags object = {}
+param environmentName string
+param logAnalyticsCustomerId string
+
+@secure()
+param logAnalyticsSharedKey string
+
+param acrLoginServer string
+param imageTag string = 'bootstrap'
+param bridgeExternalIngress bool = true
+param managedIdentityResourceIds object
+param managedIdentityClientIds object
+param storageAccountName string
+param keyVaultUri string
+param databaseHost string
+param databaseName string
+param environmentLabel string = 'prod'
+
+var commonEnv = [
+  {
+    name: 'PATCHFORGE_ENVIRONMENT'
+    value: environmentLabel
+  }
+  {
+    name: 'PATCHFORGE_BOUNDARY'
+    value: 'governance-only-no-scanner-no-exploit-no-deployment'
+  }
+  {
+    name: 'PATCHFORGE_STORAGE_ACCOUNT'
+    value: storageAccountName
+  }
+  {
+    name: 'PATCHFORGE_KEYVAULT_URI'
+    value: keyVaultUri
+  }
+  {
+    name: 'PATCHFORGE_DATABASE_HOST'
+    value: databaseHost
+  }
+  {
+    name: 'PATCHFORGE_DATABASE_NAME'
+    value: databaseName
+  }
+]
+
+var appDefinitions = [
+  {
+    name: 'ca-patchforge-ui-prod'
+    containerName: 'patchforge-ui'
+    image: '${acrLoginServer}/diiac/patchforge-frontend:${imageTag}'
+    identityId: managedIdentityResourceIds.ui
+    clientId: managedIdentityClientIds.ui
+    external: true
+    targetPort: 8080
+    cpu: json('0.5')
+    memory: '1Gi'
+    minReplicas: 1
+    maxReplicas: 3
+    role: 'frontend'
+  }
+  {
+    name: 'ca-patchforge-bridge-prod'
+    containerName: 'patchforge-bridge'
+    image: '${acrLoginServer}/diiac/patchforge-bridge:${imageTag}'
+    identityId: managedIdentityResourceIds.bridge
+    clientId: managedIdentityClientIds.bridge
+    external: bridgeExternalIngress
+    targetPort: 8080
+    cpu: json('0.5')
+    memory: '1Gi'
+    minReplicas: 1
+    maxReplicas: 5
+    role: 'bridge-api'
+  }
+  {
+    name: 'ca-patchforge-runtime-prod'
+    containerName: 'patchforge-runtime'
+    image: '${acrLoginServer}/diiac/patchforge-runtime:${imageTag}'
+    identityId: managedIdentityResourceIds.runtime
+    clientId: managedIdentityClientIds.runtime
+    external: false
+    targetPort: 8080
+    cpu: json('0.5')
+    memory: '1Gi'
+    minReplicas: 1
+    maxReplicas: 3
+    role: 'runtime-governance'
+  }
+  {
+    name: 'ca-patchforge-sra-prod'
+    containerName: 'patchforge-sra'
+    image: '${acrLoginServer}/diiac/patchforge-sra-agent:${imageTag}'
+    identityId: managedIdentityResourceIds.sra
+    clientId: managedIdentityClientIds.sra
+    external: false
+    targetPort: 8080
+    cpu: json('0.5')
+    memory: '1Gi'
+    minReplicas: 0
+    maxReplicas: 3
+    role: 'sra-advisory-only'
+  }
+  {
+    name: 'ca-patchforge-worker-prod'
+    containerName: 'patchforge-worker'
+    image: '${acrLoginServer}/diiac/patchforge-ingest-worker:${imageTag}'
+    identityId: managedIdentityResourceIds.worker
+    clientId: managedIdentityClientIds.worker
+    external: false
+    targetPort: 8080
+    cpu: json('0.5')
+    memory: '1Gi'
+    minReplicas: 0
+    maxReplicas: 5
+    role: 'ingest-export-worker'
+  }
+  {
+    name: 'ca-patchforge-scheduler-prod'
+    containerName: 'patchforge-scheduler'
+    image: '${acrLoginServer}/diiac/patchforge-scheduler:${imageTag}'
+    identityId: managedIdentityResourceIds.worker
+    clientId: managedIdentityClientIds.worker
+    external: false
+    targetPort: 8080
+    cpu: json('0.25')
+    memory: '0.5Gi'
+    minReplicas: 0
+    maxReplicas: 1
+    role: 'scheduler'
+  }
+]
+
+resource managedEnvironment 'Microsoft.App/managedEnvironments@2023-05-01' = {
+  name: environmentName
+  location: location
+  tags: tags
+  properties: {
+    appLogsConfiguration: {
+      destination: 'log-analytics'
+      logAnalyticsConfiguration: {
+        customerId: logAnalyticsCustomerId
+        sharedKey: logAnalyticsSharedKey
+      }
+    }
+    zoneRedundant: false
+  }
+}
+
+resource containerApps 'Microsoft.App/containerApps@2024-03-01' = [for app in appDefinitions: {
+  name: app.name
+  location: location
+  tags: union(tags, {
+    component: app.role
+  })
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${app.identityId}': {}
+    }
+  }
+  properties: {
+    managedEnvironmentId: managedEnvironment.id
+    configuration: {
+      activeRevisionsMode: 'Single'
+      ingress: {
+        external: app.external
+        targetPort: app.targetPort
+        transport: 'auto'
+        allowInsecure: false
+      }
+      registries: [
+        {
+          server: acrLoginServer
+          identity: app.identityId
+        }
+      ]
+    }
+    template: {
+      containers: [
+        {
+          name: app.containerName
+          image: app.image
+          env: concat(commonEnv, [
+            {
+              name: 'AZURE_CLIENT_ID'
+              value: app.clientId
+            }
+            {
+              name: 'PATCHFORGE_COMPONENT'
+              value: app.role
+            }
+          ])
+          resources: {
+            cpu: app.cpu
+            memory: app.memory
+          }
+        }
+      ]
+      scale: {
+        minReplicas: app.minReplicas
+        maxReplicas: app.maxReplicas
+      }
+    }
+  }
+}]
+
+output environmentId string = managedEnvironment.id
+output containerAppNames array = [for app in appDefinitions: app.name]

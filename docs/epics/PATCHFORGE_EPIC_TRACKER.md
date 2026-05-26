@@ -14,7 +14,7 @@
 | --- | --- | --- | --- |
 | PF-E0 | Repository bootstrap | Complete | `04bf579` |
 | PF-E1 | Product identity and architecture | Complete | |
-| PF-E2 | Azure IaC baseline | Pending | |
+| PF-E2 | Azure IaC baseline | Complete | |
 | PF-E3 | Schemas and evidence models | Pending | |
 | PF-E4 | Backend API and storage | Pending | |
 | PF-E5 | Runtime governance and signed packs | Pending | |
@@ -26,4 +26,4 @@
 
 ## Next Epic
 
-PF-E2: Dedicated Azure infrastructure-as-code baseline.
+PF-E3: PatchForge domain schemas and evidence models.
