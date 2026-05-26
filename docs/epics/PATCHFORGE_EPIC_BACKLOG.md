@@ -65,6 +65,8 @@ Deliverables:
 
 ## PF-E4: Backend API And Storage
 
+Status: complete
+
 Purpose: add tenant-isolated Patch Intelligence storage and API foundations.
 
 Deliverables:

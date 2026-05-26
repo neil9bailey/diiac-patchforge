@@ -1,0 +1,13 @@
+{
+  "name": "diiac-patchforge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test backend-api/**/*.test.mjs",
+    "test:contracts": "python -m pytest -q --basetemp .pytest_tmp",
+    "api:check": "node --check backend-api/server.js",
+    "api:start": "node backend-api/server.js"
+  }
+}
+

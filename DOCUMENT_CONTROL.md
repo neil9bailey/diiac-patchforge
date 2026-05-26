@@ -37,6 +37,10 @@ DIIaC™ PatchForge
 | contracts/domain-models/patchforge/*.schema.json | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | contracts/evidence_models.json | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | tests/test_contracts.py | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| package.json | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| backend-api/server.js | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| backend-api/patchforge/storage.js | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| backend-api/patchforge-api.test.mjs | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 
 ## Change Control
 

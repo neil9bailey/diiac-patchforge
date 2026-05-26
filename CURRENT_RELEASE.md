@@ -1,14 +1,14 @@
 # Current Release
 
-## DIIaC™ PatchForge PF-E3
+## DIIaC™ PatchForge PF-E4
 
-Release state: schemas and evidence models baseline in progress
+Release state: backend API and local storage baseline in progress
 
 Date: 2026-05-26
 
 ## Scope
 
-PF-E3 adds PatchForge domain schemas, evidence models, and validation tests.
+PF-E4 adds the PatchForge Backend API and tenant-isolated local JSON storage foundation.
 
 Included:
 
@@ -32,6 +32,9 @@ Included:
 - vulnerability, source, asset, service, exploitability, threat context, patch availability, feasibility, controls, readiness, risk acceptance, decision, outcome, SRA, and pack manifest schemas
 - evidence models for IT, emergency patch, risk acceptance, service transition, and OT patch governance
 - contract tests for schema loading, required fields, SRA advisory-only state, final approval defaults, and hard gate controls
+- Node Backend API with health, readiness, vulnerability, asset, service, exposure, and dashboard metrics endpoints
+- local JSON storage abstraction under customer-config/demo/patchforge
+- API tests for tenant isolation, review events, rejected evidence exclusion, metrics, and boundary endpoints
 - release baseline manifest
 - document control register
 
@@ -54,4 +57,4 @@ No deployment has been performed.
 
 ## Trust State
 
-Signed pack generation is planned for later epics and is not implemented in PF-E3.
+Signed pack generation is planned for later epics and is not implemented in PF-E4.

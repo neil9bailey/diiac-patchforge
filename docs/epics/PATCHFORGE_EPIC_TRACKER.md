@@ -16,7 +16,7 @@
 | PF-E1 | Product identity and architecture | Complete | |
 | PF-E2 | Azure IaC baseline | Complete | |
 | PF-E3 | Schemas and evidence models | Complete | |
-| PF-E4 | Backend API and storage | Pending | |
+| PF-E4 | Backend API and storage | Complete | |
 | PF-E5 | Runtime governance and signed packs | Pending | |
 | PF-E6 | Dedicated frontend shell | Pending | |
 | PF-E7 | Full Admin UI | Pending | |
@@ -26,4 +26,4 @@
 
 ## Next Epic
 
-PF-E4: Backend API and tenant-isolated Patch Intelligence storage.
+PF-E5: PatchForge deterministic runtime and signed decision packs.
