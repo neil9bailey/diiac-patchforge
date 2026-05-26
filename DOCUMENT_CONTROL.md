@@ -41,6 +41,8 @@ DIIaC™ PatchForge
 | backend-api/server.js | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | backend-api/patchforge/storage.js | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | backend-api/patchforge-api.test.mjs | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| runtime/governance_runtime.py | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| runtime/tests/test_governance_runtime.py | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 
 ## Change Control
 

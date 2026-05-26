@@ -17,7 +17,7 @@
 | PF-E2 | Azure IaC baseline | Complete | |
 | PF-E3 | Schemas and evidence models | Complete | |
 | PF-E4 | Backend API and storage | Complete | |
-| PF-E5 | Runtime governance and signed packs | Pending | |
+| PF-E5 | Runtime governance and signed packs | Complete | |
 | PF-E6 | Dedicated frontend shell | Pending | |
 | PF-E7 | Full Admin UI | Pending | |
 | PF-E8 | SRA MCP advisory layer | Pending | |
@@ -26,4 +26,4 @@
 
 ## Next Epic
 
-PF-E5: PatchForge deterministic runtime and signed decision packs.
+PF-E6: Dedicated PatchForge enterprise UI shell.

@@ -1,14 +1,14 @@
 # Current Release
 
-## DIIaC™ PatchForge PF-E4
+## DIIaC™ PatchForge PF-E5
 
-Release state: backend API and local storage baseline in progress
+Release state: runtime governance and signed packs baseline in progress
 
 Date: 2026-05-26
 
 ## Scope
 
-PF-E4 adds the PatchForge Backend API and tenant-isolated local JSON storage foundation.
+PF-E5 adds the deterministic PatchForge runtime and local signed decision pack generation.
 
 Included:
 
@@ -35,6 +35,12 @@ Included:
 - Node Backend API with health, readiness, vulnerability, asset, service, exposure, and dashboard metrics endpoints
 - local JSON storage abstraction under customer-config/demo/patchforge
 - API tests for tenant isolation, review events, rejected evidence exclusion, metrics, and boundary endpoints
+- deterministic governance runtime
+- evidence register and evidence model evaluation
+- policy pack evaluation and readiness calculation
+- patch decision context construction
+- local signed decision pack generation and verification
+- runtime tests for rejected evidence, SRA/scanner hard-gate limits, emergency approval blockers, pack verification, and boundary rejection
 - release baseline manifest
 - document control register
 
@@ -57,4 +63,4 @@ No deployment has been performed.
 
 ## Trust State
 
-Signed pack generation is planned for later epics and is not implemented in PF-E4.
+Signed pack generation is implemented locally with a development/test signature path. Production signing trust is planned for Azure Key Vault-backed deployment.

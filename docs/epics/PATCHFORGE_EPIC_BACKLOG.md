@@ -88,6 +88,8 @@ Rules:
 
 ## PF-E5: Runtime Governance And Signed Packs
 
+Status: complete
+
 Purpose: add deterministic governance runtime and signed decision packs.
 
 Deliverables:
