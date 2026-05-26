@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/sra_mcp_call_manifest.schema.json",
+  "title": "PatchForge SRA MCP Call Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tenant_id",
+    "call_id",
+    "tool_name",
+    "advisory_only",
+    "input_hash",
+    "output_hash",
+    "review_state",
+    "no_exploit_content",
+    "no_deployment_action"
+  ],
+  "properties": {
+    "tenant_id": { "type": "string", "minLength": 1 },
+    "call_id": { "type": "string", "minLength": 1 },
+    "tool_name": {
+      "type": "string",
+      "enum": [
+        "research_cve",
+        "assess_exploit_risk",
+        "map_affected_assets",
+        "suggest_compensating_controls",
+        "assess_patch_feasibility",
+        "summarise_vendor_advisory",
+        "assess_ot_patch_constraints",
+        "build_patch_decision_context"
+      ]
+    },
+    "advisory_only": { "type": "boolean", "const": true },
+    "input_hash": { "type": "string", "minLength": 16 },
+    "output_hash": { "type": "string", "minLength": 16 },
+    "source_refs": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "review_state": {
+      "type": "string",
+      "enum": ["pending_review", "reviewed", "rejected", "superseded"],
+      "default": "pending_review"
+    },
+    "no_exploit_content": { "type": "boolean", "const": true },
+    "no_deployment_action": { "type": "boolean", "const": true }
+  }
+}
+

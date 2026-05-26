@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/patch_availability.schema.json",
+  "title": "PatchForge Patch Availability",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tenant_id",
+    "availability_id",
+    "vulnerability_id",
+    "status",
+    "vendor_support_state",
+    "review_state"
+  ],
+  "properties": {
+    "tenant_id": { "type": "string", "minLength": 1 },
+    "availability_id": { "type": "string", "minLength": 1 },
+    "vulnerability_id": { "type": "string", "minLength": 1 },
+    "status": {
+      "type": "string",
+      "enum": ["patch_available", "mitigation_only", "no_patch_available", "not_applicable", "unknown"]
+    },
+    "vendor_support_state": {
+      "type": "string",
+      "enum": ["supported", "extended_support", "unsupported", "vendor_exception", "unknown"]
+    },
+    "patch_reference": { "type": ["string", "null"] },
+    "release_date": { "type": ["string", "null"], "format": "date" },
+    "evidence_refs": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "review_state": { "type": "string", "enum": ["pending_review", "reviewed", "rejected", "superseded"] }
+  }
+}
+

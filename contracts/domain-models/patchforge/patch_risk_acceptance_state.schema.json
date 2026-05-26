@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/patch_risk_acceptance_state.schema.json",
+  "title": "PatchForge Patch Risk Acceptance State",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tenant_id",
+    "risk_acceptance_id",
+    "vulnerability_id",
+    "owner",
+    "rationale",
+    "expiry_date",
+    "approval_state",
+    "final_approval_issued"
+  ],
+  "properties": {
+    "tenant_id": { "type": "string", "minLength": 1 },
+    "risk_acceptance_id": { "type": "string", "minLength": 1 },
+    "vulnerability_id": { "type": "string", "minLength": 1 },
+    "service_id": { "type": ["string", "null"] },
+    "owner": { "type": "string", "minLength": 1 },
+    "rationale": { "type": "string", "minLength": 1 },
+    "expiry_date": { "type": "string", "format": "date" },
+    "compensating_control_refs": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "approval_state": { "type": "string", "enum": ["pending", "approved", "rejected", "expired", "superseded"] },
+    "final_approval_issued": { "type": "boolean", "default": false },
+    "approval_event_refs": { "type": "array", "items": { "type": "string" }, "default": [] }
+  }
+}
+

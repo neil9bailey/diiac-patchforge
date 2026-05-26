@@ -1,14 +1,14 @@
 # Current Release
 
-## DIIaC™ PatchForge PF-E2
+## DIIaC™ PatchForge PF-E3
 
-Release state: Azure IaC baseline in progress
+Release state: schemas and evidence models baseline in progress
 
 Date: 2026-05-26
 
 ## Scope
 
-PF-E2 adds a dedicated Azure infrastructure-as-code baseline for DIIaC™ PatchForge without deploying any Azure resources.
+PF-E3 adds PatchForge domain schemas, evidence models, and validation tests.
 
 Included:
 
@@ -29,6 +29,9 @@ Included:
 - IaC validation script
 - Azure deployment planning script
 - image build/push planning script
+- vulnerability, source, asset, service, exploitability, threat context, patch availability, feasibility, controls, readiness, risk acceptance, decision, outcome, SRA, and pack manifest schemas
+- evidence models for IT, emergency patch, risk acceptance, service transition, and OT patch governance
+- contract tests for schema loading, required fields, SRA advisory-only state, final approval defaults, and hard gate controls
 - release baseline manifest
 - document control register
 
@@ -51,4 +54,4 @@ No deployment has been performed.
 
 ## Trust State
 
-Signed pack generation is planned for later epics and is not implemented in PF-E2.
+Signed pack generation is planned for later epics and is not implemented in PF-E3.

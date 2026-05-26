@@ -49,6 +49,8 @@ Rules:
 
 ## PF-E3: Schemas And Evidence Models
 
+Status: complete
+
 Purpose: define PatchForge domain schemas and evidence models.
 
 Deliverables:

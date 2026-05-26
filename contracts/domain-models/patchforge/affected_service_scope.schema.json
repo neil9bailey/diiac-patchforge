@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/affected_service_scope.schema.json",
+  "title": "PatchForge Affected Service Scope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tenant_id",
+    "scope_id",
+    "vulnerability_id",
+    "services",
+    "business_impact",
+    "review_state"
+  ],
+  "properties": {
+    "tenant_id": { "type": "string", "minLength": 1 },
+    "scope_id": { "type": "string", "minLength": 1 },
+    "vulnerability_id": { "type": "string", "minLength": 1 },
+    "services": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["service_id", "service_name", "service_tier", "customer_facing"],
+        "properties": {
+          "service_id": { "type": "string", "minLength": 1 },
+          "service_name": { "type": "string", "minLength": 1 },
+          "service_tier": { "type": "string", "enum": ["tier_0", "tier_1", "tier_2", "tier_3", "unknown"] },
+          "customer_facing": { "type": "boolean" },
+          "owner": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "business_impact": {
+      "type": "string",
+      "enum": ["critical", "high", "medium", "low", "unknown"]
+    },
+    "evidence_refs": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "review_state": {
+      "type": "string",
+      "enum": ["pending_review", "reviewed", "rejected", "superseded"]
+    }
+  }
+}
+

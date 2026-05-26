@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/patch_feasibility_assessment.schema.json",
+  "title": "PatchForge Patch Feasibility Assessment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tenant_id",
+    "feasibility_id",
+    "vulnerability_id",
+    "feasibility",
+    "change_risk",
+    "rollback_state",
+    "review_state"
+  ],
+  "properties": {
+    "tenant_id": { "type": "string", "minLength": 1 },
+    "feasibility_id": { "type": "string", "minLength": 1 },
+    "vulnerability_id": { "type": "string", "minLength": 1 },
+    "feasibility": { "type": "string", "enum": ["ready", "ready_with_conditions", "blocked", "not_applicable", "unknown"] },
+    "change_risk": { "type": "string", "enum": ["critical", "high", "medium", "low", "unknown"] },
+    "maintenance_window": { "type": ["string", "null"] },
+    "rollback_state": { "type": "string", "enum": ["validated", "available", "uncertain", "unavailable", "not_required"] },
+    "test_evidence_refs": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "rollback_evidence_refs": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "constraints": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "review_state": { "type": "string", "enum": ["pending_review", "reviewed", "rejected", "superseded"] }
+  }
+}
+

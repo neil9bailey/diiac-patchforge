@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/sra_research_trace.schema.json",
+  "title": "PatchForge SRA Research Trace",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tenant_id",
+    "trace_id",
+    "vulnerability_id",
+    "advisory_only",
+    "findings",
+    "source_map",
+    "confidence",
+    "review_state",
+    "cannot_close_hard_gates_alone"
+  ],
+  "properties": {
+    "tenant_id": { "type": "string", "minLength": 1 },
+    "trace_id": { "type": "string", "minLength": 1 },
+    "vulnerability_id": { "type": "string", "minLength": 1 },
+    "advisory_only": { "type": "boolean", "const": true },
+    "findings": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "source_map": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source_ref", "claim"],
+        "properties": {
+          "source_ref": { "type": "string" },
+          "claim": { "type": "string" }
+        }
+      },
+      "default": []
+    },
+    "contradictions": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "confidence": { "type": "string", "enum": ["high", "medium", "low", "unknown"] },
+    "review_state": { "type": "string", "enum": ["pending_review", "reviewed", "rejected", "superseded"] },
+    "cannot_close_hard_gates_alone": { "type": "boolean", "const": true }
+  }
+}
+

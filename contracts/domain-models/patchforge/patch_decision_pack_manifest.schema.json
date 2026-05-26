@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/patch_decision_pack_manifest.schema.json",
+  "title": "PatchForge Patch Decision Pack Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tenant_id",
+    "pack_id",
+    "decision_id",
+    "decision_posture",
+    "source_pack_immutable",
+    "final_approval_issued",
+    "artefacts",
+    "signature_state",
+    "created_at"
+  ],
+  "properties": {
+    "tenant_id": { "type": "string", "minLength": 1 },
+    "pack_id": { "type": "string", "minLength": 1 },
+    "decision_id": { "type": "string", "minLength": 1 },
+    "decision_posture": {
+      "type": "string",
+      "enum": [
+        "patch_required",
+        "emergency_change_required",
+        "mitigate_temporarily",
+        "risk_accept_temporarily",
+        "defer_pending_evidence",
+        "block_go_live",
+        "patch_not_applicable",
+        "close_verified"
+      ]
+    },
+    "source_pack_immutable": { "type": "boolean", "const": true },
+    "final_approval_issued": { "type": "boolean", "default": false },
+    "artefacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "sha256"],
+        "properties": {
+          "name": { "type": "string" },
+          "sha256": { "type": "string", "minLength": 16 }
+        }
+      }
+    },
+    "signature_state": { "type": "string", "enum": ["unsigned", "dev_signed", "trusted_signed", "verification_failed"] },
+    "created_at": { "type": "string", "format": "date-time" }
+  }
+}
+

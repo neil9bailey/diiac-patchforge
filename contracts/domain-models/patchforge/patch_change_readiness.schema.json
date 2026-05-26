@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/patch_change_readiness.schema.json",
+  "title": "PatchForge Patch Change Readiness",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tenant_id",
+    "readiness_id",
+    "vulnerability_id",
+    "readiness_state",
+    "human_review_required",
+    "final_approval_issued"
+  ],
+  "properties": {
+    "tenant_id": { "type": "string", "minLength": 1 },
+    "readiness_id": { "type": "string", "minLength": 1 },
+    "vulnerability_id": { "type": "string", "minLength": 1 },
+    "readiness_state": { "type": "string", "enum": ["ready", "ready_with_conditions", "blocked", "not_applicable", "unknown"] },
+    "blockers": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "change_window_ref": { "type": ["string", "null"] },
+    "test_evidence_refs": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "rollback_plan_refs": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "human_review_required": { "type": "boolean", "const": true },
+    "final_approval_issued": { "type": "boolean", "default": false },
+    "approval_event_refs": { "type": "array", "items": { "type": "string" }, "default": [] }
+  }
+}
+

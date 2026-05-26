@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/patch_outcome_feedback.schema.json",
+  "title": "PatchForge Patch Outcome Feedback",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tenant_id",
+    "feedback_id",
+    "decision_id",
+    "outcome_state",
+    "validation_evidence_refs",
+    "review_state"
+  ],
+  "properties": {
+    "tenant_id": { "type": "string", "minLength": 1 },
+    "feedback_id": { "type": "string", "minLength": 1 },
+    "decision_id": { "type": "string", "minLength": 1 },
+    "outcome_state": { "type": "string", "enum": ["implemented", "partially_implemented", "failed", "rolled_back", "not_started", "not_applicable"] },
+    "validation_evidence_refs": { "type": "array", "items": { "type": "string" } },
+    "customer_impact": { "type": "string", "enum": ["none", "low", "medium", "high", "unknown"] },
+    "review_state": { "type": "string", "enum": ["pending_review", "reviewed", "rejected", "superseded"] }
+  }
+}
+

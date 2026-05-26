@@ -34,6 +34,9 @@ DIIaC™ PatchForge
 | scripts/validate_iac.ps1 | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | scripts/plan_azure_deployment.ps1 | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | scripts/build_push_images.ps1 | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| contracts/domain-models/patchforge/*.schema.json | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| contracts/evidence_models.json | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| tests/test_contracts.py | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 
 ## Change Control
 

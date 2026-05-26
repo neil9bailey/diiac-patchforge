@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/patch_decision_context.schema.json",
+  "title": "PatchForge Patch Decision Context",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tenant_id",
+    "decision_id",
+    "vulnerability_id",
+    "decision_posture",
+    "evidence_model",
+    "evidence_refs",
+    "blockers",
+    "human_review_state",
+    "final_approval_issued"
+  ],
+  "properties": {
+    "tenant_id": { "type": "string", "minLength": 1 },
+    "decision_id": { "type": "string", "minLength": 1 },
+    "vulnerability_id": { "type": "string", "minLength": 1 },
+    "decision_posture": {
+      "type": "string",
+      "enum": [
+        "patch_required",
+        "emergency_change_required",
+        "mitigate_temporarily",
+        "risk_accept_temporarily",
+        "defer_pending_evidence",
+        "block_go_live",
+        "patch_not_applicable",
+        "close_verified"
+      ]
+    },
+    "evidence_model": { "type": "string", "minLength": 1 },
+    "evidence_refs": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "blockers": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "human_review_state": { "type": "string", "enum": ["not_started", "pending", "approved", "rejected"] },
+    "final_approval_issued": { "type": "boolean", "default": false },
+    "decision_rationale": { "type": "string" },
+    "created_at": { "type": ["string", "null"], "format": "date-time" }
+  }
+}
+

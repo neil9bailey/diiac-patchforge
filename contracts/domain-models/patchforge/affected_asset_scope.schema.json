@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/affected_asset_scope.schema.json",
+  "title": "PatchForge Affected Asset Scope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tenant_id",
+    "scope_id",
+    "vulnerability_id",
+    "assets",
+    "scope_confidence",
+    "review_state"
+  ],
+  "properties": {
+    "tenant_id": { "type": "string", "minLength": 1 },
+    "scope_id": { "type": "string", "minLength": 1 },
+    "vulnerability_id": { "type": "string", "minLength": 1 },
+    "assets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["asset_id", "asset_class", "exposure"],
+        "properties": {
+          "asset_id": { "type": "string", "minLength": 1 },
+          "asset_name": { "type": "string" },
+          "asset_class": {
+            "type": "string",
+            "enum": ["server", "endpoint", "network", "cloud", "identity", "application", "database", "ot", "unknown"]
+          },
+          "exposure": {
+            "type": "string",
+            "enum": ["internet_facing", "customer_facing", "internal", "segmented", "ot_site", "unknown"]
+          },
+          "criticality": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low", "unknown"],
+            "default": "unknown"
+          }
+        }
+      }
+    },
+    "scope_confidence": {
+      "type": "string",
+      "enum": ["high", "medium", "low", "unknown"]
+    },
+    "evidence_refs": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "review_state": {
+      "type": "string",
+      "enum": ["pending_review", "reviewed", "rejected", "superseded"]
+    }
+  }
+}
+

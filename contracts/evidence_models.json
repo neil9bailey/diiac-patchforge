@@ -1,0 +1,158 @@
+{
+  "schema_version": "0.1.0",
+  "product": "DIIaC PatchForge",
+  "source_defaults": {
+    "scanner_output": {
+      "initial_evidence_state": "referenced",
+      "initial_review_state": "pending_review",
+      "can_close_hard_gate_alone": false
+    },
+    "sra_trace": {
+      "initial_evidence_state": "referenced",
+      "initial_review_state": "pending_review",
+      "advisory_only": true,
+      "can_close_hard_gate_alone": false
+    },
+    "human_review": {
+      "initial_evidence_state": "reviewed",
+      "initial_review_state": "reviewed",
+      "can_close_hard_gate_alone": true
+    }
+  },
+  "hard_gate_sources_disallowed_alone": [
+    "scanner_output",
+    "sra_trace"
+  ],
+  "common_required_evidence_classes": [
+    "vulnerability_identity",
+    "affected_asset_scope",
+    "exploitability_signal",
+    "threat_intelligence_context",
+    "business_service_impact",
+    "patch_availability",
+    "patch_feasibility",
+    "test_evidence",
+    "rollback_plan",
+    "compensating_controls",
+    "change_window",
+    "customer_impact",
+    "risk_acceptance",
+    "human_review_signoff"
+  ],
+  "models": {
+    "vuln_patch_governance": {
+      "description": "Default IT vulnerability and patch governance evidence model.",
+      "required_evidence_classes": [
+        "vulnerability_identity",
+        "affected_asset_scope",
+        "affected_service_scope",
+        "exploitability_signal",
+        "threat_intelligence_context",
+        "business_service_impact",
+        "patch_availability",
+        "patch_feasibility",
+        "test_evidence",
+        "rollback_plan",
+        "change_window",
+        "human_review_signoff"
+      ],
+      "hard_gates": [
+        "vulnerability_identity",
+        "affected_asset_scope",
+        "patch_availability",
+        "human_review_signoff"
+      ]
+    },
+    "emergency_patch_change": {
+      "description": "Fast but governed emergency patch decision model.",
+      "required_evidence_classes": [
+        "vulnerability_identity",
+        "affected_asset_scope",
+        "affected_service_scope",
+        "exploitability_signal",
+        "threat_intelligence_context",
+        "business_service_impact",
+        "patch_availability",
+        "patch_feasibility",
+        "rollback_plan",
+        "customer_impact",
+        "human_review_signoff"
+      ],
+      "hard_gates": [
+        "vulnerability_identity",
+        "known_exploitation_or_urgency",
+        "affected_service_scope",
+        "rollback_plan",
+        "human_review_signoff"
+      ]
+    },
+    "patch_risk_acceptance": {
+      "description": "Temporary deferral and risk acceptance model.",
+      "required_evidence_classes": [
+        "vulnerability_identity",
+        "affected_asset_scope",
+        "affected_service_scope",
+        "business_service_impact",
+        "patch_availability",
+        "patch_feasibility",
+        "compensating_controls",
+        "risk_acceptance",
+        "human_review_signoff"
+      ],
+      "hard_gates": [
+        "owner",
+        "expiry_date",
+        "rationale",
+        "compensating_controls",
+        "human_review_signoff"
+      ]
+    },
+    "service_transition_patch_readiness": {
+      "description": "Service transition gate for vulnerabilities affecting go-live readiness.",
+      "required_evidence_classes": [
+        "vulnerability_identity",
+        "affected_service_scope",
+        "business_service_impact",
+        "patch_availability",
+        "patch_feasibility",
+        "test_evidence",
+        "rollback_plan",
+        "change_window",
+        "customer_impact",
+        "human_review_signoff"
+      ],
+      "hard_gates": [
+        "known_exploited_review",
+        "test_evidence",
+        "rollback_plan",
+        "human_review_signoff"
+      ]
+    },
+    "ot_vuln_patch_governance": {
+      "description": "OT vulnerability and patch governance model with safety and operational constraints.",
+      "required_evidence_classes": [
+        "vulnerability_identity",
+        "affected_asset_scope",
+        "affected_service_scope",
+        "exploitability_signal",
+        "threat_intelligence_context",
+        "business_service_impact",
+        "patch_availability",
+        "patch_feasibility",
+        "safety_impact",
+        "maintenance_window",
+        "vendor_support",
+        "rollback_plan",
+        "compensating_controls",
+        "human_review_signoff"
+      ],
+      "hard_gates": [
+        "safety_impact",
+        "maintenance_window",
+        "vendor_support",
+        "human_review_signoff"
+      ]
+    }
+  }
+}
+
