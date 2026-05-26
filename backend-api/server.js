@@ -1,14 +1,16 @@
 import http from "node:http";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { PatchForgeJsonStorage } from "./patchforge/storage.js";
+import { authorizeRequest, createAuthConfigFromEnv } from "./auth.js";
+import { createPatchForgeStorage } from "./patchforge/storage.js";
 import { runSraTool } from "./sra/securityResearchAgent.js";
 
 const DEFAULT_PORT = Number(process.env.PORT || 8080);
 const DEFAULT_TENANT = process.env.PATCHFORGE_DEFAULT_TENANT || "diiac-demo";
 
 export function createServer(options = {}) {
-  const storage = options.storage || new PatchForgeJsonStorage(options.storageRoot);
+  const storage = options.storage || createPatchForgeStorage({ storageRoot: options.storageRoot });
+  const authConfig = options.auth || createAuthConfigFromEnv();
 
   return http.createServer(async (req, res) => {
     try {
@@ -16,6 +18,15 @@ export function createServer(options = {}) {
       const url = new URL(req.url || "/", "http://localhost");
       const route = `${req.method || "GET"} ${url.pathname}`;
       const tenantId = resolveTenant(req, url);
+      const authorization = await authorizeRequest(req, url, authConfig);
+
+      if (!authorization.ok) {
+        return sendJson(res, authorization.statusCode, {
+          error: authorization.error,
+          message: authorization.message,
+          required_roles: authorization.requiredRoles
+        });
+      }
 
       if (req.method === "GET" && url.pathname === "/health") {
         return sendJson(res, 200, {
@@ -28,7 +39,8 @@ export function createServer(options = {}) {
       if (req.method === "GET" && url.pathname === "/readiness") {
         return sendJson(res, 200, {
           status: "ready",
-          storage: "local-json",
+          storage: storage.storageMode || "local-json",
+          auth_required: Boolean(authConfig.required),
           tenant_required: true
         });
       }

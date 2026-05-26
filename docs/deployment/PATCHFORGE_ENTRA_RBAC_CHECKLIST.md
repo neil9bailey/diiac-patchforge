@@ -51,6 +51,15 @@ Evidence:
 
 PatchForge expects app roles to appear as role claims in access tokens. The Bridge/API should enforce role-aware authorization before production launch.
 
+PF-AZ4 state:
+
+- Bridge/API enforces Microsoft Entra bearer tokens for protected `/api/*` routes when `PATCHFORGE_AUTH_REQUIRED=true`.
+- Public `/health` and `/readiness` remain unauthenticated for platform monitoring.
+- Protected routes return 401 when no bearer token is supplied.
+- Azure CLI bearer-token smoke could not complete because the Microsoft Azure CLI first-party client has not been consented for the PatchForge API delegated scope.
+
+Evidence: `docs/release/evidence/2026-05-26-patchforge-production-hardening/auth-smoke-pfaz4.json`
+
 ## Managed Identity Assignments
 
 Managed identities:

@@ -107,6 +107,21 @@ Custom-domain live state:
 - API certificate: `mc-acae-diiac-pat-api-patchforge-d-1628`
 - DNS cutover evidence: `docs/release/evidence/2026-05-26-patchforge-dns-cutover/`
 
+Production hardening state as of PF-AZ4 on 2026-05-26:
+
+- Deployed image tag: `pfaz4-20260526`
+- Bridge/API storage mode: `postgresql`
+- Bridge/API auth mode: `PATCHFORGE_AUTH_REQUIRED=true`
+- PostgreSQL password source: existing Key Vault secret `patchforge-postgres-admin-password`
+- PostgreSQL firewall rule: `AllowAzureServices` (`0.0.0.0` to `0.0.0.0`) for initial Container Apps connectivity
+- Runtime signing mode: Azure Key Vault ES256 supported
+- Runtime signing key name: `pf-pack-signing-prod`
+- Runtime Key Vault signing smoke: verified true
+- Custom domains are now represented in Bicep using existing managed certificate names
+- Production hardening evidence: `docs/release/evidence/2026-05-26-patchforge-production-hardening/`
+
+The UI remains a public static command-centre shell. Protected API data requires Entra bearer tokens with PatchForge app roles.
+
 Tell the user before:
 
 - Azure authentication or subscription access is required

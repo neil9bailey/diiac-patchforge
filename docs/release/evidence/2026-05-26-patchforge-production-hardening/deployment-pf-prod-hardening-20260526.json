@@ -1,0 +1,112 @@
+﻿{
+    "correlationId":  "cf00d048-662b-4d58-904f-af57b5592c4f",
+    "location":  "uksouth",
+    "name":  "pf-prod-hardening-20260526",
+    "outputs":  {
+                    "acrLoginServer":  {
+                                           "type":  "String",
+                                           "value":  "acrdiiacpatchforgeprod.azurecr.io"
+                                       },
+                    "apiUrlPlaceholder":  {
+                                              "type":  "String",
+                                              "value":  "https://api.patchforge.diiac.io"
+                                          },
+                    "containerAppsEnvironmentId":  {
+                                                       "type":  "String",
+                                                       "value":  "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/managedEnvironments/acae-diiac-patchforge-prod"
+                                                   },
+                    "frontendUrlPlaceholder":  {
+                                                   "type":  "String",
+                                                   "value":  "https://patchforge.diiac.io"
+                                               },
+                    "keyVaultUri":  {
+                                        "type":  "String",
+                                        "value":  "https://kv-diiac-patchforge-prod.vault.azure.net/"
+                                    },
+                    "resourceGroup":  {
+                                          "type":  "String",
+                                          "value":  "rg-diiac-patchforge-prod"
+                                      },
+                    "storageAccountName":  {
+                                               "type":  "String",
+                                               "value":  "stdiiacpatchforgeprod01"
+                                           }
+                },
+    "parameters":  {
+                       "acrSku":  {
+                                      "type":  "String",
+                                      "value":  "Basic"
+                                  },
+                       "allowAzureServicesToPostgres":  {
+                                                            "type":  "Bool",
+                                                            "value":  true
+                                                        },
+                       "authRequired":  {
+                                            "type":  "Bool",
+                                            "value":  true
+                                        },
+                       "bridgeExternalIngress":  {
+                                                     "type":  "Bool",
+                                                     "value":  true
+                                                 },
+                       "createPostgres":  {
+                                              "type":  "Bool",
+                                              "value":  true
+                                          },
+                       "deployContainerApps":  {
+                                                   "type":  "Bool",
+                                                   "value":  true
+                                               },
+                       "entraAudience":  {
+                                             "type":  "String",
+                                             "value":  "api://ec30b0eb-cfc4-48cc-a5f2-2a1345d96736"
+                                         },
+                       "environmentName":  {
+                                               "type":  "String",
+                                               "value":  "prod"
+                                           },
+                       "imageTag":  {
+                                        "type":  "String",
+                                        "value":  "pfaz4-20260526"
+                                    },
+                       "keyVaultSigningKeyName":  {
+                                                      "type":  "String",
+                                                      "value":  "pf-pack-signing-prod"
+                                                  },
+                       "keyVaultSigningKeyVersion":  {
+                                                         "type":  "String",
+                                                         "value":  ""
+                                                     },
+                       "location":  {
+                                        "type":  "String",
+                                        "value":  "uksouth"
+                                    },
+                       "postgresAdministratorLogin":  {
+                                                          "type":  "String",
+                                                          "value":  "patchforgeadmin"
+                                                      },
+                       "postgresAdministratorPassword":  {
+                                                             "type":  "SecureString"
+                                                         },
+                       "postgresPasswordSecretName":  {
+                                                          "type":  "String",
+                                                          "value":  "patchforge-postgres-admin-password"
+                                                      },
+                       "resourceGroupName":  {
+                                                 "type":  "String",
+                                                 "value":  "rg-diiac-patchforge-prod"
+                                             },
+                       "tags":  {
+                                    "type":  "Object",
+                                    "value":  {
+                                                  "boundary":  "governance-only",
+                                                  "environment":  "prod",
+                                                  "managedBy":  "bicep",
+                                                  "owner":  "DIIaC",
+                                                  "product":  "DIIaC PatchForge"
+                                              }
+                                }
+                   },
+    "provisioningState":  "Succeeded",
+    "timestamp":  "2026-05-26T18:45:20.502535+00:00"
+}

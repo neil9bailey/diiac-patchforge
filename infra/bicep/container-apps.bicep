@@ -17,6 +17,17 @@ param storageAccountName string
 param keyVaultUri string
 param databaseHost string
 param databaseName string
+param databaseUser string = 'patchforgeadmin'
+param databasePasswordSecretName string = 'patchforge-postgres-admin-password'
+param storageMode string = 'postgresql'
+param entraTenantId string = '67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da'
+param entraAudience string = 'api://ec30b0eb-cfc4-48cc-a5f2-2a1345d96736'
+param authRequired bool = true
+param keyVaultSigningKeyId string = ''
+param uiCustomDomain string = 'patchforge.diiac.io'
+param apiCustomDomain string = 'api.patchforge.diiac.io'
+param uiManagedCertificateName string = 'mc-acae-diiac-pat-patchforge-diiac-9158'
+param apiManagedCertificateName string = 'mc-acae-diiac-pat-api-patchforge-d-1628'
 param environmentLabel string = 'prod'
 
 var commonEnv = [
@@ -44,6 +55,34 @@ var commonEnv = [
     name: 'PATCHFORGE_DATABASE_NAME'
     value: databaseName
   }
+  {
+    name: 'PATCHFORGE_DATABASE_USER'
+    value: databaseUser
+  }
+  {
+    name: 'PATCHFORGE_DATABASE_PASSWORD_SECRET_NAME'
+    value: databasePasswordSecretName
+  }
+  {
+    name: 'PATCHFORGE_STORAGE_MODE'
+    value: storageMode
+  }
+  {
+    name: 'PATCHFORGE_ENTRA_TENANT_ID'
+    value: entraTenantId
+  }
+  {
+    name: 'PATCHFORGE_ENTRA_AUDIENCE'
+    value: entraAudience
+  }
+  {
+    name: 'PATCHFORGE_AUTH_REQUIRED'
+    value: string(authRequired)
+  }
+  {
+    name: 'PATCHFORGE_KEYVAULT_SIGNING_KEY_ID'
+    value: keyVaultSigningKeyId
+  }
 ]
 
 var appDefinitions = [
@@ -60,6 +99,8 @@ var appDefinitions = [
     minReplicas: 1
     maxReplicas: 3
     role: 'frontend'
+    customDomain: uiCustomDomain
+    managedCertificateName: uiManagedCertificateName
   }
   {
     name: 'ca-patchforge-bridge-prod'
@@ -74,6 +115,8 @@ var appDefinitions = [
     minReplicas: 1
     maxReplicas: 5
     role: 'bridge-api'
+    customDomain: apiCustomDomain
+    managedCertificateName: apiManagedCertificateName
   }
   {
     name: 'ca-patchforge-runtime-prod'
@@ -88,6 +131,8 @@ var appDefinitions = [
     minReplicas: 1
     maxReplicas: 3
     role: 'runtime-governance'
+    customDomain: ''
+    managedCertificateName: ''
   }
   {
     name: 'ca-patchforge-sra-prod'
@@ -102,6 +147,8 @@ var appDefinitions = [
     minReplicas: 0
     maxReplicas: 3
     role: 'sra-advisory-only'
+    customDomain: ''
+    managedCertificateName: ''
   }
   {
     name: 'ca-patchforge-worker-prod'
@@ -116,6 +163,8 @@ var appDefinitions = [
     minReplicas: 0
     maxReplicas: 5
     role: 'ingest-export-worker'
+    customDomain: ''
+    managedCertificateName: ''
   }
   {
     name: 'ca-patchforge-scheduler-prod'
@@ -130,6 +179,8 @@ var appDefinitions = [
     minReplicas: 0
     maxReplicas: 1
     role: 'scheduler'
+    customDomain: ''
+    managedCertificateName: ''
   }
 ]
 
@@ -170,6 +221,13 @@ resource containerApps 'Microsoft.App/containerApps@2024-03-01' = [for app in ap
         targetPort: app.targetPort
         transport: 'auto'
         allowInsecure: false
+        customDomains: (!empty(app.customDomain) && !empty(app.managedCertificateName)) ? [
+          {
+            name: app.customDomain
+            bindingType: 'SniEnabled'
+            certificateId: '${managedEnvironment.id}/managedCertificates/${app.managedCertificateName}'
+          }
+        ] : []
       }
       registries: [
         {

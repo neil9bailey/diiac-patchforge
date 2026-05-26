@@ -9,7 +9,27 @@ import { PatchForgeJsonStorage } from "./patchforge/storage.js";
 async function withApi(run) {
   const storageRoot = await mkdtemp(path.join(os.tmpdir(), "patchforge-api-"));
   const storage = new PatchForgeJsonStorage(storageRoot);
-  const server = createServer({ storage });
+  const server = createServer({ storage, auth: { required: false } });
+  await new Promise((resolve) => server.listen(0, resolve));
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  try {
+    await run(baseUrl);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    await rm(storageRoot, { recursive: true, force: true });
+  }
+}
+
+async function withAuthenticatedApi(run, verifier) {
+  const storageRoot = await mkdtemp(path.join(os.tmpdir(), "patchforge-auth-api-"));
+  const storage = new PatchForgeJsonStorage(storageRoot);
+  const server = createServer({
+    storage,
+    auth: {
+      required: true,
+      verifier
+    }
+  });
   await new Promise((resolve) => server.listen(0, resolve));
   const baseUrl = `http://127.0.0.1:${server.address().port}`;
   try {
@@ -210,5 +230,31 @@ test("admin config saves locally, masks secrets, and blocks live Azure mutation"
     });
     assert.equal(blocked.response.status, 400);
     assert.equal(blocked.body.error, "live_azure_mutation_blocked");
+  });
+});
+
+test("auth gate requires a valid bearer token and PatchForge app role when enabled", async () => {
+  await withAuthenticatedApi(async (baseUrl) => {
+    const missing = await request(baseUrl, "/api/patchforge/vulnerabilities", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(missing.response.status, 401);
+    assert.equal(missing.body.error, "missing_bearer_token");
+
+    const forbidden = await request(baseUrl, "/api/patchforge/vulnerabilities", {
+      headers: { "x-tenant-id": "tenant-a", authorization: "Bearer no-role" }
+    });
+    assert.equal(forbidden.response.status, 403);
+    assert.equal(forbidden.body.error, "insufficient_patchforge_role");
+
+    const allowed = await request(baseUrl, "/api/patchforge/vulnerabilities", {
+      headers: { "x-tenant-id": "tenant-a", authorization: "Bearer reader" }
+    });
+    assert.equal(allowed.response.status, 200);
+  }, async (token) => {
+    if (token === "reader") {
+      return { roles: ["PatchForge.Reader"], tid: "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da", oid: "user-reader" };
+    }
+    return { roles: [], tid: "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da", oid: "user-empty" };
   });
 });

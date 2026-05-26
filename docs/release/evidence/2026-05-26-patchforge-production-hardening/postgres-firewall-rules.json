@@ -1,0 +1,9 @@
+﻿{
+    "endIpAddress":  "0.0.0.0",
+    "id":  "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.DBforPostgreSQL/flexibleServers/psql-diiac-patchforge-prod/firewallRules/AllowAzureServices",
+    "name":  "AllowAzureServices",
+    "resourceGroup":  "rg-diiac-patchforge-prod",
+    "startIpAddress":  "0.0.0.0",
+    "systemData":  null,
+    "type":  "Microsoft.DBforPostgreSQL/flexibleServers/firewallRules"
+}

@@ -42,6 +42,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "24"
+          cache: npm
+          cache-dependency-path: backend-api/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm --prefix backend-api ci
 
       - name: Check backend syntax
         run: node --check backend-api/server.js

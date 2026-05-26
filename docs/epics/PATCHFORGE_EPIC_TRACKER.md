@@ -27,7 +27,8 @@
 | PF-AZ1 | Dedicated Azure bootstrap deployment | Complete | |
 | PF-AZ2 | Identity, signing, database, and admin membership gates | Complete | |
 | PF-AZ3 | DNS cutover and custom-domain TLS binding | Complete | |
+| PF-AZ4 | API RBAC, PostgreSQL storage, and runtime Key Vault signing | Complete | |
 
 ## Next Epic
 
-Post-PF-AZ3: add runtime Key Vault signing integration, enforce Entra app roles in the Bridge/API and UI, and migrate application storage from local JSON to PostgreSQL.
+Post-PF-AZ4: add UI sign-in/client role UX, move PostgreSQL and storage to a private networking model, and add buyer-grade protected workflow demos.

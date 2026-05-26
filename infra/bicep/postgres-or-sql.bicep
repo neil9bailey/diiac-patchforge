@@ -6,6 +6,7 @@ param createPostgres bool = false
 param postgresServerName string
 param databaseName string = 'patchforge_prod'
 param administratorLogin string = 'patchforgeadmin'
+param allowAzureServicesFirewallRule bool = true
 
 @secure()
 param administratorPassword string = ''
@@ -45,6 +46,15 @@ resource patchForgeDatabase 'Microsoft.DBforPostgreSQL/flexibleServers/databases
   properties: {
     charset: 'UTF8'
     collation: 'en_US.utf8'
+  }
+}
+
+resource allowAzureServices 'Microsoft.DBforPostgreSQL/flexibleServers/firewallRules@2023-12-01-preview' = if (createPostgres && allowAzureServicesFirewallRule) {
+  name: 'AllowAzureServices'
+  parent: postgresServer
+  properties: {
+    startIpAddress: '0.0.0.0'
+    endIpAddress: '0.0.0.0'
   }
 }
 

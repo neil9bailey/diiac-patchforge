@@ -1,0 +1,24 @@
+﻿{
+    "timestamp_utc":  "2026-05-26T18:52:34.9474237Z",
+    "unauthenticated_request":  {
+                                    "url":  "https://api.patchforge.diiac.io/api/patchforge/dashboard/metrics",
+                                    "statusCode":  401,
+                                    "ok":  true,
+                                    "expected":  "missing_bearer_token",
+                                    "required_roles":  [
+                                                           "PatchForge.Reader",
+                                                           "PatchForge.Auditor",
+                                                           "PatchForge.TriageAnalyst",
+                                                           "PatchForge.SecurityLead",
+                                                           "PatchForge.Admin"
+                                                       ]
+                                },
+    "azure_cli_token_smoke":  {
+                                  "attempted":  true,
+                                  "completed":  false,
+                                  "reason":  "Azure CLI first-party client has not been consented for the PatchForge API delegated scope in this tenant.",
+                                  "aad_error":  "AADSTS65001",
+                                  "remediation":  "Use the PatchForge UI auth flow or grant/perform interactive consent for the API scope before CLI bearer-token smoke testing.",
+                                  "token_recorded":  false
+                              }
+}

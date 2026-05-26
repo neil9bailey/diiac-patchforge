@@ -3,11 +3,14 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import os
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Protocol
 from typing import Any
 from uuid import uuid4
+from urllib.parse import urlparse
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -63,6 +66,11 @@ class EvidenceEvaluation:
     rejected_refs: list[str]
     advisory_only_refs: list[str]
     readiness_score: int
+
+
+class SigningProvider(Protocol):
+    def sign(self, signed_payload: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+        ...
 
 
 def now_utc() -> str:
@@ -309,6 +317,8 @@ def create_signed_decision_pack(
     approval_events: list[dict[str, Any]] | None = None,
     requested_posture: str | None = None,
     signing_key: bytes | str | None = None,
+    key_vault_key_id: str | None = None,
+    signing_provider: SigningProvider | None = None,
     dev_mode: bool = True,
 ) -> dict[str, Any]:
     pack_dir = Path(output_dir)
@@ -344,7 +354,8 @@ def create_signed_decision_pack(
         "patch_risk_acceptance_state.json": risk_acceptance or {"final_approval_issued": False},
         "human_review_state.json": human_review_state,
         "trust_bundle.json": {
-            "signing_mode": "dev" if dev_mode else "production",
+            "signing_mode": "dev" if dev_mode else "azure_key_vault",
+            "key_id": key_vault_key_id or ("dev-test-only" if dev_mode else None),
             "signature_scope": "artefact_integrity_not_source_truth"
         },
         "replay_certificate.json": {
@@ -390,7 +401,13 @@ def create_signed_decision_pack(
         "governance_manifest_sha256": verification_manifest["governance_manifest_sha256"],
         "verification_manifest_sha256": _sha256_file(pack_dir / "verification_manifest.json")
     }
-    signature, sigmeta = _sign_payload(signed_payload, signing_key=signing_key, dev_mode=dev_mode)
+    signature, sigmeta = _sign_payload(
+        signed_payload,
+        signing_key=signing_key,
+        key_vault_key_id=key_vault_key_id,
+        signing_provider=signing_provider,
+        dev_mode=dev_mode,
+    )
     _write_json(pack_dir / "signed_export.sigmeta.json", sigmeta)
     (pack_dir / "signed_export.sig").write_text(signature, encoding="utf-8")
 
@@ -453,9 +470,18 @@ def _hash_artefacts(pack_dir: Path, file_names: Any) -> list[dict[str, str]]:
 def _sign_payload(
     signed_payload: dict[str, Any],
     signing_key: bytes | str | None,
+    key_vault_key_id: str | None,
+    signing_provider: SigningProvider | None,
     dev_mode: bool,
 ) -> tuple[str, dict[str, Any]]:
     payload = canonical_json(signed_payload)
+
+    if signing_provider:
+        return signing_provider.sign(signed_payload)
+
+    key_vault_key_id = key_vault_key_id or os.getenv("PATCHFORGE_KEYVAULT_SIGNING_KEY_ID")
+    if key_vault_key_id and not dev_mode:
+        return _sign_payload_with_key_vault(signed_payload, key_vault_key_id)
 
     if signing_key and not dev_mode:
         try:
@@ -478,7 +504,7 @@ def _sign_payload(
         return signature, sigmeta
 
     if not dev_mode:
-        raise GovernanceRuntimeError("Production signing requires an Ed25519 signing key.")
+        raise GovernanceRuntimeError("Production signing requires a Key Vault key ID or an Ed25519 signing key.")
 
     dev_key = "patchforge-dev-test-key"
     signature = hmac.new(dev_key.encode("utf-8"), payload, hashlib.sha256).hexdigest()
@@ -504,4 +530,124 @@ def _verify_signature(sigmeta: dict[str, Any], signature: str, dev_key: str | No
     if sigmeta["algorithm"] == "Ed25519":  # pragma: no cover - verification needs public key plumbing later
         return False
 
+    if sigmeta["algorithm"] == "ES256":
+        return _verify_es256_signature(sigmeta, signature, payload)
+
     return False
+
+
+def _sign_payload_with_key_vault(
+    signed_payload: dict[str, Any],
+    key_vault_key_id: str,
+) -> tuple[str, dict[str, Any]]:
+    try:
+        from azure.identity import DefaultAzureCredential
+        from azure.keyvault.keys import KeyClient
+        from azure.keyvault.keys.crypto import CryptographyClient, SignatureAlgorithm
+    except ImportError as exc:  # pragma: no cover - optional production path
+        raise GovernanceRuntimeError(
+            "Azure Key Vault signing requires azure-identity and azure-keyvault-keys."
+        ) from exc
+
+    payload = canonical_json(signed_payload)
+    digest = hashlib.sha256(payload).digest()
+    credential_kwargs = {}
+    managed_identity_client_id = os.getenv("AZURE_CLIENT_ID")
+    if managed_identity_client_id:
+        credential_kwargs["managed_identity_client_id"] = managed_identity_client_id
+    credential = DefaultAzureCredential(**credential_kwargs)
+    crypto_client = CryptographyClient(key_vault_key_id, credential)
+    sign_result = crypto_client.sign(SignatureAlgorithm.es256, digest)
+
+    vault_url, key_name, key_version = _parse_key_vault_key_id(key_vault_key_id)
+    key_client = KeyClient(vault_url=vault_url, credential=credential)
+    key = key_client.get_key(key_name, key_version)
+    public_jwk = _public_jwk_from_key_vault_key(key)
+
+    sigmeta = {
+        "algorithm": "ES256",
+        "key_id": sign_result.key_id or key_vault_key_id,
+        "signed_payload": signed_payload,
+        "signature_encoding": "base64url_raw_ecdsa",
+        "public_jwk": public_jwk,
+        "dev_key_hint": None,
+        "signing_provider": "azure_key_vault"
+    }
+    return _base64url_encode(sign_result.signature), sigmeta
+
+
+def _parse_key_vault_key_id(key_id: str) -> tuple[str, str, str | None]:
+    parsed = urlparse(key_id)
+    parts = [part for part in parsed.path.split("/") if part]
+    if len(parts) < 2 or parts[0] != "keys":
+        raise GovernanceRuntimeError("Key Vault key ID must use the form https://<vault>/keys/<name>/<version>.")
+    vault_url = f"{parsed.scheme}://{parsed.netloc}"
+    key_name = parts[1]
+    key_version = parts[2] if len(parts) > 2 else None
+    return vault_url, key_name, key_version
+
+
+def _public_jwk_from_key_vault_key(key: Any) -> dict[str, str]:
+    jwk = key.key
+    x_value = getattr(jwk, "x", None)
+    y_value = getattr(jwk, "y", None)
+    if x_value is None or y_value is None:
+        raise GovernanceRuntimeError("Key Vault signing key must expose EC public key coordinates for local verification.")
+    return {
+        "kty": str(getattr(jwk, "kty", None) or getattr(jwk, "key_type", "EC")),
+        "crv": str(getattr(jwk, "crv", None) or getattr(jwk, "curve", "P-256")),
+        "x": _base64url_encode(_bytes_from_key_material(x_value)),
+        "y": _base64url_encode(_bytes_from_key_material(y_value)),
+    }
+
+
+def _verify_es256_signature(sigmeta: dict[str, Any], signature: str, payload: bytes) -> bool:
+    public_jwk = sigmeta.get("public_jwk")
+    if not public_jwk:
+        return False
+    try:
+        from cryptography.exceptions import InvalidSignature
+        from cryptography.hazmat.primitives import hashes
+        from cryptography.hazmat.primitives.asymmetric import ec, utils
+    except ImportError as exc:  # pragma: no cover - optional production path
+        raise GovernanceRuntimeError("ES256 verification requires the cryptography package.") from exc
+
+    x = int.from_bytes(_base64url_decode(public_jwk["x"]), "big")
+    y = int.from_bytes(_base64url_decode(public_jwk["y"]), "big")
+    public_key = ec.EllipticCurvePublicNumbers(x, y, ec.SECP256R1()).public_key()
+    raw_signature = _base64url_decode(signature)
+    if len(raw_signature) == 64:
+        r = int.from_bytes(raw_signature[:32], "big")
+        s = int.from_bytes(raw_signature[32:], "big")
+        signature_to_verify = utils.encode_dss_signature(r, s)
+    else:
+        signature_to_verify = raw_signature
+
+    try:
+        public_key.verify(signature_to_verify, payload, ec.ECDSA(hashes.SHA256()))
+        return True
+    except InvalidSignature:
+        return False
+
+
+def _bytes_from_key_material(value: Any) -> bytes:
+    if isinstance(value, bytes):
+        return value
+    if isinstance(value, str):
+        return _base64url_decode(value)
+    if isinstance(value, int):
+        return value.to_bytes(32, "big")
+    return bytes(value)
+
+
+def _base64url_encode(value: bytes) -> str:
+    import base64
+
+    return base64.urlsafe_b64encode(value).rstrip(b"=").decode("ascii")
+
+
+def _base64url_decode(value: str) -> bytes:
+    import base64
+
+    padded = value + "=" * (-len(value) % 4)
+    return base64.urlsafe_b64decode(padded.encode("ascii"))

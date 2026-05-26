@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from "node:crypto";
+﻿import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -10,6 +10,15 @@ const COLLECTIONS = [
   "reviews",
   "audit_events"
 ];
+
+const COLLECTION_ID_FIELDS = {
+  vulnerabilities: "vulnerability_id",
+  sources: "source_record_id",
+  assets: "asset_id",
+  services: "service_id",
+  reviews: "review_id",
+  audit_events: "audit_id"
+};
 
 const DEFAULT_ADMIN_CONFIG = {
   tenant_id: "diiac-demo",
@@ -75,15 +84,16 @@ export function hashObject(value) {
 export class PatchForgeJsonStorage {
   constructor(rootDir = path.resolve("customer-config/demo/patchforge")) {
     this.rootDir = rootDir;
+    this.storageMode = "local-json";
   }
 
   async ensureReady() {
     await mkdir(this.rootDir, { recursive: true });
-    await Promise.all(COLLECTIONS.map((collection) => this.#ensureCollection(collection)));
+    await Promise.all(COLLECTIONS.map((collection) => this._ensureCollection(collection)));
   }
 
-  async #ensureCollection(collection) {
-    const file = this.#file(collection);
+  async _ensureCollection(collection) {
+    const file = this._file(collection);
     try {
       await readFile(file, "utf8");
     } catch (error) {
@@ -94,30 +104,30 @@ export class PatchForgeJsonStorage {
     }
   }
 
-  #file(collection) {
+  _file(collection) {
     return path.join(this.rootDir, `${collection}.json`);
   }
 
-  async #read(collection) {
+  async _read(collection) {
     await this.ensureReady();
-    return JSON.parse(await readFile(this.#file(collection), "utf8"));
+    return JSON.parse(await readFile(this._file(collection), "utf8"));
   }
 
-  async #write(collection, records) {
+  async _write(collection, records) {
     await this.ensureReady();
-    const file = this.#file(collection);
+    const file = this._file(collection);
     const tmp = `${file}.${process.pid}.${Date.now()}.tmp`;
     await writeFile(tmp, `${JSON.stringify(records, null, 2)}\n`, "utf8");
     await rename(tmp, file);
   }
 
-  #adminConfigFile() {
+  _adminConfigFile() {
     return path.join(this.rootDir, "admin_config.json");
   }
 
-  async #readAdminConfigFile() {
+  async _readAdminConfigFile() {
     await this.ensureReady();
-    const file = this.#adminConfigFile();
+    const file = this._adminConfigFile();
     try {
       return JSON.parse(await readFile(file, "utf8"));
     } catch (error) {
@@ -130,28 +140,28 @@ export class PatchForgeJsonStorage {
     }
   }
 
-  async #writeAdminConfigFile(config) {
+  async _writeAdminConfigFile(config) {
     await this.ensureReady();
-    const file = this.#adminConfigFile();
+    const file = this._adminConfigFile();
     const tmp = `${file}.${process.pid}.${Date.now()}.tmp`;
     await writeFile(tmp, `${JSON.stringify(config, null, 2)}\n`, "utf8");
     await rename(tmp, file);
   }
 
   async list(collection, tenantId) {
-    const records = await this.#read(collection);
+    const records = await this._read(collection);
     return records.filter((record) => record.tenant_id === tenantId);
   }
 
   async append(collection, record) {
-    const records = await this.#read(collection);
+    const records = await this._read(collection);
     records.push(record);
-    await this.#write(collection, records);
+    await this._write(collection, records);
     return record;
   }
 
   async replace(collection, predicate, updater) {
-    const records = await this.#read(collection);
+    const records = await this._read(collection);
     let updatedRecord = null;
     const updated = records.map((record) => {
       if (!predicate(record)) {
@@ -160,7 +170,7 @@ export class PatchForgeJsonStorage {
       updatedRecord = updater(record);
       return updatedRecord;
     });
-    await this.#write(collection, updated);
+    await this._write(collection, updated);
     return updatedRecord;
   }
 
@@ -383,13 +393,13 @@ export class PatchForgeJsonStorage {
   }
 
   async readAdminConfig(tenantId) {
-    const allConfig = await this.#readAdminConfigFile();
+    const allConfig = await this._readAdminConfigFile();
     const config = allConfig[tenantId] || { ...DEFAULT_ADMIN_CONFIG, tenant_id: tenantId };
     return maskSecretValues(config);
   }
 
   async saveAdminConfig(tenantId, payload) {
-    const allConfig = await this.#readAdminConfigFile();
+    const allConfig = await this._readAdminConfigFile();
     const previous = allConfig[tenantId] || { ...DEFAULT_ADMIN_CONFIG, tenant_id: tenantId };
     const next = {
       ...previous,
@@ -411,7 +421,7 @@ export class PatchForgeJsonStorage {
 
     const sanitized = maskSecretValues(next);
     allConfig[tenantId] = sanitized;
-    await this.#writeAdminConfigFile(allConfig);
+    await this._writeAdminConfigFile(allConfig);
     await this.audit(tenantId, "admin_config_updated", { sections: Object.keys(payload) });
     return sanitized;
   }
@@ -424,15 +434,19 @@ export class PatchForgeJsonStorage {
       live_azure_mutation_enabled: false,
       checks: [
         { name: "Frontend health", status: "ready", mode: "read-only" },
-        { name: "Bridge health", status: "ready", mode: "local-json" },
+        { name: "Bridge health", status: "ready", mode: this.storageMode || "local-json" },
         { name: "Runtime health", status: "ready", mode: "local" },
         { name: "SRA health", status: config.sra?.advisory_only ? "advisory" : "disabled", mode: "advisory-only" },
         { name: "Worker health", status: "planned", mode: "not-deployed" },
         { name: "Scheduler health", status: "planned", mode: "not-deployed" },
-        { name: "Database health", status: "placeholder", mode: config.storage?.mode || "local-json" },
-        { name: "Storage health", status: "ready", mode: config.storage?.mode || "local-json" },
-        { name: "Key Vault health", status: "planned", mode: "no-live-access" },
-        { name: "Signing trust", status: config.signing?.trust_state || "dev-local", mode: "no-production-key" }
+        {
+          name: "Database health",
+          status: this.storageMode === "postgresql" ? "ready" : "placeholder",
+          mode: this.storageMode || config.storage?.mode || "local-json"
+        },
+        { name: "Storage health", status: "ready", mode: this.storageMode || config.storage?.mode || "local-json" },
+        { name: "Key Vault health", status: config.signing?.production_signing_enabled ? "ready" : "planned", mode: "managed-identity" },
+        { name: "Signing trust", status: config.signing?.trust_state || "dev-local", mode: config.signing?.production_signing_enabled ? "key-vault" : "no-production-key" }
       ]
     };
   }
@@ -446,6 +460,148 @@ export class PatchForgeJsonStorage {
       created_at: new Date().toISOString()
     });
   }
+}
+
+export class PatchForgePostgresStorage extends PatchForgeJsonStorage {
+  constructor(options = {}) {
+    super(options.localFallbackRoot);
+    this.storageMode = "postgresql";
+    this.options = options;
+    this.pool = options.pool || null;
+    this.ready = false;
+  }
+
+  async ensureReady() {
+    if (this.ready) {
+      return;
+    }
+    if (!this.pool) {
+      this.pool = await createPostgresPool(this.options);
+    }
+    await this.pool.query(`
+      create table if not exists patchforge_records (
+        tenant_id text not null,
+        collection text not null,
+        record_id text not null,
+        record jsonb not null,
+        created_at timestamptz not null default now(),
+        updated_at timestamptz not null default now(),
+        primary key (tenant_id, collection, record_id)
+      )
+    `);
+    await this.pool.query(`
+      create index if not exists idx_patchforge_records_collection_tenant
+      on patchforge_records (collection, tenant_id)
+    `);
+    await this.pool.query(`
+      create table if not exists patchforge_admin_config (
+        tenant_id text primary key,
+        config jsonb not null,
+        updated_at timestamptz not null default now()
+      )
+    `);
+    await this.pool.query(
+      `insert into patchforge_admin_config (tenant_id, config)
+       values ($1, $2::jsonb)
+       on conflict (tenant_id) do nothing`,
+      [DEFAULT_ADMIN_CONFIG.tenant_id, JSON.stringify(productionAdminConfig())]
+    );
+    this.ready = true;
+  }
+
+  async list(collection, tenantId) {
+    await this.ensureReady();
+    assertKnownCollection(collection);
+    const result = await this.pool.query(
+      `select record
+       from patchforge_records
+       where tenant_id = $1 and collection = $2
+       order by created_at asc`,
+      [tenantId, collection]
+    );
+    return result.rows.map((row) => row.record);
+  }
+
+  async append(collection, record) {
+    await this.ensureReady();
+    assertKnownCollection(collection);
+    const recordId = recordIdFor(collection, record);
+    await this.pool.query(
+      `insert into patchforge_records (tenant_id, collection, record_id, record)
+       values ($1, $2, $3, $4::jsonb)
+       on conflict (tenant_id, collection, record_id)
+       do update set record = excluded.record, updated_at = now()`,
+      [record.tenant_id, collection, recordId, JSON.stringify(record)]
+    );
+    return record;
+  }
+
+  async replace(collection, predicate, updater) {
+    await this.ensureReady();
+    assertKnownCollection(collection);
+    const result = await this.pool.query(
+      `select tenant_id, record_id, record
+       from patchforge_records
+       where collection = $1
+       order by created_at asc`,
+      [collection]
+    );
+    let updatedRecord = null;
+    for (const row of result.rows) {
+      if (!predicate(row.record)) {
+        continue;
+      }
+      updatedRecord = updater(row.record);
+      await this.pool.query(
+        `update patchforge_records
+         set record = $1::jsonb, updated_at = now()
+         where tenant_id = $2 and collection = $3 and record_id = $4`,
+        [JSON.stringify(updatedRecord), row.tenant_id, collection, row.record_id]
+      );
+    }
+    return updatedRecord;
+  }
+
+  async _readAdminConfigFile() {
+    await this.ensureReady();
+    const result = await this.pool.query(
+      `select tenant_id, config
+       from patchforge_admin_config
+       order by tenant_id asc`
+    );
+    return Object.fromEntries(result.rows.map((row) => [row.tenant_id, row.config]));
+  }
+
+  async _writeAdminConfigFile(configByTenant) {
+    await this.ensureReady();
+    for (const [tenantId, config] of Object.entries(configByTenant)) {
+      await this.pool.query(
+        `insert into patchforge_admin_config (tenant_id, config, updated_at)
+         values ($1, $2::jsonb, now())
+         on conflict (tenant_id)
+         do update set config = excluded.config, updated_at = now()`,
+        [tenantId, JSON.stringify(config)]
+      );
+    }
+  }
+}
+
+export function createPatchForgeStorage(options = {}) {
+  const mode = (options.mode || process.env.PATCHFORGE_STORAGE_MODE || "local-json").toLowerCase();
+  if (["postgres", "postgresql", "postgresql-flexible-server"].includes(mode)) {
+    return new PatchForgePostgresStorage({
+      host: process.env.PATCHFORGE_DATABASE_HOST,
+      database: process.env.PATCHFORGE_DATABASE_NAME || "patchforge_prod",
+      user: process.env.PATCHFORGE_DATABASE_USER || "patchforgeadmin",
+      password: process.env.PATCHFORGE_DATABASE_PASSWORD,
+      passwordSecretName: process.env.PATCHFORGE_DATABASE_PASSWORD_SECRET_NAME,
+      keyVaultUri: process.env.PATCHFORGE_KEYVAULT_URI,
+      azureClientId: process.env.AZURE_CLIENT_ID,
+      ssl: process.env.PATCHFORGE_DATABASE_SSL !== "false",
+      ...options
+    });
+  }
+  return new PatchForgeJsonStorage(options.storageRoot);
 }
 
 export function isPositiveEvidence(source) {
@@ -471,4 +627,75 @@ export function maskSecretValues(value) {
 
 function isSecretKey(key) {
   return /(^|_)(password|token|secret|apiKey|api_key|clientSecret|client_secret|signingSecret|signing_secret)$/i.test(key);
+}
+
+function productionAdminConfig() {
+  return {
+    ...DEFAULT_ADMIN_CONFIG,
+    signing: {
+      ...DEFAULT_ADMIN_CONFIG.signing,
+      trust_state: "key-vault",
+      production_signing_enabled: true
+    },
+    storage: {
+      ...DEFAULT_ADMIN_CONFIG.storage,
+      mode: "postgresql"
+    },
+    updated_at: new Date().toISOString()
+  };
+}
+
+function assertKnownCollection(collection) {
+  if (!COLLECTIONS.includes(collection)) {
+    throw new Error(`Unknown PatchForge collection: ${collection}`);
+  }
+}
+
+function recordIdFor(collection, record) {
+  const idField = COLLECTION_ID_FIELDS[collection];
+  const recordId = record[idField] || record.id;
+  if (!record.tenant_id) {
+    throw new Error(`PatchForge ${collection} record is missing tenant_id.`);
+  }
+  if (!recordId) {
+    throw new Error(`PatchForge ${collection} record is missing ${idField}.`);
+  }
+  return String(recordId);
+}
+
+async function createPostgresPool(options) {
+  const { Pool } = await import("pg");
+  const password = options.password || await resolvePostgresPassword(options);
+  if (!options.host) {
+    throw new Error("PATCHFORGE_DATABASE_HOST is required when PATCHFORGE_STORAGE_MODE=postgresql.");
+  }
+  if (!password) {
+    throw new Error("PATCHFORGE_DATABASE_PASSWORD or PATCHFORGE_DATABASE_PASSWORD_SECRET_NAME is required for PostgreSQL storage.");
+  }
+  return new Pool({
+    host: options.host,
+    database: options.database || "patchforge_prod",
+    user: options.user || "patchforgeadmin",
+    password,
+    port: Number(options.port || process.env.PATCHFORGE_DATABASE_PORT || 5432),
+    max: Number(options.maxPoolSize || process.env.PATCHFORGE_DATABASE_POOL_MAX || 5),
+    ssl: options.ssl === false ? false : { rejectUnauthorized: true }
+  });
+}
+
+async function resolvePostgresPassword(options) {
+  if (!options.passwordSecretName) {
+    return null;
+  }
+  if (!options.keyVaultUri) {
+    throw new Error("PATCHFORGE_KEYVAULT_URI is required when using a database password secret.");
+  }
+  const { DefaultAzureCredential } = await import("@azure/identity");
+  const { SecretClient } = await import("@azure/keyvault-secrets");
+  const credential = new DefaultAzureCredential(
+    options.azureClientId ? { managedIdentityClientId: options.azureClientId } : undefined
+  );
+  const client = new SecretClient(options.keyVaultUri, credential);
+  const secret = await client.getSecret(options.passwordSecretName);
+  return secret.value;
 }

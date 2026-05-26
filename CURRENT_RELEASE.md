@@ -1,14 +1,14 @@
 # Current Release
 
-## DIIaC PatchForge PF-AZ3
+## DIIaC PatchForge PF-AZ4
 
-Release state: Azure bootstrap live with identity, signing, database, and DNS cutover gates completed
+Release state: Azure bootstrap live with identity, signing, database, DNS cutover, API RBAC, PostgreSQL storage, and runtime Key Vault signing gates completed
 
 Date: 2026-05-26
 
 ## Scope
 
-PF-AZ1 deploys the first dedicated PatchForge Azure bootstrap into the DIIaC tenant using a new PatchForge resource group.
+PF-AZ4 records the current dedicated PatchForge Azure production state in the DIIaC tenant using the new PatchForge resource group.
 
 Included:
 
@@ -112,11 +112,18 @@ Included:
 - custom domains `patchforge.diiac.io` and `api.patchforge.diiac.io`
 - Azure Container Apps managed certificates for both PatchForge custom domains
 - HTTPS smoke evidence for custom-domain UI, bridge health, and bridge readiness
+- Bridge/API Entra bearer-token enforcement for protected PatchForge API routes
+- PostgreSQL storage adapter for PatchForge records, admin config, and audit events
+- Bridge/API production deployment using PostgreSQL storage
+- Bridge/API managed identity retrieval of the existing PostgreSQL password secret from Key Vault
+- Runtime Azure Key Vault ES256 signing integration
+- live runtime Key Vault signing smoke against `pf-pack-signing-prod`
+- Bicep-managed custom-domain certificate bindings to prevent future deployment drift
+- image tag `pfaz4-20260526` deployed to all PatchForge Container Apps
 
 Excluded:
 
-- live application database migration from local JSON storage to PostgreSQL
-- runtime managed identity signing integration
+- UI sign-in flow and client-side MSAL role UX
 - vulnerability scanning
 - exploit generation
 - patch deployment
@@ -158,12 +165,13 @@ Deployment evidence:
 - `docs/release/evidence/2026-05-26-patchforge-azure-bootstrap/`
 - `docs/release/evidence/2026-05-26-patchforge-gates/`
 - `docs/release/evidence/2026-05-26-patchforge-dns-cutover/`
+- `docs/release/evidence/2026-05-26-patchforge-production-hardening/`
 
 ## Trust State
 
-Signed pack generation is implemented locally with a development/test signature path. Azure Key Vault production signing key `pf-pack-signing-prod` now exists and passed an ES256 sign/verify smoke test.
+Signed pack generation supports both local development/test signatures and Azure Key Vault ES256 production signatures.
 
-Runtime signing integration is still pending. The runtime must use managed identity and the Key Vault key before production decision packs rely on the production trust path.
+Azure Key Vault production signing key `pf-pack-signing-prod` exists and the runtime Key Vault signing path passed a live sign/verify smoke test.
 
 ## Identity State
 
@@ -185,7 +193,7 @@ PostgreSQL is live:
 - Version: PostgreSQL 16
 - State: Ready
 
-The bridge has database host/name environment references. Application storage remains local JSON-backed until the storage abstraction is migrated to PostgreSQL in a later implementation gate.
+The bridge is deployed with PostgreSQL storage enabled and retrieves the existing PostgreSQL password secret from Key Vault by managed identity.
 
 ## DNS State
 
@@ -196,3 +204,9 @@ Live custom-domain endpoints:
 - UI: `https://patchforge.diiac.io/`
 - API health: `https://api.patchforge.diiac.io/health`
 - API readiness: `https://api.patchforge.diiac.io/readiness`
+
+## API Security State
+
+Protected PatchForge API routes require Microsoft Entra bearer tokens when `PATCHFORGE_AUTH_REQUIRED=true`.
+
+Unauthenticated protected API requests return 401 with the required PatchForge roles. The public health and readiness endpoints remain available for platform monitoring.

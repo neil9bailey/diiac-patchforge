@@ -28,6 +28,24 @@ param postgresAdministratorPassword string = ''
 @description('Container image tag used for initial container app placeholders.')
 param imageTag string = 'bootstrap'
 
+@description('PatchForge API app identifier URI used as the Entra access-token audience.')
+param entraAudience string = 'api://ec30b0eb-cfc4-48cc-a5f2-2a1345d96736'
+
+@description('Whether the Bridge/API requires Microsoft Entra bearer tokens for PatchForge API routes.')
+param authRequired bool = true
+
+@description('Key Vault key name used by the runtime for production decision-pack signing.')
+param keyVaultSigningKeyName string = 'pf-pack-signing-prod'
+
+@description('Optional Key Vault key version used by the runtime for production decision-pack signing. Leave blank to use the current key version.')
+param keyVaultSigningKeyVersion string = ''
+
+@description('Key Vault secret name containing the PostgreSQL administrator password for the bridge storage adapter.')
+param postgresPasswordSecretName string = 'patchforge-postgres-admin-password'
+
+@description('Whether to add the PostgreSQL firewall rule that allows Azure services to reach the server.')
+param allowAzureServicesToPostgres bool = true
+
 @allowed([
   'Basic'
   'Standard'
@@ -151,6 +169,7 @@ module database 'postgres-or-sql.bicep' = {
     databaseName: names.database
     administratorLogin: postgresAdministratorLogin
     administratorPassword: postgresAdministratorPassword
+    allowAzureServicesFirewallRule: allowAzureServicesToPostgres
   }
 }
 
@@ -172,6 +191,15 @@ module containerApps 'container-apps.bicep' = if (deployContainerApps) {
     keyVaultUri: keyVault.outputs.vaultUri
     databaseHost: database.outputs.databaseHost
     databaseName: names.database
+    databaseUser: postgresAdministratorLogin
+    databasePasswordSecretName: postgresPasswordSecretName
+    storageMode: createPostgres ? 'postgresql' : 'local-json'
+    entraTenantId: subscription().tenantId
+    entraAudience: entraAudience
+    authRequired: authRequired
+    keyVaultSigningKeyId: empty(keyVaultSigningKeyVersion)
+      ? '${keyVault.outputs.vaultUri}keys/${keyVaultSigningKeyName}'
+      : '${keyVault.outputs.vaultUri}keys/${keyVaultSigningKeyName}/${keyVaultSigningKeyVersion}'
     environmentLabel: environmentName
   }
 }

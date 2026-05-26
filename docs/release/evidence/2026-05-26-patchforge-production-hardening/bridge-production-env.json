@@ -1,0 +1,52 @@
+﻿[
+    {
+        "name":  "PATCHFORGE_KEYVAULT_URI",
+        "value":  "https://kv-diiac-patchforge-prod.vault.azure.net/",
+        "secretRef":  null
+    },
+    {
+        "name":  "PATCHFORGE_DATABASE_HOST",
+        "value":  "psql-diiac-patchforge-prod.postgres.database.azure.com",
+        "secretRef":  null
+    },
+    {
+        "name":  "PATCHFORGE_DATABASE_NAME",
+        "value":  "patchforge_prod",
+        "secretRef":  null
+    },
+    {
+        "name":  "PATCHFORGE_DATABASE_USER",
+        "value":  "patchforgeadmin",
+        "secretRef":  null
+    },
+    {
+        "name":  "PATCHFORGE_DATABASE_PASSWORD_SECRET_NAME",
+        "value":  "patchforge-postgres-admin-password",
+        "secretRef":  null
+    },
+    {
+        "name":  "PATCHFORGE_STORAGE_MODE",
+        "value":  "postgresql",
+        "secretRef":  null
+    },
+    {
+        "name":  "PATCHFORGE_ENTRA_TENANT_ID",
+        "value":  "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+        "secretRef":  null
+    },
+    {
+        "name":  "PATCHFORGE_ENTRA_AUDIENCE",
+        "value":  "api://ec30b0eb-cfc4-48cc-a5f2-2a1345d96736",
+        "secretRef":  null
+    },
+    {
+        "name":  "PATCHFORGE_AUTH_REQUIRED",
+        "value":  "True",
+        "secretRef":  null
+    },
+    {
+        "name":  "PATCHFORGE_KEYVAULT_SIGNING_KEY_ID",
+        "value":  "https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod",
+        "secretRef":  null
+    }
+]

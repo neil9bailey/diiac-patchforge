@@ -1,0 +1,11 @@
+﻿{
+    "timestamp_utc":  "2026-05-26T18:38:10.0488356Z",
+    "pack_id":  "PF-20260526-dc1fbd3a",
+    "algorithm":  "ES256",
+    "key_id":  "https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod/2e348fdeaaaf448ebba206130ef86b52",
+    "signing_provider":  "azure_key_vault",
+    "signature_recorded_in_evidence":  false,
+    "local_public_key_verification":  true,
+    "signature_ok":  true,
+    "manifest_ok":  true
+}

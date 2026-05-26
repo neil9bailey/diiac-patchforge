@@ -1,0 +1,44 @@
+﻿[
+    {
+        "repository":  "diiac/patchforge-frontend",
+        "tag":  "pfaz4-20260526",
+        "digest":  "sha256:40eb632c448e5a7bc58ab0a9295fb72750984aaa321bc92403b1d06907b40820",
+        "createdTime":  "2026-05-26T18:38:43.1854404Z",
+        "lastUpdateTime":  "2026-05-26T18:38:43.1854404Z"
+    },
+    {
+        "repository":  "diiac/patchforge-bridge",
+        "tag":  "pfaz4-20260526",
+        "digest":  "sha256:cb7362c64121cf312f06580ff047d166f2ff776dcafe283b0a6439571b1456b8",
+        "createdTime":  "2026-05-26T18:39:36.9308099Z",
+        "lastUpdateTime":  "2026-05-26T18:39:36.9308099Z"
+    },
+    {
+        "repository":  "diiac/patchforge-runtime",
+        "tag":  "pfaz4-20260526",
+        "digest":  "sha256:6f29523550b9b6ed466671936a134b2ba49d224515a85370ca4d9748d8c56850",
+        "createdTime":  "2026-05-26T18:40:20.6742245Z",
+        "lastUpdateTime":  "2026-05-26T18:40:20.6742245Z"
+    },
+    {
+        "repository":  "diiac/patchforge-sra-agent",
+        "tag":  "pfaz4-20260526",
+        "digest":  "sha256:86f60505c7e1c714b358637416a869914e3a1878a73c324be48a2f8dd5cdc896",
+        "createdTime":  "2026-05-26T18:40:27.673939Z",
+        "lastUpdateTime":  "2026-05-26T18:40:27.673939Z"
+    },
+    {
+        "repository":  "diiac/patchforge-ingest-worker",
+        "tag":  "pfaz4-20260526",
+        "digest":  "sha256:efaf79e9ef5f684efc533d0327dc6c2b4f8130e026cba49de9595f1cb5b0f1cc",
+        "createdTime":  "2026-05-26T18:40:34.5758143Z",
+        "lastUpdateTime":  "2026-05-26T18:40:34.5758143Z"
+    },
+    {
+        "repository":  "diiac/patchforge-scheduler",
+        "tag":  "pfaz4-20260526",
+        "digest":  "sha256:f92c02419d2bed641e4811d33b5055865f1000b08066ca298ea3d11f17e32cdf",
+        "createdTime":  "2026-05-26T18:40:40.6359649Z",
+        "lastUpdateTime":  "2026-05-26T18:40:40.6359649Z"
+    }
+]

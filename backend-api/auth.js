@@ -1,0 +1,129 @@
+const DEFAULT_TENANT_ID = "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da";
+const DEFAULT_AUDIENCE = "api://ec30b0eb-cfc4-48cc-a5f2-2a1345d96736";
+const ADMIN_ROLE = "PatchForge.Admin";
+
+const ROUTE_ROLES = [
+  { method: "GET", pattern: /^\/api\/patchforge\/admin\/config$/, roles: ["PatchForge.Admin", "PatchForge.Auditor"] },
+  { method: "PUT", pattern: /^\/api\/patchforge\/admin\/config$/, roles: ["PatchForge.Admin"] },
+  { method: "GET", pattern: /^\/api\/patchforge\/admin\/health$/, roles: ["PatchForge.Admin", "PatchForge.Auditor"] },
+  { method: "POST", pattern: /^\/api\/patchforge\/vulnerabilities\/ingest$/, roles: ["PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.Admin"] },
+  { method: "POST", pattern: /^\/api\/patchforge\/vulnerabilities\/[^/]+\/review$/, roles: ["PatchForge.SecurityLead", "PatchForge.Admin"] },
+  { method: "POST", pattern: /^\/api\/patchforge\/assets\/ingest$/, roles: ["PatchForge.TriageAnalyst", "PatchForge.Admin"] },
+  { method: "POST", pattern: /^\/api\/patchforge\/services\/ingest$/, roles: ["PatchForge.TriageAnalyst", "PatchForge.Admin"] },
+  { method: "POST", pattern: /^\/api\/sra\//, roles: ["PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.Admin"] },
+  { method: "GET", pattern: /^\/api\//, roles: ["PatchForge.Reader", "PatchForge.Auditor", "PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.Admin"] },
+  { method: "POST", pattern: /^\/api\//, roles: ["PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.Admin"] }
+];
+
+export function createAuthConfigFromEnv() {
+  const tenantId = process.env.PATCHFORGE_ENTRA_TENANT_ID || DEFAULT_TENANT_ID;
+  const audience = process.env.PATCHFORGE_ENTRA_AUDIENCE || DEFAULT_AUDIENCE;
+  const issuer = process.env.PATCHFORGE_ENTRA_ISSUER || `https://login.microsoftonline.com/${tenantId}/v2.0`;
+  return {
+    required: parseBoolean(process.env.PATCHFORGE_AUTH_REQUIRED, false),
+    tenantId,
+    audience,
+    issuer,
+    jwksUri: process.env.PATCHFORGE_ENTRA_JWKS_URI || `https://login.microsoftonline.com/${tenantId}/discovery/v2.0/keys`
+  };
+}
+
+export async function authorizeRequest(req, url, authConfig = {}) {
+  const method = req.method || "GET";
+  const requiredRoles = rolesForRoute(method, url.pathname);
+  if (!requiredRoles.length) {
+    return { ok: true, principal: null, requiredRoles };
+  }
+
+  if (!authConfig.required) {
+    return { ok: true, principal: { auth_disabled: true }, requiredRoles };
+  }
+
+  const token = bearerToken(req.headers.authorization);
+  if (!token) {
+    return {
+      ok: false,
+      statusCode: 401,
+      error: "missing_bearer_token",
+      message: "A Microsoft Entra access token is required.",
+      requiredRoles
+    };
+  }
+
+  try {
+    const principal = authConfig.verifier
+      ? await authConfig.verifier(token)
+      : await verifyEntraJwt(token, authConfig);
+    const roles = normalizeRoles(principal.roles);
+    if (!roles.some((role) => requiredRoles.includes(role) || role === ADMIN_ROLE)) {
+      return {
+        ok: false,
+        statusCode: 403,
+        error: "insufficient_patchforge_role",
+        message: "The token is valid but does not contain a required PatchForge app role.",
+        requiredRoles,
+        roles
+      };
+    }
+    return { ok: true, principal: { ...principal, roles }, requiredRoles };
+  } catch (error) {
+    return {
+      ok: false,
+      statusCode: 401,
+      error: "invalid_bearer_token",
+      message: error.message,
+      requiredRoles
+    };
+  }
+}
+
+export function rolesForRoute(method, pathname) {
+  const match = ROUTE_ROLES.find((route) => route.method === method && route.pattern.test(pathname));
+  return match ? match.roles : [];
+}
+
+function bearerToken(authorizationHeader) {
+  if (!authorizationHeader) {
+    return null;
+  }
+  const match = authorizationHeader.match(/^Bearer\s+(.+)$/i);
+  return match ? match[1] : null;
+}
+
+async function verifyEntraJwt(token, authConfig) {
+  const { createRemoteJWKSet, jwtVerify } = await import("jose");
+  const jwks = createRemoteJWKSet(new URL(authConfig.jwksUri));
+  const { payload } = await jwtVerify(token, jwks, {
+    issuer: authConfig.issuer,
+    audience: authConfig.audience,
+    clockTolerance: "2 minutes"
+  });
+  if (authConfig.tenantId && payload.tid !== authConfig.tenantId) {
+    throw new Error("Token tenant does not match the PatchForge tenant.");
+  }
+  return {
+    oid: payload.oid || payload.sub,
+    upn: payload.preferred_username || payload.upn || null,
+    tid: payload.tid,
+    aud: payload.aud,
+    roles: payload.roles || [],
+    scopes: typeof payload.scp === "string" ? payload.scp.split(" ") : []
+  };
+}
+
+function normalizeRoles(roles) {
+  if (!roles) {
+    return [];
+  }
+  if (Array.isArray(roles)) {
+    return roles.flatMap((role) => String(role).split(",")).map((role) => role.trim()).filter(Boolean);
+  }
+  return String(roles).split(",").map((role) => role.trim()).filter(Boolean);
+}
+
+function parseBoolean(value, fallback) {
+  if (value === undefined || value === null || value === "") {
+    return fallback;
+  }
+  return ["1", "true", "yes", "on"].includes(String(value).toLowerCase());
+}

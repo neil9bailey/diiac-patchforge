@@ -17,7 +17,14 @@ Azure Key Vault production signing key has been created:
 
 Smoke verification result: passed.
 
+Runtime integration:
+
+- The runtime supports Azure Key Vault-backed ES256 signing through `PATCHFORGE_KEYVAULT_SIGNING_KEY_ID`.
+- The deployed runtime image `pfaz4-20260526` includes Azure SDK and cryptography dependencies.
+- Live runtime signing smoke passed with local public-key verification.
+
 Evidence: `docs/release/evidence/2026-05-26-patchforge-gates/keyvault-signing-smoke.json`
+Runtime evidence: `docs/release/evidence/2026-05-26-patchforge-production-hardening/runtime-keyvault-signing-smoke.json`
 
 ## Production Direction
 
@@ -35,9 +42,8 @@ Production design requirements:
 
 ## Remaining Access Gate
 
-Before production signing is enabled in runtime decision-pack generation, confirm:
+Before production signing is used for buyer-facing production decision packs, confirm:
 
-- runtime managed identity permissions
 - signing key rotation policy
 - recovery and purge protection expectations
 - verification key publication strategy

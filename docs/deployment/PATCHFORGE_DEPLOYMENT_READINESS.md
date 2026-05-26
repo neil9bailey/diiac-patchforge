@@ -6,12 +6,12 @@ Track PatchForge deployment readiness, live Azure bootstrap state, and remaining
 
 ## Current Gate
 
-PatchForge Azure bootstrap is live in a dedicated production resource group. The identity, production signing key, PostgreSQL resource, and DNS custom-domain gates are also completed.
+PatchForge Azure bootstrap is live in a dedicated production resource group. The identity, production signing key, PostgreSQL resource, DNS custom-domain, API RBAC, PostgreSQL storage, and runtime Key Vault signing gates are completed.
 
 PatchForge is not yet ready for full production cutover until the user confirms:
 
-- runtime managed identity signing integration
-- application storage migration from local JSON to PostgreSQL
+- UI sign-in flow and client-side role UX
+- private networking design for PostgreSQL and storage
 
 Known non-secret tenant planning values are recorded in `docs/deployment/PATCHFORGE_DIIAC_TENANT_REFERENCE.md`:
 
@@ -93,6 +93,8 @@ Live custom-domain URLs:
 - Key Vault signing key: `pf-pack-signing-prod`
 - Gate evidence: `docs/release/evidence/2026-05-26-patchforge-gates/`
 - DNS cutover evidence: `docs/release/evidence/2026-05-26-patchforge-dns-cutover/`
+- Production hardening evidence: `docs/release/evidence/2026-05-26-patchforge-production-hardening/`
+- Deployed image tag: `pfaz4-20260526`
 
 HTTP smoke after gates:
 
@@ -105,6 +107,13 @@ HTTPS smoke after DNS cutover:
 - Custom-domain UI: 200
 - Custom-domain API health: 200
 - Custom-domain API readiness: 200
+
+PF-AZ4 smoke:
+
+- Custom-domain UI: 200
+- Custom-domain API health: 200
+- Custom-domain API readiness: 200 with `storage=postgresql` and `auth_required=true`
+- Unauthenticated protected API request: 401 expected
 
 ## Local URLs
 

@@ -48,7 +48,7 @@ Recommended before production:
 
 ## Phase 4: Production Deployment
 
-Status: bootstrap plus identity, signing, database, and DNS custom-domain gates complete on 2026-05-26.
+Status: bootstrap plus identity, signing, database, DNS custom-domain, API RBAC, PostgreSQL storage, and runtime Key Vault signing gates complete on 2026-05-26.
 
 Created:
 
@@ -69,12 +69,16 @@ Completed after bootstrap:
 - production Key Vault signing key and ES256 smoke verification
 - PostgreSQL Flexible Server `psql-diiac-patchforge-prod`
 - PostgreSQL database `patchforge_prod`
+- Bridge/API Entra bearer-token authorization for protected API routes
+- Bridge/API PostgreSQL storage adapter deployed with Key Vault secret retrieval
+- Runtime Azure Key Vault ES256 signing path
+- Bicep-managed custom-domain bindings
+- production image tag `pfaz4-20260526`
 
 Still pending:
 
-- role enforcement hardening inside the Bridge/API and UI
-- runtime managed identity signing integration
-- application storage migration from local JSON to PostgreSQL
+- UI sign-in flow and client-side role UX
+- private PostgreSQL/storage networking model
 
 ## Phase 5: DNS Cutover
 
