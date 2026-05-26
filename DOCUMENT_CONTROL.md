@@ -52,6 +52,12 @@ DIIaC™ PatchForge
 | backend-api/sra/securityResearchAgent.test.mjs | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | runtime/decision_control_center.py | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | runtime/tests/test_decision_control_center.py | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| runtime/reports.py | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| runtime/tests/test_reports.py | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| docs/demos/PATCHFORGE_DEMO_RUNBOOK.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| docs/release/evidence/patchforge-demo-pack/demo_scenarios.json | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| docs/validation/PATCHFORGE_VALIDATION_PLAN.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| docs/validation/PATCHFORGE_READINESS_SUMMARY.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 
 ## Change Control
 

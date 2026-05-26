@@ -1,14 +1,14 @@
 # Current Release
 
-## DIIaC™ PatchForge PF-E9
+## DIIaC™ PatchForge PF-E10
 
-Release state: Decision Control Center baseline in progress
+Release state: reports, demos, and validation baseline in progress
 
 Date: 2026-05-26
 
 ## Scope
 
-PF-E9 adds PatchForge Decision Control Center runtime foundations.
+PF-E10 adds PatchForge reports, demo scenarios, and validation documentation.
 
 Included:
 
@@ -73,6 +73,12 @@ Included:
 - risk acceptance expiry checks
 - post-patch validation event handling
 - DCC tests
+- report renderer for CAB, board, customer, risk acceptance, and OT reports
+- demo runbook
+- demo scenario seeds
+- validation plan
+- readiness summary
+- report and demo tests
 - release baseline manifest
 - document control register
 

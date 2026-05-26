@@ -1,0 +1,47 @@
+{
+  "product": "DIIaC PatchForge",
+  "schema_version": "0.1.0",
+  "scenarios": [
+    {
+      "id": "critical-exploited-orion-gateway",
+      "title": "Critical exploited CVE in Orion Gateway",
+      "vulnerability_id": "CVE-2026-10421",
+      "service": "Orion Gateway",
+      "decision_posture": "emergency_change_required",
+      "expected_blockers": ["rollback_plan", "human_review_signoff"]
+    },
+    {
+      "id": "emergency-patch-rollback-uncertainty",
+      "title": "Emergency patch with rollback uncertainty",
+      "vulnerability_id": "CVE-2026-11100",
+      "service": "Identity Gateway",
+      "decision_posture": "emergency_change_required",
+      "expected_blockers": ["rollback_plan", "service_impact_review"]
+    },
+    {
+      "id": "ot-controller-patch-deferral",
+      "title": "OT controller patch deferral with compensating controls",
+      "vulnerability_id": "OT-ADV-2026-017",
+      "service": "Line Control",
+      "decision_posture": "risk_accept_temporarily",
+      "expected_blockers": ["safety_impact", "maintenance_window", "vendor_support"]
+    },
+    {
+      "id": "service-transition-known-exploited-block",
+      "title": "Service transition blocked by unpatched known exploited vulnerability",
+      "vulnerability_id": "CVE-2026-12045",
+      "service": "Customer Portal",
+      "decision_posture": "block_go_live",
+      "expected_blockers": ["test_evidence", "rollback_plan", "human_review_signoff"]
+    },
+    {
+      "id": "msp-monthly-customer-pack",
+      "title": "MSP monthly customer patch-governance pack",
+      "vulnerability_id": "MONTHLY-PACK-2026-05",
+      "service": "Managed Customer Estate",
+      "decision_posture": "defer_pending_evidence",
+      "expected_blockers": ["expiring_risk_acceptances", "customer_impact_review"]
+    }
+  ]
+}
+

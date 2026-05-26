@@ -211,6 +211,8 @@ Rules:
 
 ## PF-E10: Reports, Demos, Validation Pack
 
+Status: complete
+
 Purpose: add buyer-grade reports, demo runbooks, validation documents, and demo evidence.
 
 Deliverables:

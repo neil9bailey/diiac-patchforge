@@ -22,8 +22,8 @@
 | PF-E7 | Full Admin UI | Complete | |
 | PF-E8 | SRA MCP advisory layer | Complete | |
 | PF-E9 | Decision Workbench and DCC | Complete | |
-| PF-E10 | Reports, demos, validation pack | Pending | |
+| PF-E10 | Reports, demos, validation pack | Complete | |
 
 ## Next Epic
 
-PF-E10: PatchForge reports, demos, and validation pack.
+Post-E10: prepare deployment readiness review, Azure access checklist, and DNS cutover plan when requested.
