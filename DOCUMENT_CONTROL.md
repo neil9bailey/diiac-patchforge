@@ -58,6 +58,23 @@ DIIaC™ PatchForge
 | docs/release/evidence/patchforge-demo-pack/demo_scenarios.json | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | docs/validation/PATCHFORGE_VALIDATION_PLAN.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | docs/validation/PATCHFORGE_READINESS_SUMMARY.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| .github/workflows/ci.yml | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| .dockerignore | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| requirements-dev.txt | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| docs/deployment/PATCHFORGE_DEPLOYMENT_READINESS.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| docs/deployment/PATCHFORGE_AZURE_ACCESS_CHECKLIST.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| docs/deployment/PATCHFORGE_DNS_CUTOVER_CHECKLIST.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| docs/deployment/PATCHFORGE_ENTRA_RBAC_CHECKLIST.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| docs/deployment/PATCHFORGE_SIGNING_STRATEGY.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| docs/deployment/PATCHFORGE_ROLLOUT_PLAN.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| Frontend/Dockerfile | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| Frontend/nginx.conf | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| backend-api/Dockerfile | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| runtime/Dockerfile | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| runtime/health_server.py | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| compose.yaml | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| scripts/start_local_dev.ps1 | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
+| scripts/build_push_images.ps1 | DIIaC | Updated | 0.2.0 | 2026-05-26 |
 
 ## Change Control
 

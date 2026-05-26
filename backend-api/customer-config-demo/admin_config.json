@@ -1,0 +1,26 @@
+{
+  "diiac-demo": {
+    "tenant_id": "diiac-demo",
+    "general": {
+      "product_name": "DIIaC PatchForge",
+      "target_url": "https://patchforge.diiac.io",
+      "environment": "Production",
+      "governance_tier": "Enterprise Strict"
+    },
+    "sra": {
+      "advisory_only": true,
+      "review_required": true,
+      "can_close_hard_gates_alone": false
+    },
+    "telemetry": {
+      "health_checks_read_only": true,
+      "azure_mutation_enabled": false
+    },
+    "feature_flags": {
+      "sra_enabled": false,
+      "live_scanner_ingest_enabled": false,
+      "azure_mutation_enabled": false
+    }
+  }
+}
+

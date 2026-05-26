@@ -1,14 +1,14 @@
 # Current Release
 
-## DIIaC™ PatchForge PF-E10
+## DIIaC™ PatchForge PF-E11
 
-Release state: reports, demos, and validation baseline in progress
+Release state: deployment readiness and CI/CD hardening complete
 
 Date: 2026-05-26
 
 ## Scope
 
-PF-E10 adds PatchForge reports, demo scenarios, and validation documentation.
+PF-E11 prepares PatchForge for controlled deployment through CI, containerization, local orchestration, and deployment readiness documentation.
 
 Included:
 
@@ -79,6 +79,17 @@ Included:
 - validation plan
 - readiness summary
 - report and demo tests
+- GitHub Actions CI
+- deployment readiness docs
+- Azure access checklist
+- DNS cutover checklist
+- Entra RBAC checklist
+- production signing strategy
+- rollout plan
+- Dockerfiles for frontend, backend/API, and runtime
+- runtime health server
+- Docker Compose local orchestration
+- local dev startup script
 - release baseline manifest
 - document control register
 

@@ -1,0 +1,32 @@
+name: patchforge
+
+services:
+  patchforge-api:
+    build:
+      context: ./backend-api
+      dockerfile: Dockerfile
+    environment:
+      PORT: "8080"
+      PATCHFORGE_DEFAULT_TENANT: diiac-demo
+    ports:
+      - "8080:8080"
+
+  patchforge-runtime:
+    build:
+      context: .
+      dockerfile: runtime/Dockerfile
+    environment:
+      PORT: "8080"
+    ports:
+      - "8081:8080"
+
+  patchforge-frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:8080"
+    depends_on:
+      - patchforge-api
+      - patchforge-runtime
+

@@ -23,7 +23,8 @@
 | PF-E8 | SRA MCP advisory layer | Complete | |
 | PF-E9 | Decision Workbench and DCC | Complete | |
 | PF-E10 | Reports, demos, validation pack | Complete | |
+| PF-E11 | Deployment readiness and CI/CD hardening | Complete | |
 
 ## Next Epic
 
-Post-E10: prepare deployment readiness review, Azure access checklist, and DNS cutover plan when requested.
+Post-PF-E11: run Azure what-if only after tenant, subscription, and region are confirmed.

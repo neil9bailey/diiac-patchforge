@@ -1,0 +1,15 @@
+.git
+.github
+artifacts
+node_modules
+Frontend/node_modules
+Frontend/dist
+Frontend/coverage
+.pytest_cache
+.pytest_tmp
+__pycache__
+*.pyc
+*.tsbuildinfo
+*.log
+.env
+.env.*

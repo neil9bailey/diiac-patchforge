@@ -8,12 +8,12 @@ param(
 $ErrorActionPreference = "Stop"
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 $images = @(
-    @{ Name = "diiac/patchforge-frontend"; Path = "Frontend" },
-    @{ Name = "diiac/patchforge-bridge"; Path = "backend-api" },
-    @{ Name = "diiac/patchforge-runtime"; Path = "runtime" },
-    @{ Name = "diiac/patchforge-sra-agent"; Path = "backend-api" },
-    @{ Name = "diiac/patchforge-ingest-worker"; Path = "backend-api" },
-    @{ Name = "diiac/patchforge-scheduler"; Path = "backend-api" }
+    @{ Name = "diiac/patchforge-frontend"; Path = "Frontend"; Dockerfile = "Frontend/Dockerfile" },
+    @{ Name = "diiac/patchforge-bridge"; Path = "backend-api"; Dockerfile = "backend-api/Dockerfile" },
+    @{ Name = "diiac/patchforge-runtime"; Path = "."; Dockerfile = "runtime/Dockerfile" },
+    @{ Name = "diiac/patchforge-sra-agent"; Path = "backend-api"; Dockerfile = "backend-api/Dockerfile" },
+    @{ Name = "diiac/patchforge-ingest-worker"; Path = "backend-api"; Dockerfile = "backend-api/Dockerfile" },
+    @{ Name = "diiac/patchforge-scheduler"; Path = "backend-api"; Dockerfile = "backend-api/Dockerfile" }
 )
 
 Write-Host "PatchForge image build/push plan"
@@ -22,8 +22,9 @@ Write-Host "Tag: $ImageTag"
 
 foreach ($image in $images) {
     $context = Join-Path $repoRoot $image.Path
+    $dockerfile = Join-Path $repoRoot $image.Dockerfile
     $fullName = "$RegistryName.azurecr.io/$($image.Name):$ImageTag"
-    Write-Host "docker build -t $fullName `"$context`""
+    Write-Host "docker build -f `"$dockerfile`" -t $fullName `"$context`""
     Write-Host "docker push $fullName"
 }
 
@@ -47,15 +48,14 @@ az acr login --name $RegistryName
 
 foreach ($image in $images) {
     $context = Join-Path $repoRoot $image.Path
-    $dockerfile = Join-Path $context "Dockerfile"
+    $dockerfile = Join-Path $repoRoot $image.Dockerfile
     if (-not (Test-Path $dockerfile)) {
         throw "Missing Dockerfile for $($image.Name): $dockerfile"
     }
 
     $fullName = "$RegistryName.azurecr.io/$($image.Name):$ImageTag"
-    docker build -t $fullName $context
+    docker build -f $dockerfile -t $fullName $context
     docker push $fullName
 }
 
 Write-Host "PatchForge image build/push complete."
-

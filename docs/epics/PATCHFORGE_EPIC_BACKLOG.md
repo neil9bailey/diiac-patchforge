@@ -232,3 +232,27 @@ Rules:
 - no autonomous patch approval
 - signed pack verifies
 - demo seeds parse
+
+## PF-E11: Deployment Readiness And CI/CD Hardening
+
+Status: complete
+
+Purpose: prepare PatchForge for controlled deployment without creating or mutating Azure resources.
+
+Deliverables:
+
+- GitHub Actions CI
+- Dockerfiles for frontend, backend/API, and runtime
+- local dev orchestration
+- Azure access checklist
+- DNS cutover checklist
+- Entra RBAC checklist
+- signing strategy
+- rollout plan
+
+Rules:
+
+- no live Azure deployment
+- no DNS changes
+- no secrets in repository
+- Azure what-if only after tenant and subscription confirmation

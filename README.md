@@ -47,6 +47,40 @@ This repository starts with the PF-E0 baseline only:
 
 No Azure resources are deployed by this baseline. No scanner, exploit, or patch-deployment capability is created.
 
+## Local Validation
+
+```powershell
+python -m pytest -q --basetemp .pytest_tmp
+npm test
+npm --prefix Frontend test
+npm --prefix Frontend run build
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate_iac.ps1
+```
+
+## Local Run
+
+Without Docker:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start_local_dev.ps1
+```
+
+With Docker:
+
+```powershell
+docker compose up --build
+```
+
+Local URLs:
+
+- Frontend: `http://127.0.0.1:5173`
+- API: `http://127.0.0.1:8080`
+- Runtime health, Docker Compose: `http://127.0.0.1:8081/health`
+
+## Deployment Gate
+
+Azure deployment and DNS changes require explicit approval. Before Azure what-if or deployment, confirm tenant, subscription, region, signing strategy, and DNS plan.
+
 ## Repository Layout
 
 ```text
