@@ -1,5 +1,65 @@
 # Current Release
 
+## DIIaC PatchForge PF-AZ10 UI, VendorLens Catalogue, and CISO Patch Comparison
+
+Release state: deployed to Azure and live validated through the production UI/API as a signed-in PatchForge Admin user.
+
+Date: 2026-05-27
+
+PF-AZ10 improves the live demo and operating UI by fixing card/content wrapping, adding pagination to growing queues and catalogues, making VendorLens reference catalogue navigation clickable, hardening NVD catalogue refresh against public API rate limits, and adding a CISO-oriented patch-version comparison workflow and report artefact.
+
+PF-AZ10 image tag:
+
+- `pfaz10-20260527-513fea2`
+
+PF-AZ10 commits:
+
+- `4c254c8` - UI pagination, VendorLens catalogue refresh, CISO patch comparison
+- `8075a87` - NVD rate-limit hardening
+- `513fea2` - paginated Patch Compare selectors
+
+PF-AZ10 local validation:
+
+- backend syntax and tests: PASS, 29 tests
+- frontend tests and production build: PASS, 11 tests
+- Python runtime tests: PASS, 26 tests
+- IaC validation and Bicep build: PASS
+- Docker/ACR image build and push: PASS for frontend, bridge/API, runtime, SRA, worker, and scheduler
+
+PF-AZ10 Azure rollout:
+
+- GitHub push: PASS, latest commit `513fea2`
+- ACR build/push: PASS for image tag `pfaz10-20260527-513fea2`
+- Targeted image-only Container Apps update: PASS
+- Active revisions:
+  - UI: `ca-patchforge-ui-prod--0000016`
+  - Bridge/API: `ca-patchforge-bridge-prod--0000015`
+  - Runtime: `ca-patchforge-runtime-prod--0000014`
+  - SRA: `ca-patchforge-sra-prod--0000013`
+  - Worker: `ca-patchforge-worker-prod--0000013`
+  - Scheduler: `ca-patchforge-scheduler-prod--0000013`
+
+PF-AZ10 live validation:
+
+- UI HTTP 200: PASS
+- API health HTTP 200: PASS
+- API readiness HTTP 200 with `storage=postgresql`, `auth_required=true`, and `tenant_required=true`: PASS
+- Protected vulnerability and VendorLens routes unauthenticated HTTP 401: PASS
+- Browser/MSAL sign-in as `n.bailey@diiac.io`: PASS
+- Displayed role `PatchForge.Admin`: PASS
+- Action Center and Finding Detail visual overflow checks: PASS
+- VendorLens catalogue visual overflow checks: PASS
+- VendorLens NVD refresh: PASS with governed `completed_with_warnings` state when NVD public rate limit is reached; existing source-bound catalogue remains usable
+- VendorLens active advisories visible: PASS, 730 source-bound advisory records
+- Patch Compare pagination: PASS, `1-10 of 730 comparison advisories` with Back/Next/page-number controls
+- App console-breaking errors: PASS, no PatchForge app console errors observed
+
+PF-AZ10 evidence path:
+
+- `docs/release/evidence/2026-05-27-patchforge-pfaz10-ui-vendorlens-ciso-compare/`
+
+PF-AZ10 does not add vulnerability scanning, exploit generation, procedural exploit steps, patch deployment, production mutation, autonomous CAB approval, or autonomous risk acceptance.
+
 ## DIIaC PatchForge PF-AZ9 VendorLens
 
 Release state: deployed to Azure and live validated through the production UI/API as a signed-in PatchForge Admin user.

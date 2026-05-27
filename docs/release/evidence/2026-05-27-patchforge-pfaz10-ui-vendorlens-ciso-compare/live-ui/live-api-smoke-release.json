@@ -1,0 +1,37 @@
+[
+    {
+        "name":  "ui_head_release",
+        "status_code":  200,
+        "body_file":  "docs\\release\\evidence\\2026-05-27-patchforge-pfaz10-ui-vendorlens-ciso-compare\\live-ui\\ui_head_release.body.txt",
+        "headers_file":  "docs\\release\\evidence\\2026-05-27-patchforge-pfaz10-ui-vendorlens-ciso-compare\\live-ui\\ui_head_release.headers.txt",
+        "body_excerpt":  "HTTP/1.1 200 OK\r\nserver: nginx/1.27.5\r\ndate: Wed, 27 May 2026 15:03:06 GMT\r\ncontent-type: text/html\r\ncontent-length: 458\r\nlast-modified: Wed, 27 May 2026 14:58:32 GMT\r\netag: \"6a170698-1ca\"\r\ncache-control: no-store\r\nx-content-type-options: nosniff\r\nx-frame-options: DENY\r\naccept-ranges: bytes\r\n\r\n"
+    },
+    {
+        "name":  "api_health_release",
+        "status_code":  200,
+        "body_file":  "docs\\release\\evidence\\2026-05-27-patchforge-pfaz10-ui-vendorlens-ciso-compare\\live-ui\\api_health_release.body.txt",
+        "headers_file":  "docs\\release\\evidence\\2026-05-27-patchforge-pfaz10-ui-vendorlens-ciso-compare\\live-ui\\api_health_release.headers.txt",
+        "body_excerpt":  "{\n  \"status\": \"ok\",\n  \"product\": \"DIIaC PatchForge\",\n  \"boundary\": \"governance-only\"\n}\n"
+    },
+    {
+        "name":  "api_readiness_release",
+        "status_code":  200,
+        "body_file":  "docs\\release\\evidence\\2026-05-27-patchforge-pfaz10-ui-vendorlens-ciso-compare\\live-ui\\api_readiness_release.body.txt",
+        "headers_file":  "docs\\release\\evidence\\2026-05-27-patchforge-pfaz10-ui-vendorlens-ciso-compare\\live-ui\\api_readiness_release.headers.txt",
+        "body_excerpt":  "{\n  \"status\": \"ready\",\n  \"storage\": \"postgresql\",\n  \"auth_required\": true,\n  \"tenant_required\": true\n}\n"
+    },
+    {
+        "name":  "protected_vulnerabilities_unauthenticated_release",
+        "status_code":  401,
+        "body_file":  "docs\\release\\evidence\\2026-05-27-patchforge-pfaz10-ui-vendorlens-ciso-compare\\live-ui\\protected_vulnerabilities_unauthenticated_release.body.txt",
+        "headers_file":  "docs\\release\\evidence\\2026-05-27-patchforge-pfaz10-ui-vendorlens-ciso-compare\\live-ui\\protected_vulnerabilities_unauthenticated_release.headers.txt",
+        "body_excerpt":  "{\n  \"error\": \"missing_bearer_token\",\n  \"message\": \"A Microsoft Entra access token is required.\",\n  \"required_roles\": [\n    \"PatchForge.Reader\",\n    \"PatchForge.Auditor\",\n    \"PatchForge.TriageAnalyst\",\n    \"PatchForge.SecurityLead\",\n    \"PatchForge.Admin\"\n  ]\n}\n"
+    },
+    {
+        "name":  "protected_vendorlens_unauthenticated_release",
+        "status_code":  401,
+        "body_file":  "docs\\release\\evidence\\2026-05-27-patchforge-pfaz10-ui-vendorlens-ciso-compare\\live-ui\\protected_vendorlens_unauthenticated_release.body.txt",
+        "headers_file":  "docs\\release\\evidence\\2026-05-27-patchforge-pfaz10-ui-vendorlens-ciso-compare\\live-ui\\protected_vendorlens_unauthenticated_release.headers.txt",
+        "body_excerpt":  "{\n  \"error\": \"missing_bearer_token\",\n  \"message\": \"A Microsoft Entra access token is required.\",\n  \"required_roles\": [\n    \"PatchForge.Reader\",\n    \"PatchForge.Auditor\",\n    \"PatchForge.TriageAnalyst\",\n    \"PatchForge.SecurityLead\",\n    \"PatchForge.Admin\"\n  ]\n}\n"
+    }
+]

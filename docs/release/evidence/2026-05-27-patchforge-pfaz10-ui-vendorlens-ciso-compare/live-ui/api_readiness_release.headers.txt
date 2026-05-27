@@ -1,0 +1,9 @@
+HTTP/1.1 200 OK
+access-control-allow-methods: GET,POST,PUT,OPTIONS
+access-control-allow-headers: authorization,content-type,x-tenant-id
+access-control-max-age: 600
+content-type: application/json; charset=utf-8
+cache-control: no-store
+date: Wed, 27 May 2026 15:03:10 GMT
+transfer-encoding: chunked
+

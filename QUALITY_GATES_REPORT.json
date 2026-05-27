@@ -1,13 +1,13 @@
 {
-  "release": "PF-AZ9-VENDORLENS",
+  "release": "PF-AZ10-UI-VENDORLENS-CISO-COMPARE",
   "date": "2026-05-27",
   "status": "azure_live_browser_validated",
-  "image_tag": "pfaz9-20260527-e8a0de2",
-  "commit": "e8a0de2",
+  "image_tag": "pfaz10-20260527-513fea2",
+  "commit": "513fea2",
   "previous_live_release": {
-    "release": "PF-AZ8A",
-    "image_tag": "pfaz8a-20260527-4f3bbe8",
-    "commit": "4f3bbe8",
+    "release": "PF-AZ9-VENDORLENS",
+    "image_tag": "pfaz9-20260527-e8a0de2",
+    "commit": "e8a0de2",
     "status": "azure_live_browser_validated"
   },
   "gates": [
@@ -16,36 +16,26 @@
     { "name": "backend_reports_syntax", "status": "pass" },
     { "name": "backend_scheduler_syntax", "status": "pass" },
     { "name": "backend_config_applicability_syntax", "status": "pass" },
+    { "name": "backend_vendorlens_syntax", "status": "pass" },
     { "name": "sra_syntax", "status": "pass" },
-    { "name": "backend_tests", "status": "pass", "tests": 27 },
+    { "name": "backend_tests", "status": "pass", "tests": 29 },
     { "name": "frontend_tests", "status": "pass", "tests": 11 },
     { "name": "frontend_build", "status": "pass" },
     { "name": "python_runtime_tests", "status": "pass", "tests": 26 },
     { "name": "iac_validation", "status": "pass" },
     { "name": "bicep_build", "status": "pass" },
-    { "name": "frontend_docker_build", "status": "pass", "image": "diiac/patchforge-frontend:pfaz9-local" },
-    { "name": "bridge_docker_build", "status": "pass", "image": "diiac/patchforge-bridge:pfaz9-local" },
-    { "name": "runtime_docker_build", "status": "pass", "image": "diiac/patchforge-runtime:pfaz9-local" },
-    {
-      "name": "vendorlens_docx_pdf_report_generation",
-      "status": "pass",
-      "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz9-vendorlens/local-reports/"
-    },
-    {
-      "name": "docx_png_visual_render",
-      "status": "not_available",
-      "reason": "LibreOffice/soffice is unavailable on the local PATH"
-    },
-    { "name": "github_push", "status": "pass", "commit": "e8a0de2" },
-    { "name": "azure_image_push", "status": "pass", "image_tag": "pfaz9-20260527-e8a0de2" },
-    { "name": "azure_update", "status": "pass", "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz9-vendorlens/deploy-apply/" },
-    { "name": "live_api_smoke", "status": "pass", "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz9-vendorlens/live-ui/live-api-smoke.json" },
-    { "name": "live_ui_vendorlens_validation", "status": "pass", "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz9-vendorlens/live-ui/ui-smoke-summary.json" },
-    { "name": "keyvault_signing_smoke", "status": "pass", "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz9-vendorlens/live-ui/keyvault-signing-smoke.json" },
-    { "name": "postgres_smoke", "status": "pass", "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz9-vendorlens/live-ui/postgres-smoke.json" },
-    { "name": "production_validation_data_cleanup", "status": "pass", "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz9-vendorlens/live-ui/production-validation-data-cleanup.json" }
+    { "name": "acr_image_push", "status": "pass", "image_tag": "pfaz10-20260527-513fea2" },
+    { "name": "azure_update", "status": "pass", "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz10-ui-vendorlens-ciso-compare/deploy-apply/" },
+    { "name": "live_api_smoke", "status": "pass", "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz10-ui-vendorlens-ciso-compare/live-ui/live-api-smoke-release.json" },
+    { "name": "live_ui_visual_overflow", "status": "pass", "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz10-ui-vendorlens-ciso-compare/live-ui/browser-screenshots/" },
+    { "name": "vendorlens_nvd_catalogue_refresh", "status": "pass_with_governed_rate_limit_warning", "records_reported": 635 },
+    { "name": "vendorlens_catalogue_records_visible", "status": "pass", "records": 730 },
+    { "name": "vendorlens_patch_compare_pagination", "status": "pass", "page_label": "1-10 of 730 comparison advisories" },
+    { "name": "protected_routes_unauthenticated", "status": "pass", "expected_status": 401 },
+    { "name": "postgres_readiness", "status": "pass", "storage": "postgresql" },
+    { "name": "keyvault_signing_path", "status": "previous_live_pass_not_rerun" }
   ],
-  "vendorlens_boundary_checks": {
+  "boundary_checks": {
     "source_bound_advisory_intelligence": true,
     "human_review_required": true,
     "final_approval_false_by_default": true,
@@ -55,11 +45,18 @@
     "autonomous_cab_approval_absent": true,
     "autonomous_risk_acceptance_absent": true
   },
-  "report_checks": {
-    "network_vendor_applicability_section_present": true,
-    "customer_configuration_context_section_present": true,
-    "sra_aip_chat_summary_present": true,
-    "final_approval_not_issued_sentence_present": true,
-    "not_vulnerable_claim_absent": true
-  }
+  "ui_checks": {
+    "finding_cards_wrap": true,
+    "finding_detail_hero_wraps": true,
+    "status_pills_wrap": true,
+    "pagination_controls_present": true,
+    "vendorlens_reference_catalogue_clickable": true,
+    "patch_compare_large_advisory_catalogue_paginated": true,
+    "console_breaking_errors_absent": true
+  },
+  "remaining_notes": [
+    "No new synthetic customer asset was created in production because demo data is prohibited.",
+    "Patch Compare can run once reviewed customer network asset evidence is attached.",
+    "NVD public API rate limiting is handled as a governed feed-run state; configure a private NVD API key for fuller high-volume refreshes."
+  ]
 }

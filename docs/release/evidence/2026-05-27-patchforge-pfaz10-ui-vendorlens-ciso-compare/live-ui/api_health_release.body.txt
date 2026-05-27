@@ -1,0 +1,5 @@
+{
+  "status": "ok",
+  "product": "DIIaC PatchForge",
+  "boundary": "governance-only"
+}

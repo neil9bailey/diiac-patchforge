@@ -1,0 +1,11 @@
+{
+  "error": "missing_bearer_token",
+  "message": "A Microsoft Entra access token is required.",
+  "required_roles": [
+    "PatchForge.Reader",
+    "PatchForge.Auditor",
+    "PatchForge.TriageAnalyst",
+    "PatchForge.SecurityLead",
+    "PatchForge.Admin"
+  ]
+}

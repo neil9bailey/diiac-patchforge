@@ -1,0 +1,45 @@
+{
+  "release": "PF-AZ10-UI-VENDORLENS-CISO-COMPARE",
+  "image_tag": "pfaz10-20260527-513fea2",
+  "commit": "513fea2",
+  "validated_at": "2026-05-27T15:03:32Z",
+  "validated_user": "n.bailey@diiac.io",
+  "displayed_role": "PatchForge.Admin",
+  "ui_http_200": true,
+  "api_health_200": true,
+  "api_readiness": {
+    "status": "ready",
+    "storage": "postgresql",
+    "auth_required": true,
+    "tenant_required": true
+  },
+  "protected_routes_401_unauthenticated": true,
+  "vendorlens": {
+    "vendors_tracked": 17,
+    "active_advisories_visible": 730,
+    "nvd_refresh_state": "completed_with_warnings",
+    "nvd_refresh_records_reported": 635,
+    "patch_compare_pagination": "1-10 of 730 comparison advisories",
+    "customer_asset_created": false
+  },
+  "visual_checks": {
+    "action_center": "pass",
+    "finding_detail": "pass",
+    "vendorlens": "pass",
+    "patch_compare": "pass"
+  },
+  "screenshots": [
+    "browser-screenshots/pfaz10-action-center.png",
+    "browser-screenshots/pfaz10-finding-detail.png",
+    "browser-screenshots/pfaz10-vendorlens-final.png",
+    "browser-screenshots/pfaz10-patch-compare-final.png"
+  ],
+  "boundary": {
+    "no_scanner": true,
+    "no_exploit_generation": true,
+    "no_patch_deployment": true,
+    "no_production_mutation": true,
+    "no_autonomous_approval": true,
+    "no_autonomous_risk_acceptance": true
+  }
+}

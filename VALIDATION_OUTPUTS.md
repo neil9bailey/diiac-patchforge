@@ -1,3 +1,73 @@
+# PF-AZ10 UI, VendorLens Catalogue, and CISO Patch Comparison Validation Outputs
+
+## PF-AZ10 Local Validation
+
+Date: 2026-05-27
+
+Status: PASS. PF-AZ10 is deployed to Azure and validated through the live UI/API as a signed-in PatchForge Admin user.
+
+Scope:
+
+- Fix UI wrapping and content overflow in finding cards, context banners, hero panels, status lines, and VendorLens panels.
+- Add pagination to growing content areas including findings, vulnerability queue, assets/services, source feeds/runs, vendor lists, VendorLens advisories/assets/gaps, decision packs, reports, Admin health checks, and Admin sections.
+- Add clickable VendorLens reference catalogue with source details and per-vendor refresh action.
+- Refresh NVD catalogue records without requiring a single CVE input.
+- Handle NVD public API rate limits as governed `completed_with_warnings` or `rate_limited` feed-run states instead of a broken UI workflow.
+- Add CISO patch-version comparison workflow and report artefact.
+
+Local validation:
+
+- `node --check backend-api/server.js`: PASS
+- `node --check backend-api/auth.js`: PASS
+- `node --check backend-api/patchforge/reports.js`: PASS
+- `node --check backend-api/patchforge/scheduler.js`: PASS
+- `node --check backend-api/patchforge/configApplicability.js`: PASS
+- `node --check backend-api/patchforge/vendorLens.js`: PASS
+- `node --check backend-api/sra/securityResearchAgent.js`: PASS
+- `npm --prefix backend-api test`: PASS, 29 tests
+- `npm --prefix Frontend test`: PASS, 11 tests
+- `npm --prefix Frontend run build`: PASS
+- `python -m pytest -q --basetemp .pytest_tmp`: PASS, 26 tests
+- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate_iac.ps1`: PASS
+- `az bicep build --file infra/bicep/main.bicep`: PASS
+
+Azure rollout:
+
+- GitHub push: PASS, latest commit `513fea2`
+- Image tag: `pfaz10-20260527-513fea2`
+- ACR image push: PASS for frontend, bridge/API, runtime, SRA, worker, and scheduler
+- ACR tag verification: PASS for all six repositories
+- Bicep what-if: captured; targeted image-only rollout used to avoid broad infrastructure drift
+- Container Apps image update: PASS
+- Active revisions:
+  - UI: `ca-patchforge-ui-prod--0000016`
+  - Bridge/API: `ca-patchforge-bridge-prod--0000015`
+  - Runtime: `ca-patchforge-runtime-prod--0000014`
+  - SRA: `ca-patchforge-sra-prod--0000013`
+  - Worker: `ca-patchforge-worker-prod--0000013`
+  - Scheduler: `ca-patchforge-scheduler-prod--0000013`
+
+Live validation:
+
+- UI HTTP 200: PASS
+- API health HTTP 200: PASS
+- API readiness HTTP 200 with `storage=postgresql`, `auth_required=true`, and `tenant_required=true`: PASS
+- Protected vulnerability and VendorLens routes unauthenticated HTTP 401: PASS
+- Browser/MSAL sign-in as `n.bailey@diiac.io`: PASS
+- Displayed role `PatchForge.Admin`: PASS
+- Action Center and Finding Detail visual overflow checks: PASS
+- VendorLens reference catalogue loads: PASS, 17 vendors
+- VendorLens active advisories: PASS, 730 source-bound records
+- NVD catalogue refresh: PASS, governed `completed_with_warnings` state observed when the public NVD API rate limit was reached
+- Patch Compare pagination: PASS, `1-10 of 730 comparison advisories`
+- App console-breaking errors: PASS; only a Microsoft login favicon 404 was observed
+
+PF-AZ10 evidence path:
+
+`docs/release/evidence/2026-05-27-patchforge-pfaz10-ui-vendorlens-ciso-compare/`
+
+Important boundary note: PF-AZ10 does not add scanning, exploit generation, procedural exploit steps, patch deployment, production mutation from the UI, autonomous CAB approval, or autonomous risk acceptance.
+
 # PF-AZ9 VendorLens Validation Outputs
 
 ## PF-AZ9 VendorLens Local Validation

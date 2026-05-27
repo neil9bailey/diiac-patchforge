@@ -1,7 +1,7 @@
 {
   "product": "DIIaC PatchForge",
-  "baseline_id": "PF-AZ9-VENDORLENS",
-  "baseline_name": "VendorLens Network Vendor Intelligence and Config-Aware Patch Advisor",
+  "baseline_id": "PF-AZ10-UI-VENDORLENS-CISO-COMPARE",
+  "baseline_name": "UI Pagination, VendorLens Catalogue Hardening, and CISO Patch Comparison",
   "baseline_date": "2026-05-27",
   "target_url": "https://patchforge.diiac.io",
   "api_url": "https://api.patchforge.diiac.io",
@@ -14,27 +14,26 @@
   "storage_state": "postgresql_live_previous_baseline",
   "auth_state": "entra_rbac_required",
   "signing_state": "azure_key_vault_required_for_production_runtime",
-  "image_tag": "pfaz9-20260527-e8a0de2",
-  "commit": "e8a0de2",
+  "image_tag": "pfaz10-20260527-513fea2",
+  "commit": "513fea2",
   "previous_live_baseline": {
-    "baseline_id": "PF-AZ8A",
-    "image_tag": "pfaz8a-20260527-4f3bbe8",
-    "commit": "4f3bbe8",
+    "baseline_id": "PF-AZ9-VENDORLENS",
+    "image_tag": "pfaz9-20260527-e8a0de2",
+    "commit": "e8a0de2",
     "release_state": "azure_live_browser_validated"
   },
   "scope": [
-    "network vendor catalogue",
-    "vendor advisory source-bound ingest adapters",
-    "customer network asset and configuration evidence records",
-    "configuration applicability assessment",
-    "Ask PatchForge config-aware SRA/AIP chat",
-    "VendorLens UI and Admin source controls",
-    "VendorLens signed-pack artefacts",
-    "DOCX/PDF report network vendor applicability sections"
+    "UI content wrapping and overflow prevention",
+    "pagination for growing queues, catalogues, reports, packs, admin sections, source feeds, and VendorLens views",
+    "clickable VendorLens reference catalogue",
+    "NVD catalogue refresh without requiring a single CVE",
+    "NVD rate-limit handling as governed feed-run state",
+    "CISO patch-version comparison workflow",
+    "CISO patch-version comparison report artefact"
   ],
   "local_validation": {
     "backend_syntax": "pass",
-    "backend_tests": "pass",
+    "backend_tests": "pass_29",
     "frontend_tests": "pass",
     "frontend_build": "pass",
     "python_runtime_tests": "pass",
@@ -43,19 +42,19 @@
     "docker_builds": "pass",
     "docx_pdf_report_generation": "pass",
     "docx_visual_render": "not_available_local_soffice_missing",
-    "evidence_path": "docs/release/evidence/2026-05-27-patchforge-pfaz9-vendorlens/"
+    "evidence_path": "docs/release/evidence/2026-05-27-patchforge-pfaz10-ui-vendorlens-ciso-compare/"
   },
   "azure_rollout": {
     "github_push": "pass",
     "acr_image_push": "pass",
     "targeted_containerapp_update": "pass",
     "active_revisions": {
-      "ui": "ca-patchforge-ui-prod--0000013",
-      "bridge_api": "ca-patchforge-bridge-prod--0000012",
-      "runtime": "ca-patchforge-runtime-prod--0000011",
-      "sra": "ca-patchforge-sra-prod--0000010",
-      "worker": "ca-patchforge-worker-prod--0000010",
-      "scheduler": "ca-patchforge-scheduler-prod--0000010"
+      "ui": "ca-patchforge-ui-prod--0000016",
+      "bridge_api": "ca-patchforge-bridge-prod--0000015",
+      "runtime": "ca-patchforge-runtime-prod--0000014",
+      "sra": "ca-patchforge-sra-prod--0000013",
+      "worker": "ca-patchforge-worker-prod--0000013",
+      "scheduler": "ca-patchforge-scheduler-prod--0000013"
     }
   },
   "live_validation": {
@@ -63,14 +62,15 @@
     "browser_msal_user": "n.bailey@diiac.io",
     "displayed_role": "PatchForge.Admin",
     "vendor_catalogue_count": 17,
-    "config_applicability_posture": "requires_review",
-    "urgency_posture": "urgent_scope_confirmation_required",
-    "signed_pack_id": "PF-20260527-2d9f160a",
-    "signed_pack_verified": true,
-    "keyvault_signing": "pass",
+    "vendorlens_active_advisories": 730,
+    "nvd_refresh_state": "completed_with_warnings_when_public_rate_limit_reached",
+    "patch_compare_pagination": "pass_1_to_10_of_730",
+    "visual_overflow_checks": "pass",
+    "signed_pack_verified": "not_rerun_no_new_customer_asset_created",
+    "keyvault_signing": "previous_live_pass_not_rerun",
     "postgresql": "pass",
-    "validation_records_removed_after_evidence_capture": true,
-    "evidence_path": "docs/release/evidence/2026-05-27-patchforge-pfaz9-vendorlens/live-ui/"
+    "validation_records_removed_after_evidence_capture": "not_applicable_no_synthetic_records_created",
+    "evidence_path": "docs/release/evidence/2026-05-27-patchforge-pfaz10-ui-vendorlens-ciso-compare/live-ui/"
   },
   "excluded_capabilities": [
     "vulnerability_scanner",

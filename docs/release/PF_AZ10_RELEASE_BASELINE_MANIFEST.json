@@ -1,0 +1,39 @@
+{
+  "product": "DIIaC PatchForge",
+  "baseline_id": "PF-AZ10-UI-VENDORLENS-CISO-COMPARE",
+  "baseline_date": "2026-05-27",
+  "target_url": "https://patchforge.diiac.io",
+  "api_url": "https://api.patchforge.diiac.io",
+  "image_tag": "pfaz10-20260527-513fea2",
+  "commit": "513fea2",
+  "release_state": "azure_live_browser_validated",
+  "azure_resource_group": "rg-diiac-patchforge-prod",
+  "azure_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+  "scope": [
+    "UI wrapping and overflow fixes",
+    "pagination for growing content",
+    "clickable VendorLens reference catalogue",
+    "NVD catalogue refresh without single-CVE dependency",
+    "NVD public rate-limit handling",
+    "CISO patch-version comparison",
+    "CISO patch comparison report artefact"
+  ],
+  "active_revisions": {
+    "ui": "ca-patchforge-ui-prod--0000016",
+    "bridge_api": "ca-patchforge-bridge-prod--0000015",
+    "runtime": "ca-patchforge-runtime-prod--0000014",
+    "sra": "ca-patchforge-sra-prod--0000013",
+    "worker": "ca-patchforge-worker-prod--0000013",
+    "scheduler": "ca-patchforge-scheduler-prod--0000013"
+  },
+  "evidence_path": "docs/release/evidence/2026-05-27-patchforge-pfaz10-ui-vendorlens-ciso-compare/",
+  "excluded_capabilities": [
+    "vulnerability_scanning",
+    "exploit_generation",
+    "procedural_exploit_steps",
+    "patch_deployment",
+    "production_mutation",
+    "autonomous_cab_approval",
+    "autonomous_risk_acceptance"
+  ]
+}

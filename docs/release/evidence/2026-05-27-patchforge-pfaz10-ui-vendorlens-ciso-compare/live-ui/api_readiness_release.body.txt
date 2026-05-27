@@ -1,0 +1,6 @@
+{
+  "status": "ready",
+  "storage": "postgresql",
+  "auth_required": true,
+  "tenant_required": true
+}
