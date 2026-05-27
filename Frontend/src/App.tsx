@@ -279,7 +279,8 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
           assets: customerNetworkAssets,
           advisories: vendorSecurityAdvisories,
           latestAssessment: current.vendorLens.latestAssessment,
-          latestChat: current.vendorLens.latestChat
+          latestChat: current.vendorLens.latestChat,
+          latestComparison: current.vendorLens.latestComparison
         },
         bayesian: null,
         adminHealth,
@@ -355,6 +356,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         requested_posture: selectedPosture,
         bayesian_snapshot: state.bayesian,
         config_applicability_assessment: state.vendorLens.latestAssessment,
+        vendorlens_patch_comparison: state.vendorLens.latestComparison,
         sra_config_chat_session: state.vendorLens.latestChat,
         asset_id: state.vendorLens.latestAssessment?.asset_id || state.vendorLens.assets[0]?.asset_id,
         advisory_id: state.vendorLens.latestAssessment?.advisory_id || state.vendorLens.advisories[0]?.advisory_id
@@ -538,24 +540,49 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
     }
   }
 
-  async function handleRefreshVendorLensSource() {
+  async function handleRefreshVendorLensSource(vendorIdOverride?: string) {
     setOperationMessage(null);
     setOperationError(null);
-    const cve = vendorAdvisoryForm.cve.trim() || state.vendorLens.advisories[0]?.cve || selectedVulnerabilityId;
-    if (!cve) {
-      setOperationError("Enter a CVE before refreshing NVD metadata.");
-      return;
-    }
     try {
       const run = await liveApi.refreshVendorLensSource(tenantId, {
         adapter: "nvd_cve_api",
-        cve,
-        vendor_id: vendorAdvisoryForm.vendor_id
+        mode: "catalogue",
+        vendor_id: vendorIdOverride || vendorAdvisoryForm.vendor_id || "all-vendors",
+        max_vendors: 17,
+        results_per_page: 100,
+        max_pages: 1
       });
       setOperationMessage(`${run.feed_name} ${run.status}: ${run.message || "VendorLens source refresh recorded."}`);
       await loadLiveState();
     } catch (error) {
       setOperationError(error instanceof Error ? error.message : "VendorLens source refresh failed.");
+    }
+  }
+
+  async function handleCompareVendorLensPatch(assetId?: string, advisoryId?: string) {
+    setOperationMessage(null);
+    setOperationError(null);
+    const asset = state.vendorLens.assets.find((item) => item.asset_id === assetId) || state.vendorLens.assets[0];
+    const advisory = state.vendorLens.advisories.find((item) => item.advisory_id === advisoryId) || state.vendorLens.advisories[0];
+    if (!asset || !advisory) {
+      setOperationError("VendorLens needs at least one customer network asset and one vendor advisory before comparing patch versions.");
+      return;
+    }
+    try {
+      const comparison = await liveApi.compareVendorLensPatch(tenantId, {
+        asset_id: asset.asset_id,
+        advisory_id: advisory.advisory_id
+      });
+      setState((current) => ({
+        ...current,
+        vendorLens: {
+          ...current.vendorLens,
+          latestComparison: comparison
+        }
+      }));
+      setOperationMessage(`Patch comparison prepared for CISO review: ${comparison.current_version || "current unknown"} to ${comparison.target_version || "target pending"}.`);
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : "VendorLens patch comparison failed.");
     }
   }
 
@@ -758,6 +785,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 onAssess={handleAssessVendorLens}
                 onAsk={handleAskVendorLens}
                 onRefreshSource={handleRefreshVendorLensSource}
+                onComparePatch={handleCompareVendorLensPatch}
                 canWrite={canWrite}
               />
             )}
@@ -908,7 +936,7 @@ function ActionCenter({
     { label: "Critical exposure", value: metrics.critical_exposure, tone: "danger", icon: TriangleAlert },
     { label: "Signed packs", value: metrics.signed_packs || decisionPacks.length, tone: "trust", icon: FileCheck2 }
   ];
-  const topFindings = findings.slice(0, 6);
+  const findingsPage = usePagination(findings, 4, "action-findings");
 
   return (
     <>
@@ -942,7 +970,7 @@ function ActionCenter({
       <NextActionCards />
 
       <div className="finding-grid">
-        {topFindings.map((finding) => (
+        {findingsPage.items.map((finding) => (
           <article className="finding-card" key={finding.vulnerability_id}>
             <div className="finding-card-head">
               <span className={`pill ${severityTone(finding.severity)}`}>{humanize(finding.severity || "unknown")}</span>
@@ -967,7 +995,9 @@ function ActionCenter({
         ))}
       </div>
 
-      {!topFindings.length && (
+      <PaginationControls {...findingsPage} label="findings" />
+
+      {!findingsPage.items.length && (
         <EmptyState
           title="No governed findings yet"
           detail={`Refresh live public intelligence or ingest a real finding. ${sourceFeedState.feeds.length} public source feeds are configured and all outputs remain source-bound pending review.`}
@@ -1431,6 +1461,7 @@ function VulnerabilityQueue({
   onIngest: (event: FormEvent<HTMLFormElement>) => void;
   canWrite: boolean;
 }) {
+  const queuePage = usePagination(vulnerabilities, 8, "vulnerability-queue");
   return (
     <>
       <div className="section-title">
@@ -1453,7 +1484,7 @@ function VulnerabilityQueue({
             </tr>
           </thead>
           <tbody>
-            {vulnerabilities.map((item) => (
+            {queuePage.items.map((item) => (
               <tr key={item.vulnerability_id}>
                 <td>
                   <strong>{item.vulnerability_id}</strong>
@@ -1472,6 +1503,7 @@ function VulnerabilityQueue({
         </table>
         {!vulnerabilities.length && <EmptyState title="Queue is empty" detail="Use the ingest form below or the protected API to submit real tenant records." />}
       </div>
+      <PaginationControls {...queuePage} label="vulnerabilities" />
 
       {canWrite ? <section className="wide-band">
         <div className="section-title">
@@ -1538,21 +1570,25 @@ function VulnerabilityQueue({
 }
 
 function AssetExposure({ assets, services }: { assets: AssetRecord[]; services: ServiceRecord[] }) {
+  const assetPage = usePagination(assets, 8, "asset-exposure-assets");
+  const servicePage = usePagination(services, 8, "asset-exposure-services");
   return (
     <div className="split-grid">
       <section className="data-band">
         <h3>Assets</h3>
-        {assets.map((asset) => (
+        {assetPage.items.map((asset) => (
           <StatusLine key={asset.asset_id} label={asset.asset_name || asset.asset_id} value={humanize(asset.exposure || "unknown")} tone="steel" />
         ))}
         {!assets.length && <EmptyState title="No asset records" detail="Asset scope appears after real inventory records are ingested." />}
+        <PaginationControls {...assetPage} label="assets" />
       </section>
       <section className="data-band">
         <h3>Services</h3>
-        {services.map((service) => (
+        {servicePage.items.map((service) => (
           <StatusLine key={service.service_id} label={service.service_name || service.service_id} value={service.customer_facing ? "Customer-facing" : humanize(service.service_tier || "unknown")} tone={service.customer_facing ? "amber" : "steel"} />
         ))}
         {!services.length && <EmptyState title="No service records" detail="Service exposure appears after real service catalogue records are ingested." />}
+        <PaginationControls {...servicePage} label="services" />
       </section>
     </div>
   );
@@ -1692,6 +1728,9 @@ function SourceFeeds({
   onRefresh: (feedId: string) => void;
   canWrite: boolean;
 }) {
+  const feedPage = usePagination(sourceFeedState.feeds, 4, "source-feeds");
+  const runPage = usePagination(sourceFeedState.recent_runs, 8, "source-feed-runs");
+
   return (
     <>
       <div className="section-title">
@@ -1700,7 +1739,7 @@ function SourceFeeds({
       </div>
 
       <div className="split-grid">
-        {sourceFeedState.feeds.map((feed) => (
+        {feedPage.items.map((feed) => (
           <section className="data-band source-feed-panel" key={feed.feed_id}>
             <div className="section-title compact-title">
               <h3>{feed.feed_name}</h3>
@@ -1716,6 +1755,7 @@ function SourceFeeds({
           </section>
         ))}
       </div>
+      <PaginationControls {...feedPage} label="feeds" />
 
       <section className="wide-band">
         <div className="section-title">
@@ -1736,7 +1776,7 @@ function SourceFeeds({
               </tr>
             </thead>
             <tbody>
-              {sourceFeedState.recent_runs.map((run) => (
+              {runPage.items.map((run) => (
                 <tr key={run.run_id}>
                   <td>
                     <strong>{run.run_id}</strong>
@@ -1754,6 +1794,7 @@ function SourceFeeds({
           </table>
           {!sourceFeedState.recent_runs.length && <EmptyState title="No live source feed runs" detail="Refresh CISA KEV or FIRST EPSS to pull real public intelligence into the governed queue." />}
         </div>
+        <PaginationControls {...runPage} label="feed runs" />
       </section>
 
       {!canWrite && <EmptyState title="Read-only role" detail="Source refresh actions require a PatchForge triage, security lead, or admin role." />}
@@ -1762,6 +1803,7 @@ function SourceFeeds({
 }
 
 function VendorThreatLandscape({ vendors, threatSummary }: { vendors: VendorProfile[]; threatSummary: ThreatLandscapeSummary | null }) {
+  const vendorPage = usePagination(vendors, 10, "vendor-threat-vendors");
   return (
     <>
       <div className="section-title">
@@ -1794,7 +1836,7 @@ function VendorThreatLandscape({ vendors, threatSummary }: { vendors: VendorProf
             </tr>
           </thead>
           <tbody>
-            {vendors.map((vendor) => (
+            {vendorPage.items.map((vendor) => (
               <tr key={vendor.vendor_id}>
                 <td>{vendor.vendor_name}</td>
                 <td>{humanize(vendor.category)}</td>
@@ -1804,6 +1846,7 @@ function VendorThreatLandscape({ vendors, threatSummary }: { vendors: VendorProf
           </tbody>
         </table>
       </div>
+      <PaginationControls {...vendorPage} label="vendors" />
     </>
   );
 }
@@ -1814,6 +1857,7 @@ const vendorLensTabs = [
   "Advisories & CVEs",
   "Customer Estate Match",
   "Config Applicability",
+  "Patch Compare",
   "Urgency & Recommended Posture",
   "Ask PatchForge",
   "Vendor Evidence Packs",
@@ -1833,6 +1877,7 @@ function VendorLens({
   onAssess,
   onAsk,
   onRefreshSource,
+  onComparePatch,
   canWrite
 }: {
   vendorLens: VendorLensState;
@@ -1846,14 +1891,20 @@ function VendorLens({
   onIngestAdvisory: (event: FormEvent<HTMLFormElement>) => void;
   onAssess: () => void;
   onAsk: () => void;
-  onRefreshSource: () => void;
+  onRefreshSource: (vendorId?: string) => void;
+  onComparePatch: (assetId?: string, advisoryId?: string) => void;
   canWrite: boolean;
 }) {
   const [activeTab, setActiveTab] = useState(vendorLensTabs[0]);
-  const asset = vendorLens.assets[0];
-  const advisory = vendorLens.advisories[0];
+  const [selectedVendorId, setSelectedVendorId] = useState(vendorLens.vendors[0]?.vendor_id || "");
+  const [selectedAssetId, setSelectedAssetId] = useState(vendorLens.assets[0]?.asset_id || "");
+  const [selectedAdvisoryId, setSelectedAdvisoryId] = useState(vendorLens.advisories[0]?.advisory_id || "");
+  const asset = vendorLens.assets.find((item) => item.asset_id === selectedAssetId) || vendorLens.assets[0];
+  const advisory = vendorLens.advisories.find((item) => item.advisory_id === selectedAdvisoryId) || vendorLens.advisories[0];
   const assessment = vendorLens.latestAssessment || vendorLens.dashboard?.recent_assessments?.[0] || null;
   const chat = vendorLens.latestChat;
+  const comparison = vendorLens.latestComparison;
+  const selectedVendor = vendorLens.vendors.find((vendor) => vendor.vendor_id === selectedVendorId) || vendorLens.vendors[0] || null;
   const cards = [
     { label: "Vendors tracked", value: vendorLens.dashboard?.vendors_tracked || vendorLens.vendors.length, tone: "steel", icon: Network },
     { label: "Active advisories", value: vendorLens.dashboard?.active_advisories || vendorLens.advisories.length, tone: "amber", icon: ShieldAlert },
@@ -1862,6 +1913,29 @@ function VendorLens({
     { label: "Config unknown", value: vendorLens.dashboard?.config_unknown_count || 0, tone: "amber", icon: ListFilter },
     { label: "Emergency attention", value: vendorLens.dashboard?.emergency_attention_required || 0, tone: "danger", icon: Clock3 }
   ];
+  const vendorPage = usePagination(vendorLens.vendors, 8, "vendorlens-vendors");
+  const productVendorPage = usePagination(vendorLens.vendors, 6, "vendorlens-products");
+  const advisoryPage = usePagination(vendorLens.advisories, 8, "vendorlens-advisories");
+  const assetPage = usePagination(vendorLens.assets, 8, "vendorlens-assets");
+  const gapPage = usePagination(assessment?.evidence_gaps || [], 6, "vendorlens-gaps");
+
+  useEffect(() => {
+    if (!selectedVendorId && vendorLens.vendors[0]?.vendor_id) {
+      setSelectedVendorId(vendorLens.vendors[0].vendor_id);
+    }
+  }, [selectedVendorId, vendorLens.vendors]);
+
+  useEffect(() => {
+    if (!selectedAssetId && vendorLens.assets[0]?.asset_id) {
+      setSelectedAssetId(vendorLens.assets[0].asset_id);
+    }
+  }, [selectedAssetId, vendorLens.assets]);
+
+  useEffect(() => {
+    if (!selectedAdvisoryId && vendorLens.advisories[0]?.advisory_id) {
+      setSelectedAdvisoryId(vendorLens.advisories[0].advisory_id);
+    }
+  }, [selectedAdvisoryId, vendorLens.advisories]);
 
   return (
     <>
@@ -1901,14 +1975,17 @@ function VendorLens({
           </p>
         </div>
         <div className="hero-actions">
-          <button type="button" className="action-button" onClick={onRefreshSource} disabled={!canWrite}>
-            <RefreshCw size={16} aria-hidden /> Refresh NVD
+          <button type="button" className="action-button" onClick={() => onRefreshSource("all-vendors")} disabled={!canWrite}>
+            <RefreshCw size={16} aria-hidden /> Refresh All NVD Vendors
           </button>
           <button type="button" className="action-button secondary-action" onClick={onAssess} disabled={!canWrite || !asset || !advisory}>
             <Gauge size={16} aria-hidden /> Assess
           </button>
           <button type="button" className="action-button secondary-action" onClick={onAsk} disabled={!canWrite || !asset || !advisory}>
             <MessageSquareText size={16} aria-hidden /> Ask PatchForge
+          </button>
+          <button type="button" className="action-button secondary-action" onClick={() => onComparePatch(asset?.asset_id, advisory?.advisory_id)} disabled={!canWrite || !asset || !advisory}>
+            <Layers3 size={16} aria-hidden /> Compare Patch
           </button>
         </div>
       </section>
@@ -1922,36 +1999,43 @@ function VendorLens({
       </div>
 
       {activeTab === "Network Vendors" && (
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Vendor</th>
-                <th>Category</th>
-                <th>Source</th>
-                <th>Families</th>
-                <th>Review</th>
-              </tr>
-            </thead>
-            <tbody>
-              {vendorLens.vendors.map((vendor) => (
-                <tr key={vendor.vendor_id}>
-                  <td>{vendor.vendor_name}</td>
-                  <td>{humanize(vendor.vendor_category)}</td>
-                  <td><small>{vendor.advisory_source_url || "Configured in Admin"}</small></td>
-                  <td>{(vendor.product_families || []).slice(0, 4).join(", ") || "Not recorded"}</td>
-                  <td>{humanize(vendor.source_review_state || "reference_catalogue")}</td>
-                </tr>
+        <div className="split-grid">
+          <section className="data-band">
+            <div className="section-title compact-title">
+              <h3>Reference Catalogue</h3>
+              <span className="pill steel">{vendorLens.vendors.length} vendors</span>
+            </div>
+            <div className="reference-list">
+              {vendorPage.items.map((vendor) => (
+                <button key={vendor.vendor_id} type="button" className={selectedVendor?.vendor_id === vendor.vendor_id ? "reference-row active" : "reference-row"} onClick={() => setSelectedVendorId(vendor.vendor_id)}>
+                  <strong>{vendor.vendor_name}</strong>
+                  <span>{humanize(vendor.vendor_category)}</span>
+                  <small>{(vendor.product_families || []).slice(0, 3).join(", ") || "Families pending"}</small>
+                </button>
               ))}
-            </tbody>
-          </table>
-          {!vendorLens.vendors.length && <EmptyState title="Vendor catalogue unavailable" detail="VendorLens vendor catalogue loads from the protected PatchForge API." />}
+            </div>
+            <PaginationControls {...vendorPage} label="vendors" />
+            {!vendorLens.vendors.length && <EmptyState title="Vendor catalogue unavailable" detail="VendorLens vendor catalogue loads from the protected PatchForge API." />}
+          </section>
+          <section className="data-band reference-detail">
+            <h3>{selectedVendor?.vendor_name || "Reference detail"}</h3>
+            <StatusLine label="Source type" value={humanize(selectedVendor?.advisory_source_type || "public_vendor_advisory")} tone="teal" />
+            <StatusLine label="Review state" value={humanize(selectedVendor?.source_review_state || "reference_catalogue")} tone="amber" />
+            <StatusLine label="Last refresh" value={selectedVendor?.last_refresh_at ? new Date(selectedVendor.last_refresh_at).toLocaleString() : "Not refreshed"} tone="steel" />
+            <p className="muted-copy url-copy">{selectedVendor?.advisory_source_url || "Source URL is configured in Admin."}</p>
+            <div className="report-actions">
+              {selectedVendor?.advisory_source_url && <a className="action-button" href={selectedVendor.advisory_source_url} target="_blank" rel="noreferrer">Open Source</a>}
+              <button type="button" className="action-button secondary-action" onClick={() => onRefreshSource(selectedVendor?.vendor_id)} disabled={!canWrite}>
+                <RefreshCw size={16} aria-hidden /> Refresh NVD Catalogue
+              </button>
+            </div>
+          </section>
         </div>
       )}
 
       {activeTab === "Product Families" && (
         <div className="report-grid">
-          {vendorLens.vendors.slice(0, 12).map((vendor) => (
+          {productVendorPage.items.map((vendor) => (
             <section className="data-band report-card" key={vendor.vendor_id}>
               <div className="section-title compact-title">
                 <h3>{vendor.vendor_name}</h3>
@@ -1960,6 +2044,7 @@ function VendorLens({
               {(vendor.product_families || []).map((family) => <StatusLine key={family} label={family} value="Tracked" tone="teal" />)}
             </section>
           ))}
+          <PaginationControls {...productVendorPage} label="vendor family cards" />
         </div>
       )}
 
@@ -1988,10 +2073,11 @@ function VendorLens({
           </section>
           <section className="data-band">
             <h3>Current Advisory Queue</h3>
-            {vendorLens.advisories.slice(0, 8).map((item) => (
+            {advisoryPage.items.map((item) => (
               <StatusLine key={item.advisory_id} label={item.cve || item.advisory_id} value={humanize(item.review_state || "pending_review")} tone={item.known_exploited ? "danger" : "amber"} detail={item.title || item.vendor_name} />
             ))}
             {!vendorLens.advisories.length && <p className="muted-copy">No vendor advisories are attached yet.</p>}
+            <PaginationControls {...advisoryPage} label="advisories" />
           </section>
         </div>
       )}
@@ -2022,10 +2108,11 @@ function VendorLens({
           </section>
           <section className="data-band">
             <h3>Customer Estate Records</h3>
-            {vendorLens.assets.slice(0, 8).map((item) => (
+            {assetPage.items.map((item) => (
               <StatusLine key={item.asset_id} label={`${item.vendor_id} ${item.model || item.product_family || ""}`} value={humanize(item.review_state || "pending_review")} tone={item.internet_facing ? "amber" : "steel"} detail={`${item.firmware_version || "version pending"} | ${item.management_exposure || "exposure pending"}`} />
             ))}
             {!vendorLens.assets.length && <p className="muted-copy">No customer network assets are attached yet.</p>}
+            <PaginationControls {...assetPage} label="assets" />
           </section>
         </div>
       )}
@@ -2043,13 +2130,59 @@ function VendorLens({
           </section>
           <section className="data-band">
             <h3>Evidence Gaps</h3>
-            {(assessment?.evidence_gaps || []).map((gap) => (
+            {gapPage.items.map((gap) => (
               <div className="guide-fact" key={gap.gap_id || gap.plain_english_gap}>
                 <strong>{gap.plain_english_gap || humanize(gap.gap_id || "Evidence gap")}</strong>
                 <p>{gap.required_evidence || "Reviewed evidence required."}</p>
               </div>
             ))}
             {!assessment?.evidence_gaps?.length && <p className="muted-copy">Run an applicability assessment to populate evidence gaps.</p>}
+            <PaginationControls {...gapPage} label="evidence gaps" />
+          </section>
+        </div>
+      )}
+
+      {activeTab === "Patch Compare" && (
+        <div className="split-grid">
+          <section className="data-band">
+            <h3>Current vs Target Patch</h3>
+            <label>
+              Customer device
+              <select value={asset?.asset_id || ""} onChange={(event) => setSelectedAssetId(event.target.value)}>
+                <option value="">Select customer network asset</option>
+                {vendorLens.assets.map((item) => (
+                  <option key={item.asset_id} value={item.asset_id}>
+                    {`${item.vendor_id} ${item.model || item.product_family || item.asset_id} ${item.firmware_version || ""}`}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Advisory or CVE
+              <select value={advisory?.advisory_id || ""} onChange={(event) => setSelectedAdvisoryId(event.target.value)}>
+                <option value="">Select source-bound advisory</option>
+                {vendorLens.advisories.map((item) => (
+                  <option key={item.advisory_id} value={item.advisory_id}>
+                    {`${item.cve || item.advisory_id} ${item.vendor_name || item.vendor_id || ""}`}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <StatusLine label="Asset" value={asset?.asset_id || "No asset selected"} tone="steel" />
+            <StatusLine label="Advisory" value={advisory?.cve || advisory?.advisory_id || "No advisory selected"} tone="amber" />
+            <StatusLine label="Running version" value={comparison?.current_version || asset?.firmware_version || "Version pending"} tone="steel" />
+            <StatusLine label="Target fixed version" value={comparison?.target_version || advisory?.fixed_versions?.[0] || "Fixed version pending"} tone="teal" />
+            <StatusLine label="Current status" value={humanize(comparison?.current_version_status || "not compared")} tone="amber" />
+            <StatusLine label="Target status" value={humanize(comparison?.target_version_status || "not compared")} tone="teal" />
+            <button type="button" className="action-button" onClick={() => onComparePatch(asset?.asset_id, advisory?.advisory_id)} disabled={!canWrite || !asset || !advisory}>
+              <Layers3 size={16} aria-hidden /> Run Patch Compare
+            </button>
+          </section>
+          <section className="data-band">
+            <h3>CISO Review Summary</h3>
+            <p className="muted-copy">{comparison?.ciso_summary || "Run patch compare to prepare a CISO-ready summary from source-bound advisory and customer asset evidence."}</p>
+            <p className="boundary-copy">Export the CISO Patch Version Comparison Report from Reports & Packs after generating a signed pack with this comparison attached.</p>
+            {(comparison?.evidence_required || []).slice(0, 6).map((item) => <p className="rail-note" key={item}><FileCheck2 size={15} aria-hidden /> {item}</p>)}
           </section>
         </div>
       )}
@@ -2096,9 +2229,9 @@ function VendorLens({
       {activeTab === "Vendor Evidence Packs" && (
         <section className="wide-band">
           <h3>Vendor Evidence Pack Inputs</h3>
-          <p className="muted-copy">Signed packs can now include network vendor profile, customer network asset, vendor advisory, config applicability, VendorLens decision context, and SRA/AIP chat artefacts.</p>
+          <p className="muted-copy">Signed packs can now include network vendor profile, customer network asset, vendor advisory, config applicability, patch comparison, VendorLens decision context, and SRA/AIP chat artefacts.</p>
           <div className="decision-option-grid">
-            {["network_vendor_profile_snapshot.json", "customer_network_asset_snapshot.json", "vendor_security_advisory_snapshot.json", "config_applicability_assessment.json", "sra_config_chat_session.json", "vendorlens_decision_context.json"].map((artefact) => (
+            {["network_vendor_profile_snapshot.json", "customer_network_asset_snapshot.json", "vendor_security_advisory_snapshot.json", "config_applicability_assessment.json", "vendorlens_patch_comparison.json", "sra_config_chat_session.json", "vendorlens_decision_context.json"].map((artefact) => (
               <div className="decision-option" key={artefact}>
                 <h4>{artefact}</h4>
                 <p>Preserved in signed pack when VendorLens context is attached to pack generation.</p>
@@ -2137,6 +2270,7 @@ function DecisionPacks({
   onDownloadReport: (packId: string, reportType: string, format: "docx" | "pdf") => void;
 }) {
   const defaultReport = reports.find((report) => report.report_type === "board_vulnerability_remediation_summary") || reports[0];
+  const packPage = usePagination(decisionPacks, 8, "decision-packs");
   return (
     <>
       <div className="section-title">
@@ -2157,7 +2291,7 @@ function DecisionPacks({
             </tr>
           </thead>
           <tbody>
-            {decisionPacks.map((pack) => (
+            {packPage.items.map((pack) => (
               <tr key={pack.pack_id}>
                 <td>{pack.pack_id}</td>
                 <td>{pack.vulnerability_id}</td>
@@ -2184,6 +2318,7 @@ function DecisionPacks({
         </table>
         {!decisionPacks.length && <EmptyState title="No decision packs" detail="Signed packs appear after the workbench compiles a real tenant record." />}
       </div>
+      <PaginationControls {...packPage} label="decision packs" />
     </>
   );
 }
@@ -2199,6 +2334,7 @@ function Reports({
 }) {
   const verifiedPacks = decisionPacks.filter((pack) => pack.verification?.verified);
   const latestPack = verifiedPacks[0] || decisionPacks[0];
+  const reportPage = usePagination(reports, 6, "reports-catalog");
   return (
     <>
       <div className="section-title">
@@ -2220,7 +2356,7 @@ function Reports({
       </section>
 
       <div className="report-grid">
-        {reports.map((report) => (
+        {reportPage.items.map((report) => (
           <section className="data-band report-card" key={report.report_type}>
             <div className="section-title compact-title">
               <h3>{report.title}</h3>
@@ -2240,6 +2376,7 @@ function Reports({
           </section>
         ))}
       </div>
+      <PaginationControls {...reportPage} label="reports" />
       {!reports.length && <EmptyState title="No report catalogue" detail="Report templates load from the protected PatchForge API." />}
       {!decisionPacks.length && <EmptyState title="No signed pack available" detail="Generate a signed decision pack before producing board packs or customer reports." />}
     </>
@@ -2265,6 +2402,9 @@ function Admin({
   adminHealth: AdminHealth | null;
   onSave: () => void;
 }) {
+  const healthPage = usePagination(adminHealth?.checks || [], 8, "admin-health");
+  const sectionPage = usePagination(adminSections, 12, "admin-sections");
+
   return (
     <>
       <div className="section-title">
@@ -2303,22 +2443,24 @@ function Admin({
         <section className="config-panel" aria-label="Admin health dashboard">
           <h4>Health Checks</h4>
           <div className="health-list">
-            {(adminHealth?.checks || []).map((check) => (
+            {healthPage.items.map((check) => (
               <StatusLine key={check.name} label={check.name} value={humanize(check.status)} tone={healthTone(check.status)} detail={check.mode} />
             ))}
             {!adminHealth?.checks?.length && <p className="muted-copy">Health checks load from the protected bridge API.</p>}
           </div>
+          <PaginationControls {...healthPage} label="health checks" />
         </section>
       </div>
 
       <div className="admin-grid admin-section-grid">
-        {adminSections.map((section) => (
+        {sectionPage.items.map((section) => (
           <button className="admin-tile" type="button" key={section}>
             <KeyRound size={17} aria-hidden />
             <span>{section}</span>
           </button>
         ))}
       </div>
+      <PaginationControls {...sectionPage} label="admin sections" />
     </>
   );
 }
@@ -2345,6 +2487,69 @@ function StatusLine({ label, value, tone, detail }: { label: string; value: stri
       <strong className={`pill ${tone}`}>{value}</strong>
     </div>
   );
+}
+
+type PaginationState<T> = {
+  items: T[];
+  page: number;
+  pageCount: number;
+  total: number;
+  pageSize: number;
+  start: number;
+  end: number;
+  setPage: (page: number) => void;
+};
+
+function usePagination<T>(items: T[], pageSize = 8, key = "page"): PaginationState<T> {
+  const [pageByKey, setPageByKey] = useState<Record<string, number>>({});
+  const pageCount = Math.max(1, Math.ceil(items.length / pageSize));
+  const requestedPage = pageByKey[key] || 1;
+  const page = Math.min(Math.max(1, requestedPage), pageCount);
+  useEffect(() => {
+    if (requestedPage !== page) {
+      setPageByKey((current) => ({ ...current, [key]: page }));
+    }
+  }, [key, page, requestedPage]);
+  const start = (page - 1) * pageSize;
+  const end = Math.min(start + pageSize, items.length);
+  return {
+    items: items.slice(start, end),
+    page,
+    pageCount,
+    total: items.length,
+    pageSize,
+    start,
+    end,
+    setPage: (nextPage) => setPageByKey((current) => ({ ...current, [key]: Math.min(Math.max(1, nextPage), pageCount) }))
+  };
+}
+
+function PaginationControls<T>({ page, pageCount, total, start, end, setPage, label }: PaginationState<T> & { label: string }) {
+  if (total <= 0) {
+    return null;
+  }
+  const pages = pageNumbers(page, pageCount);
+  return (
+    <nav className="pagination" aria-label={`${label} pagination`}>
+      <span>{start + 1}-{end} of {total} {label}</span>
+      <div>
+        <button type="button" className="icon-button page-button" onClick={() => setPage(page - 1)} disabled={page <= 1} aria-label={`Previous ${label} page`}>Back</button>
+        {pages.map((item, index) => item === "gap"
+          ? <span className="page-gap" key={`${label}-${item}-${index}`}>...</span>
+          : <button type="button" className={item === page ? "icon-button page-button active" : "icon-button page-button"} key={`${label}-${item}`} onClick={() => setPage(item)} aria-label={`${label} page ${item}`}>{item}</button>)}
+        <button type="button" className="icon-button page-button" onClick={() => setPage(page + 1)} disabled={page >= pageCount} aria-label={`Next ${label} page`}>Next</button>
+      </div>
+    </nav>
+  );
+}
+
+function pageNumbers(current: number, total: number): Array<number | "gap"> {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, index) => index + 1);
+  }
+  const values = new Set([1, total, current - 1, current, current + 1]);
+  const sorted = Array.from(values).filter((value) => value >= 1 && value <= total).sort((a, b) => a - b);
+  return sorted.flatMap((value, index) => index > 0 && value - sorted[index - 1] > 1 ? ["gap" as const, value] : [value]);
 }
 
 function UtilityRail({
@@ -2433,7 +2638,8 @@ function emptyLiveState(tenantId: string): LiveState {
       assets: [],
       advisories: [],
       latestAssessment: null,
-      latestChat: null
+      latestChat: null,
+      latestComparison: null
     },
     sourceFeedState: { feeds: [], recent_runs: [] },
     adminHealth: null,

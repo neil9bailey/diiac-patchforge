@@ -249,6 +249,38 @@ export async function buildVendorLensDashboard(storage, tenantId) {
   };
 }
 
+export async function listVendorLensPatchComparisons(storage, tenantId) {
+  return (await storage.list("vendorlens_patch_comparisons", tenantId))
+    .sort((a, b) => String(b.generated_at || b.created_at || "").localeCompare(String(a.generated_at || a.created_at || "")));
+}
+
+export async function compareAndStorePatchVersion(storage, tenantId, body = {}) {
+  const asset = body.asset || await findById(storage, "customer_network_assets", tenantId, body.asset_id, "asset_id") || {};
+  const advisory = body.advisory || await findById(storage, "vendor_security_advisories", tenantId, body.advisory_id, "advisory_id") || {};
+  const comparison = buildPatchVersionComparison({
+    tenant_id: tenantId,
+    asset,
+    advisory,
+    target_version: body.target_version,
+    current_version: body.current_version,
+    ...body
+  });
+  await storage.append("vendorlens_patch_comparisons", {
+    tenant_id: tenantId,
+    ...comparison,
+    ...lineageFromBody(body)
+  });
+  await storage.audit(tenantId, "vendorlens_patch_version_compared", {
+    comparison_id: comparison.comparison_id,
+    asset_id: comparison.asset_id,
+    advisory_id: comparison.advisory_id,
+    current_version: comparison.current_version,
+    target_version: comparison.target_version,
+    ...lineageFromBody(body)
+  });
+  return comparison;
+}
+
 export async function refreshVendorLensSource({ storage, tenantId, body = {}, fetchImpl = globalThis.fetch }) {
   const adapter = String(body.adapter || body.source_type || body.feed_id || "nvd_cve_api").toLowerCase();
   try {
@@ -283,7 +315,7 @@ async function refreshNvdCve({ storage, tenantId, body, fetchImpl }) {
   const cve = firstValue(body.cve, body.cves);
   const startedAt = new Date().toISOString();
   if (!cve) {
-    return recordRun(storage, tenantId, runRecord(body, "nvd-cve-2", "NVD CVE 2.0", "NVD", "blocked", "NVD CVE enrichment requires a requested CVE identifier.", startedAt));
+    return refreshNvdCatalogue({ storage, tenantId, body, fetchImpl, startedAt });
   }
   const requestUrl = `https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=${encodeURIComponent(cve)}`;
   const payload = await fetchJson(requestUrl, fetchImpl);
@@ -302,6 +334,68 @@ async function refreshNvdCve({ storage, tenantId, body, fetchImpl }) {
     records_seen: records.length,
     records_matched: records.length,
     records_ingested: ingested
+  });
+}
+
+async function refreshNvdCatalogue({ storage, tenantId, body, fetchImpl, startedAt }) {
+  const vendors = await listNetworkVendors(storage, tenantId);
+  const requestedVendor = normalizeVendorId(body.vendor_id || body.vendor_name || "all-vendors");
+  const selectedVendors = requestedVendor && requestedVendor !== "all-vendors"
+    ? vendors.filter((vendorItem) => vendorItem.vendor_id === requestedVendor || normalizeVendorId(vendorItem.vendor_name) === requestedVendor)
+    : vendors.filter((vendorItem) => vendorItem.enabled !== false).slice(0, boundedLimit(body.max_vendors, 17, 1, NETWORK_VENDOR_CATALOG.length));
+  const queries = selectedVendors.length ? selectedVendors : vendors.slice(0, 1);
+  const resultsPerPage = boundedLimit(body.results_per_page || body.limit_per_query, 100, 1, 500);
+  const maxPages = boundedLimit(body.max_pages, 1, 1, 5);
+  const sourceUrls = [];
+  let recordsSeen = 0;
+  let recordsMatched = 0;
+  let recordsIngested = 0;
+  for (const vendorItem of queries) {
+    const keyword = body.keyword_search || vendorItem.vendor_name;
+    for (let page = 0; page < maxPages; page += 1) {
+      const startIndex = page * resultsPerPage;
+      const url = nvdUrl({
+        keywordSearch: keyword,
+        resultsPerPage,
+        startIndex,
+        pubStartDate: body.pub_start_date || body.pubStartDate || null,
+        pubEndDate: body.pub_end_date || body.pubEndDate || null,
+        lastModStartDate: body.last_mod_start_date || body.lastModStartDate || null,
+        lastModEndDate: body.last_mod_end_date || body.lastModEndDate || null
+      });
+      sourceUrls.push(url);
+      const payload = await fetchJson(url, fetchImpl);
+      const records = Array.isArray(payload.vulnerabilities) ? payload.vulnerabilities : [];
+      recordsSeen += Number(payload.totalResults || records.length || 0);
+      recordsMatched += records.length;
+      for (const item of records) {
+        const advisory = advisoryFromNvd(item, url, {
+          ...body,
+          vendor_id: vendorItem.vendor_id,
+          vendor_name: vendorItem.vendor_name
+        });
+        if (!advisory.cve) {
+          continue;
+        }
+        await ingestVendorSecurityAdvisory(storage, tenantId, advisory);
+        recordsIngested += 1;
+      }
+      if (records.length < resultsPerPage) {
+        break;
+      }
+    }
+    await upsertNetworkVendor(storage, tenantId, {
+      ...vendorItem,
+      last_refresh_at: new Date().toISOString(),
+      ...lineageFromBody(body)
+    });
+  }
+  return recordRun(storage, tenantId, {
+    ...runRecord(body, "nvd-cve-2-catalogue", "NVD CVE 2.0 VendorLens Catalogue", "NVD", "completed", `${recordsIngested} NVD vendor CVE records catalogued as source-bound pending-review intelligence across ${queries.length} vendor reference(s).`, startedAt, sourceUrls[0] || null),
+    source_urls: sourceUrls,
+    records_seen: recordsSeen,
+    records_matched: recordsMatched,
+    records_ingested: recordsIngested
   });
 }
 
@@ -435,6 +529,69 @@ function chatMessage(session, role, content, payload) {
   };
 }
 
+function buildPatchVersionComparison(input = {}) {
+  const asset = input.asset || {};
+  const advisory = input.advisory || {};
+  const currentVersion = input.current_version || asset.firmware_version || null;
+  const targetVersion = input.target_version || firstValue(advisory.fixed_versions) || null;
+  const affectedVersions = list(advisory.affected_versions);
+  const fixedVersions = list(advisory.fixed_versions);
+  const affectedFeatures = list(advisory.affected_features || advisory.affected_feature || advisory.feature);
+  const currentAffected = currentVersion && (affectedVersions.includes(currentVersion) || affectedVersions.length === 0);
+  const targetRecorded = targetVersion && (fixedVersions.includes(targetVersion) || fixedVersions.length === 0);
+  const versionStatus = !currentVersion
+    ? "current_version_unknown"
+    : currentAffected
+      ? "current_version_potentially_affected"
+      : "current_version_not_listed_as_affected_pending_review";
+  const targetStatus = !targetVersion
+    ? "target_version_not_recorded"
+    : targetRecorded
+      ? "target_version_recorded_as_fixed_pending_review"
+      : "target_version_not_in_fixed_list_pending_review";
+  return {
+    comparison_id: input.comparison_id || `vl-compare-${Date.now()}-${randomUUID().slice(0, 8)}`,
+    generated_at: input.generated_at || new Date().toISOString(),
+    tenant_id: input.tenant_id || asset.tenant_id || advisory.tenant_id || null,
+    vendor_id: advisory.vendor_id || asset.vendor_id || input.vendor_id || null,
+    vendor_name: advisory.vendor_name || humanize(advisory.vendor_id || asset.vendor_id || input.vendor_id || "vendor"),
+    asset_id: asset.asset_id || input.asset_id || null,
+    advisory_id: advisory.advisory_id || input.advisory_id || null,
+    cve: advisory.cve || firstValue(advisory.cves) || input.cve || null,
+    product_family: asset.product_family || advisory.product_family || null,
+    model: asset.model || null,
+    current_version: currentVersion,
+    target_version: targetVersion,
+    fixed_versions: fixedVersions,
+    affected_versions: affectedVersions,
+    affected_features: affectedFeatures,
+    current_version_status: versionStatus,
+    target_version_status: targetStatus,
+    security_delta: advisory.summary
+      ? `The target version is recorded by the source advisory as the remediating or fixed branch for: ${advisory.summary}`
+      : "The source advisory does not include enough reviewed detail to describe the precise security delta.",
+    operational_delta: [
+      "Confirm vendor release notes, fixed-version applicability, configuration dependencies, HA/cluster impact, and rollback support before approval.",
+      "PatchForge records the comparison for CISO/CAB review only; it does not deploy or approve the change."
+    ],
+    evidence_required: [
+      "Reviewed vendor advisory and release notes",
+      "Current device firmware/version evidence",
+      "Target version or fixed-version evidence",
+      "Affected feature configuration evidence",
+      "Testing evidence and rollback plan"
+    ],
+    ciso_summary: targetVersion
+      ? `Current version ${currentVersion || "unknown"} is compared with target version ${targetVersion}. ${targetStatus === "target_version_recorded_as_fixed_pending_review" ? "The target is recorded as a fixed version in source-bound advisory data, pending review." : "Fixed-version status remains pending review."} Final approval has not been issued.`
+      : "No target fixed version is attached, so CISO review should treat remediation certainty as incomplete.",
+    human_review_required: true,
+    advisory_only: true,
+    can_close_hard_gates_alone: false,
+    final_approval_issued: false,
+    no_patch_deployment: true
+  };
+}
+
 function advisoryFromNvd(item, sourceUrl, body) {
   const cve = item.cve || {};
   const descriptions = Array.isArray(cve.descriptions) ? cve.descriptions : [];
@@ -453,6 +610,8 @@ function advisoryFromNvd(item, sourceUrl, body) {
     source_class: "cve_record",
     source_url: sourceUrl,
     source_payload: item,
+    published_at: cve.published || cve.publishedDate || null,
+    last_modified_at: cve.lastModified || cve.lastModifiedDate || null,
     affected_products: cpeMatches,
     affected_versions: [],
     fixed_versions: [],
@@ -460,6 +619,16 @@ function advisoryFromNvd(item, sourceUrl, body) {
     evidence_state: "referenced",
     ...lineageFromBody(body)
   });
+}
+
+function nvdUrl(params) {
+  const url = new URL("https://services.nvd.nist.gov/rest/json/cves/2.0");
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== "") {
+      url.searchParams.set(key, String(value));
+    }
+  }
+  return url.toString();
 }
 
 function extractCpeMatches(configurations) {

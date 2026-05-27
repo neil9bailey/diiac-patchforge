@@ -83,6 +83,7 @@ class PatchForgeRuntimeHandler(BaseHTTPRequestHandler):
             customer_network_asset_snapshot=_dict_or_none(payload.get("customer_network_asset_snapshot")),
             vendor_security_advisory_snapshot=_dict_or_none(payload.get("vendor_security_advisory_snapshot")),
             config_applicability_assessment=_dict_or_none(payload.get("config_applicability_assessment")),
+            vendorlens_patch_comparison=_dict_or_none(payload.get("vendorlens_patch_comparison")),
             sra_config_chat_session=_dict_or_none(payload.get("sra_config_chat_session")),
             vendorlens_decision_context=_dict_or_none(payload.get("vendorlens_decision_context")),
             sra_trace=_dict_or_none(payload.get("sra_trace")),

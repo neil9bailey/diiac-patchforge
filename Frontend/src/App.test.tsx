@@ -150,6 +150,11 @@ function createApi(overrides: Partial<PatchForgeApi> = {}): PatchForgeApi {
       title: "CAB Patch Decision Report",
       audience: "Change Advisory Board",
       formats: ["docx", "pdf"]
+    }, {
+      report_type: "ciso_patch_version_comparison_report",
+      title: "CISO Patch Version Comparison Report",
+      audience: "CISO and security leadership",
+      formats: ["docx", "pdf"]
     }]),
     downloadDecisionPackReport: vi.fn(async () => new Blob(["report"], { type: "application/pdf" })),
     assessBayesianRisk: vi.fn(async () => ({
@@ -294,13 +299,13 @@ function createApi(overrides: Partial<PatchForgeApi> = {}): PatchForgeApi {
     })),
     refreshVendorLensSource: vi.fn(async () => ({
       run_id: "run-vendorlens-nvd",
-      feed_id: "nvd-cve-2",
-      feed_name: "NVD CVE 2.0",
+      feed_id: "nvd-cve-2-catalogue",
+      feed_name: "NVD CVE 2.0 VendorLens Catalogue",
       status: "completed",
-      records_seen: 1,
-      records_ingested: 1,
+      records_seen: 128,
+      records_ingested: 100,
       records_enriched: 0,
-      message: "1 NVD CVE records ingested as source-bound pending-review vendor intelligence.",
+      message: "100 NVD vendor CVE records catalogued as source-bound pending-review intelligence.",
       completed_at: "2026-05-27T08:00:00Z",
       can_close_hard_gates_alone: false
     })),
@@ -326,6 +331,30 @@ function createApi(overrides: Partial<PatchForgeApi> = {}): PatchForgeApi {
         next_decision_gate: "Configuration applicability review"
       }],
       human_review_required: true,
+      final_approval_issued: false
+    })),
+    compareVendorLensPatch: vi.fn(async () => ({
+      comparison_id: "vl-compare-1",
+      vendor_id: "fortinet",
+      vendor_name: "Fortinet",
+      asset_id: "net-asset-1",
+      advisory_id: "fortinet-CVE-2026-REAL-001",
+      cve: "CVE-2026-REAL-001",
+      product_family: "FortiGate",
+      model: "100F",
+      current_version: "7.2.7",
+      target_version: "7.2.8",
+      fixed_versions: ["7.2.8"],
+      affected_versions: ["7.2.7"],
+      affected_features: ["ssl_vpn"],
+      current_version_status: "current_version_potentially_affected",
+      target_version_status: "target_version_recorded_as_fixed_pending_review",
+      security_delta: "The target version is recorded as remediating the source-bound advisory.",
+      operational_delta: ["Confirm release notes and rollback support."],
+      evidence_required: ["Reviewed vendor advisory and release notes"],
+      ciso_summary: "Current version 7.2.7 is compared with target version 7.2.8. Final approval has not been issued.",
+      human_review_required: true,
+      advisory_only: true,
       final_approval_issued: false
     })),
     startVendorLensChat: vi.fn(async () => ({
@@ -450,8 +479,13 @@ describe("PatchForge guided shell", () => {
     expect(screen.getAllByRole("heading", { name: "VendorLens" }).length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Fortinet").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("CVE-2026-REAL-001").length).toBeGreaterThanOrEqual(1);
+    fireEvent.click(screen.getByRole("button", { name: "Refresh NVD Catalogue" }));
+    await waitFor(() => expect(api.refreshVendorLensSource).toHaveBeenCalledWith("diiac.io", expect.objectContaining({ mode: "catalogue", max_vendors: 17 })));
     fireEvent.click(screen.getByRole("button", { name: "Assess" }));
     await waitFor(() => expect(api.assessConfigApplicability).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole("button", { name: "Compare Patch" }));
+    await waitFor(() => expect(api.compareVendorLensPatch).toHaveBeenCalled());
+    expect(await screen.findByText(/Patch comparison prepared for CISO review/i)).toBeInTheDocument();
     fireEvent.click(screen.getAllByRole("button", { name: "Ask PatchForge" })[0]);
     await waitFor(() => expect(api.startVendorLensChat).toHaveBeenCalled());
     expect(await screen.findByText(/cannot safely declare this configuration unaffected/i)).toBeInTheDocument();
@@ -495,6 +529,7 @@ describe("PatchForge guided shell", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Admin" }));
     expect(screen.getByRole("heading", { name: "Admin" })).toBeInTheDocument();
     expect(screen.getByText("Entra ID / RBAC")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "admin sections page 2" }));
     expect(screen.getByText("Signing & Trust")).toBeInTheDocument();
     expect(screen.getByText("MCP agent intake")).toBeInTheDocument();
     expect(screen.getByText("Governed")).toBeInTheDocument();

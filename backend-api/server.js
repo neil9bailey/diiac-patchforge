@@ -11,11 +11,13 @@ import {
   appendVendorLensChatMessage,
   assessAndStoreConfigApplicability,
   buildVendorLensDashboard,
+  compareAndStorePatchVersion,
   createVendorLensChatSession,
   getVendorLensChatSession,
   ingestVendorSecurityAdvisory,
   listCustomerNetworkAssets,
   listNetworkVendors,
+  listVendorLensPatchComparisons,
   listVendorSecurityAdvisories,
   refreshVendorLensSource,
   upsertCustomerNetworkAsset,
@@ -351,6 +353,25 @@ export function createServer(options = {}) {
         });
       }
 
+      if (route === "GET /api/patchforge/vendorlens/patch-comparisons") {
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          comparisons: await listVendorLensPatchComparisons(storage, tenantId)
+        });
+      }
+
+      if (route === "POST /api/patchforge/vendorlens/patch-compare") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const comparison = await compareAndStorePatchVersion(storage, tenantContext.effective_tenant_id, withLineage(body, tenantContext, authorization));
+        return sendJson(res, 200, {
+          tenant_id: tenantContext.effective_tenant_id,
+          tenant_context: tenantContext,
+          comparison
+        });
+      }
+
       if (route === "POST /api/patchforge/vendorlens/chat") {
         const body = await readJson(req);
         const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
@@ -510,6 +531,7 @@ export function createServer(options = {}) {
           customer_network_asset_snapshot: vendorLensContext.customer_network_asset_snapshot,
           vendor_security_advisory_snapshot: vendorLensContext.vendor_security_advisory_snapshot,
           config_applicability_assessment: vendorLensContext.config_applicability_assessment,
+          vendorlens_patch_comparison: vendorLensContext.vendorlens_patch_comparison,
           sra_config_chat_session: vendorLensContext.sra_config_chat_session,
           vendorlens_decision_context: vendorLensContext.vendorlens_decision_context,
           controls: body.controls || null,
@@ -1176,6 +1198,7 @@ async function buildVendorLensPackContext(storage, tenantId, body = {}) {
   const advisories = await listVendorSecurityAdvisories(storage, tenantId);
   const assets = await listCustomerNetworkAssets(storage, tenantId);
   const chats = await storage.list("vendorlens_chat_sessions", tenantId);
+  const comparisons = await listVendorLensPatchComparisons(storage, tenantId);
   const assessment = body.config_applicability_assessment
     || findRecord(assessments, "assessment_id", body.config_applicability_assessment_id)
     || findRecord(assessments, "advisory_id", body.advisory_id)
@@ -1201,6 +1224,12 @@ async function buildVendorLensPackContext(storage, tenantId, body = {}) {
     || findRecord(chats, "assessment_id", assessment?.assessment_id)
     || chats.slice(-1)[0]
     || null;
+  const comparison = body.vendorlens_patch_comparison
+    || findRecord(comparisons, "comparison_id", body.comparison_id)
+    || findRecord(comparisons, "advisory_id", assessment?.advisory_id || body.advisory_id)
+    || findRecord(comparisons, "asset_id", assessment?.asset_id || body.asset_id)
+    || comparisons.slice(-1)[0]
+    || null;
 
   const vendorLensDecisionContext = body.vendorlens_decision_context || (assessment ? {
     context_id: `vendorlens-${assessment.assessment_id}`,
@@ -1220,6 +1249,7 @@ async function buildVendorLensPackContext(storage, tenantId, body = {}) {
     customer_network_asset_snapshot: asset,
     vendor_security_advisory_snapshot: advisory,
     config_applicability_assessment: assessment,
+    vendorlens_patch_comparison: comparison,
     sra_config_chat_session: chat,
     vendorlens_decision_context: vendorLensDecisionContext
   };

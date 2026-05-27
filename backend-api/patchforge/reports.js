@@ -43,6 +43,12 @@ export const REPORT_CATALOG = [
     formats: ["docx", "pdf"]
   },
   {
+    report_type: "ciso_patch_version_comparison_report",
+    title: "CISO Patch Version Comparison Report",
+    audience: "CISO and security leadership",
+    formats: ["docx", "pdf"]
+  },
+  {
     report_type: "risk_acceptance_report",
     title: "Risk Acceptance Report",
     audience: "Risk owner and audit",
@@ -114,6 +120,7 @@ export function buildReportContext({ reportType, pack, vulnerability = null, int
   const customerNetworkAsset = artefacts["customer_network_asset_snapshot.json"] || null;
   const vendorSecurityAdvisory = artefacts["vendor_security_advisory_snapshot.json"] || null;
   const configApplicability = artefacts["config_applicability_assessment.json"] || null;
+  const vendorLensPatchComparison = artefacts["vendorlens_patch_comparison.json"] || null;
   const sraConfigChat = artefacts["sra_config_chat_session.json"] || null;
   const vendorLensDecisionContext = artefacts["vendorlens_decision_context.json"] || null;
   const sraTrace = artefacts["sra_trace.json"] || null;
@@ -171,6 +178,7 @@ export function buildReportContext({ reportType, pack, vulnerability = null, int
     customerNetworkAsset,
     vendorSecurityAdvisory,
     configApplicability,
+    vendorLensPatchComparison,
     sraConfigChat,
     vendorLensDecisionContext,
     sraTrace,
@@ -293,6 +301,7 @@ async function buildDocxReport(context) {
         heading("Vendor and Threat Landscape", HeadingLevel.HEADING_1),
         ...keyValueBlocks(threatRows(context)),
         ...vendorLensDocxSections(context),
+        ...patchComparisonDocxSections(context),
         heading("Blockers and Required Human Actions", HeadingLevel.HEADING_1),
         ...blockerBlocks(context),
         heading("Automated Governance Analysis Completed", HeadingLevel.HEADING_1),
@@ -868,6 +877,36 @@ function vendorLensGapBlocks(assessment = {}) {
   ]));
 }
 
+function patchComparisonDocxSections(context) {
+  const comparison = context.vendorLensPatchComparison || {};
+  const hasComparison = Boolean(context.vendorLensPatchComparison && context.vendorLensPatchComparison.available !== false);
+  return [
+    heading("Patch Version Comparison for CISO Review", HeadingLevel.HEADING_1),
+    para(hasComparison
+      ? "This section compares the recorded device firmware or patch level with the source-bound remediating version. It is prepared for CISO/CAB review and does not deploy or approve a patch."
+      : "Patch version comparison was not attached to this signed pack."),
+    ...keyValueBlocks([
+      ["Vendor", comparison.vendor_name || comparison.vendor_id || "Not attached"],
+      ["Asset", comparison.asset_id || "Not attached"],
+      ["Advisory / CVE", comparison.cve || comparison.advisory_id || "Not attached"],
+      ["Current version", comparison.current_version || "Not recorded"],
+      ["Target / fixed version", comparison.target_version || listText(comparison.fixed_versions)],
+      ["Current version status", humanize(comparison.current_version_status || "not assessed")],
+      ["Target version status", humanize(comparison.target_version_status || "not assessed")],
+      ["Final approval", comparison.final_approval_issued ? "Issued" : "Not issued"]
+    ]),
+    heading("Security Delta", HeadingLevel.HEADING_2),
+    para(comparison.security_delta || "Reviewed release-note evidence is required before PatchForge can state the exact security changes introduced by the target version."),
+    heading("Operational Delta and Evidence Required", HeadingLevel.HEADING_2),
+    ...bulletList([
+      ...(Array.isArray(comparison.operational_delta) ? comparison.operational_delta : []),
+      ...(Array.isArray(comparison.evidence_required) ? comparison.evidence_required.map((item) => `Evidence required: ${item}`) : [])
+    ].slice(0, 12)),
+    heading("CISO Summary", HeadingLevel.HEADING_2),
+    para(comparison.ciso_summary || "No CISO version-comparison summary is available because the comparison artefact was not attached.")
+  ];
+}
+
 async function buildPdfReport(context) {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: "LETTER", margin: 54, compress: false, info: { Title: context.title, Author: "DIIaC PatchForge" } });
@@ -933,6 +972,7 @@ async function buildPdfReport(context) {
     pdfSection(doc, "Vendor and Threat Landscape");
     pdfKeyValues(doc, threatRows(context));
     pdfVendorLensSections(doc, context);
+    pdfPatchComparisonSections(doc, context);
     pdfSection(doc, "Blockers and Next Actions");
     for (const blocker of (context.evidenceGapDetails?.length ? context.evidenceGapDetails : (context.blockers.length ? context.blockers : ["Human review required"]))) {
       const detail = typeof blocker === "string" ? gapDetailForReport(blocker) : blocker;
@@ -1039,6 +1079,35 @@ function pdfVendorLensSections(doc, context) {
     ["Governed posture", humanize(chat.latest_response?.current_governed_posture || assessment.urgency_posture || "not assessed")],
     ["Decision not allowed yet", chat.latest_response?.decision_not_allowed_yet || assessment.decision_not_allowed_yet || "Human review remains required."]
   ]);
+}
+
+function pdfPatchComparisonSections(doc, context) {
+  const comparison = context.vendorLensPatchComparison || {};
+  pdfSection(doc, "Patch Version Comparison for CISO Review");
+  pdfParagraph(doc, context.vendorLensPatchComparison
+    ? "This comparison shows the recorded running version against the target or fixed version for CISO/CAB review. It does not deploy or approve a patch."
+    : "Patch version comparison was not attached to this signed pack.");
+  pdfKeyValues(doc, [
+    ["Vendor", comparison.vendor_name || comparison.vendor_id || "Not attached"],
+    ["Asset", comparison.asset_id || "Not attached"],
+    ["Advisory / CVE", comparison.cve || comparison.advisory_id || "Not attached"],
+    ["Current version", comparison.current_version || "Not recorded"],
+    ["Target / fixed version", comparison.target_version || listText(comparison.fixed_versions)],
+    ["Current version status", humanize(comparison.current_version_status || "not assessed")],
+    ["Target version status", humanize(comparison.target_version_status || "not assessed")],
+    ["Final approval", comparison.final_approval_issued ? "Issued" : "Not issued"]
+  ]);
+  pdfSection(doc, "Security Delta");
+  pdfParagraph(doc, comparison.security_delta || "Reviewed release-note evidence is required before PatchForge can state the exact security changes introduced by the target version.");
+  pdfSection(doc, "Operational Delta and Evidence Required");
+  for (const item of [
+    ...(Array.isArray(comparison.operational_delta) ? comparison.operational_delta : []),
+    ...(Array.isArray(comparison.evidence_required) ? comparison.evidence_required.map((value) => `Evidence required: ${value}`) : [])
+  ].slice(0, 10)) {
+    pdfBullet(doc, item);
+  }
+  pdfSection(doc, "CISO Summary");
+  pdfParagraph(doc, comparison.ciso_summary || "No CISO version-comparison summary is available because the comparison artefact was not attached.");
 }
 
 function pdfSection(doc, title) {

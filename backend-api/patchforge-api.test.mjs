@@ -461,6 +461,21 @@ test("VendorLens catalogue, assets, advisories, config applicability, chat, and 
     assert.equal(disabledUnreviewed.body.assessment.urgency_posture, "urgent_scope_confirmation_required");
     assert.equal(disabledUnreviewed.body.assessment.final_approval_issued, false);
 
+    const comparison = await request(baseUrl, "/api/patchforge/vendorlens/patch-compare", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        asset_id: "net-fw-1",
+        advisory_id: "FG-ADV-CVE-2026-REAL-001",
+        target_version: "7.2.8"
+      })
+    });
+    assert.equal(comparison.response.status, 200);
+    assert.equal(comparison.body.comparison.advisory_only, true);
+    assert.equal(comparison.body.comparison.no_patch_deployment, true);
+    assert.equal(comparison.body.comparison.final_approval_issued, false);
+    assert.match(comparison.body.comparison.ciso_summary, /Current version 7\.2\.7/);
+
     await request(baseUrl, "/api/patchforge/vendorlens/assets", {
       method: "POST",
       headers: { "x-tenant-id": "tenant-a" },
@@ -564,19 +579,22 @@ test("VendorLens catalogue, assets, advisories, config applicability, chat, and 
         advisory_id: "FG-ADV-CVE-2026-REAL-001",
         asset_id: "net-fw-1",
         config_applicability_assessment_id: disabledUnreviewed.body.assessment.assessment_id,
+        comparison_id: comparison.body.comparison.comparison_id,
         session_id: chat.body.session.session_id
       })
     });
     assert.equal(generated.response.status, 201);
     assert.ok(generated.body.decision_pack.artefacts["config_applicability_assessment.json"]);
+    assert.ok(generated.body.decision_pack.artefacts["vendorlens_patch_comparison.json"]);
     assert.ok(generated.body.decision_pack.artefacts["vendorlens_decision_context.json"]);
 
     const context = buildReportContext({
-      reportType: "cab_patch_decision_report",
+      reportType: "ciso_patch_version_comparison_report",
       pack: generated.body.decision_pack
     });
     assert.equal(context.configApplicability.final_approval_issued, false);
     assert.equal(context.configApplicability.urgency_posture, "urgent_scope_confirmation_required");
+    assert.equal(context.vendorLensPatchComparison.final_approval_issued, false);
   });
 });
 
@@ -608,6 +626,45 @@ test("VendorLens NVD source refresh is source-bound and pending review", async (
             configurations: [{ nodes: [{ cpeMatch: [{ criteria: "cpe:2.3:o:cisco:asa_software:9.18:*:*:*:*:*:*:*" }] }] }]
           }
         }]
+      });
+    }
+  });
+});
+
+test("VendorLens NVD catalogue refresh pages vendor CVEs without requiring a single CVE", async () => {
+  await withApi(async (baseUrl) => {
+    const refresh = await request(baseUrl, "/api/patchforge/vendorlens/sources/refresh", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ adapter: "nvd_cve_api", mode: "catalogue", vendor_id: "fortinet", results_per_page: 2, max_pages: 2 })
+    });
+    assert.equal(refresh.response.status, 202);
+    assert.equal(refresh.body.source_feed_run.status, "completed");
+    assert.equal(refresh.body.source_feed_run.records_ingested, 3);
+    assert.equal(refresh.body.source_feed_run.feed_id, "nvd-cve-2-catalogue");
+
+    const advisories = await request(baseUrl, "/api/patchforge/vendorlens/advisories", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(advisories.body.advisories.length, 3);
+    assert.ok(advisories.body.advisories.every((item) => item.review_state === "pending_review"));
+  }, {
+    vendorLensFetchImpl: async (url) => {
+      assert.match(String(url), /keywordSearch=Fortinet/);
+      const start = new URL(String(url)).searchParams.get("startIndex");
+      const ids = start === "2"
+        ? ["CVE-2026-NVD-CAT-003"]
+        : ["CVE-2026-NVD-CAT-001", "CVE-2026-NVD-CAT-002"];
+      return jsonResponse({
+        totalResults: 3,
+        vulnerabilities: ids.map((id) => ({
+          cve: {
+            id,
+            descriptions: [{ lang: "en", value: `${id} Fortinet catalogue record.` }],
+            metrics: { cvssMetricV31: [{ cvssData: { baseSeverity: "HIGH" } }] },
+            configurations: [{ nodes: [{ cpeMatch: [{ criteria: "cpe:2.3:o:fortinet:fortios:7.2.7:*:*:*:*:*:*:*" }] }] }]
+          }
+        }))
       });
     }
   });
@@ -1180,6 +1237,13 @@ function fakeRuntimeClient() {
             advisory_only: true,
             human_review_required: true,
             final_approval_issued: false
+          },
+          "vendorlens_patch_comparison.json": payload.vendorlens_patch_comparison || {
+            available: false,
+            advisory_only: true,
+            human_review_required: true,
+            final_approval_issued: false,
+            no_patch_deployment: true
           },
           "sra_config_chat_session.json": payload.sra_config_chat_session || {
             available: false,

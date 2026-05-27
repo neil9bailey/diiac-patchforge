@@ -227,7 +227,10 @@ nav {
   background: #121a1d;
   color: #dbe6e3;
   font-size: 0.78rem;
-  white-space: nowrap;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
 }
 
 .pill-button {
@@ -331,6 +334,7 @@ nav {
   gap: 12px;
   margin-bottom: 12px;
   min-width: 0;
+  flex-wrap: wrap;
 }
 
 .section-title h3,
@@ -360,6 +364,10 @@ nav {
   padding: 0 12px;
   background: #182528;
   border-color: #385159;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
 }
 
 .icon-button {
@@ -439,6 +447,8 @@ nav {
   border: 1px solid rgba(214, 160, 61, 0.26);
   background: rgba(8, 11, 13, 0.34);
   font-size: 0.78rem;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .action-list {
@@ -461,11 +471,22 @@ nav {
   gap: 12px;
   min-height: 38px;
   border-top: 1px solid rgba(149, 163, 160, 0.16);
+  min-width: 0;
 }
 
 .status-line span {
   display: grid;
   gap: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.status-line strong {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 50%;
+  justify-content: center;
+  text-align: center;
 }
 
 .status-line small {
@@ -497,6 +518,8 @@ td {
   border-bottom: 1px solid rgba(149, 163, 160, 0.14);
   text-align: left;
   font-size: 0.86rem;
+  vertical-align: top;
+  overflow-wrap: anywhere;
 }
 
 th {
@@ -518,11 +541,12 @@ td small {
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
+  min-width: 0;
 }
 
 .report-brief {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(320px, 1fr) minmax(240px, 420px);
   align-items: center;
   gap: 16px;
   background:
@@ -561,7 +585,7 @@ td small {
 .finding-brief,
 .review-runway {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(320px, 1fr) minmax(240px, 420px);
   gap: 16px;
   align-items: center;
   background:
@@ -583,11 +607,13 @@ td small {
   flex-wrap: wrap;
   gap: 8px;
   justify-content: flex-end;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .finding-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
   gap: 12px;
   margin-top: 14px;
 }
@@ -598,12 +624,15 @@ td small {
   border-radius: 8px;
   background: rgba(16, 22, 25, 0.94);
   padding: 14px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .finding-card {
   display: grid;
   gap: 12px;
   min-height: 290px;
+  align-content: start;
 }
 
 .finding-card h3,
@@ -627,6 +656,7 @@ td small {
   color: #c8d2cf;
   line-height: 1.52;
   font-size: 0.88rem;
+  overflow-wrap: anywhere;
 }
 
 .insight-list {
@@ -684,7 +714,7 @@ td small {
 }
 
 .finding-score {
-  min-width: 220px;
+  min-width: 0;
   display: grid;
   gap: 8px;
   justify-items: end;
@@ -693,6 +723,8 @@ td small {
 .finding-score strong {
   font-size: 1.15rem;
   text-align: right;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .finding-score small {
@@ -880,6 +912,14 @@ textarea {
   font-size: 0.82rem;
 }
 
+.data-band > label {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
 .toggle-row {
   min-height: 38px;
   display: flex;
@@ -989,6 +1029,84 @@ textarea {
   flex-wrap: wrap;
   gap: 8px;
   margin: 14px 0;
+}
+
+.pagination {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.pagination > div {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.page-button {
+  width: auto;
+  min-width: 36px;
+  padding: 0 10px;
+  font-size: 0.78rem;
+}
+
+.page-button.active {
+  border-color: var(--teal);
+  color: #ffffff;
+  background: #142225;
+}
+
+.page-gap {
+  color: var(--muted);
+  padding: 0 2px;
+}
+
+.reference-list {
+  display: grid;
+  gap: 8px;
+}
+
+.reference-row {
+  width: 100%;
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid rgba(149, 163, 160, 0.18);
+  border-radius: 8px;
+  background: #11191c;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.reference-row:hover,
+.reference-row.active {
+  border-color: var(--teal);
+  background: #142225;
+}
+
+.reference-row span,
+.reference-row small {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.reference-detail {
+  min-width: 0;
+}
+
+.url-copy {
+  overflow-wrap: anywhere;
+}
+
+.report-grid > .pagination {
+  grid-column: 1 / -1;
 }
 
 .vendorlens-tab {

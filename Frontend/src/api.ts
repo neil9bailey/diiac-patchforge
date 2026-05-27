@@ -137,6 +137,32 @@ export type ConfigApplicabilityAssessment = {
   final_approval_issued: boolean;
 };
 
+export type VendorLensPatchComparison = {
+  comparison_id: string;
+  generated_at?: string;
+  vendor_id?: string | null;
+  vendor_name?: string | null;
+  asset_id?: string | null;
+  advisory_id?: string | null;
+  cve?: string | null;
+  product_family?: string | null;
+  model?: string | null;
+  current_version?: string | null;
+  target_version?: string | null;
+  fixed_versions?: string[];
+  affected_versions?: string[];
+  affected_features?: string[];
+  current_version_status: string;
+  target_version_status: string;
+  security_delta: string;
+  operational_delta: string[];
+  evidence_required: string[];
+  ciso_summary: string;
+  human_review_required: boolean;
+  advisory_only: boolean;
+  final_approval_issued: boolean;
+};
+
 export type VendorLensChatResponse = {
   short_answer: string;
   current_governed_posture: string;
@@ -176,6 +202,7 @@ export type VendorLensState = {
   advisories: VendorSecurityAdvisory[];
   latestAssessment: ConfigApplicabilityAssessment | null;
   latestChat: VendorLensChatSession | null;
+  latestComparison: VendorLensPatchComparison | null;
 };
 
 export type FindingIntelligence = {
@@ -421,6 +448,7 @@ export type PatchForgeApi = {
   ingestVendorSecurityAdvisory(tenantId: string, payload: Record<string, unknown>): Promise<VendorSecurityAdvisory>;
   refreshVendorLensSource(tenantId: string, payload: Record<string, unknown>): Promise<SourceFeedRun>;
   assessConfigApplicability(tenantId: string, payload: Record<string, unknown>): Promise<ConfigApplicabilityAssessment>;
+  compareVendorLensPatch(tenantId: string, payload: Record<string, unknown>): Promise<VendorLensPatchComparison>;
   startVendorLensChat(tenantId: string, payload: Record<string, unknown>): Promise<{ session: VendorLensChatSession; response: VendorLensChatResponse }>;
   sendVendorLensChatMessage(tenantId: string, sessionId: string, payload: Record<string, unknown>): Promise<{ session: VendorLensChatSession; response: VendorLensChatResponse }>;
   actionCenter(tenantId: string): Promise<FindingIntelligence[]>;
@@ -617,6 +645,13 @@ export function createPatchForgeApi(getAccessToken: () => Promise<string>, confi
         body: JSON.stringify(payload)
       });
       return body.assessment;
+    },
+    async compareVendorLensPatch(tenantId, payload) {
+      const body = await request<{ comparison: VendorLensPatchComparison }>("/api/patchforge/vendorlens/patch-compare", tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return body.comparison;
     },
     async startVendorLensChat(tenantId, payload) {
       const body = await request<{ session: VendorLensChatSession; response: VendorLensChatResponse }>("/api/patchforge/vendorlens/chat", tenantId, {
