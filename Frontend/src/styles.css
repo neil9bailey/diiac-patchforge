@@ -1072,6 +1072,12 @@ textarea {
   gap: 8px;
 }
 
+.compact-reference-list {
+  max-height: 392px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
 .reference-row {
   width: 100%;
   display: grid;
@@ -1099,6 +1105,14 @@ textarea {
 
 .reference-detail {
   min-width: 0;
+}
+
+.subhead {
+  margin: 14px 0 8px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  text-transform: uppercase;
+  letter-spacing: 0;
 }
 
 .url-copy {

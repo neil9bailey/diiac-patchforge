@@ -1918,6 +1918,8 @@ function VendorLens({
   const advisoryPage = usePagination(vendorLens.advisories, 8, "vendorlens-advisories");
   const assetPage = usePagination(vendorLens.assets, 8, "vendorlens-assets");
   const gapPage = usePagination(assessment?.evidence_gaps || [], 6, "vendorlens-gaps");
+  const compareAssetPage = usePagination(vendorLens.assets, 6, "vendorlens-compare-assets");
+  const compareAdvisoryPage = usePagination(vendorLens.advisories, 10, "vendorlens-compare-advisories");
 
   useEffect(() => {
     if (!selectedVendorId && vendorLens.vendors[0]?.vendor_id) {
@@ -2146,28 +2148,31 @@ function VendorLens({
         <div className="split-grid">
           <section className="data-band">
             <h3>Current vs Target Patch</h3>
-            <label>
-              Customer device
-              <select value={asset?.asset_id || ""} onChange={(event) => setSelectedAssetId(event.target.value)}>
-                <option value="">Select customer network asset</option>
-                {vendorLens.assets.map((item) => (
-                  <option key={item.asset_id} value={item.asset_id}>
-                    {`${item.vendor_id} ${item.model || item.product_family || item.asset_id} ${item.firmware_version || ""}`}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Advisory or CVE
-              <select value={advisory?.advisory_id || ""} onChange={(event) => setSelectedAdvisoryId(event.target.value)}>
-                <option value="">Select source-bound advisory</option>
-                {vendorLens.advisories.map((item) => (
-                  <option key={item.advisory_id} value={item.advisory_id}>
-                    {`${item.cve || item.advisory_id} ${item.vendor_name || item.vendor_id || ""}`}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <p className="muted-copy">Choose a reviewed customer device and a source-bound advisory. Large NVD catalogues stay paginated so the CISO comparison remains usable.</p>
+            <h4 className="subhead">Customer device</h4>
+            <div className="reference-list compact-reference-list">
+              {compareAssetPage.items.map((item) => (
+                <button key={item.asset_id} type="button" className={asset?.asset_id === item.asset_id ? "reference-row active" : "reference-row"} onClick={() => setSelectedAssetId(item.asset_id)}>
+                  <strong>{`${item.vendor_id} ${item.model || item.product_family || item.asset_id}`}</strong>
+                  <span>{item.firmware_version || "Version pending"}</span>
+                  <small>{item.management_exposure || "Exposure pending"}</small>
+                </button>
+              ))}
+            </div>
+            {!vendorLens.assets.length && <p className="muted-copy">No customer network asset evidence is attached yet.</p>}
+            <PaginationControls {...compareAssetPage} label="comparison assets" />
+            <h4 className="subhead">Advisory or CVE</h4>
+            <div className="reference-list compact-reference-list">
+              {compareAdvisoryPage.items.map((item) => (
+                <button key={item.advisory_id} type="button" className={advisory?.advisory_id === item.advisory_id ? "reference-row active" : "reference-row"} onClick={() => setSelectedAdvisoryId(item.advisory_id)}>
+                  <strong>{item.cve || item.advisory_id}</strong>
+                  <span>{item.vendor_name || item.vendor_id || "Vendor pending"}</span>
+                  <small>{item.title || "Source-bound advisory pending review"}</small>
+                </button>
+              ))}
+            </div>
+            {!vendorLens.advisories.length && <p className="muted-copy">No source-bound vendor advisory records are attached yet.</p>}
+            <PaginationControls {...compareAdvisoryPage} label="comparison advisories" />
             <StatusLine label="Asset" value={asset?.asset_id || "No asset selected"} tone="steel" />
             <StatusLine label="Advisory" value={advisory?.cve || advisory?.advisory_id || "No advisory selected"} tone="amber" />
             <StatusLine label="Running version" value={comparison?.current_version || asset?.firmware_version || "Version pending"} tone="steel" />
