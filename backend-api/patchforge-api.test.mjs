@@ -684,6 +684,57 @@ test("professional decision pack reports export as DOCX and PDF", async () => {
   });
 });
 
+test("finding intelligence explains queue records in human-readable governance terms", async () => {
+  await withApi(async (baseUrl) => {
+    await request(baseUrl, "/api/patchforge/vulnerabilities/ingest", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        vulnerability_id: "CVE-2026-PF-INTEL-001",
+        title: "Customer gateway authentication bypass",
+        description: "A customer gateway component can be bypassed under affected conditions.",
+        severity: "critical",
+        known_exploited: true,
+        internet_exposed: true,
+        patch_status: "patch_available",
+        affected_service_ids: ["svc-gateway"],
+        sources: [{
+          source_record_id: "src-intel-1",
+          source_class: "kev_record",
+          source_name: "CISA KEV",
+          evidence_state: "referenced",
+          review_state: "pending_review"
+        }]
+      })
+    });
+
+    const analysis = await request(baseUrl, "/api/patchforge/vulnerabilities/CVE-2026-PF-INTEL-001/analyse", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({})
+    });
+    assert.equal(analysis.response.status, 200);
+    assert.equal(analysis.body.intelligence.vulnerability_id, "CVE-2026-PF-INTEL-001");
+    assert.equal(analysis.body.intelligence.boundary.no_exploit_code, true);
+    assert.equal(analysis.body.intelligence.boundary.no_patch_deployment, true);
+    assert.equal(analysis.body.intelligence.recommendation.posture, "emergency_change_required");
+    assert.match(analysis.body.intelligence.summary.plain_english, /governance decision/i);
+    assert.match(analysis.body.intelligence.exploitability.prohibited_detail, /procedural exploitation steps/i);
+
+    const detail = await request(baseUrl, "/api/patchforge/vulnerabilities/CVE-2026-PF-INTEL-001/intelligence", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(detail.response.status, 200);
+    assert.ok(detail.body.intelligence.automation.completed.includes("Bound source provenance"));
+
+    const actionCenter = await request(baseUrl, "/api/patchforge/action-center", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(actionCenter.response.status, 200);
+    assert.equal(actionCenter.body.findings[0].vulnerability_id, "CVE-2026-PF-INTEL-001");
+  });
+});
+
 test("scheduler performs real-source refresh without scanner or deployment actions", async () => {
   const storageRoot = await mkdtemp(path.join(os.tmpdir(), "patchforge-scheduler-"));
   const storage = new PatchForgeJsonStorage(storageRoot);

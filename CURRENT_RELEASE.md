@@ -1,5 +1,29 @@
 # Current Release
 
+## DIIaC PatchForge PF-AZ8
+
+Release state: PF-AZ8 local validation passed and is pending Azure rollout/live browser validation. PF-AZ7 remains the currently deployed Azure baseline until the PF-AZ8 image rollout completes.
+
+Date: 2026-05-27
+
+PF-AZ8 adds a guided intelligence workflow and decision-grade DOCX/PDF reports that respond to customer-demo feedback.
+
+PF-AZ8 local evidence path:
+
+- `docs/release/evidence/2026-05-27-patchforge-pfaz8-guided-intelligence-workflow/`
+
+PF-AZ8 adds:
+
+- Action Center, Finding Detail, Review & Approve, and Reports & Packs workflow
+- human-readable finding intelligence API
+- autonomous analysis summary with human approval still required
+- exploitability intelligence without exploit code or procedural steps
+- decision options matrix and evidence gaps in the UI and reports
+- signed-pack artefact support for `finding_intelligence_snapshot.json`
+- improved DOCX/PDF board and CAB reports with Word-rendered visual QA
+
+PF-AZ8 does not add seeded demo data, synthetic vulnerability data, scanning, exploit generation, procedural exploit steps, patch deployment, production mutation from the UI, autonomous CAB approval, or autonomous risk acceptance.
+
 ## DIIaC PatchForge PF-AZ7
 
 Release state: PF-AZ7 live operational customer-demo baseline deployed to Azure and validated through the live UI as a signed-in PatchForge Admin user

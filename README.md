@@ -37,7 +37,7 @@ PatchForge does not scan environments, exploit vulnerabilities, deploy patches, 
 
 ## Current Product Scope
 
-This repository now contains the PF-AZ5 production-demo product line for PatchForge:
+This repository now contains the PF-AZ8 production-demo product line for PatchForge:
 
 - product identity
 - product boundary
@@ -51,7 +51,11 @@ This repository now contains the PF-AZ5 production-demo product line for PatchFo
 - Bayesian patch-risk advisory inference
 - vendor and threat landscape intelligence
 - source-bound SRA and agent finding intake
-- board-grade reports and validation evidence
+- guided Action Center, Finding Detail, Review & Approve, and Reports & Packs workflow
+- human-readable finding intelligence API
+- decision-grade DOCX/PDF board and CAB reports
+- signed-pack finding intelligence snapshots
+- board-grade validation evidence
 
 No scanner, exploit, or patch-deployment capability is created. PatchForge remains a governance and assurance product only.
 

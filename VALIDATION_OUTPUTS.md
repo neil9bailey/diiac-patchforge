@@ -1,3 +1,46 @@
+# PF-AZ8 Validation Outputs
+
+## PF-AZ8 Local Validation
+
+Date: 2026-05-27
+
+Status: local validation PASS; Azure rollout and live browser validation pending.
+
+Scope:
+
+- Guided Action Center, Finding Detail, Review & Approve, and Reports & Packs workflow.
+- Human-readable finding intelligence API.
+- Decision-grade DOCX/PDF board and CAB reports.
+- Signed-pack support for `finding_intelligence_snapshot.json`.
+
+Local validation:
+
+- `node --check backend-api/server.js`: PASS
+- `node --check backend-api/patchforge/intelligence.js`: PASS
+- `node --check backend-api/patchforge/reports.js`: PASS
+- `npm --prefix backend-api test`: PASS, 25 tests
+- `npm --prefix Frontend test`: PASS, 10 tests
+- `python -m pytest -q --basetemp .pytest_tmp`: PASS, 25 tests
+- `npm --prefix Frontend run build`: PASS
+- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate_iac.ps1`: PASS
+- `az bicep build --file infra/bicep/main.bicep`: PASS
+- `docker build -f Frontend/Dockerfile -t diiac/patchforge-frontend:pfaz8-local Frontend`: PASS
+- `docker build -f backend-api/Dockerfile -t diiac/patchforge-bridge:pfaz8-local backend-api`: PASS
+- `docker build -f runtime/Dockerfile -t diiac/patchforge-runtime:pfaz8-local .`: PASS
+- `git diff --check`: PASS
+
+Document quality gate:
+
+- Local board DOCX generated from signed-pack context: PASS
+- Local board PDF generated from same context: PASS
+- Local CAB DOCX generated from signed-pack context: PASS
+- Local CAB PDF generated from same context: PASS
+- Microsoft Word-rendered DOCX pages inspected as PNGs: PASS
+- No clipping, overlap, broken tables, missing text, unreadable wrapping, or orphan note page observed.
+- QA evidence: `docs/release/evidence/2026-05-27-patchforge-pfaz8-guided-intelligence-workflow/report-qa/`
+
+Important boundary note: PF-AZ8 does not add scanning, exploit generation, procedural exploit steps, patch deployment, production mutation from the UI, autonomous CAB approval, or autonomous risk acceptance.
+
 # PF-AZ6 / PF-AZ7 Validation Outputs
 
 ## PF-AZ7 Live Validation

@@ -4,6 +4,7 @@ import path from "node:path";
 import { authorizeRequest, createAuthConfigFromEnv } from "./auth.js";
 import { createPatchForgeStorage } from "./patchforge/storage.js";
 import { createSourceFeedClient } from "./patchforge/sourceFeeds.js";
+import { buildFindingIntelligence, buildIntelligenceForTenant } from "./patchforge/intelligence.js";
 import { REPORT_CATALOG, generateDecisionPackReport } from "./patchforge/reports.js";
 import { startScheduler } from "./patchforge/scheduler.js";
 import { runSraTool } from "./sra/securityResearchAgent.js";
@@ -192,6 +193,29 @@ export function createServer(options = {}) {
         return sendJson(res, 200, { ...(await storage.dashboardMetrics(tenantId)), tenant_context: baseTenantContext });
       }
 
+      if (route === "GET /api/patchforge/action-center") {
+        const vulnerabilities = await storage.list("vulnerabilities", tenantId);
+        const intelligence = await Promise.all(
+          vulnerabilities.slice(0, 12).map((item) => buildIntelligenceForTenant({
+            storage,
+            tenantId,
+            vulnerabilityId: item.vulnerability_id
+          }))
+        );
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          findings: intelligence.filter(Boolean).sort(compareFindingPriority),
+          boundary: {
+            autonomous_analysis: true,
+            human_approval_required: true,
+            no_exploit_code: true,
+            no_patch_deployment: true,
+            no_autonomous_approval: true
+          }
+        });
+      }
+
       if (route === "GET /api/patchforge/source-feeds") {
         const runs = await storage.list("source_feed_runs", tenantId);
         return sendJson(res, 200, {
@@ -289,11 +313,18 @@ export function createServer(options = {}) {
         try {
           const vulnerability = await storage.getVulnerability(tenantId, pack.vulnerability_id);
           const sourceFeedRuns = await storage.list("source_feed_runs", tenantId);
+          const intelligence = vulnerability ? await buildIntelligenceForTenant({
+            storage,
+            tenantId,
+            vulnerabilityId: vulnerability.vulnerability_id,
+            bayesianSnapshot: pack.artefacts?.["bayesian_patch_risk_snapshot.json"] || null
+          }) : null;
           const report = await generateDecisionPackReport({
             reportType,
             format,
             pack,
             vulnerability,
+            intelligence,
             sourceFeedRuns: sourceFeedRuns.slice(-10).reverse()
           });
           return sendBinary(res, 200, report.buffer, {
@@ -329,6 +360,18 @@ export function createServer(options = {}) {
           });
         }
 
+        const findingIntelligence = buildFindingIntelligence({
+          vulnerability,
+          vendorAdvisories: await storage.list("vendor_advisories", resolvedTenant),
+          threatSignals: await storage.list("threat_signals", resolvedTenant),
+          assets: await storage.list("assets", resolvedTenant),
+          services: await storage.list("services", resolvedTenant),
+          decisionPacks: await storage.list("decision_packs", resolvedTenant),
+          sourceFeedRuns: await storage.list("source_feed_runs", resolvedTenant),
+          reviews: await storage.list("reviews", resolvedTenant),
+          bayesianSnapshot: body.bayesian_snapshot || buildBayesianAssessment({ vulnerability })
+        });
+
         const runtimeResult = await runtimeClient.createDecisionPack({
           tenant_id: resolvedTenant,
           vulnerability,
@@ -342,6 +385,7 @@ export function createServer(options = {}) {
           patch_prior_update_proposal: body.patch_prior_update_proposal || null,
           vendor_intelligence_snapshot: body.vendor_intelligence_snapshot || null,
           threat_landscape_snapshot: body.threat_landscape_snapshot || await buildThreatLandscapeSummary(storage, resolvedTenant),
+          finding_intelligence_snapshot: findingIntelligence,
           sra_trace: body.sra_trace || null,
           controls: body.controls || null,
           risk_acceptance: body.risk_acceptance || null,
@@ -491,6 +535,46 @@ export function createServer(options = {}) {
 
       if (route === "GET /api/patchforge/threat-landscape/summary") {
         return sendJson(res, 200, await buildThreatLandscapeSummary(storage, tenantId, baseTenantContext));
+      }
+
+      const intelligenceMatch = url.pathname.match(/^\/api\/patchforge\/vulnerabilities\/([^/]+)\/intelligence$/);
+      if (req.method === "GET" && intelligenceMatch) {
+        const intelligence = await buildIntelligenceForTenant({
+          storage,
+          tenantId,
+          vulnerabilityId: decodeURIComponent(intelligenceMatch[1])
+        });
+        return intelligence ? sendJson(res, 200, { tenant_id: tenantId, tenant_context: baseTenantContext, intelligence }) : sendJson(res, 404, { error: "vulnerability_not_found" });
+      }
+
+      const analyseMatch = url.pathname.match(/^\/api\/patchforge\/vulnerabilities\/([^/]+)\/analyse$/);
+      if (req.method === "POST" && analyseMatch) {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const vulnerabilityIdForAnalysis = decodeURIComponent(analyseMatch[1]);
+        const bayesianSnapshot = buildBayesianAssessment({ vulnerability: await storage.getVulnerability(tenantContext.effective_tenant_id, vulnerabilityIdForAnalysis) || {}, ...body });
+        const intelligence = await buildIntelligenceForTenant({
+          storage,
+          tenantId: tenantContext.effective_tenant_id,
+          vulnerabilityId: vulnerabilityIdForAnalysis,
+          bayesianSnapshot
+        });
+        if (!intelligence) {
+          return sendJson(res, 404, { error: "vulnerability_not_found" });
+        }
+        await storage.audit(tenantContext.effective_tenant_id, "finding_intelligence_generated", {
+          vulnerability_id: vulnerabilityIdForAnalysis,
+          intelligence_id: intelligence.intelligence_id,
+          recommendation: intelligence.recommendation?.posture,
+          ...lineageFields(tenantContext, authorization)
+        });
+        return sendJson(res, 200, {
+          tenant_id: tenantContext.effective_tenant_id,
+          tenant_context: tenantContext,
+          intelligence,
+          bayesian: bayesianSnapshot,
+          boundary: intelligence.boundary
+        });
       }
 
       const sraRoutes = {
@@ -679,6 +763,23 @@ function buildEvidenceItemsFromRecord(vulnerability, submittedItems = []) {
 
   const submittedEvidence = Array.isArray(submittedItems) ? submittedItems : [];
   return [...sourceEvidence, ...submittedEvidence];
+}
+
+function compareFindingPriority(a, b) {
+  return priorityScore(b) - priorityScore(a);
+}
+
+function priorityScore(finding = {}) {
+  const severity = String(finding.severity || "").toLowerCase();
+  const posture = String(finding.recommendation?.posture || "").toLowerCase();
+  return [
+    severity === "critical" ? 40 : severity === "high" ? 25 : severity === "medium" ? 10 : 0,
+    finding.exploitability?.known_exploited ? 35 : 0,
+    finding.exposure?.internet_exposed ? 20 : 0,
+    finding.exposure?.customer_facing ? 15 : 0,
+    posture === "emergency_change_required" ? 30 : posture === "patch_required" ? 18 : 0,
+    finding.evidence?.gaps?.length ? 6 : 0
+  ].reduce((total, value) => total + value, 0);
 }
 
 function evidenceClassForSource(source) {

@@ -71,12 +71,12 @@ const COLORS = {
   white: "FFFFFF"
 };
 
-export async function generateDecisionPackReport({ reportType, format, pack, vulnerability = null, sourceFeedRuns = [] }) {
+export async function generateDecisionPackReport({ reportType, format, pack, vulnerability = null, intelligence = null, sourceFeedRuns = [] }) {
   const normalizedFormat = String(format || "").toLowerCase();
   if (!["docx", "pdf"].includes(normalizedFormat)) {
     throw new Error("Unsupported report format. Use docx or pdf.");
   }
-  const context = buildReportContext({ reportType, pack, vulnerability, sourceFeedRuns });
+  const context = buildReportContext({ reportType, pack, vulnerability, intelligence, sourceFeedRuns });
   if (normalizedFormat === "docx") {
     return {
       buffer: await buildDocxReport(context),
@@ -91,7 +91,7 @@ export async function generateDecisionPackReport({ reportType, format, pack, vul
   };
 }
 
-export function buildReportContext({ reportType, pack, vulnerability = null, sourceFeedRuns = [] }) {
+export function buildReportContext({ reportType, pack, vulnerability = null, intelligence = null, sourceFeedRuns = [] }) {
   const catalogItem = REPORT_TYPE_MAP.get(reportType);
   if (!catalogItem) {
     const error = new Error(`Unknown PatchForge report type: ${reportType}`);
@@ -103,6 +103,7 @@ export function buildReportContext({ reportType, pack, vulnerability = null, sou
   const decisionContext = artefacts["patch_decision_context.json"] || {};
   const readiness = pack?.readiness || decisionContext.readiness || {};
   const bayesian = artefacts["bayesian_patch_risk_snapshot.json"] || null;
+  const findingIntelligence = intelligence || artefacts["finding_intelligence_snapshot.json"] || null;
   const vendor = artefacts["vendor_intelligence_snapshot.json"] || null;
   const threat = artefacts["threat_landscape_snapshot.json"] || null;
   const sraTrace = artefacts["sra_trace.json"] || null;
@@ -140,6 +141,18 @@ export function buildReportContext({ reportType, pack, vulnerability = null, sou
     governanceManifestHash: verificationManifest.governance_manifest_sha256 || "not recorded",
     evidenceRefs: decisionContext.evidence_refs || vulnerabilitySnapshot.source_record_ids || [],
     sources: normalizedSources(vulnerabilitySnapshot),
+    intelligence: findingIntelligence,
+    executiveReadout: findingIntelligence?.summary?.executive_readout || null,
+    plainEnglish: findingIntelligence?.summary?.plain_english || null,
+    whyNow: findingIntelligence?.summary?.why_now || null,
+    whatItAffects: findingIntelligence?.summary?.what_it_affects || null,
+    operationalRisk: findingIntelligence?.summary?.operational_risk || null,
+    decisionRequired: findingIntelligence?.summary?.decision_required || null,
+    exploitability: findingIntelligence?.exploitability || null,
+    exposure: findingIntelligence?.exposure || null,
+    recommendation: findingIntelligence?.recommendation || null,
+    decisionOptions: findingIntelligence?.decision_options || [],
+    automation: findingIntelligence?.automation || null,
     bayesian,
     vendor,
     threat,
@@ -211,6 +224,28 @@ async function buildDocxReport(context) {
       children: [
         titleBlock(context),
         leadCallout(context),
+        heading("Executive Decision Summary", HeadingLevel.HEADING_1),
+        para(context.executiveReadout || `${context.vulnerabilityId} is currently governed as ${humanize(context.decisionPosture)}. Final approval has not been issued unless explicitly recorded in the signed pack.`),
+        decisionSummaryTable(context),
+        heading("What This Vulnerability Means", HeadingLevel.HEADING_1),
+        para(context.plainEnglish || `${context.vulnerabilityTitle} is recorded in PatchForge as a source-bound vulnerability decision. The business question is not only whether the issue exists, but what the organisation should do next with reviewed evidence.`),
+        heading("Why It Matters Now", HeadingLevel.HEADING_2),
+        para(context.whyNow || "PatchForge has not recorded enough reviewed urgency evidence to make a stronger statement. Complete source review, exposure mapping, and patch feasibility evidence before final approval."),
+        heading("Affected Products, Services, and Assets", HeadingLevel.HEADING_1),
+        para(context.whatItAffects || "Affected assets and services were not fully mapped in the pack. This gap matters because severity alone does not show customer impact, operational risk, ownership, or change feasibility."),
+        scopeTable(context),
+        heading("Exploitability Intelligence", HeadingLevel.HEADING_1),
+        warningBox(context.exploitability?.prohibited_detail || "Exploit code, exploit payloads, and procedural exploitation steps are intentionally not provided."),
+        para(context.exploitability?.safe_description || "PatchForge records exploitability signals for governance prioritisation only. They do not prove tenant compromise, and they do not close evidence gates without human review."),
+        keyValueTable(exploitabilityRows(context)),
+        heading("Recommended Governance Posture", HeadingLevel.HEADING_1),
+        para(recommendationNarrative(context)),
+        actionPlanTable(context),
+        heading("Decision Options Matrix", HeadingLevel.HEADING_1),
+        decisionOptionsTable(context),
+        heading("Evidence Confidence and Gaps", HeadingLevel.HEADING_1, { pageBreakBefore: true }),
+        para("The report separates source-pack evidence from current-state overlays. Source records, scanner findings, SRA/MCP/agent findings, CISA KEV records, EPSS signals, and vendor advisories remain source-bound until reviewed."),
+        evidenceGapTable(context),
         heading("Decision Snapshot", HeadingLevel.HEADING_1),
         keyValueTable([
           ["Vulnerability", context.vulnerabilityId],
@@ -232,19 +267,22 @@ async function buildDocxReport(context) {
         ]),
         heading("Source Intelligence", HeadingLevel.HEADING_1),
         sourceTable(context.sources),
-        heading("Bayesian Advisory", HeadingLevel.HEADING_1, { pageBreakBefore: true }),
+        heading("Bayesian Advisory", HeadingLevel.HEADING_1),
         keyValueTable(bayesianRows(context)),
         heading("Vendor and Threat Landscape", HeadingLevel.HEADING_1),
         keyValueTable(threatRows(context)),
         heading("Blockers and Required Human Actions", HeadingLevel.HEADING_1),
         blockersTable(context),
+        heading("Autonomous Analysis Completed", HeadingLevel.HEADING_1),
+        ...bulletList(context.automation?.completed || ["Source-bound finding normalised", "Governance boundary applied"]),
+        heading("Human Decisions Still Required", HeadingLevel.HEADING_1),
+        ...bulletList(context.automation?.remaining_human_decisions || ["Review evidence and issue or withhold accountable approval."]),
         heading("Source-Pack and Current-State Separation", HeadingLevel.HEADING_1),
         para("The signed source pack preserves the compiled evidence state at generation time. Current-state overlays, post-pack evidence events, human approvals, and later reviews must be recorded as separate accountable events."),
         heading("Decision Boundary", HeadingLevel.HEADING_1),
         warningBox(context.boundaryText),
         heading("Appendix: Signed Artefacts", HeadingLevel.HEADING_1),
-        artefactTable(context.artefactNames),
-        footerNote(context)
+        artefactTable(context.artefactNames)
       ]
     }]
   });
@@ -292,6 +330,123 @@ function warningBox(text) {
     spacing: { before: 80, after: 180 },
     children: [new TextRun({ text: safeText(text), bold: true, color: COLORS.ink })]
   });
+}
+
+function bulletList(items) {
+  const values = Array.isArray(items) && items.length ? items : ["Not recorded"];
+  return values.slice(0, 10).map((item) => new Paragraph({
+    bullet: { level: 0 },
+    spacing: { after: 80 },
+    children: [new TextRun({ text: safeText(item), size: 20, color: COLORS.ink })]
+  }));
+}
+
+function decisionSummaryTable(context) {
+  return keyValueTable([
+    ["Recommended posture", humanize(context.recommendation?.posture || context.decisionPosture)],
+    ["Next best action", context.recommendation?.next_best_action || "Review evidence and compile the signed decision pack."],
+    ["Confidence", humanize(context.recommendation?.confidence || "not recorded")],
+    ["Human approval", context.finalApprovalIssued ? "Recorded in signed pack" : "Still required"],
+    ["Decision boundary", "Analysis is autonomous; approval, risk acceptance, and closure are human-controlled"]
+  ]);
+}
+
+function scopeTable(context) {
+  const services = context.exposure?.affected_services || [];
+  const assets = context.exposure?.affected_assets || [];
+  const rows = [["Scope", "Record", "Operational meaning"]];
+  for (const service of services.slice(0, 6)) {
+    rows.push([
+      "Service",
+      service.service_name || service.service_id,
+      `${service.customer_facing ? "Customer-facing" : humanize(service.service_tier || "tier unknown")} | Owner: ${service.owner || "not recorded"}`
+    ]);
+  }
+  for (const asset of assets.slice(0, 6)) {
+    rows.push([
+      "Asset",
+      asset.asset_name || asset.asset_id,
+      `${humanize(asset.asset_class || "class unknown")} | ${humanize(asset.criticality || "criticality unknown")} | ${humanize(asset.exposure || "exposure unknown")}`
+    ]);
+  }
+  if (rows.length === 1) {
+    rows.push(["Unmapped", "No reviewed asset/service scope", "This is a decision blocker because the organisation cannot safely judge impact or completion."]);
+  }
+  return gridTable(rows, [1500, 3060, 4800]);
+}
+
+function exploitabilityRows(context) {
+  const exploitability = context.exploitability || {};
+  return [
+    ["Known exploited signal", exploitability.known_exploited ? "Yes, source-bound pending review unless accepted" : "Not recorded as reviewed"],
+    ["EPSS score", formatProbability(exploitability.epss_score)],
+    ["EPSS percentile", formatProbability(exploitability.epss_percentile)],
+    ["Ransomware campaign use", exploitability.ransomware_use || "Unknown"],
+    ["Can close gates alone", "No"]
+  ];
+}
+
+function recommendationNarrative(context) {
+  const recommendation = context.recommendation || {};
+  const rationale = Array.isArray(recommendation.rationale) && recommendation.rationale.length
+    ? recommendation.rationale.join(" ")
+    : "PatchForge recommends completing evidence review before final approval.";
+  return `${humanize(recommendation.posture || context.decisionPosture)} is the current advisory posture. ${rationale} This remains a governed decision: PatchForge can prepare the evidence and report, but a human approver must issue the decision outcome.`;
+}
+
+function actionPlanTable(context) {
+  const recommendation = context.recommendation || {};
+  const rows = [["Timing", "Action", "Owner / gate"]];
+  const doNow = Array.isArray(recommendation.do_now) && recommendation.do_now.length ? recommendation.do_now : [recommendation.next_best_action || "Review source evidence and compile decision pack."];
+  const doNext = Array.isArray(recommendation.do_next) ? recommendation.do_next : [];
+  for (const action of doNow.slice(0, 4)) {
+    rows.push(["Now", action, "Security lead / CAB reviewer"]);
+  }
+  for (const action of doNext.slice(0, 5)) {
+    rows.push(["Next", action, "Service owner / evidence owner"]);
+  }
+  if (recommendation.due_date) {
+    rows.push(["Deadline", `Recorded due date: ${recommendation.due_date}`, "Accountable owner"]);
+  }
+  return gridTable(rows, [1300, 5360, 2700]);
+}
+
+function decisionOptionsTable(context) {
+  const options = context.decisionOptions.length ? context.decisionOptions : [{
+    posture: context.decisionPosture,
+    when_to_choose: "Use when evidence supports the posture and an accountable human reviewer approves it.",
+    benefits: "Preserves traceability.",
+    risks: "Evidence gaps remain if source review and scope are incomplete.",
+    evidence_needed: context.blockers || [],
+    approval_needed: true,
+    recommended: true
+  }];
+  const rows = [["Option", "When it fits", "Decision impact"]];
+  for (const option of options.slice(0, 6)) {
+    rows.push([
+      `${option.recommended ? "Recommended: " : ""}${humanize(option.posture)}`,
+      option.when_to_choose,
+      `Benefit: ${option.benefits} Required evidence: ${(option.evidence_needed || []).join(", ") || "reviewed evidence"}. Approval: ${option.approval_needed ? "required" : "not required at this stage"}.`
+    ]);
+  }
+  return gridTable(rows, [2200, 3400, 3760]);
+}
+
+function evidenceGapTable(context) {
+  const evidence = context.intelligence?.evidence || {};
+  const gaps = evidence.gaps?.length ? evidence.gaps : context.blockers;
+  const rows = [["Evidence / gate", "State", "Decision implication"]];
+  if (gaps?.length) {
+    for (const gap of gaps.slice(0, 8)) {
+      rows.push([humanize(gap), "Open", actionForBlocker(gap)]);
+    }
+  } else {
+    rows.push(["Evidence blockers", "No open blocker list supplied", "Human approval and final outcome still require accountable review."]);
+  }
+  rows.push(["Pending source review", String(evidence.pending_review_count ?? "Not recorded"), "Pending sources cannot be treated as accepted truth."]);
+  rows.push(["Accepted positive evidence", String(evidence.accepted_positive_evidence_count ?? "Not recorded"), "Only accepted positive evidence can support hard gates."]);
+  rows.push(["Rejected sources", String(evidence.rejected_source_count ?? "Not recorded"), "Rejected sources cannot support the decision."]);
+  return gridTable(rows, [2600, 1900, 4860]);
 }
 
 function footerNote(context) {
@@ -423,6 +578,29 @@ async function buildPdfReport(context) {
     doc.on("end", () => resolve(Buffer.concat(chunks)));
 
     pdfTitle(doc, context);
+    pdfSection(doc, "Executive Decision Summary");
+    pdfParagraph(doc, context.executiveReadout || `${context.vulnerabilityId} is currently governed as ${humanize(context.decisionPosture)}. Final approval remains human-controlled.`);
+    pdfKeyValues(doc, [
+      ["Recommended posture", humanize(context.recommendation?.posture || context.decisionPosture)],
+      ["Next best action", context.recommendation?.next_best_action || "Review evidence and compile the signed decision pack."],
+      ["Confidence", humanize(context.recommendation?.confidence || "not recorded")],
+      ["Human approval", context.finalApprovalIssued ? "Recorded" : "Still required"]
+    ]);
+    pdfSection(doc, "What This Vulnerability Means");
+    pdfParagraph(doc, context.plainEnglish || `${context.vulnerabilityTitle} is a source-bound vulnerability decision. PatchForge translates it into governed options, evidence gaps, and accountable human actions.`);
+    pdfSection(doc, "Why It Matters Now");
+    pdfParagraph(doc, context.whyNow || "Urgency depends on reviewed source, exposure, and service-impact evidence.");
+    pdfSection(doc, "Affected Scope");
+    pdfParagraph(doc, context.whatItAffects || "Affected asset and service scope is not fully mapped in the signed pack.");
+    pdfSection(doc, "Exploitability Intelligence");
+    pdfCallout(doc, context.exploitability?.prohibited_detail || "Exploit code, exploit payloads, and procedural exploitation steps are intentionally not provided.");
+    pdfParagraph(doc, context.exploitability?.safe_description || "Exploitability signals inform prioritisation only and do not close evidence gates.");
+    pdfKeyValues(doc, exploitabilityRows(context));
+    pdfSection(doc, "Recommended Action Plan");
+    pdfParagraph(doc, recommendationNarrative(context));
+    for (const action of [...(context.recommendation?.do_now || []), ...(context.recommendation?.do_next || [])].slice(0, 7)) {
+      pdfBullet(doc, action);
+    }
     pdfSection(doc, "Decision Snapshot");
     pdfKeyValues(doc, [
       ["Vulnerability", context.vulnerabilityId],
@@ -432,6 +610,10 @@ async function buildPdfReport(context) {
       ["Readiness", humanize(context.readinessState)],
       ["Final approval", context.finalApprovalIssued ? "Issued" : "Not issued"]
     ]);
+    pdfSection(doc, "Decision Options");
+    for (const option of (context.decisionOptions.length ? context.decisionOptions : []).slice(0, 5)) {
+      pdfBullet(doc, `${option.recommended ? "Recommended: " : ""}${humanize(option.posture)} - ${option.when_to_choose}`);
+    }
     pdfSection(doc, "Evidence, Trust, and Signing");
     pdfKeyValues(doc, [
       ["Signed pack", context.packId],
@@ -484,6 +666,15 @@ function pdfKeyValues(doc, rows) {
     doc.fillColor(`#${COLORS.ink}`).font("Helvetica").fontSize(9).text(safeText(value), doc.page.margins.left + 175, y, { width: 320 });
     doc.moveDown(0.55);
   }
+}
+
+function pdfParagraph(doc, text) {
+  ensurePdfRoom(doc, 44);
+  doc.fillColor(`#${COLORS.ink}`).font("Helvetica").fontSize(9.5).text(safeText(text), {
+    width: doc.page.width - doc.page.margins.left - doc.page.margins.right,
+    lineGap: 2
+  });
+  doc.moveDown(0.7);
 }
 
 function pdfBullet(doc, text) {

@@ -76,6 +76,7 @@ class PatchForgeRuntimeHandler(BaseHTTPRequestHandler):
             bayesian_snapshot=_dict_or_none(payload.get("bayesian_snapshot")),
             patch_prior_usage_manifest=_dict_or_none(payload.get("patch_prior_usage_manifest")),
             patch_prior_update_proposal=_dict_or_none(payload.get("patch_prior_update_proposal")),
+            finding_intelligence_snapshot=_dict_or_none(payload.get("finding_intelligence_snapshot")),
             vendor_intelligence_snapshot=_dict_or_none(payload.get("vendor_intelligence_snapshot")),
             threat_landscape_snapshot=_dict_or_none(payload.get("threat_landscape_snapshot")),
             sra_trace=_dict_or_none(payload.get("sra_trace")),

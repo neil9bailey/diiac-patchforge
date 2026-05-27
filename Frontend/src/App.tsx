@@ -35,6 +35,7 @@ import {
   AssetRecord,
   BayesianAssessment,
   DecisionPackRecord,
+  FindingIntelligence,
   PatchForgeApi,
   PatchForgeMetrics,
   ReportCatalogItem,
@@ -49,6 +50,10 @@ import {
 import { PatchForgeAuthSession, usePatchForgeAuth } from "./auth";
 
 type PageKey =
+  | "Action Center"
+  | "Finding Detail"
+  | "Review & Approve"
+  | "Reports & Packs"
   | "Command Center"
   | "Guide"
   | "Vulnerability Queue"
@@ -78,6 +83,7 @@ type AppProps = {
 
 type LiveState = {
   metrics: PatchForgeMetrics;
+  findings: FindingIntelligence[];
   vulnerabilities: VulnerabilityRecord[];
   assets: AssetRecord[];
   services: ServiceRecord[];
@@ -95,20 +101,11 @@ const PRODUCT_MARK = "DIIaC\u2122";
 const config = getPatchForgeConfig();
 
 const navItems: NavItem[] = [
-  { label: "Command Center", icon: Gauge },
+  { label: "Action Center", icon: Gauge },
+  { label: "Finding Detail", icon: ShieldAlert },
+  { label: "Review & Approve", icon: ClipboardCheck },
+  { label: "Reports & Packs", icon: FileText },
   { label: "Guide", icon: BookOpenCheck },
-  { label: "Vulnerability Queue", icon: ListFilter },
-  { label: "Asset & Service Exposure", icon: Network },
-  { label: "Decision Workbench", icon: ClipboardCheck },
-  { label: "Emergency Patch", icon: ShieldAlert },
-  { label: "Risk Acceptances", icon: Clock3 },
-  { label: "Compensating Controls", icon: Blocks },
-  { label: "SRA Research", icon: Radar },
-  { label: "Evidence Catalogue", icon: Archive },
-  { label: "Decision Packs", icon: FileCheck2 },
-  { label: "Reports", icon: FileText },
-  { label: "Source Feeds", icon: RefreshCw },
-  { label: "Vendor & Threat Landscape", icon: Layers3 },
   { label: "Admin", icon: SlidersHorizontal }
 ];
 
@@ -171,7 +168,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
   const contextAuth = usePatchForgeAuth();
   const session = auth || contextAuth;
   const liveApi = useMemo(() => api || createPatchForgeApi(session.getAccessToken), [api, session.getAccessToken]);
-  const [activePage, setActivePage] = useState<PageKey>("Command Center");
+  const [activePage, setActivePage] = useState<PageKey>("Action Center");
   const [tenantId, setTenantId] = useState(initialTenantId || config.tenantHeader);
   const [state, setState] = useState<LiveState>(() => emptyLiveState(tenantId));
   const [refreshing, setRefreshing] = useState(false);
@@ -186,6 +183,10 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
   const canWrite = hasAnyRole(session.roles, ["PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.Admin"]);
   const isAdmin = hasAnyRole(session.roles, ["PatchForge.Admin"]);
   const canReadAdmin = hasAnyRole(session.roles, ["PatchForge.Admin", "PatchForge.Auditor"]);
+  const selectedFinding = useMemo(
+    () => state.findings.find((item) => item.vulnerability_id === selectedVulnerabilityId) || state.findings[0] || null,
+    [selectedVulnerabilityId, state.findings]
+  );
   const visibleNav = useMemo(
     () => navItems.filter((item) => item.label !== "Admin" || isAdmin),
     [isAdmin]
@@ -198,9 +199,10 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
     setRefreshing(true);
     setOperationError(null);
     try {
-      const [metrics, vulnerabilities, assets, services, decisionPacks, reports, threatSummary, vendors, sourceFeedState, adminHealth, adminConfig] = await Promise.all([
+      const [metrics, vulnerabilities, findings, assets, services, decisionPacks, reports, threatSummary, vendors, sourceFeedState, adminHealth, adminConfig] = await Promise.all([
         liveApi.metrics(tenantId),
         liveApi.listVulnerabilities(tenantId),
+        liveApi.actionCenter(tenantId),
         liveApi.listAssets(tenantId),
         liveApi.listServices(tenantId),
         liveApi.listDecisionPacks(tenantId),
@@ -211,7 +213,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         canReadAdmin ? liveApi.adminHealth(tenantId) : Promise.resolve(null),
         canReadAdmin ? liveApi.adminConfig(tenantId) : Promise.resolve({} as AdminConfig)
       ]);
-      setState({ metrics, vulnerabilities, assets, services, decisionPacks, reports, threatSummary, vendors, sourceFeedState, bayesian: null, adminHealth, adminConfig });
+      setState({ metrics, findings, vulnerabilities, assets, services, decisionPacks, reports, threatSummary, vendors, sourceFeedState, bayesian: null, adminHealth, adminConfig });
       setSelectedVulnerabilityId((current) => current || vulnerabilities[0]?.vulnerability_id || "");
       const general = adminConfig.general as { environment?: string; governance_tier?: string } | undefined;
       setAdminEnvironment(general?.environment || config.environmentLabel);
@@ -284,7 +286,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
       });
       setOperationMessage(`Signed decision pack ${pack.pack_id} generated.`);
       await loadLiveState();
-      setActivePage("Decision Packs");
+      setActivePage("Reports & Packs");
     } catch (error) {
       setOperationError(error instanceof Error ? error.message : "Decision pack generation failed.");
     }
@@ -307,6 +309,33 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
       setOperationMessage(`Bayesian advisory recommends ${humanize(bayesian.recommended_governance_posture)}.`);
     } catch (error) {
       setOperationError(error instanceof Error ? error.message : "Bayesian assessment failed.");
+    }
+  }
+
+  function handleSelectFinding(vulnerabilityId: string, page: PageKey = "Finding Detail") {
+    setSelectedVulnerabilityId(vulnerabilityId);
+    setActivePage(page);
+  }
+
+  async function handleAnalyseFinding() {
+    setOperationMessage(null);
+    setOperationError(null);
+    const vulnerabilityId = selectedVulnerabilityId || selectedFinding?.vulnerability_id || state.vulnerabilities[0]?.vulnerability_id;
+    if (!vulnerabilityId) {
+      setOperationError("Select or ingest a vulnerability before running PatchForge intelligence analysis.");
+      return;
+    }
+    try {
+      const result = await liveApi.analyseFinding(tenantId, vulnerabilityId);
+      setState((current) => ({
+        ...current,
+        bayesian: result.bayesian || current.bayesian,
+        findings: [result.intelligence, ...current.findings.filter((item) => item.vulnerability_id !== result.intelligence.vulnerability_id)]
+      }));
+      setSelectedVulnerabilityId(result.intelligence.vulnerability_id);
+      setOperationMessage(`PatchForge intelligence analysis completed for ${result.intelligence.vulnerability_id}. Human approval remains required.`);
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : "Finding intelligence analysis failed.");
     }
   }
 
@@ -436,6 +465,54 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         <div className="content-grid">
           <section className="primary-panel" aria-label={activePage}>
             <OperationMessages message={operationMessage} error={operationError} />
+            {activePage === "Action Center" && (
+              <ActionCenter
+                metrics={state.metrics}
+                findings={state.findings}
+                vulnerabilities={state.vulnerabilities}
+                decisionPacks={state.decisionPacks}
+                sourceFeedState={state.sourceFeedState}
+                canWrite={canWrite}
+                onSelectFinding={handleSelectFinding}
+                onRefreshSourceFeed={handleRefreshSourceFeed}
+              />
+            )}
+            {activePage === "Finding Detail" && (
+              <FindingDetail
+                finding={selectedFinding}
+                vulnerabilities={state.vulnerabilities}
+                onSelectFinding={handleSelectFinding}
+                onAnalyse={handleAnalyseFinding}
+                canWrite={canWrite}
+              />
+            )}
+            {activePage === "Review & Approve" && (
+              <ReviewApprove
+                finding={selectedFinding}
+                vulnerabilities={state.vulnerabilities}
+                selectedVulnerabilityId={selectedVulnerabilityId}
+                setSelectedVulnerabilityId={setSelectedVulnerabilityId}
+                selectedPosture={selectedPosture}
+                setSelectedPosture={setSelectedPosture}
+                decisionPacks={state.decisionPacks}
+                reports={state.reports}
+                onAnalyse={handleAnalyseFinding}
+                onGenerate={handleGeneratePack}
+                onSraResearch={handleSraResearch}
+                onDownloadReport={handleDownloadReport}
+                sraResult={sraResult}
+                canWrite={canWrite}
+              />
+            )}
+            {activePage === "Reports & Packs" && (
+              <ReportsPacks
+                findings={state.findings}
+                decisionPacks={state.decisionPacks}
+                reports={state.reports}
+                onExportPack={handleExportPack}
+                onDownloadReport={handleDownloadReport}
+              />
+            )}
             {activePage === "Command Center" && (
               <CommandCenter
                 metrics={state.metrics}
@@ -553,6 +630,344 @@ function OperationMessages({ message, error }: { message: string | null; error: 
     <>
       {message && <div className="notice success"><CheckCircle2 size={16} aria-hidden /> {message}</div>}
       {error && <div className="notice error"><TriangleAlert size={16} aria-hidden /> {error}</div>}
+    </>
+  );
+}
+
+function ActionCenter({
+  metrics,
+  findings,
+  vulnerabilities,
+  decisionPacks,
+  sourceFeedState,
+  canWrite,
+  onSelectFinding,
+  onRefreshSourceFeed
+}: {
+  metrics: PatchForgeMetrics;
+  findings: FindingIntelligence[];
+  vulnerabilities: VulnerabilityRecord[];
+  decisionPacks: DecisionPackRecord[];
+  sourceFeedState: SourceFeedState;
+  canWrite: boolean;
+  onSelectFinding: (vulnerabilityId: string, page?: PageKey) => void;
+  onRefreshSourceFeed: (feedId: string) => void;
+}) {
+  const metricCards = [
+    { label: "Findings to govern", value: metrics.vulnerability_count, tone: "steel", icon: ListFilter },
+    { label: "Known exploited", value: metrics.known_exploited, tone: "amber", icon: ShieldAlert },
+    { label: "Critical exposure", value: metrics.critical_exposure, tone: "danger", icon: TriangleAlert },
+    { label: "Signed packs", value: metrics.signed_packs || decisionPacks.length, tone: "trust", icon: FileCheck2 }
+  ];
+  const topFindings = findings.slice(0, 6);
+
+  return (
+    <>
+      <div className="metric-grid">
+        {metricCards.map(({ label, value, tone, icon: Icon }) => (
+          <article className={`metric-card ${tone}`} key={label}>
+            <Icon size={20} aria-hidden />
+            <span>{label}</span>
+            <strong>{value}</strong>
+          </article>
+        ))}
+      </div>
+
+      <section className="wide-band action-hero">
+        <div>
+          <p className="eyebrow">Autonomous analysis, human-approved decisions</p>
+          <h3>PatchForge has already translated the queue into decision-ready work.</h3>
+          <p className="muted-copy">
+            The engine reviews source-bound intelligence, exposure signals, Bayesian advisory output, vendor context, and signed-pack state. The user journey is to understand the finding, approve or withhold the governance decision, then export a board/CAB pack.
+          </p>
+        </div>
+        <div className="hero-actions">
+          <button type="button" className="action-button" onClick={() => onRefreshSourceFeed("cisa-kev")} disabled={!canWrite}>
+            <RefreshCw size={16} aria-hidden /> Refresh KEV
+          </button>
+          <button type="button" className="action-button secondary-action" onClick={() => onRefreshSourceFeed("first-epss")} disabled={!canWrite || !vulnerabilities.length}>
+            <Radar size={16} aria-hidden /> Refresh EPSS
+          </button>
+        </div>
+      </section>
+
+      <div className="finding-grid">
+        {topFindings.map((finding) => (
+          <article className="finding-card" key={finding.vulnerability_id}>
+            <div className="finding-card-head">
+              <span className={`pill ${severityTone(finding.severity)}`}>{humanize(finding.severity || "unknown")}</span>
+              <span className="pill teal">{humanize(finding.recommendation?.posture || "defer_pending_evidence")}</span>
+            </div>
+            <h3>{finding.vulnerability_id}</h3>
+            <p>{finding.summary.executive_readout}</p>
+            <div className="insight-list">
+              <StatusLine label="Next action" value={shortValue(finding.recommendation.next_best_action)} tone="trust" />
+              <StatusLine label="Evidence gaps" value={String(finding.evidence.gaps.length)} tone={finding.evidence.gaps.length ? "amber" : "trust"} />
+              <StatusLine label="Exploitability" value={finding.exploitability.known_exploited ? "Known exploited" : "Source-bound"} tone={finding.exploitability.known_exploited ? "danger" : "steel"} />
+            </div>
+            <div className="report-actions">
+              <button type="button" className="action-button" onClick={() => onSelectFinding(finding.vulnerability_id, "Finding Detail")}>
+                <ShieldAlert size={16} aria-hidden /> Understand
+              </button>
+              <button type="button" className="action-button secondary-action" onClick={() => onSelectFinding(finding.vulnerability_id, "Review & Approve")}>
+                <ClipboardCheck size={16} aria-hidden /> Review
+              </button>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      {!topFindings.length && (
+        <EmptyState
+          title="No governed findings yet"
+          detail={`Refresh live public intelligence or ingest a real finding. ${sourceFeedState.feeds.length} public source feeds are configured and all outputs remain source-bound pending review.`}
+        />
+      )}
+    </>
+  );
+}
+
+function FindingDetail({
+  finding,
+  vulnerabilities,
+  onSelectFinding,
+  onAnalyse,
+  canWrite
+}: {
+  finding: FindingIntelligence | null;
+  vulnerabilities: VulnerabilityRecord[];
+  onSelectFinding: (vulnerabilityId: string, page?: PageKey) => void;
+  onAnalyse: () => void;
+  canWrite: boolean;
+}) {
+  if (!finding) {
+    return (
+      <EmptyState
+        title="No finding selected"
+        detail={vulnerabilities.length ? "Select a finding from Action Center to open its plain-English decision view." : "Refresh live intelligence or ingest a real record first."}
+      />
+    );
+  }
+
+  return (
+    <>
+      <section className="wide-band finding-brief">
+        <div>
+          <p className="eyebrow">{finding.vendor || "Vendor pending"} | {finding.product || "Product pending"}</p>
+          <h3>{finding.vulnerability_id}: {finding.title}</h3>
+          <p>{finding.summary.plain_english}</p>
+        </div>
+        <div className="finding-score">
+          <span className={`pill ${severityTone(finding.severity)}`}>{humanize(finding.severity)}</span>
+          <strong>{humanize(finding.recommendation.posture)}</strong>
+          <small>{humanize(finding.recommendation.confidence)} confidence</small>
+        </div>
+      </section>
+
+      <div className="split-grid">
+        <section className="data-band narrative-panel">
+          <h3>Why This Matters</h3>
+          <p>{finding.summary.why_now}</p>
+          <p>{finding.summary.operational_risk}</p>
+        </section>
+        <section className="data-band narrative-panel">
+          <h3>Exploitability Intelligence</h3>
+          <p>{finding.exploitability.safe_description}</p>
+          <p className="boundary-copy">{finding.exploitability.prohibited_detail}</p>
+        </section>
+      </div>
+
+      <section className="wide-band">
+        <div className="section-title">
+          <h3>Affected Scope</h3>
+          <span className={finding.exposure.unmapped_scope ? "pill amber" : "pill trust"}>{finding.exposure.unmapped_scope ? "Mapping incomplete" : "Mapped"}</span>
+        </div>
+        <p className="muted-copy">{finding.summary.what_it_affects}</p>
+        <div className="split-grid scope-readout">
+          <section>
+            <h4>Services</h4>
+            {finding.exposure.affected_services.map((service) => (
+              <StatusLine key={service.service_id} label={service.service_name} value={service.customer_facing ? "Customer-facing" : humanize(service.service_tier)} tone={service.customer_facing ? "amber" : "steel"} />
+            ))}
+            {!finding.exposure.affected_services.length && <p className="muted-copy">No reviewed service mapping attached.</p>}
+          </section>
+          <section>
+            <h4>Assets</h4>
+            {finding.exposure.affected_assets.map((asset) => (
+              <StatusLine key={asset.asset_id} label={asset.asset_name} value={humanize(asset.exposure)} tone={asset.exposure?.toLowerCase().includes("internet") ? "amber" : "steel"} />
+            ))}
+            {!finding.exposure.affected_assets.length && <p className="muted-copy">No reviewed asset mapping attached.</p>}
+          </section>
+        </div>
+      </section>
+
+      <section className="wide-band">
+        <div className="section-title">
+          <h3>Decision Options</h3>
+          <button type="button" className="action-button" onClick={onAnalyse} disabled={!canWrite}>
+            <Radar size={16} aria-hidden /> Re-run Analysis
+          </button>
+        </div>
+        <div className="decision-option-grid">
+          {finding.decision_options.map((option) => (
+            <article className={option.recommended ? "decision-option recommended" : "decision-option"} key={option.posture}>
+              <span className={option.recommended ? "pill trust" : "pill steel"}>{option.recommended ? "Recommended" : "Available"}</span>
+              <h4>{humanize(option.posture)}</h4>
+              <p>{option.when_to_choose}</p>
+              <small>Evidence: {option.evidence_needed.join(", ") || "Reviewed evidence required"}</small>
+            </article>
+          ))}
+        </div>
+        <button type="button" className="action-button large-action" onClick={() => onSelectFinding(finding.vulnerability_id, "Review & Approve")}>
+          <ClipboardCheck size={16} aria-hidden /> Continue to Review
+        </button>
+      </section>
+    </>
+  );
+}
+
+function ReviewApprove({
+  finding,
+  vulnerabilities,
+  selectedVulnerabilityId,
+  setSelectedVulnerabilityId,
+  selectedPosture,
+  setSelectedPosture,
+  decisionPacks,
+  reports,
+  onAnalyse,
+  onGenerate,
+  onSraResearch,
+  onDownloadReport,
+  sraResult,
+  canWrite
+}: {
+  finding: FindingIntelligence | null;
+  vulnerabilities: VulnerabilityRecord[];
+  selectedVulnerabilityId: string;
+  setSelectedVulnerabilityId: (value: string) => void;
+  selectedPosture: string;
+  setSelectedPosture: (value: string) => void;
+  decisionPacks: DecisionPackRecord[];
+  reports: ReportCatalogItem[];
+  onAnalyse: () => void;
+  onGenerate: () => void;
+  onSraResearch: () => void;
+  onDownloadReport: (packId: string, reportType: string, format: "docx" | "pdf") => void;
+  sraResult: Record<string, unknown> | null;
+  canWrite: boolean;
+}) {
+  const latestPack = finding?.latest_signed_pack
+    ? decisionPacks.find((pack) => pack.pack_id === finding.latest_signed_pack?.pack_id) || null
+    : decisionPacks.find((pack) => pack.vulnerability_id === finding?.vulnerability_id) || null;
+  const boardReport = reports.find((report) => report.report_type === "board_vulnerability_remediation_summary") || reports[0];
+  const cabReport = reports.find((report) => report.report_type === "cab_patch_decision_report") || reports[1] || boardReport;
+
+  return (
+    <>
+      <section className="wide-band review-runway">
+        <div>
+          <p className="eyebrow">Decision runway</p>
+          <h3>{finding ? `${finding.vulnerability_id}: ${humanize(finding.recommendation.posture)}` : "Select a finding to review"}</h3>
+          <p className="muted-copy">
+            PatchForge performs the analysis, keeps agent and source output advisory-only, and leaves the accountable decision to the user. Use this page to compile the signed pack and export professional DOCX/PDF reports.
+          </p>
+        </div>
+        <div className="decision-controls compact-controls">
+          <label>
+            Finding
+            <select value={selectedVulnerabilityId} onChange={(event) => setSelectedVulnerabilityId(event.target.value)}>
+              <option value="">Select ingested record</option>
+              {vulnerabilities.map((item) => <option key={item.vulnerability_id} value={item.vulnerability_id}>{item.vulnerability_id}</option>)}
+            </select>
+          </label>
+          <label>
+            Governance posture
+            <select value={selectedPosture} onChange={(event) => setSelectedPosture(event.target.value)}>
+              {postures.map((posture) => <option key={posture} value={posture}>{humanize(posture)}</option>)}
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <div className="split-grid">
+        <section className="data-band">
+          <h3>Autonomous Analysis Completed</h3>
+          {(finding?.automation.completed || ["Select a finding to load analysis."]).map((item) => (
+            <p className="rail-note" key={item}><CheckCircle2 size={15} aria-hidden /> {item}</p>
+          ))}
+        </section>
+        <section className="data-band">
+          <h3>Human Decisions Required</h3>
+          {(finding?.automation.remaining_human_decisions || ["Human approval cannot be automated."]).map((item) => (
+            <p className="rail-note" key={item}><TriangleAlert size={15} aria-hidden /> {item}</p>
+          ))}
+        </section>
+      </div>
+
+      <section className="wide-band">
+        <div className="section-title">
+          <h3>Execute Governed Outputs</h3>
+          <span className="pill trust">DOCX / PDF only</span>
+        </div>
+        <div className="report-actions">
+          <button type="button" className="action-button" onClick={onAnalyse} disabled={!selectedVulnerabilityId || !canWrite}>
+            <Radar size={16} aria-hidden /> Refresh Analysis
+          </button>
+          <button type="button" className="action-button secondary-action" onClick={onSraResearch} disabled={!selectedVulnerabilityId || !canWrite}>
+            <Radar size={16} aria-hidden /> Run SRA Advisory
+          </button>
+          <button type="button" className="action-button" onClick={onGenerate} disabled={!selectedVulnerabilityId || !canWrite}>
+            <FileCheck2 size={16} aria-hidden /> Generate Signed Pack
+          </button>
+          <button type="button" className="action-button" onClick={() => latestPack && boardReport && onDownloadReport(latestPack.pack_id, boardReport.report_type, "docx")} disabled={!latestPack || !boardReport}>
+            <FileText size={16} aria-hidden /> Board DOCX
+          </button>
+          <button type="button" className="action-button" onClick={() => latestPack && cabReport && onDownloadReport(latestPack.pack_id, cabReport.report_type, "pdf")} disabled={!latestPack || !cabReport}>
+            <Download size={16} aria-hidden /> CAB PDF
+          </button>
+        </div>
+        <div className="split-grid">
+          <StatusLine label="Latest signed pack" value={latestPack?.pack_id || "Generate after review"} tone={latestPack ? "trust" : "amber"} />
+          <StatusLine label="Final approval" value={latestPack?.final_approval_issued ? "Issued" : "Not issued"} tone={latestPack?.final_approval_issued ? "trust" : "amber"} />
+          <StatusLine label="SRA output" value={sraResult ? "Advisory returned" : "Not run this session"} tone="teal" />
+          <StatusLine label="Autonomous approval" value="Blocked" tone="amber" />
+        </div>
+      </section>
+
+      {!canWrite && <EmptyState title="Read-only role" detail="Review, pack generation, and report actions require a PatchForge write role." />}
+    </>
+  );
+}
+
+function ReportsPacks({
+  findings,
+  decisionPacks,
+  reports,
+  onExportPack,
+  onDownloadReport
+}: {
+  findings: FindingIntelligence[];
+  decisionPacks: DecisionPackRecord[];
+  reports: ReportCatalogItem[];
+  onExportPack: (packId: string) => void;
+  onDownloadReport: (packId: string, reportType: string, format: "docx" | "pdf") => void;
+}) {
+  return (
+    <>
+      <section className="wide-band report-brief">
+        <div>
+          <p className="eyebrow">Professional decision outputs</p>
+          <h3>Board, CAB, customer, risk, and OT packs generated from signed evidence.</h3>
+          <p className="muted-copy">Reports use the intelligence narrative, evidence gaps, decision options, signed-pack metadata, and the no-exploit/no-deployment boundary.</p>
+        </div>
+        <div className="report-pack-selector">
+          <span className="pill trust">{decisionPacks.filter((pack) => pack.verification?.verified).length} verified packs</span>
+          <span className="pill teal">{findings.length} analysed findings</span>
+        </div>
+      </section>
+      <DecisionPacks decisionPacks={decisionPacks} reports={reports} onExportPack={onExportPack} onDownloadReport={onDownloadReport} />
+      <Reports decisionPacks={decisionPacks} reports={reports} onDownloadReport={onDownloadReport} />
     </>
   );
 }
@@ -1428,6 +1843,7 @@ function emptyLiveState(tenantId: string): LiveState {
       rejected_sources: 0,
       signed_packs: 0
     },
+    findings: [],
     vulnerabilities: [],
     assets: [],
     services: [],
@@ -1489,6 +1905,11 @@ function signalLabel(item: VulnerabilityRecord) {
     signals.push("OT");
   }
   return signals.join(", ") || "No reviewed signal";
+}
+
+function shortValue(value = "") {
+  const text = String(value || "Not recorded");
+  return text.length > 42 ? `${text.slice(0, 39)}...` : text;
 }
 
 function downloadJson(fileName: string, payload: unknown) {

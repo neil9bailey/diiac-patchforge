@@ -1,0 +1,50 @@
+{
+  "product": "DIIaC PatchForge",
+  "baseline_id": "PF-AZ8",
+  "baseline_name": "Guided intelligence workflow and decision-grade reports",
+  "baseline_date": "2026-05-27",
+  "target_url": "https://patchforge.diiac.io",
+  "api_url": "https://api.patchforge.diiac.io",
+  "release_state": "local_validated_pending_azure_rollout",
+  "remote_target": "neil9bailey/diiac-patchforge",
+  "azure_resource_group": "rg-diiac-patchforge-prod",
+  "azure_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+  "capabilities_created": [
+    "guided_action_center",
+    "finding_detail_plain_english_intelligence",
+    "review_approve_workflow",
+    "reports_packs_workflow",
+    "finding_intelligence_api",
+    "human_readable_exploitability_intelligence_without_exploit_steps",
+    "decision_options_matrix",
+    "signed_pack_finding_intelligence_snapshot",
+    "decision_grade_docx_pdf_reports"
+  ],
+  "local_validation": {
+    "backend_syntax": "pass",
+    "backend_tests": "pass",
+    "frontend_tests": "pass",
+    "frontend_build": "pass",
+    "python_tests": "pass",
+    "git_diff_check": "pass",
+    "docx_pdf_visual_qa": "pass",
+    "docx_pdf_visual_qa_record": "docs/release/evidence/2026-05-27-patchforge-pfaz8-guided-intelligence-workflow/report-qa/"
+  },
+  "azure_rollout": {
+    "status": "pending",
+    "image_tag": null,
+    "active_revisions": null,
+    "live_ui_validation": "pending",
+    "live_api_validation": "pending"
+  },
+  "excluded_capabilities": [
+    "vulnerability_scanner",
+    "exploit_generation",
+    "procedural_exploit_steps",
+    "patch_deployment",
+    "production_mutation_from_ui",
+    "autonomous_cab_approval",
+    "autonomous_risk_acceptance",
+    "unreviewed_agent_source_truth"
+  ]
+}

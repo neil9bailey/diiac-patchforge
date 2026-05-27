@@ -61,6 +61,83 @@ export type VendorProfile = {
   review_state?: string;
 };
 
+export type FindingIntelligence = {
+  intelligence_id: string;
+  generated_at: string;
+  vulnerability_id: string;
+  title: string;
+  severity: string;
+  vendor?: string;
+  product?: string;
+  summary: {
+    plain_english: string;
+    why_now: string;
+    what_it_affects: string;
+    operational_risk: string;
+    decision_required: string;
+    executive_readout: string;
+  };
+  exploitability: {
+    known_exploited: boolean;
+    epss_score: number | null;
+    epss_percentile: number | null;
+    ransomware_use: string;
+    safe_description: string;
+    prohibited_detail: string;
+  };
+  exposure: {
+    affected_service_count: number;
+    affected_asset_count: number;
+    internet_exposed: boolean;
+    customer_facing: boolean;
+    ot_relevant: boolean;
+    unmapped_scope: boolean;
+    interpretation: string[];
+    affected_services: Array<{ service_id: string; service_name: string; owner: string; customer_facing: boolean; service_tier: string }>;
+    affected_assets: Array<{ asset_id: string; asset_name: string; asset_class: string; criticality: string; exposure: string }>;
+  };
+  recommendation: {
+    posture: string;
+    next_best_action: string;
+    confidence: string;
+    rationale: string[];
+    do_now: string[];
+    do_next: string[];
+    due_date?: string | null;
+    advisory_only: boolean;
+    final_approval_issued: boolean;
+  };
+  decision_options: Array<{
+    posture: string;
+    when_to_choose: string;
+    benefits: string;
+    risks: string;
+    evidence_needed: string[];
+    approval_needed: boolean;
+    recommended?: boolean;
+  }>;
+  evidence: {
+    accepted_positive_evidence_count: number;
+    pending_review_count: number;
+    rejected_source_count: number;
+    gaps: string[];
+    warning: string;
+  };
+  automation: {
+    completed: string[];
+    remaining_human_decisions: string[];
+    available_actions: string[];
+  };
+  latest_signed_pack?: {
+    pack_id: string;
+    decision_posture: string;
+    readiness_state: string;
+    verified: boolean;
+    final_approval_issued: boolean;
+  } | null;
+  boundary: Record<string, boolean>;
+};
+
 export type SourceFeed = {
   feed_id: string;
   feed_name: string;
@@ -201,6 +278,9 @@ export type PatchForgeApi = {
   listVendors(tenantId: string): Promise<VendorProfile[]>;
   sourceFeeds(tenantId: string): Promise<SourceFeedState>;
   refreshSourceFeed(tenantId: string, payload: Record<string, unknown>): Promise<SourceFeedRun>;
+  actionCenter(tenantId: string): Promise<FindingIntelligence[]>;
+  findingIntelligence(tenantId: string, vulnerabilityId: string): Promise<FindingIntelligence>;
+  analyseFinding(tenantId: string, vulnerabilityId: string, payload?: Record<string, unknown>): Promise<{ intelligence: FindingIntelligence; bayesian?: BayesianAssessment }>;
   sraResearch(tenantId: string, path: string, payload: Record<string, unknown>): Promise<Record<string, unknown>>;
   adminHealth(tenantId: string): Promise<AdminHealth>;
   adminConfig(tenantId: string): Promise<AdminConfig>;
@@ -348,6 +428,20 @@ export function createPatchForgeApi(getAccessToken: () => Promise<string>, confi
         body: JSON.stringify(payload)
       });
       return body.source_feed_run;
+    },
+    async actionCenter(tenantId) {
+      const body = await request<{ findings: FindingIntelligence[] }>("/api/patchforge/action-center", tenantId);
+      return body.findings || [];
+    },
+    async findingIntelligence(tenantId, vulnerabilityId) {
+      const body = await request<{ intelligence: FindingIntelligence }>(`/api/patchforge/vulnerabilities/${encodeURIComponent(vulnerabilityId)}/intelligence`, tenantId);
+      return body.intelligence;
+    },
+    async analyseFinding(tenantId, vulnerabilityId, payload = {}) {
+      return request<{ intelligence: FindingIntelligence; bayesian?: BayesianAssessment }>(`/api/patchforge/vulnerabilities/${encodeURIComponent(vulnerabilityId)}/analyse`, tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
     },
     async sraResearch(tenantId, path, payload) {
       return request<Record<string, unknown>>(path, tenantId, {
