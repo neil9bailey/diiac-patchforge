@@ -1,0 +1,9 @@
+{
+    "captured_at":  "2026-05-27T03:02:43.6486130Z",
+    "pack_id":  "PF-20260527-9fc7f010",
+    "signing_provider":  "azure_key_vault",
+    "verification_verified":  true,
+    "manifest_ok":  true,
+    "signature_ok":  true,
+    "result":  "PASS"
+}

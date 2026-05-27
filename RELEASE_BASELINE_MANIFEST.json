@@ -6,9 +6,14 @@
   "target_url": "https://patchforge.diiac.io",
   "api_url": "https://api.patchforge.diiac.io",
   "remote_target": "neil9bailey/diiac-patchforge",
-  "release_state": "local_validated_pending_azure_rollout",
+  "release_state": "azure_live_browser_validated",
   "deployment_performed": true,
-  "pfaz5_intelligence_deployment_performed": true,
+  "azure_resources_created": true,
+  "azure_resource_group": "rg-diiac-patchforge-prod",
+  "azure_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+  "storage_state": "postgresql",
+  "auth_state": "entra_rbac_required",
+  "signing_state": "azure_key_vault_required_for_production_runtime",
   "pfaz5_image_tag": "pfaz5-20260526-8a145e8",
   "pfaz5_commit": "8a145e849a2c57fed3bc00440f2f2f8b29585f72",
   "pfaz6_image_tag": "pfaz6-20260526-473b055",
@@ -17,13 +22,9 @@
   "pfaz7_image_tag": "pfaz7-20260527-71643ce",
   "pfaz7_commit": "71643ce4123bed543c9b0b55c39347b4775946d1",
   "pfaz7_operational_demo_hardening": "azure_live_browser_validated",
-  "pfaz8_guided_intelligence_workflow": "local_validated_pending_azure_rollout",
-  "azure_resources_created": true,
-  "azure_resource_group": "rg-diiac-patchforge-prod",
-  "azure_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
-  "storage_state": "postgresql",
-  "auth_state": "entra_rbac_required",
-  "signing_state": "azure_key_vault_required_for_production_runtime",
+  "pfaz8_image_tag": "pfaz8-20260527-cc708fd",
+  "pfaz8_commit": "cc708fd",
+  "pfaz8_guided_intelligence_workflow": "azure_live_browser_validated",
   "capabilities_created": [
     "repository_skeleton",
     "azure_container_apps_deployment",
@@ -57,24 +58,61 @@
   "live_validation": {
     "ui": "pass",
     "api": "pass",
-    "previous_pfaz6_ui": "pass",
-    "previous_pfaz6_api": "pass",
     "signed_in_user": "n.bailey@diiac.io",
     "displayed_role": "PatchForge.Admin",
-    "source_feed_cisa_kev": "pass",
-    "source_feed_first_epss": "pass",
     "validated_real_cve": "CVE-2026-48172",
-    "decision_pack_id": "PF-20260527-54588be9",
+    "decision_pack_id": "PF-20260527-9fc7f010",
     "pack_verified": true,
+    "manifest_ok": true,
+    "signature_ok": true,
+    "signing_provider": "azure_key_vault",
     "final_approval_issued": false,
-    "production_no_demo_data_cleanup": "pass",
-    "removed_synthetic_validation_scope": "CVE-2026-PF-DEMO-001",
-    "docx_pdf_report_download": "pass",
-    "docx_pdf_visual_qa": "pass",
-    "scheduler_refresh": "pass",
-    "evidence_path": "docs/release/evidence/2026-05-27-patchforge-pfaz7-operational-demo/",
-    "previous_pfaz6_evidence_path": "docs/release/evidence/2026-05-26-patchforge-pfaz6-live-source-intelligence/"
+    "docx_report_download": "pass",
+    "pdf_report_download": "pass",
+    "key_vault_signing_smoke": "pass",
+    "postgresql_readiness": "pass",
+    "protected_route_unauthenticated": 401,
+    "evidence_path": "docs/release/evidence/2026-05-27-patchforge-pfaz8-guided-intelligence-workflow/live-ui/",
+    "previous_pfaz7_evidence_path": "docs/release/evidence/2026-05-27-patchforge-pfaz7-operational-demo/"
   },
+  "active_revisions": [
+    {
+      "app": "ca-patchforge-ui-prod",
+      "revision": "ca-patchforge-ui-prod--0000010",
+      "image": "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-frontend:pfaz8-20260527-cc708fd",
+      "traffic": 100
+    },
+    {
+      "app": "ca-patchforge-bridge-prod",
+      "revision": "ca-patchforge-bridge-prod--0000009",
+      "image": "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-bridge:pfaz8-20260527-cc708fd",
+      "traffic": 100
+    },
+    {
+      "app": "ca-patchforge-runtime-prod",
+      "revision": "ca-patchforge-runtime-prod--0000008",
+      "image": "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-runtime:pfaz8-20260527-cc708fd",
+      "traffic": 100
+    },
+    {
+      "app": "ca-patchforge-sra-prod",
+      "revision": "ca-patchforge-sra-prod--0000007",
+      "image": "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-sra-agent:pfaz8-20260527-cc708fd",
+      "traffic": 100
+    },
+    {
+      "app": "ca-patchforge-worker-prod",
+      "revision": "ca-patchforge-worker-prod--0000007",
+      "image": "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-ingest-worker:pfaz8-20260527-cc708fd",
+      "traffic": 100
+    },
+    {
+      "app": "ca-patchforge-scheduler-prod",
+      "revision": "ca-patchforge-scheduler-prod--0000007",
+      "image": "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-scheduler:pfaz8-20260527-cc708fd",
+      "traffic": 100
+    }
+  ],
   "local_validation": {
     "backend_tests": "pass",
     "frontend_tests": "pass",

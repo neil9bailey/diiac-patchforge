@@ -2,13 +2,21 @@
 
 ## DIIaC PatchForge PF-AZ8
 
-Release state: PF-AZ8 local validation passed and is pending Azure rollout/live browser validation. PF-AZ7 remains the currently deployed Azure baseline until the PF-AZ8 image rollout completes.
+Release state: PF-AZ8 is deployed to Azure and live validated through the production UI/API as a signed-in PatchForge Admin user.
 
 Date: 2026-05-27
 
 PF-AZ8 adds a guided intelligence workflow and decision-grade DOCX/PDF reports that respond to customer-demo feedback.
 
-PF-AZ8 local evidence path:
+PF-AZ8 image tag:
+
+- `pfaz8-20260527-cc708fd`
+
+PF-AZ8 commit:
+
+- `cc708fd`
+
+PF-AZ8 evidence path:
 
 - `docs/release/evidence/2026-05-27-patchforge-pfaz8-guided-intelligence-workflow/`
 
@@ -26,11 +34,11 @@ PF-AZ8 does not add seeded demo data, synthetic vulnerability data, scanning, ex
 
 ## DIIaC PatchForge PF-AZ7
 
-Release state: PF-AZ7 live operational customer-demo baseline deployed to Azure and validated through the live UI as a signed-in PatchForge Admin user
+Release state: PF-AZ7 was the previous live operational customer-demo baseline.
 
 Date: 2026-05-27
 
-PF-AZ7 is the currently deployed Azure baseline.
+PF-AZ8 is now the currently deployed Azure baseline.
 
 ## PF-AZ7 Operational Demo Increment
 
@@ -217,6 +225,8 @@ PF-AZ6 Azure rollout and live browser validation evidence is recorded under `doc
 
 PF-AZ7 Azure rollout, scheduler validation, live browser validation, fresh signed pack verification, and DOCX/PDF visual QA evidence is recorded under `docs/release/evidence/2026-05-27-patchforge-pfaz7-operational-demo/`.
 
+PF-AZ8 Azure rollout, guided workflow validation, signed-in browser validation, signed pack verification, DOCX/PDF live protected report checks, Key Vault signing smoke, and PostgreSQL readiness evidence is recorded under `docs/release/evidence/2026-05-27-patchforge-pfaz8-guided-intelligence-workflow/`.
+
 ## Runtime State
 
 PatchForge bootstrap services are live in Azure Container Apps.
@@ -258,16 +268,45 @@ Deployment evidence:
 - `docs/release/evidence/2026-05-26-patchforge-pfaz5-intelligence-rollout/`
 - `docs/release/evidence/2026-05-26-patchforge-pfaz6-live-source-intelligence/`
 - `docs/release/evidence/2026-05-27-patchforge-pfaz7-operational-demo/`
+- `docs/release/evidence/2026-05-27-patchforge-pfaz8-guided-intelligence-workflow/`
 
-Latest PF-AZ7 operational demo revisions:
+Latest PF-AZ8 guided intelligence revisions:
 
-- UI: `ca-patchforge-ui-prod--0000009`
-- Bridge/API: `ca-patchforge-bridge-prod--0000008`
-- Runtime: `ca-patchforge-runtime-prod--0000007`
-- SRA: `ca-patchforge-sra-prod--0000006`
-- Worker: `ca-patchforge-worker-prod--0000006`
-- Scheduler: `ca-patchforge-scheduler-prod--0000006`
-- Image tag: `pfaz7-20260527-71643ce`
+- UI: `ca-patchforge-ui-prod--0000010`
+- Bridge/API: `ca-patchforge-bridge-prod--0000009`
+- Runtime: `ca-patchforge-runtime-prod--0000008`
+- SRA: `ca-patchforge-sra-prod--0000007`
+- Worker: `ca-patchforge-worker-prod--0000007`
+- Scheduler: `ca-patchforge-scheduler-prod--0000007`
+- Image tag: `pfaz8-20260527-cc708fd`
+
+## PF-AZ8 Live Validation
+
+Live UI validation result: PASS
+
+Live API validation result: PASS
+
+Validated user workflow:
+
+- signed in at `https://patchforge.diiac.io` as `n.bailey@diiac.io`
+- confirmed displayed role `PatchForge.Admin`
+- confirmed live API readiness with PostgreSQL storage and Entra auth required
+- confirmed protected API routes return 401 without a bearer token
+- loaded the simplified Action Center from live protected APIs
+- opened Finding Detail for `CVE-2026-48172` and confirmed plain-English vulnerability explanation, affected scope, exploitability intelligence, and decision options
+- confirmed exploit code, exploit payloads, and procedural exploitation steps are not provided
+- opened Review & Approve and confirmed autonomous analysis completed while human approval remained required
+- ran SRA advisory and confirmed advisory-only output
+- generated fresh signed pack `PF-20260527-9fc7f010`
+- verified the exported pack reports `verified=true`, `manifest_ok=true`, `signature_ok=true`, `signing_provider=azure_key_vault`, and `final_approval_issued=false`
+- confirmed the signed pack includes `finding_intelligence_snapshot.json`, Bayesian, SRA, vendor, and threat-landscape artefacts
+- generated live protected DOCX and PDF reports from the signed pack
+- opened Admin and confirmed database, storage, Key Vault, signing trust, bridge, runtime, and frontend health
+- opened the Guide page for the minimal-input, agent-led workflow
+
+Live evidence path:
+
+- `docs/release/evidence/2026-05-27-patchforge-pfaz8-guided-intelligence-workflow/live-ui/`
 
 ## PF-AZ7 Live Validation
 

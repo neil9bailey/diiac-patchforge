@@ -2,7 +2,7 @@
 
 Date: 2026-05-27
 
-Status before Azure rollout: local validation passed; Azure image build, deployment, and live browser validation pending.
+Status: PASS. PF-AZ8 is deployed to Azure and validated through the live UI/API.
 
 PF-AZ8 responds to customer-demo feedback that the product needed to feel less like a technical queue and more like an intelligent decision workflow.
 
@@ -51,6 +51,50 @@ PF-AZ8 responds to customer-demo feedback that the product needed to feel less l
 Report QA evidence:
 
 - `docs/release/evidence/2026-05-27-patchforge-pfaz8-guided-intelligence-workflow/report-qa/`
+
+## Azure Rollout
+
+- GitHub push: PASS, commit `cc708fd`
+- Image tag: `pfaz8-20260527-cc708fd`
+- ACR build/push: PASS for frontend, bridge/API, runtime, SRA, worker, and scheduler images
+- ACR tag verification: PASS
+- What-if: captured under release evidence; full template apply was not used because the what-if included broader drift/noise than the image-only rollout required
+- Targeted Container Apps image update: PASS
+
+Active revisions:
+
+- UI: `ca-patchforge-ui-prod--0000010`
+- Bridge/API: `ca-patchforge-bridge-prod--0000009`
+- Runtime: `ca-patchforge-runtime-prod--0000008`
+- SRA: `ca-patchforge-sra-prod--0000007`
+- Worker: `ca-patchforge-worker-prod--0000007`
+- Scheduler: `ca-patchforge-scheduler-prod--0000007`
+
+## Live Validation
+
+- UI HTTP 200: PASS
+- API health HTTP 200: PASS
+- API readiness HTTP 200 with `storage=postgresql`, `auth_required=true`, and `tenant_required=true`: PASS
+- Protected route unauthenticated HTTP 401: PASS
+- Signed-in browser validation as `n.bailey@diiac.io`: PASS
+- Displayed role `PatchForge.Admin`: PASS
+- Action Center live API binding: PASS
+- Finding Detail plain-English intelligence for `CVE-2026-48172`: PASS
+- Review & Approve human-gated workflow: PASS
+- SRA advisory-only workflow: PASS
+- Signed decision pack generated: `PF-20260527-9fc7f010`
+- Pack verification: PASS
+- Key Vault signing provider: `azure_key_vault`
+- Final approval issued: `false`
+- Protected DOCX report generation: PASS
+- Protected PDF report generation: PASS
+- Admin health page: PASS
+- Guide page: PASS
+- PostgreSQL readiness: PASS
+
+Live evidence:
+
+- `docs/release/evidence/2026-05-27-patchforge-pfaz8-guided-intelligence-workflow/live-ui/`
 
 ## Boundary
 

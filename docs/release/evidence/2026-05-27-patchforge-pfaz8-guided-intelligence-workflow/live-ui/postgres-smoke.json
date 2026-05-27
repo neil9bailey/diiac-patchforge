@@ -1,0 +1,8 @@
+{
+    "captured_at":  "2026-05-27T03:02:43.6486130Z",
+    "readiness_status":  200,
+    "storage":  "postgresql",
+    "auth_required":  true,
+    "tenant_required":  true,
+    "result":  "PASS"
+}

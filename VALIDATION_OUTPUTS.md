@@ -4,7 +4,7 @@
 
 Date: 2026-05-27
 
-Status: local validation PASS; Azure rollout and live browser validation pending.
+Status: PASS. PF-AZ8 is deployed to Azure and validated through the live UI/API.
 
 Scope:
 
@@ -40,6 +40,49 @@ Document quality gate:
 - QA evidence: `docs/release/evidence/2026-05-27-patchforge-pfaz8-guided-intelligence-workflow/report-qa/`
 
 Important boundary note: PF-AZ8 does not add scanning, exploit generation, procedural exploit steps, patch deployment, production mutation from the UI, autonomous CAB approval, or autonomous risk acceptance.
+
+Azure rollout:
+
+- GitHub push: PASS, commit `cc708fd`
+- Image tag: `pfaz8-20260527-cc708fd`
+- ACR build/push: PASS for frontend, bridge/API, runtime, SRA, worker, and scheduler images
+- ACR tag verification: PASS for all six repositories
+- Bicep what-if: captured; not applied because it included broader drift/noise than the image rollout required
+- Targeted image-only Container Apps update: PASS
+- Active revisions:
+  - UI: `ca-patchforge-ui-prod--0000010`
+  - Bridge/API: `ca-patchforge-bridge-prod--0000009`
+  - Runtime: `ca-patchforge-runtime-prod--0000008`
+  - SRA: `ca-patchforge-sra-prod--0000007`
+  - Worker: `ca-patchforge-worker-prod--0000007`
+  - Scheduler: `ca-patchforge-scheduler-prod--0000007`
+
+Live validation:
+
+- UI HTTP 200: PASS
+- API health HTTP 200: PASS
+- API readiness HTTP 200 with `storage=postgresql`, `auth_required=true`, and `tenant_required=true`: PASS
+- Protected vulnerability route unauthenticated HTTP 401: PASS
+- Browser/MSAL sign-in as `n.bailey@diiac.io`: PASS
+- Displayed role `PatchForge.Admin`: PASS
+- Simplified guided navigation smoke across Action Center, Finding Detail, Review & Approve, Reports & Packs, Guide, and Admin: PASS
+- Real public-source record validated: `CVE-2026-48172`
+- Finding Detail plain-English intelligence: PASS
+- Exploitability intelligence boundary: PASS, no exploit code, payloads, or procedural exploitation steps shown
+- Review & Approve autonomous analysis summary: PASS
+- SRA advisory: PASS, advisory-only
+- Fresh signed pack generated after PF-AZ8 rollout: `PF-20260527-9fc7f010`
+- Pack verification: PASS, `verified=true`, `manifest_ok=true`, `signature_ok=true`
+- Key Vault signing smoke: PASS through live pack export with `signing_provider=azure_key_vault`
+- Final approval remained false: PASS
+- Protected DOCX report generation from live signed pack: PASS
+- Protected PDF report generation from live signed pack: PASS
+- Admin health route: PASS, database, storage, Key Vault, signing trust, bridge, runtime, and frontend health visible
+- PostgreSQL readiness: PASS
+
+PF-AZ8 evidence path:
+
+`docs/release/evidence/2026-05-27-patchforge-pfaz8-guided-intelligence-workflow/`
 
 # PF-AZ6 / PF-AZ7 Validation Outputs
 

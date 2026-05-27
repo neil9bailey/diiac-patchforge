@@ -1,0 +1,37 @@
+{
+    "ui":  {
+               "status":  200,
+               "url":  "https://patchforge.diiac.io/"
+           },
+    "health":  {
+                   "body":  {
+                                "status":  "ok",
+                                "product":  "DIIaC PatchForge",
+                                "boundary":  "governance-only"
+                            },
+                   "status":  200
+               },
+    "readiness":  {
+                      "body":  {
+                                   "status":  "ready",
+                                   "storage":  "postgresql",
+                                   "auth_required":  true,
+                                   "tenant_required":  true
+                               },
+                      "status":  200
+                  },
+    "protected_vulnerabilities_unauth":  {
+                                             "body":  {
+                                                          "error":  "missing_bearer_token",
+                                                          "message":  "A Microsoft Entra access token is required.",
+                                                          "required_roles":  [
+                                                                                 "PatchForge.Reader",
+                                                                                 "PatchForge.Auditor",
+                                                                                 "PatchForge.TriageAnalyst",
+                                                                                 "PatchForge.SecurityLead",
+                                                                                 "PatchForge.Admin"
+                                                                             ]
+                                                      },
+                                             "status":  401
+                                         }
+}

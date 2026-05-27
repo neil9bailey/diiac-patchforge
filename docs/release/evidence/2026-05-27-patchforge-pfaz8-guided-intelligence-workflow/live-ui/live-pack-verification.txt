@@ -1,0 +1,12 @@
+﻿PF-AZ8 live pack verification
+Captured: 2026-05-27T03:02:43.6486130Z
+Pack: PF-20260527-9fc7f010
+Signing provider: azure_key_vault
+Verification: True
+Manifest OK: True
+Signature OK: True
+Final approval issued: False
+Artefacts verified: 18
+DOCX report status/bytes: 200 / 15342
+PDF report status/bytes: 200 / 9099
+Boundary: no scanner, no exploit generation, no patch deployment, no production mutation, no autonomous approval.

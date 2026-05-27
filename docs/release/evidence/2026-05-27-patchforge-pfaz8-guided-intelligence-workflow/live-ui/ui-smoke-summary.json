@@ -1,0 +1,114 @@
+{
+    "release":  "PF-AZ8",
+    "image_tag":  "pfaz8-20260527-cc708fd",
+    "captured_at":  "2026-05-27T03:02:43.6486130Z",
+    "ui_url":  "https://patchforge.diiac.io/",
+    "api_url":  "https://api.patchforge.diiac.io",
+    "signed_in_user_visible":  true,
+    "admin_role_visible":  true,
+    "workflow":  {
+                     "sign_in":  "pass",
+                     "action_center_loaded":  "pass",
+                     "finding_detail_loaded":  "pass",
+                     "review_and_approve_loaded":  "pass",
+                     "sra_advisory_returned":  "pass",
+                     "signed_pack_generated":  "pass",
+                     "report_docx_generated":  "pass",
+                     "report_pdf_generated":  "pass",
+                     "admin_health_loaded":  "pass",
+                     "guide_loaded":  "pass"
+                 },
+    "live_api":  {
+                     "ui_http_status":  200,
+                     "health_status":  200,
+                     "readiness_status":  200,
+                     "storage":  "postgresql",
+                     "auth_required":  true,
+                     "tenant_required":  true,
+                     "protected_route_unauthenticated_status":  401
+                 },
+    "signed_pack":  {
+                        "pack_id":  "PF-20260527-9fc7f010",
+                        "export_status":  200,
+                        "verified":  true,
+                        "manifest_ok":  true,
+                        "signature_ok":  true,
+                        "signing_provider":  "azure_key_vault",
+                        "final_approval_issued":  false,
+                        "artefacts":  [
+                                          "affected_asset_scope.json",
+                                          "bayesian_patch_risk_snapshot.json",
+                                          "compensating_controls_plan.json",
+                                          "exploitability_assessment.json",
+                                          "finding_intelligence_snapshot.json",
+                                          "governance_manifest.json",
+                                          "human_review_state.json",
+                                          "patch_change_readiness.json",
+                                          "patch_decision_context.json",
+                                          "patch_feasibility_assessment.json",
+                                          "patch_prior_update_proposal.json",
+                                          "patch_prior_usage_manifest.json",
+                                          "patch_risk_acceptance_state.json",
+                                          "replay_certificate.json",
+                                          "signed_export.sig",
+                                          "signed_export.sigmeta.json",
+                                          "sra_trace.json",
+                                          "threat_landscape_snapshot.json",
+                                          "trust_bundle.json",
+                                          "vendor_intelligence_snapshot.json",
+                                          "verification_manifest.json",
+                                          "vulnerability_intelligence_snapshot.json"
+                                      ]
+                    },
+    "active_revisions":  [
+                             {
+                                 "app":  "ca-patchforge-ui-prod",
+                                 "revision":  "ca-patchforge-ui-prod--0000010",
+                                 "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-frontend:pfaz8-20260527-cc708fd",
+                                 "traffic":  100
+                             },
+                             {
+                                 "app":  "ca-patchforge-bridge-prod",
+                                 "revision":  "ca-patchforge-bridge-prod--0000009",
+                                 "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-bridge:pfaz8-20260527-cc708fd",
+                                 "traffic":  100
+                             },
+                             {
+                                 "app":  "ca-patchforge-runtime-prod",
+                                 "revision":  "ca-patchforge-runtime-prod--0000008",
+                                 "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-runtime:pfaz8-20260527-cc708fd",
+                                 "traffic":  100
+                             },
+                             {
+                                 "app":  "ca-patchforge-sra-prod",
+                                 "revision":  "ca-patchforge-sra-prod--0000007",
+                                 "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-sra-agent:pfaz8-20260527-cc708fd",
+                                 "traffic":  100
+                             },
+                             {
+                                 "app":  "ca-patchforge-worker-prod",
+                                 "revision":  "ca-patchforge-worker-prod--0000007",
+                                 "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-ingest-worker:pfaz8-20260527-cc708fd",
+                                 "traffic":  100
+                             },
+                             {
+                                 "app":  "ca-patchforge-scheduler-prod",
+                                 "revision":  "ca-patchforge-scheduler-prod--0000007",
+                                 "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-scheduler:pfaz8-20260527-cc708fd",
+                                 "traffic":  100
+                             }
+                         ],
+    "screenshots":  [
+                        "patchforge-pfaz8-action-center-loaded.png",
+                        "patchforge-pfaz8-action-center-signed-in.png",
+                        "patchforge-pfaz8-admin-health.png",
+                        "patchforge-pfaz8-after-signin-click.png",
+                        "patchforge-pfaz8-finding-detail.png",
+                        "patchforge-pfaz8-guide.png",
+                        "patchforge-pfaz8-initial.png",
+                        "patchforge-pfaz8-pack-generated.png",
+                        "patchforge-pfaz8-review-approve.png",
+                        "patchforge-pfaz8-sra-advisory.png"
+                    ],
+    "console_notes":  "Only Microsoft login favicon/BSSO extension noise observed; no PatchForge app-breaking console error captured."
+}

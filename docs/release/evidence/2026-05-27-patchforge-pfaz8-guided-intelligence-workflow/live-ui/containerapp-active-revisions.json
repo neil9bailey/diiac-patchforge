@@ -1,0 +1,44 @@
+[
+    {
+        "app":  "ca-patchforge-ui-prod",
+        "created":  "2026-05-27T02:48:38+00:00",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-frontend:pfaz8-20260527-cc708fd",
+        "revision":  "ca-patchforge-ui-prod--0000010",
+        "traffic":  100
+    },
+    {
+        "app":  "ca-patchforge-bridge-prod",
+        "created":  "2026-05-27T02:48:57+00:00",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-bridge:pfaz8-20260527-cc708fd",
+        "revision":  "ca-patchforge-bridge-prod--0000009",
+        "traffic":  100
+    },
+    {
+        "app":  "ca-patchforge-runtime-prod",
+        "created":  "2026-05-27T02:49:18+00:00",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-runtime:pfaz8-20260527-cc708fd",
+        "revision":  "ca-patchforge-runtime-prod--0000008",
+        "traffic":  100
+    },
+    {
+        "app":  "ca-patchforge-sra-prod",
+        "created":  "2026-05-27T02:49:48+00:00",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-sra-agent:pfaz8-20260527-cc708fd",
+        "revision":  "ca-patchforge-sra-prod--0000007",
+        "traffic":  100
+    },
+    {
+        "app":  "ca-patchforge-worker-prod",
+        "created":  "2026-05-27T02:50:18+00:00",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-ingest-worker:pfaz8-20260527-cc708fd",
+        "revision":  "ca-patchforge-worker-prod--0000007",
+        "traffic":  100
+    },
+    {
+        "app":  "ca-patchforge-scheduler-prod",
+        "created":  "2026-05-27T02:50:36+00:00",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-scheduler:pfaz8-20260527-cc708fd",
+        "revision":  "ca-patchforge-scheduler-prod--0000007",
+        "traffic":  100
+    }
+]

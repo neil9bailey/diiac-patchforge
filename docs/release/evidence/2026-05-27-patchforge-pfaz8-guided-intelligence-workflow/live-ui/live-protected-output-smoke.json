@@ -1,0 +1,161 @@
+{
+  "ok": true,
+  "captured_at": "2026-05-27T03:00:12.713Z",
+  "signed_in_user_visible": true,
+  "admin_role_visible": true,
+  "pack_id": "PF-20260527-9fc7f010",
+  "export_status": 200,
+  "report_docx_status": 200,
+  "report_pdf_status": 200,
+  "report_docx_bytes": 15342,
+  "report_pdf_bytes": 9099,
+  "verification": {
+    "verified": true,
+    "artefacts": [
+      {
+        "ok": true,
+        "name": "affected_asset_scope.json",
+        "actual": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843",
+        "expected": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843"
+      },
+      {
+        "ok": true,
+        "name": "bayesian_patch_risk_snapshot.json",
+        "actual": "75209e79a4604f953c038c3b08f827beb4d68ea231b284445c157f2cd4996a9d",
+        "expected": "75209e79a4604f953c038c3b08f827beb4d68ea231b284445c157f2cd4996a9d"
+      },
+      {
+        "ok": true,
+        "name": "compensating_controls_plan.json",
+        "actual": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+        "expected": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+      },
+      {
+        "ok": true,
+        "name": "exploitability_assessment.json",
+        "actual": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843",
+        "expected": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843"
+      },
+      {
+        "ok": true,
+        "name": "finding_intelligence_snapshot.json",
+        "actual": "4a5a8f8ddf147b24480d4ee15efadcb04c31da23c3e9088ca2ff1a3ff5d9e07f",
+        "expected": "4a5a8f8ddf147b24480d4ee15efadcb04c31da23c3e9088ca2ff1a3ff5d9e07f"
+      },
+      {
+        "ok": true,
+        "name": "human_review_state.json",
+        "actual": "f5f8227f3fa4f41292047918bc64d137e32d178ec0ec747dde4e0e5479863180",
+        "expected": "f5f8227f3fa4f41292047918bc64d137e32d178ec0ec747dde4e0e5479863180"
+      },
+      {
+        "ok": true,
+        "name": "patch_change_readiness.json",
+        "actual": "0f508a5b6ba0bb870b67ec8f9e2e3691cc0848893d9798cd484de6c1b865af6e",
+        "expected": "0f508a5b6ba0bb870b67ec8f9e2e3691cc0848893d9798cd484de6c1b865af6e"
+      },
+      {
+        "ok": true,
+        "name": "patch_decision_context.json",
+        "actual": "68ccbe76a76fe6ea878bb2bd3f3b2f68af802dc44a79030f2ae7f8283f9d1b3e",
+        "expected": "68ccbe76a76fe6ea878bb2bd3f3b2f68af802dc44a79030f2ae7f8283f9d1b3e"
+      },
+      {
+        "ok": true,
+        "name": "patch_feasibility_assessment.json",
+        "actual": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+        "expected": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+      },
+      {
+        "ok": true,
+        "name": "patch_prior_update_proposal.json",
+        "actual": "ebd17e0c3518ab9b4f9ec1402c52a30c51159eb7b324036c18a4ac825745debc",
+        "expected": "ebd17e0c3518ab9b4f9ec1402c52a30c51159eb7b324036c18a4ac825745debc"
+      },
+      {
+        "ok": true,
+        "name": "patch_prior_usage_manifest.json",
+        "actual": "76e6379feef38f5792a5089a82da0a2a9a520221ccdea540ff67a6551d3558b9",
+        "expected": "76e6379feef38f5792a5089a82da0a2a9a520221ccdea540ff67a6551d3558b9"
+      },
+      {
+        "ok": true,
+        "name": "patch_risk_acceptance_state.json",
+        "actual": "240fa9c55e6c6a5659a74edfc30c159d74c3616651fa672443d312682e6c66df",
+        "expected": "240fa9c55e6c6a5659a74edfc30c159d74c3616651fa672443d312682e6c66df"
+      },
+      {
+        "ok": true,
+        "name": "replay_certificate.json",
+        "actual": "527fd1ec8df016b00e7051116c1bc3554c8a30b7867e096f7462253c58c5807f",
+        "expected": "527fd1ec8df016b00e7051116c1bc3554c8a30b7867e096f7462253c58c5807f"
+      },
+      {
+        "ok": true,
+        "name": "sra_trace.json",
+        "actual": "47dbb360210fd7279ed2120f0e090807e8de6b6198ebe6d2bfac7f8a514b8292",
+        "expected": "47dbb360210fd7279ed2120f0e090807e8de6b6198ebe6d2bfac7f8a514b8292"
+      },
+      {
+        "ok": true,
+        "name": "threat_landscape_snapshot.json",
+        "actual": "d2b666eddc97fc7d47bc5922e00ace243a0d360f0484c435efef34fe164cfdfc",
+        "expected": "d2b666eddc97fc7d47bc5922e00ace243a0d360f0484c435efef34fe164cfdfc"
+      },
+      {
+        "ok": true,
+        "name": "trust_bundle.json",
+        "actual": "af2e7686ddf7befdc5df08c00811af347a9f944457285dc6ba6ac4f39a6de4ed",
+        "expected": "af2e7686ddf7befdc5df08c00811af347a9f944457285dc6ba6ac4f39a6de4ed"
+      },
+      {
+        "ok": true,
+        "name": "vendor_intelligence_snapshot.json",
+        "actual": "2e240f711b516376553cf0e1479b5d9a4e2df182c0723d207958448a90898a3f",
+        "expected": "2e240f711b516376553cf0e1479b5d9a4e2df182c0723d207958448a90898a3f"
+      },
+      {
+        "ok": true,
+        "name": "vulnerability_intelligence_snapshot.json",
+        "actual": "faefe9145aaf33dd4c9da6f72b40bc6da60f316e9aa315cee35486b8013cc9c8",
+        "expected": "faefe9145aaf33dd4c9da6f72b40bc6da60f316e9aa315cee35486b8013cc9c8"
+      }
+    ],
+    "manifest_ok": true,
+    "signature_ok": true
+  },
+  "signing_provider": "azure_key_vault",
+  "readiness_state": null,
+  "final_approval_issued": false,
+  "artefact_keys": [
+    "affected_asset_scope.json",
+    "bayesian_patch_risk_snapshot.json",
+    "compensating_controls_plan.json",
+    "exploitability_assessment.json",
+    "finding_intelligence_snapshot.json",
+    "governance_manifest.json",
+    "human_review_state.json",
+    "patch_change_readiness.json",
+    "patch_decision_context.json",
+    "patch_feasibility_assessment.json",
+    "patch_prior_update_proposal.json",
+    "patch_prior_usage_manifest.json",
+    "patch_risk_acceptance_state.json",
+    "replay_certificate.json",
+    "signed_export.sig",
+    "signed_export.sigmeta.json",
+    "sra_trace.json",
+    "threat_landscape_snapshot.json",
+    "trust_bundle.json",
+    "vendor_intelligence_snapshot.json",
+    "verification_manifest.json",
+    "vulnerability_intelligence_snapshot.json"
+  ],
+  "boundary": {
+    "no_scanner": true,
+    "no_exploit_generation": true,
+    "no_patch_deployment": true,
+    "no_production_mutation": true,
+    "no_autonomous_approval": true
+  }
+}
