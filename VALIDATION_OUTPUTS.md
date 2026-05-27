@@ -1,10 +1,10 @@
 # PF-AZ6 / PF-AZ7 Validation Outputs
 
-## PF-AZ7 Local Candidate Validation
+## PF-AZ7 Live Validation
 
 Date: 2026-05-27
 
-PF-AZ7 is locally validated and pending GitHub push, Azure image rollout, live API smoke, signed-in browser validation, and live DOCX/PDF download visual QA.
+PF-AZ7 is deployed to Azure and validated through the live UI as a signed-in PatchForge Admin user.
 
 Scope:
 
@@ -41,14 +41,49 @@ Document quality gate:
 - No clipping, overlap, broken tables, missing text, or unreadable wrapping observed.
 - QA evidence: `docs/release/evidence/2026-05-27-patchforge-pfaz7-operational-demo/doc-qa/docx-pdf-visual-qa.json`
 
-Azure rollout status:
+Azure rollout:
 
-- GitHub push: pending
-- Image tag: pending
-- Azure update: pending
-- Live API smoke: pending
-- Live browser/MSAL validation: pending
-- Live DOCX/PDF report download and visual QA: pending
+- GitHub push: PASS, commit `71643ce4123bed543c9b0b55c39347b4775946d1`
+- Image tag: `pfaz7-20260527-71643ce`
+- ACR build/push: PASS for frontend, bridge/API, runtime, SRA, worker, and scheduler images
+- ACR tag verification: PASS for all six repositories
+- Bicep what-if: captured; not applied because it included broader drift/noise than the image rollout required
+- Targeted image-only Container Apps update: PASS
+- Scheduler min/max replicas: PASS, one active replica
+- Active revisions:
+  - UI: `ca-patchforge-ui-prod--0000009`
+  - Bridge/API: `ca-patchforge-bridge-prod--0000008`
+  - Runtime: `ca-patchforge-runtime-prod--0000007`
+  - SRA: `ca-patchforge-sra-prod--0000006`
+  - Worker: `ca-patchforge-worker-prod--0000006`
+  - Scheduler: `ca-patchforge-scheduler-prod--0000006`
+
+Live validation:
+
+- UI HTTP 200: PASS
+- API health HTTP 200: PASS
+- API readiness HTTP 200 with `storage=postgresql` and `auth_required=true`: PASS
+- Protected vulnerability route unauthenticated HTTP 401: PASS
+- Protected reports route unauthenticated HTTP 401: PASS
+- Browser/MSAL sign-in as `n.bailey@diiac.io`: PASS
+- Displayed role `PatchForge.Admin`: PASS
+- Full navigation smoke across Command Center, Guide, Vulnerability Queue, Asset & Service Exposure, Decision Workbench, Emergency Patch, Risk Acceptances, Compensating Controls, SRA Research, Evidence Catalogue, Decision Packs, Reports, Source Feeds, Vendor & Threat Landscape, and Admin: PASS
+- Scheduler run completed at 2026-05-27T00:29:31Z: PASS
+- Real public-source record validated: `CVE-2026-48172`
+- SRA advisory for `CVE-2026-48172`: PASS, advisory-only/source-bound/pending-review
+- Bayesian advisory for `CVE-2026-48172`: PASS, advisory-only
+- Fresh signed pack generated after PF-AZ7 rollout: `PF-20260527-54588be9`
+- Pack verification: PASS, `manifest_ok=true`, `signature_ok=true`, `source_pack_immutable=true`
+- Key Vault signing smoke: PASS through live pack export with `signing_provider=azure_key_vault`
+- Final approval remained false: PASS
+- DOCX report download from live UI/API: PASS
+- PDF report download from live UI/API: PASS
+- Fresh DOCX/PDF visual QA: PASS
+- PostgreSQL readiness and protected list/export paths: PASS
+
+PF-AZ7 evidence path:
+
+`docs/release/evidence/2026-05-27-patchforge-pfaz7-operational-demo/`
 
 Important boundary note: PF-AZ7 does not add scanning, exploit generation, procedural exploit steps, patch deployment, production mutation from the UI, autonomous CAB approval, or autonomous risk acceptance.
 

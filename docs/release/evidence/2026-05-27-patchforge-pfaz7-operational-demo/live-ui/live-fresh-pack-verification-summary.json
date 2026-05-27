@@ -1,0 +1,11 @@
+{
+  "status": 200,
+  "verified": true,
+  "manifest_ok": true,
+  "signature_ok": true,
+  "source_pack_immutable": true,
+  "signing_provider": "azure_key_vault",
+  "signature_algorithm": "ES256",
+  "final_approval_issued": false,
+  "artefact_count": 21
+}

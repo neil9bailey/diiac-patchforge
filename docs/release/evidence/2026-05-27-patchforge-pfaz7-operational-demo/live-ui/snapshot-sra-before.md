@@ -1,0 +1,139 @@
+- main [ref=e3] [box=0,-128,1521,806]:
+  - complementary "PatchForge navigation" [ref=e4] [box=0,0,248,678]:
+    - generic [ref=e5] [box=12,16,223,55]:
+      - img [ref=e7] [box=24,26,24,24]
+      - generic [ref=e12] [box=68,19,91,38]:
+        - paragraph [ref=e13] [box=68,19,91,16]: DIIaC™
+        - heading "PatchForge" [level=1] [ref=e14] [box=68,35,91,22]
+    - navigation [ref=e15] [box=12,87,223,610]:
+      - button "Command Center" [ref=e16] [cursor=pointer] [box=12,87,223,36]:
+        - img [ref=e17] [box=22,96,18,18]
+        - generic [ref=e20] [box=50,96,107,18]: Command Center
+      - button "Guide" [ref=e21] [cursor=pointer] [box=12,128,223,36]:
+        - img [ref=e22] [box=22,137,18,18]
+        - generic [ref=e25] [box=50,137,36,18]: Guide
+      - button "Vulnerability Queue" [ref=e26] [cursor=pointer] [box=12,169,223,36]:
+        - img [ref=e27] [box=22,178,18,18]
+        - generic [ref=e28] [box=50,178,120,18]: Vulnerability Queue
+      - button "Asset & Service Exposure" [ref=e29] [cursor=pointer] [box=12,210,223,36]:
+        - img [ref=e30] [box=22,219,18,18]
+        - generic [ref=e35] [box=50,219,153,18]: Asset & Service Exposure
+      - button "Decision Workbench" [ref=e36] [cursor=pointer] [box=12,251,223,36]:
+        - img [ref=e37] [box=22,260,18,18]
+        - generic [ref=e41] [box=50,260,125,18]: Decision Workbench
+      - button "Emergency Patch" [ref=e42] [cursor=pointer] [box=12,292,223,36]:
+        - img [ref=e43] [box=22,301,18,18]
+        - generic [ref=e45] [box=50,301,104,18]: Emergency Patch
+      - button "Risk Acceptances" [ref=e46] [cursor=pointer] [box=12,333,223,36]:
+        - img [ref=e47] [box=22,342,18,18]
+        - generic [ref=e50] [box=50,342,104,18]: Risk Acceptances
+      - button "Compensating Controls" [ref=e51] [cursor=pointer] [box=12,374,223,36]:
+        - img [ref=e52] [box=22,383,18,18]
+        - generic [ref=e55] [box=50,383,143,18]: Compensating Controls
+      - button "SRA Research" [active] [ref=e56] [cursor=pointer] [box=12,415,223,36]:
+        - img [ref=e57] [box=22,424,18,18]
+        - generic [ref=e64] [box=50,424,82,18]: SRA Research
+      - button "Evidence Catalogue" [ref=e65] [cursor=pointer] [box=12,456,223,36]:
+        - img [ref=e66] [box=22,465,18,18]
+        - generic [ref=e69] [box=50,465,119,18]: Evidence Catalogue
+      - button "Decision Packs" [ref=e70] [cursor=pointer] [box=12,497,223,36]:
+        - img [ref=e71] [box=22,506,18,18]
+        - generic [ref=e75] [box=50,506,89,18]: Decision Packs
+      - button "Reports" [ref=e76] [cursor=pointer] [box=12,538,223,36]:
+        - img [ref=e77] [box=22,547,18,18]
+        - generic [ref=e80] [box=50,547,46,18]: Reports
+      - button "Source Feeds" [ref=e81] [cursor=pointer] [box=12,579,223,36]:
+        - img [ref=e82] [box=22,588,18,18]
+        - generic [ref=e87] [box=50,588,80,18]: Source Feeds
+      - button "Vendor & Threat Landscape" [ref=e88] [cursor=pointer] [box=12,620,223,36]:
+        - img [ref=e89] [box=22,629,18,18]
+        - generic [ref=e93] [box=50,629,168,18]: Vendor & Threat Landscape
+      - button "Admin" [ref=e94] [cursor=pointer] [box=12,661,223,36]:
+        - img [ref=e95] [box=22,670,18,18]
+        - generic [ref=e96] [box=50,670,40,18]: Admin
+    - generic [ref=e97] [box=12,713,223,94]:
+      - img [ref=e98] [box=23,724,18,18]
+      - paragraph [ref=e102] [box=53,724,172,72]: Governance layer only. No scanning, no exploit content, no patch deployment, no autonomous approvals.
+  - generic [ref=e103] [box=248,-128,1273,806]:
+    - generic [ref=e104] [box=248,-128,1273,118]:
+      - button "Toggle navigation" [ref=e105] [cursor=pointer] [box=268,-106,36,36]:
+        - img [ref=e106] [box=277,-97,18,18]
+      - generic [ref=e108] [box=322,-114,1179,53]:
+        - paragraph [ref=e109] [box=322,-114,1179,16]: Production | diiac.io | Enterprise Strict
+        - heading "SRA Research" [level=2] [ref=e649] [box=322,-98,1179,37]
+      - generic "Runtime trust status" [ref=e111] [box=322,-53,1179,28]:
+        - generic [ref=e112] [box=322,-53,127,28]:
+          - img [ref=e113] [box=332,-47,16,16]
+          - text: Entra protected
+        - generic [ref=e116] [box=457,-53,134,28]:
+          - img [ref=e117] [box=467,-47,16,16]
+          - text: Agent-led intake
+        - generic [ref=e124] [box=598,-53,126,28]:
+          - img [ref=e125] [box=608,-47,16,16]
+          - text: Signing trusted
+        - button "Refresh" [ref=e129] [cursor=pointer] [box=732,-53,81,28]:
+          - img [ref=e130] [box=742,-47,15,15]
+          - text: Refresh
+        - button "Sign out" [ref=e135] [cursor=pointer] [box=821,-53,87,28]:
+          - img [ref=e136] [box=831,-47,15,15]
+          - text: Sign out
+    - generic [ref=e139] [box=248,-10,1273,688]:
+      - region "SRA Research" [ref=e650] [box=262,4,939,660]:
+        - generic [ref=e645] [box=262,4,939,43]:
+          - img [ref=e646] [box=275,17,16,16]
+          - text: PDF report prepared for PF-20260526-8312f908.
+        - generic [ref=e651] [box=262,61,939,285]:
+          - generic [ref=e652] [box=277,76,909,28]:
+            - heading "Agent Intelligence" [level=3] [ref=e653] [box=277,79,138,22]
+            - generic [ref=e654] [box=1092,76,94,28]: Advisory only
+          - generic [ref=e655] [box=277,116,909,215]:
+            - generic [ref=e656] [box=277,130,449,201]:
+              - heading "SRA / MCP Controls" [level=3] [ref=e657] [box=292,144,419,22]
+              - generic [ref=e658] [box=292,166,419,38]
+              - generic [ref=e661] [box=292,204,419,38]
+              - generic [ref=e664] [box=292,242,419,38]
+              - button "Run Exploit-Risk Advisory" [ref=e667] [cursor=pointer] [box=292,280,229,36]
+            - generic [ref=e675] [box=737,130,449,201]:
+              - heading "Latest Advisory" [level=3] [ref=e676] [box=752,144,419,22]
+              - paragraph [ref=e677] [box=752,166,419,24]: No SRA advisory has been run in this session.
+      - complementary "PatchForge utility rail" [ref=e259] [box=1215,4,292,660]:
+        - generic [ref=e260] [box=1215,4,292,147]:
+          - heading "Session" [level=3] [ref=e261] [box=1230,18,262,22]
+          - paragraph [ref=e262] [box=1230,40,262,32]:
+            - img [ref=e263] [box=1230,49,15,15]
+            - text: n.bailey@diiac.io
+          - paragraph [ref=e266] [box=1230,72,262,32]:
+            - img [ref=e267] [box=1230,81,15,15]
+            - text: App roles enforced by API
+          - paragraph [ref=e271] [box=1230,104,262,32]:
+            - img [ref=e272] [box=1230,113,15,15]
+            - text: PatchForge.Admin
+        - generic [ref=e275] [box=1215,163,292,127]:
+          - heading "Queue" [level=3] [ref=e276] [box=1230,178,262,22]
+          - generic [ref=e277] [box=1230,199,262,38]:
+            - generic [ref=e278] [box=1230,207,56,22]: Records
+            - strong [ref=e279] [box=1458,204,34,28]: "10"
+          - generic [ref=e280] [box=1230,237,262,38]:
+            - generic [ref=e281] [box=1230,246,107,22]: Pending review
+            - strong [ref=e282] [box=1458,243,34,28]: "10"
+        - generic [ref=e283] [box=1215,302,292,127]:
+          - heading "Source Feeds" [level=3] [ref=e284] [box=1230,317,262,22]
+          - generic [ref=e285] [box=1230,338,262,38]:
+            - generic [ref=e286] [box=1230,347,41,22]: Feeds
+            - strong [ref=e287] [box=1465,343,27,28]: "2"
+          - generic [ref=e288] [box=1230,376,262,38]:
+            - generic [ref=e289] [box=1230,385,34,22]: Runs
+            - strong [ref=e290] [box=1458,382,34,28]: "13"
+        - generic [ref=e291] [box=1215,441,292,127]:
+          - heading "Signing Trust" [level=3] [ref=e292] [box=1230,456,262,22]
+          - generic [ref=e293] [box=1230,478,262,38]:
+            - generic [ref=e294] [box=1230,486,50,22]: Verifier
+            - strong [ref=e295] [box=1427,483,65,28]: Verified
+          - generic [ref=e296] [box=1230,516,262,38]:
+            - generic [ref=e297] [box=1230,524,34,22]: Trust
+            - strong [ref=e298] [box=1416,521,76,28]: Key-Vault
+        - generic [ref=e299] [box=1215,580,292,83]:
+          - heading "Recent Packs" [level=3] [ref=e300] [box=1230,595,262,22]
+          - paragraph [ref=e301] [box=1230,617,262,32]:
+            - img [ref=e302] [box=1230,625,15,15]
+            - text: PF-20260526-8312f908

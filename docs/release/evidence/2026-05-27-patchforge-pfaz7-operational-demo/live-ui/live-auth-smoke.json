@@ -1,0 +1,17 @@
+{
+    "release":  "PF-AZ7",
+    "validation_time_utc":  "2026-05-27T00:42:16.3402374Z",
+    "token_present":  true,
+    "readiness":  {
+                      "status":  "ready",
+                      "storage":  "postgresql",
+                      "auth_required":  true,
+                      "tenant_required":  true
+                  },
+    "protected_vulnerabilities_status":  200,
+    "protected_reports_status":  200,
+    "protected_decision_pack_export_status":  200,
+    "signed_in_user":  "n.bailey@diiac.io",
+    "displayed_role":  "PatchForge.Admin",
+    "tenant":  "diiac.io"
+}

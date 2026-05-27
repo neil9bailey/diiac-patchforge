@@ -1,0 +1,254 @@
+- main [ref=e3] [box=0,0,1521,1193]:
+  - complementary "PatchForge navigation" [ref=e4] [box=0,0,248,678]:
+    - generic [ref=e5] [box=12,16,223,55]:
+      - img [ref=e7] [box=24,26,24,24]
+      - generic [ref=e12] [box=68,19,91,38]:
+        - paragraph [ref=e13] [box=68,19,91,16]: DIIaC™
+        - heading "PatchForge" [level=1] [ref=e14] [box=68,35,91,22]
+    - navigation [ref=e15] [box=12,87,223,610]:
+      - button "Command Center" [ref=e16] [cursor=pointer] [box=12,87,223,36]:
+        - img [ref=e17] [box=22,96,18,18]
+        - generic [ref=e20] [box=50,96,107,18]: Command Center
+      - button "Guide" [ref=e21] [cursor=pointer] [box=12,128,223,36]:
+        - img [ref=e22] [box=22,137,18,18]
+        - generic [ref=e25] [box=50,137,36,18]: Guide
+      - button "Vulnerability Queue" [ref=e26] [cursor=pointer] [box=12,169,223,36]:
+        - img [ref=e27] [box=22,178,18,18]
+        - generic [ref=e28] [box=50,178,120,18]: Vulnerability Queue
+      - button "Asset & Service Exposure" [ref=e29] [cursor=pointer] [box=12,210,223,36]:
+        - img [ref=e30] [box=22,219,18,18]
+        - generic [ref=e35] [box=50,219,153,18]: Asset & Service Exposure
+      - button "Decision Workbench" [ref=e36] [cursor=pointer] [box=12,251,223,36]:
+        - img [ref=e37] [box=22,260,18,18]
+        - generic [ref=e41] [box=50,260,125,18]: Decision Workbench
+      - button "Emergency Patch" [ref=e42] [cursor=pointer] [box=12,292,223,36]:
+        - img [ref=e43] [box=22,301,18,18]
+        - generic [ref=e45] [box=50,301,104,18]: Emergency Patch
+      - button "Risk Acceptances" [ref=e46] [cursor=pointer] [box=12,333,223,36]:
+        - img [ref=e47] [box=22,342,18,18]
+        - generic [ref=e50] [box=50,342,104,18]: Risk Acceptances
+      - button "Compensating Controls" [ref=e51] [cursor=pointer] [box=12,374,223,36]:
+        - img [ref=e52] [box=22,383,18,18]
+        - generic [ref=e55] [box=50,383,143,18]: Compensating Controls
+      - button "SRA Research" [ref=e56] [cursor=pointer] [box=12,415,223,36]:
+        - img [ref=e57] [box=22,424,18,18]
+        - generic [ref=e64] [box=50,424,82,18]: SRA Research
+      - button "Evidence Catalogue" [ref=e65] [cursor=pointer] [box=12,456,223,36]:
+        - img [ref=e66] [box=22,465,18,18]
+        - generic [ref=e69] [box=50,465,119,18]: Evidence Catalogue
+      - button "Decision Packs" [ref=e70] [cursor=pointer] [box=12,497,223,36]:
+        - img [ref=e71] [box=22,506,18,18]
+        - generic [ref=e75] [box=50,506,89,18]: Decision Packs
+      - button "Reports" [active] [ref=e76] [cursor=pointer] [box=12,538,223,36]:
+        - img [ref=e77] [box=22,547,18,18]
+        - generic [ref=e80] [box=50,547,46,18]: Reports
+      - button "Source Feeds" [ref=e81] [cursor=pointer] [box=12,579,223,36]:
+        - img [ref=e82] [box=22,588,18,18]
+        - generic [ref=e87] [box=50,588,80,18]: Source Feeds
+      - button "Vendor & Threat Landscape" [ref=e88] [cursor=pointer] [box=12,620,223,36]:
+        - img [ref=e89] [box=22,629,18,18]
+        - generic [ref=e93] [box=50,629,168,18]: Vendor & Threat Landscape
+      - button "Admin" [ref=e94] [cursor=pointer] [box=12,661,223,36]:
+        - img [ref=e95] [box=22,670,18,18]
+        - generic [ref=e96] [box=50,670,40,18]: Admin
+    - generic [ref=e97] [box=12,713,223,94]:
+      - img [ref=e98] [box=23,724,18,18]
+      - paragraph [ref=e102] [box=53,724,172,72]: Governance layer only. No scanning, no exploit content, no patch deployment, no autonomous approvals.
+  - generic [ref=e103] [box=248,0,1273,1193]:
+    - generic [ref=e104] [box=248,0,1273,118]:
+      - button "Toggle navigation" [ref=e105] [cursor=pointer] [box=268,22,36,36]:
+        - img [ref=e106] [box=277,31,18,18]
+      - generic [ref=e108] [box=322,14,1179,53]:
+        - paragraph [ref=e109] [box=322,14,1179,16]: Production | diiac.io | Enterprise Strict
+        - heading "Reports" [level=2] [ref=e499] [box=322,30,1179,37]
+      - generic "Runtime trust status" [ref=e111] [box=322,75,1179,28]:
+        - generic [ref=e112] [box=322,75,127,28]:
+          - img [ref=e113] [box=332,81,16,16]
+          - text: Entra protected
+        - generic [ref=e116] [box=457,75,134,28]:
+          - img [ref=e117] [box=467,81,16,16]
+          - text: Agent-led intake
+        - generic [ref=e124] [box=598,75,126,28]:
+          - img [ref=e125] [box=608,81,16,16]
+          - text: Signing trusted
+        - button "Refresh" [ref=e129] [cursor=pointer] [box=732,75,81,28]:
+          - img [ref=e130] [box=742,81,15,15]
+          - text: Refresh
+        - button "Sign out" [ref=e135] [cursor=pointer] [box=821,75,87,28]:
+          - img [ref=e136] [box=831,81,15,15]
+          - text: Sign out
+    - generic [ref=e139] [box=248,118,1273,1076]:
+      - region "Reports" [ref=e500] [box=262,132,939,1048]:
+        - generic [ref=e501] [box=262,132,939,28]:
+          - heading "Board Packs & Reports" [level=3] [ref=e502] [box=262,135,172,22]
+          - generic [ref=e503] [box=1088,132,113,28]: DOCX / PDF only
+        - generic [ref=e504] [box=262,174,939,173]:
+          - generic [ref=e505] [box=277,188,659,143]:
+            - paragraph [ref=e506] [box=277,201,659,16]: Customer demo operating pack
+            - heading "Professional outputs generated from live signed packs" [level=3] [ref=e507] [box=277,229,659,25]
+            - paragraph [ref=e508] [box=277,260,659,72]: Reports are generated from the signed decision-pack record, preserving the source-pack/current-state distinction, evidence readiness, Bayesian advisory status, and no-autonomous-action boundary.
+          - generic [ref=e509] [box=952,246,234,28]:
+            - generic [ref=e510] [box=952,246,105,28]: 1 verified packs
+            - generic [ref=e511] [box=1064,246,122,28]: 6 report templates
+        - generic [ref=e512] [box=262,346,939,833]:
+          - generic [ref=e513] [box=262,360,463,260]:
+            - generic [ref=e514] [box=277,375,434,40]:
+              - heading "Executive Vulnerability Remediation One-Pager" [level=3] [ref=e515] [box=277,375,202,40]
+              - generic [ref=e516] [box=551,375,160,28]: Executive and board brief
+            - generic [ref=e517] [box=277,431,434,38]:
+              - generic [ref=e518] [box=277,440,48,22]: Source
+              - strong [ref=e519] [box=568,437,142,28]: Signed decision pack
+            - generic [ref=e520] [box=277,477,434,38]:
+              - generic [ref=e521] [box=277,486,57,22]: Formats
+              - strong [ref=e522] [box=604,483,106,28]: DOCX and PDF
+            - generic [ref=e523] [box=277,523,434,38]:
+              - generic [ref=e524] [box=277,532,68,22]: Boundary
+              - strong [ref=e525] [box=528,529,182,28]: No deployment or approval
+            - generic [ref=e526] [box=277,569,434,36]:
+              - button "DOCX" [ref=e527] [cursor=pointer] [box=277,569,92,36]:
+                - img [ref=e528] [box=290,579,16,16]
+                - text: DOCX
+              - button "PDF" [ref=e531] [cursor=pointer] [box=377,569,78,36]:
+                - img [ref=e532] [box=390,579,16,16]
+                - text: PDF
+          - generic [ref=e535] [box=737,360,463,260]:
+            - generic [ref=e536] [box=752,375,434,28]:
+              - heading "CAB Patch Decision Report" [level=3] [ref=e537] [box=752,375,201,20]
+              - generic [ref=e538] [box=1038,375,148,28]: Change Advisory Board
+            - generic [ref=e539] [box=752,419,434,38]:
+              - generic [ref=e540] [box=752,428,48,22]: Source
+              - strong [ref=e541] [box=1044,425,142,28]: Signed decision pack
+            - generic [ref=e542] [box=752,465,434,38]:
+              - generic [ref=e543] [box=752,474,57,22]: Formats
+              - strong [ref=e544] [box=1080,471,106,28]: DOCX and PDF
+            - generic [ref=e545] [box=752,511,434,38]:
+              - generic [ref=e546] [box=752,520,68,22]: Boundary
+              - strong [ref=e547] [box=1004,517,182,28]: No deployment or approval
+            - generic [ref=e548] [box=752,557,434,36]:
+              - button "DOCX" [ref=e549] [cursor=pointer] [box=752,557,92,36]:
+                - img [ref=e550] [box=765,567,16,16]
+                - text: DOCX
+              - button "PDF" [ref=e553] [cursor=pointer] [box=852,557,78,36]:
+                - img [ref=e554] [box=865,567,16,16]
+                - text: PDF
+          - generic [ref=e557] [box=262,646,463,260]:
+            - generic [ref=e558] [box=277,661,434,40]:
+              - heading "Board Vulnerability Remediation Summary" [level=3] [ref=e559] [box=277,661,202,40]
+              - generic [ref=e560] [box=537,661,174,28]: Board and senior leadership
+            - generic [ref=e561] [box=277,717,434,38]:
+              - generic [ref=e562] [box=277,725,48,22]: Source
+              - strong [ref=e563] [box=568,722,142,28]: Signed decision pack
+            - generic [ref=e564] [box=277,763,434,38]:
+              - generic [ref=e565] [box=277,771,57,22]: Formats
+              - strong [ref=e566] [box=604,768,106,28]: DOCX and PDF
+            - generic [ref=e567] [box=277,809,434,38]:
+              - generic [ref=e568] [box=277,817,68,22]: Boundary
+              - strong [ref=e569] [box=528,814,182,28]: No deployment or approval
+            - generic [ref=e570] [box=277,855,434,36]:
+              - button "DOCX" [ref=e571] [cursor=pointer] [box=277,855,92,36]:
+                - img [ref=e572] [box=290,865,16,16]
+                - text: DOCX
+              - button "PDF" [ref=e575] [cursor=pointer] [box=377,855,78,36]:
+                - img [ref=e576] [box=390,865,16,16]
+                - text: PDF
+          - generic [ref=e579] [box=737,646,463,260]:
+            - generic [ref=e580] [box=752,661,434,40]:
+              - heading "Customer Patch Governance Pack" [level=3] [ref=e581] [box=752,661,202,40]
+              - generic [ref=e582] [box=1056,661,130,28]: Customer assurance
+            - generic [ref=e583] [box=752,717,434,38]:
+              - generic [ref=e584] [box=752,725,48,22]: Source
+              - strong [ref=e585] [box=1044,722,142,28]: Signed decision pack
+            - generic [ref=e586] [box=752,763,434,38]:
+              - generic [ref=e587] [box=752,771,57,22]: Formats
+              - strong [ref=e588] [box=1080,768,106,28]: DOCX and PDF
+            - generic [ref=e589] [box=752,809,434,38]:
+              - generic [ref=e590] [box=752,817,68,22]: Boundary
+              - strong [ref=e591] [box=1004,814,182,28]: No deployment or approval
+            - generic [ref=e592] [box=752,855,434,36]:
+              - button "DOCX" [ref=e593] [cursor=pointer] [box=752,855,92,36]:
+                - img [ref=e594] [box=765,865,16,16]
+                - text: DOCX
+              - button "PDF" [ref=e597] [cursor=pointer] [box=852,855,78,36]:
+                - img [ref=e598] [box=865,865,16,16]
+                - text: PDF
+          - generic [ref=e601] [box=262,932,463,248]:
+            - generic [ref=e602] [box=277,946,434,28]:
+              - heading "Risk Acceptance Report" [level=3] [ref=e603] [box=277,946,177,20]
+              - generic [ref=e604] [box=576,946,135,28]: Risk owner and audit
+            - generic [ref=e605] [box=277,990,434,38]:
+              - generic [ref=e606] [box=277,999,48,22]: Source
+              - strong [ref=e607] [box=568,996,142,28]: Signed decision pack
+            - generic [ref=e608] [box=277,1036,434,38]:
+              - generic [ref=e609] [box=277,1045,57,22]: Formats
+              - strong [ref=e610] [box=604,1042,106,28]: DOCX and PDF
+            - generic [ref=e611] [box=277,1082,434,38]:
+              - generic [ref=e612] [box=277,1091,68,22]: Boundary
+              - strong [ref=e613] [box=528,1088,182,28]: No deployment or approval
+            - generic [ref=e614] [box=277,1128,434,36]:
+              - button "DOCX" [ref=e615] [cursor=pointer] [box=277,1128,92,36]:
+                - img [ref=e616] [box=290,1138,16,16]
+                - text: DOCX
+              - button "PDF" [ref=e619] [cursor=pointer] [box=377,1128,78,36]:
+                - img [ref=e620] [box=390,1138,16,16]
+                - text: PDF
+          - generic [ref=e623] [box=737,932,463,248]:
+            - generic [ref=e624] [box=752,946,434,28]:
+              - heading "OT Patch Deferral Report" [level=3] [ref=e625] [box=752,946,188,20]
+              - generic [ref=e626] [box=990,946,196,28]: OT operations and safety review
+            - generic [ref=e627] [box=752,990,434,38]:
+              - generic [ref=e628] [box=752,999,48,22]: Source
+              - strong [ref=e629] [box=1044,996,142,28]: Signed decision pack
+            - generic [ref=e630] [box=752,1036,434,38]:
+              - generic [ref=e631] [box=752,1045,57,22]: Formats
+              - strong [ref=e632] [box=1080,1042,106,28]: DOCX and PDF
+            - generic [ref=e633] [box=752,1082,434,38]:
+              - generic [ref=e634] [box=752,1091,68,22]: Boundary
+              - strong [ref=e635] [box=1004,1088,182,28]: No deployment or approval
+            - generic [ref=e636] [box=752,1128,434,36]:
+              - button "DOCX" [ref=e637] [cursor=pointer] [box=752,1128,92,36]:
+                - img [ref=e638] [box=765,1138,16,16]
+                - text: DOCX
+              - button "PDF" [ref=e641] [cursor=pointer] [box=852,1128,78,36]:
+                - img [ref=e642] [box=865,1138,16,16]
+                - text: PDF
+      - complementary "PatchForge utility rail" [ref=e259] [box=1215,132,292,1048]:
+        - generic [ref=e260] [box=1215,132,292,147]:
+          - heading "Session" [level=3] [ref=e261] [box=1230,146,262,22]
+          - paragraph [ref=e262] [box=1230,168,262,32]:
+            - img [ref=e263] [box=1230,177,15,15]
+            - text: n.bailey@diiac.io
+          - paragraph [ref=e266] [box=1230,200,262,32]:
+            - img [ref=e267] [box=1230,209,15,15]
+            - text: App roles enforced by API
+          - paragraph [ref=e271] [box=1230,232,262,32]:
+            - img [ref=e272] [box=1230,241,15,15]
+            - text: PatchForge.Admin
+        - generic [ref=e275] [box=1215,291,292,127]:
+          - heading "Queue" [level=3] [ref=e276] [box=1230,306,262,22]
+          - generic [ref=e277] [box=1230,327,262,38]:
+            - generic [ref=e278] [box=1230,335,56,22]: Records
+            - strong [ref=e279] [box=1458,332,34,28]: "10"
+          - generic [ref=e280] [box=1230,365,262,38]:
+            - generic [ref=e281] [box=1230,374,107,22]: Pending review
+            - strong [ref=e282] [box=1458,371,34,28]: "10"
+        - generic [ref=e283] [box=1215,430,292,127]:
+          - heading "Source Feeds" [level=3] [ref=e284] [box=1230,445,262,22]
+          - generic [ref=e285] [box=1230,466,262,38]:
+            - generic [ref=e286] [box=1230,475,41,22]: Feeds
+            - strong [ref=e287] [box=1465,471,27,28]: "2"
+          - generic [ref=e288] [box=1230,504,262,38]:
+            - generic [ref=e289] [box=1230,513,34,22]: Runs
+            - strong [ref=e290] [box=1458,510,34,28]: "13"
+        - generic [ref=e291] [box=1215,569,292,127]:
+          - heading "Signing Trust" [level=3] [ref=e292] [box=1230,584,262,22]
+          - generic [ref=e293] [box=1230,606,262,38]:
+            - generic [ref=e294] [box=1230,614,50,22]: Verifier
+            - strong [ref=e295] [box=1427,611,65,28]: Verified
+          - generic [ref=e296] [box=1230,644,262,38]:
+            - generic [ref=e297] [box=1230,652,34,22]: Trust
+            - strong [ref=e298] [box=1416,649,76,28]: Key-Vault
+        - generic [ref=e299] [box=1215,708,292,83]:
+          - heading "Recent Packs" [level=3] [ref=e300] [box=1230,723,262,22]
+          - paragraph [ref=e301] [box=1230,745,262,32]:
+            - img [ref=e302] [box=1230,753,15,15]
+            - text: PF-20260526-8312f908

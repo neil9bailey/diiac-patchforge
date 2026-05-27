@@ -1,18 +1,18 @@
 # Current Release
 
-## DIIaC PatchForge PF-AZ6
+## DIIaC PatchForge PF-AZ7
 
-Release state: PF-AZ6 live public source intelligence deployed to Azure and validated through the live UI as a signed-in PatchForge Admin user
-
-Date: 2026-05-26
-
-PF-AZ6 is the currently deployed Azure baseline.
-
-## PF-AZ7 Deployment Candidate
+Release state: PF-AZ7 live operational customer-demo baseline deployed to Azure and validated through the live UI as a signed-in PatchForge Admin user
 
 Date: 2026-05-27
 
-PF-AZ7 is locally validated and pending GitHub push, Azure image rollout, live API smoke, signed-in browser validation, and live DOCX/PDF report download visual QA.
+PF-AZ7 is the currently deployed Azure baseline.
+
+## PF-AZ7 Operational Demo Increment
+
+Date: 2026-05-27
+
+PF-AZ7 is deployed and live validated.
 
 PF-AZ7 adds:
 
@@ -25,13 +25,13 @@ PF-AZ7 adds:
 
 PF-AZ7 does not add seeded demo data, synthetic vulnerability data, scanning, exploit generation, procedural exploit steps, patch deployment, production mutation from the UI, autonomous CAB approval, or autonomous risk acceptance.
 
-PF-AZ7 candidate evidence path:
+PF-AZ7 live evidence path:
 
 - `docs/release/evidence/2026-05-27-patchforge-pfaz7-operational-demo/`
 
 ## Scope
 
-PF-AZ6 extends the current dedicated PatchForge Azure production state in the DIIaC tenant using the PatchForge resource group.
+PF-AZ7 extends the current dedicated PatchForge Azure production state in the DIIaC tenant using the PatchForge resource group.
 
 Included:
 
@@ -170,6 +170,12 @@ Included:
 - source-feed UI page bound to live protected API calls
 - Command Center and utility rail source-feed status
 - backend and frontend tests for public source intelligence
+- protected DOCX/PDF report catalogue and download APIs
+- professional DOCX/PDF board reports generated from signed decision packs
+- Reports page and Decision Pack DOCX/PDF export actions
+- scheduler-backed live CISA KEV and FIRST EPSS refresh
+- live PF-AZ7 signed pack `PF-20260527-54588be9`
+- live DOCX/PDF visual QA evidence for board-grade output
 
 Excluded:
 
@@ -184,6 +190,8 @@ Excluded:
 PF-AZ5 Azure deployment, image tag, active revisions, and live browser validation evidence are recorded under `docs/release/evidence/2026-05-26-patchforge-pfaz5-intelligence-rollout/`.
 
 PF-AZ6 Azure rollout and live browser validation evidence is recorded under `docs/release/evidence/2026-05-26-patchforge-pfaz6-live-source-intelligence/`.
+
+PF-AZ7 Azure rollout, scheduler validation, live browser validation, fresh signed pack verification, and DOCX/PDF visual QA evidence is recorded under `docs/release/evidence/2026-05-27-patchforge-pfaz7-operational-demo/`.
 
 ## Runtime State
 
@@ -207,7 +215,7 @@ Internal endpoints:
 
 ## Deployment State
 
-Deployment performed on 2026-05-26.
+Latest deployment performed on 2026-05-27.
 
 Target:
 
@@ -225,16 +233,44 @@ Deployment evidence:
 - `docs/release/evidence/2026-05-26-patchforge-live-product/`
 - `docs/release/evidence/2026-05-26-patchforge-pfaz5-intelligence-rollout/`
 - `docs/release/evidence/2026-05-26-patchforge-pfaz6-live-source-intelligence/`
+- `docs/release/evidence/2026-05-27-patchforge-pfaz7-operational-demo/`
 
-Latest PF-AZ6 live source intelligence revisions:
+Latest PF-AZ7 operational demo revisions:
 
-- UI: `ca-patchforge-ui-prod--0000008`
-- Bridge/API: `ca-patchforge-bridge-prod--0000007`
-- Runtime: `ca-patchforge-runtime-prod--0000006`
-- SRA: `ca-patchforge-sra-prod--0000005`
-- Worker: `ca-patchforge-worker-prod--0000005`
-- Scheduler: `ca-patchforge-scheduler-prod--0000005`
-- Image tag: `pfaz6-20260526-473b055`
+- UI: `ca-patchforge-ui-prod--0000009`
+- Bridge/API: `ca-patchforge-bridge-prod--0000008`
+- Runtime: `ca-patchforge-runtime-prod--0000007`
+- SRA: `ca-patchforge-sra-prod--0000006`
+- Worker: `ca-patchforge-worker-prod--0000006`
+- Scheduler: `ca-patchforge-scheduler-prod--0000006`
+- Image tag: `pfaz7-20260527-71643ce`
+
+## PF-AZ7 Live Validation
+
+Live UI validation result: PASS
+
+Live API validation result: PASS
+
+Validated user workflow:
+
+- signed in at `https://patchforge.diiac.io` as `n.bailey@diiac.io`
+- confirmed displayed role `PatchForge.Admin`
+- confirmed live API readiness with PostgreSQL storage and Entra auth required
+- confirmed protected API routes return 401 without a bearer token
+- navigated all main product pages including Reports and Vendor & Threat Landscape
+- confirmed scheduler-backed CISA KEV/FIRST EPSS refresh completed as `patchforge-scheduler@diiac.io`
+- ran SRA advisory for real public-source record `CVE-2026-48172`
+- confirmed SRA output is advisory-only, source-bound, pending review, and cannot close hard gates
+- ran Bayesian advisory for `CVE-2026-48172`
+- generated fresh signed pack `PF-20260527-54588be9`
+- verified the exported pack reports `verified=true`, `manifest_ok=true`, `signature_ok=true`, `signing_provider=azure_key_vault`, and `source_pack_immutable=true`
+- confirmed `final_approval_issued=false`
+- downloaded live DOCX and PDF board reports from the UI/API
+- rendered and inspected the live DOCX and PDF outputs with no clipping, overlap, broken tables, missing text, or unreadable wrapping observed
+
+Live evidence path:
+
+- `docs/release/evidence/2026-05-27-patchforge-pfaz7-operational-demo/live-ui/`
 
 ## PF-AZ6 Live Validation
 

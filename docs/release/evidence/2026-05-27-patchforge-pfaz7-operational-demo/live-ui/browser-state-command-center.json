@@ -1,0 +1,16 @@
+{
+  "url": "https://patchforge.diiac.io/",
+  "title": "DIIaC™ PatchForge",
+  "bodyText": "DIIAC™\n\nPatchForge\nCommand Center\nGuide\nVulnerability Queue\nAsset & Service Exposure\nDecision Workbench\nEmergency Patch\nRisk Acceptances\nCompensating Controls\nSRA Research\nEvidence Catalogue\nDecision Packs\nReports\nSource Feeds\nVendor & Threat Landscape\nAdmin\n\nGovernance layer only. No scanning, no exploit content, no patch deployment, no autonomous approvals.\n\nPRODUCTION | DIIAC.IO | ENTERPRISE STRICT\n\nCommand Center\nEntra protected\nAgent-led intake\nSigning trusted\nRefresh\nSign out\nCritical exposure\n0\nKnown exploited\n10\nPatch overdue\n1\nPending review\n10\nSigned packs\n1\nLive source runs\n13\nTop Governed Actions\nRefresh Intelligence\nCreate Patch Decision\nBoard Pack\nCVE-2026-48172 Critical | Unknown | pending_review\nCVE-2026-9082 Critical | Unknown | pending_review\nCVE-2025-34291 High | Unknown | pending_review\nReviewer Next Move\nRecord\nCVE-2026-48172\nWhy now\nKnown exploited\nHuman action\nReview sources and compile\nDecision State\nAll records\n10\nAccepted evidence\n0\nPending review\n10\nSigned packs\n1\nRecent Signed Packs\nPF-20260526-8312f908\nVerified\nBayesian Advisory\nAdvisory only\nRecommended posture\nAwaiting assessment\nDeferral risk posterior\nNot assessed\nLive Source Intelligence\nSource-bound pending review\nConfigured public feeds\n2\nKnown exploited advisories\n10\nLatest refresh\n27/05/2026, 01:29:31\nSession\n\nn.bailey@diiac.io\n\nApp roles enforced by API\n\nPatchForge.Admin\n\nQueue\nRecords\n10\nPending review\n10\nSource Feeds\nFeeds\n2\nRuns\n13\nSigning Trust\nVerifier\nVerified\nTrust\nKey-Vault\nRecent Packs\n\nPF-20260526-8312f908",
+  "localStorageKeys": [],
+  "sessionStorageKeys": [
+    "msal.3.account.keys",
+    "msal.3.token.keys.c4dfca53-14a5-4688-817d-6c6c7dd47407",
+    "msal.3|2d2f273d-a815-4a19-a258-c48c858252f3.67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da|login.windows.net|refreshtoken|c4dfca53-14a5-4688-817d-6c6c7dd47407|||",
+    "server-telemetry-c4dfca53-14a5-4688-817d-6c6c7dd47407",
+    "msal.3|2d2f273d-a815-4a19-a258-c48c858252f3.67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da|login.windows.net|accesstoken|c4dfca53-14a5-4688-817d-6c6c7dd47407|67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da|api://ec30b0eb-cfc4-48cc-a5f2-2a1345d96736/patchforge.access|",
+    "msal.3|2d2f273d-a815-4a19-a258-c48c858252f3.67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da|login.windows.net|67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+    "msal.version",
+    "msal.3|2d2f273d-a815-4a19-a258-c48c858252f3.67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da|login.windows.net|idtoken|c4dfca53-14a5-4688-817d-6c6c7dd47407|67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da||"
+  ]
+}

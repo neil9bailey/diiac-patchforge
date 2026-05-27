@@ -1,0 +1,78 @@
+{
+  "token_present": true,
+  "readiness": {
+    "status": "ready",
+    "storage": "postgresql",
+    "auth_required": true,
+    "tenant_required": true
+  },
+  "vulnerabilities": {
+    "status": 200,
+    "count": 10,
+    "first": "CVE-2026-48172"
+  },
+  "decision_packs": {
+    "status": 200,
+    "count": 2,
+    "fresh_pack_present": true
+  },
+  "reports": {
+    "status": 200,
+    "count": 6,
+    "names": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "source_feeds": {
+    "status": 200,
+    "feed_count": 2,
+    "run_count": 13,
+    "latest_run": {
+      "run_id": "run-first-epss-1779841771595-7b43515a",
+      "status": "completed",
+      "feed_id": "first-epss",
+      "message": "1 FIRST EPSS signals attached as source-bound pending-review intelligence.",
+      "provider": "FIRST",
+      "actor_oid": "patchforge-scheduler",
+      "actor_upn": "patchforge-scheduler@diiac.io",
+      "feed_name": "FIRST Exploit Prediction Scoring System",
+      "tenant_id": "diiac.io",
+      "source_url": "https://api.first.org/data/v1/epss?cve=CVE-2026-41091",
+      "started_at": "2026-05-27T00:29:31.595Z",
+      "actor_roles": [
+        "PatchForge.SystemScheduler"
+      ],
+      "completed_at": "2026-05-27T00:29:31.604Z",
+      "records_seen": 1,
+      "source_bound": true,
+      "source_class": "epss_signal",
+      "advisory_only": true,
+      "requested_cves": [
+        "CVE-2026-41091"
+      ],
+      "actor_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+      "records_matched": 1,
+      "requested_limit": null,
+      "review_required": true,
+      "records_enriched": 1,
+      "records_ingested": 0,
+      "tenant_id_source": "scheduler_config",
+      "effective_tenant_id": "diiac.io",
+      "no_patch_deployment": true,
+      "requested_tenant_id": "diiac.io",
+      "no_autonomous_approval": true,
+      "tenant_override_ignored": false,
+      "can_close_hard_gates_alone": false
+    }
+  },
+  "fresh_pack_export": {
+    "status": 200,
+    "verified": true,
+    "source_pack_immutable": true
+  }
+}

@@ -2,7 +2,7 @@
 
 Date: 2026-05-27
 
-PF-AZ7 prepares PatchForge for operational customer demonstrations using live public-source intelligence, signed decision packs, and professional DOCX/PDF board outputs.
+PF-AZ7 is live for operational customer demonstrations using live public-source intelligence, signed decision packs, and professional DOCX/PDF board outputs.
 
 ## Implemented
 
@@ -39,6 +39,20 @@ Evidence: `docs/release/evidence/2026-05-27-patchforge-pfaz7-operational-demo/do
 
 PatchForge remains a governance product only. PF-AZ7 does not add scanning, exploit generation, procedural exploit steps, patch deployment, production mutation from the UI, autonomous CAB approval, or autonomous risk acceptance.
 
-## Azure Readiness
+## Azure Validation
 
-Azure deployment and live UI validation are pending for this candidate and must be recorded before PF-AZ7 is marked live.
+- Image tag: `pfaz7-20260527-71643ce`.
+- Active UI revision: `ca-patchforge-ui-prod--0000009`.
+- Active bridge/API revision: `ca-patchforge-bridge-prod--0000008`.
+- Active runtime revision: `ca-patchforge-runtime-prod--0000007`.
+- Active SRA revision: `ca-patchforge-sra-prod--0000006`.
+- Active worker revision: `ca-patchforge-worker-prod--0000006`.
+- Active scheduler revision: `ca-patchforge-scheduler-prod--0000006`.
+- Live UI validation as `n.bailey@diiac.io`: PASS.
+- Displayed role `PatchForge.Admin`: PASS.
+- Live API readiness with PostgreSQL and auth required: PASS.
+- Fresh signed pack: `PF-20260527-54588be9`.
+- Key Vault signing through live pack export: PASS.
+- Live DOCX/PDF report download and visual QA: PASS.
+
+Evidence: `docs/release/evidence/2026-05-27-patchforge-pfaz7-operational-demo/`

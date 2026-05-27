@@ -1,0 +1,10 @@
+{
+    "release":  "PF-AZ7",
+    "validation_time_utc":  "2026-05-27T00:42:16.3402374Z",
+    "readiness_storage":  "postgresql",
+    "auth_required":  true,
+    "tenant_required":  true,
+    "protected_list_status":  200,
+    "protected_list_count":  10,
+    "decision_pack_count":  2
+}

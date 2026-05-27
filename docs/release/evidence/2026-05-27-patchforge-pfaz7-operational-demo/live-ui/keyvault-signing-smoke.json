@@ -1,0 +1,11 @@
+{
+    "release":  "PF-AZ7",
+    "validation_time_utc":  "2026-05-27T00:42:16.3402374Z",
+    "smoke_method":  "live_signed_pack_export",
+    "pack_id":  "PF-20260527-54588be9",
+    "signing_provider":  "azure_key_vault",
+    "signature_algorithm":  "ES256",
+    "verified":  true,
+    "manifest_ok":  true,
+    "signature_ok":  true
+}

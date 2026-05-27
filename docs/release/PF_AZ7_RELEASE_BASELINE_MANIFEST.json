@@ -6,9 +6,12 @@
   "target_url": "https://patchforge.diiac.io",
   "api_url": "https://api.patchforge.diiac.io",
   "remote_target": "neil9bailey/diiac-patchforge",
-  "release_state": "local_validated_azure_pending",
+  "release_state": "azure_live_browser_validated",
   "azure_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
   "azure_resource_group": "rg-diiac-patchforge-prod",
+  "commit": "71643ce4123bed543c9b0b55c39347b4775946d1",
+  "image_tag": "pfaz7-20260527-71643ce",
+  "fresh_live_pack": "PF-20260527-54588be9",
   "features": [
     "DOCX board pack generation from signed decision packs",
     "PDF board pack generation from signed decision packs",
@@ -39,7 +42,12 @@
     "docker_build_smoke": "pass",
     "docx_pdf_visual_qa": "pass",
     "visual_qa_record": "docs/release/evidence/2026-05-27-patchforge-pfaz7-operational-demo/doc-qa/docx-pdf-visual-qa.json",
-    "azure_deployment": "pending",
-    "live_ui_validation": "pending"
+    "azure_deployment": "pass",
+    "live_api_validation": "pass",
+    "live_ui_validation": "pass",
+    "live_docx_pdf_visual_qa": "pass",
+    "key_vault_signing_smoke": "pass",
+    "postgresql_readiness": "pass",
+    "scheduler_refresh": "pass"
   }
 }

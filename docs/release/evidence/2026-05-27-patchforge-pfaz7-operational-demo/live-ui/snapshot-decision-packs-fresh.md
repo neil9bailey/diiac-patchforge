@@ -1,0 +1,160 @@
+- main [ref=e3] [box=0,0,1521,838]:
+  - complementary "PatchForge navigation" [ref=e4] [box=0,0,248,678]:
+    - generic [ref=e5] [box=12,-129,223,55]:
+      - img [ref=e7] [box=24,-119,24,24]
+      - generic [ref=e12] [box=68,-126,91,38]:
+        - paragraph [ref=e13] [box=68,-126,91,16]: DIIaC™
+        - heading "PatchForge" [level=1] [ref=e14] [box=68,-110,91,22]
+    - navigation [ref=e15] [box=12,-58,223,610]:
+      - button "Command Center" [ref=e16] [cursor=pointer] [box=12,-58,223,36]:
+        - img [ref=e17] [box=22,-49,18,18]
+        - generic [ref=e20] [box=50,-49,107,18]: Command Center
+      - button "Guide" [ref=e21] [cursor=pointer] [box=12,-17,223,36]:
+        - img [ref=e22] [box=22,-8,18,18]
+        - generic [ref=e25] [box=50,-8,36,18]: Guide
+      - button "Vulnerability Queue" [ref=e26] [cursor=pointer] [box=12,24,223,36]:
+        - img [ref=e27] [box=22,33,18,18]
+        - generic [ref=e28] [box=50,33,120,18]: Vulnerability Queue
+      - button "Asset & Service Exposure" [ref=e29] [cursor=pointer] [box=12,65,223,36]:
+        - img [ref=e30] [box=22,74,18,18]
+        - generic [ref=e35] [box=50,74,153,18]: Asset & Service Exposure
+      - button "Decision Workbench" [ref=e36] [cursor=pointer] [box=12,106,223,36]:
+        - img [ref=e37] [box=22,115,18,18]
+        - generic [ref=e41] [box=50,115,125,18]: Decision Workbench
+      - button "Emergency Patch" [ref=e42] [cursor=pointer] [box=12,147,223,36]:
+        - img [ref=e43] [box=22,156,18,18]
+        - generic [ref=e45] [box=50,156,104,18]: Emergency Patch
+      - button "Risk Acceptances" [ref=e46] [cursor=pointer] [box=12,188,223,36]:
+        - img [ref=e47] [box=22,197,18,18]
+        - generic [ref=e50] [box=50,197,104,18]: Risk Acceptances
+      - button "Compensating Controls" [ref=e51] [cursor=pointer] [box=12,229,223,36]:
+        - img [ref=e52] [box=22,238,18,18]
+        - generic [ref=e55] [box=50,238,143,18]: Compensating Controls
+      - button "SRA Research" [ref=e56] [cursor=pointer] [box=12,270,223,36]:
+        - img [ref=e57] [box=22,279,18,18]
+        - generic [ref=e64] [box=50,279,82,18]: SRA Research
+      - button "Evidence Catalogue" [ref=e65] [cursor=pointer] [box=12,311,223,36]:
+        - img [ref=e66] [box=22,320,18,18]
+        - generic [ref=e69] [box=50,320,119,18]: Evidence Catalogue
+      - button "Decision Packs" [active] [ref=e70] [cursor=pointer] [box=12,352,223,36]:
+        - img [ref=e71] [box=22,361,18,18]
+        - generic [ref=e75] [box=50,361,89,18]: Decision Packs
+      - button "Reports" [ref=e76] [cursor=pointer] [box=12,393,223,36]:
+        - img [ref=e77] [box=22,402,18,18]
+        - generic [ref=e80] [box=50,402,46,18]: Reports
+      - button "Source Feeds" [ref=e81] [cursor=pointer] [box=12,434,223,36]:
+        - img [ref=e82] [box=22,443,18,18]
+        - generic [ref=e87] [box=50,443,80,18]: Source Feeds
+      - button "Vendor & Threat Landscape" [ref=e88] [cursor=pointer] [box=12,475,223,36]:
+        - img [ref=e89] [box=22,484,18,18]
+        - generic [ref=e93] [box=50,484,168,18]: Vendor & Threat Landscape
+      - button "Admin" [ref=e94] [cursor=pointer] [box=12,516,223,36]:
+        - img [ref=e95] [box=22,525,18,18]
+        - generic [ref=e96] [box=50,525,40,18]: Admin
+    - generic [ref=e97] [box=12,568,223,94]:
+      - img [ref=e98] [box=23,579,18,18]
+      - paragraph [ref=e102] [box=53,579,172,72]: Governance layer only. No scanning, no exploit content, no patch deployment, no autonomous approvals.
+  - generic [ref=e103] [box=248,0,1273,838]:
+    - generic [ref=e104] [box=248,0,1273,118]:
+      - button "Toggle navigation" [ref=e105] [cursor=pointer] [box=268,22,36,36]:
+        - img [ref=e106] [box=277,31,18,18]
+      - generic [ref=e108] [box=322,14,1179,53]:
+        - paragraph [ref=e109] [box=322,14,1179,16]: Production | diiac.io | Enterprise Strict
+        - heading "Decision Packs" [level=2] [ref=e976] [box=322,30,1179,37]
+      - generic "Runtime trust status" [ref=e111] [box=322,75,1179,28]:
+        - generic [ref=e112] [box=322,75,127,28]:
+          - img [ref=e113] [box=332,81,16,16]
+          - text: Entra protected
+        - generic [ref=e116] [box=457,75,134,28]:
+          - img [ref=e117] [box=467,81,16,16]
+          - text: Agent-led intake
+        - generic [ref=e124] [box=598,75,126,28]:
+          - img [ref=e125] [box=608,81,16,16]
+          - text: Signing trusted
+        - button "Refresh" [ref=e129] [cursor=pointer] [box=732,75,81,28]:
+          - img [ref=e130] [box=742,81,15,15]
+          - text: Refresh
+        - button "Sign out" [ref=e135] [cursor=pointer] [box=821,75,87,28]:
+          - img [ref=e136] [box=831,81,15,15]
+          - text: Sign out
+    - generic [ref=e139] [box=248,118,1273,720]:
+      - region "Decision Packs" [ref=e977] [box=262,132,939,692]:
+        - generic [ref=e736] [box=262,132,939,43]:
+          - img [ref=e737] [box=275,145,16,16]
+          - text: Signed decision pack PF-20260527-54588be9 generated.
+        - generic [ref=e978] [box=262,187,939,28]:
+          - heading "Decision Packs" [level=3] [ref=e979] [box=262,190,110,22]
+          - generic [ref=e980] [box=1130,187,70,28]: 2 verified
+        - table [ref=e982] [box=263,228,980,153]:
+          - rowgroup [ref=e983] [box=263,228,980,39]:
+            - row "Pack ID Vulnerability Posture Readiness Verified Created Exports" [ref=e984] [box=263,228,980,39]:
+              - columnheader "Pack ID" [ref=e985] [box=263,228,180,39]
+              - columnheader "Vulnerability" [ref=e986] [box=443,228,134,39]
+              - columnheader "Posture" [ref=e987] [box=577,228,179,39]
+              - columnheader "Readiness" [ref=e988] [box=756,228,91,39]
+              - columnheader "Verified" [ref=e989] [box=847,228,77,39]
+              - columnheader "Created" [ref=e990] [box=924,228,161,39]
+              - columnheader "Exports" [ref=e991] [box=1085,228,158,39]
+          - rowgroup [ref=e992] [box=263,266,980,114]:
+            - row "PF-20260526-8312f908 CVE-2026-48172 Defer Pending Evidence Blocked Yes 27/05/2026, 00:11:13 Export PF-20260526-8312f908 Download DOCX PF-20260526-8312f908 Download PDF PF-20260526-8312f908" [ref=e993] [box=263,266,980,57]:
+              - cell "PF-20260526-8312f908" [ref=e994] [box=263,266,180,57]
+              - cell "CVE-2026-48172" [ref=e995] [box=443,266,134,57]
+              - cell "Defer Pending Evidence" [ref=e996] [box=577,266,179,57]
+              - cell "Blocked" [ref=e997] [box=756,266,91,57]
+              - cell "Yes" [ref=e998] [box=847,266,77,57]
+              - cell "27/05/2026, 00:11:13" [ref=e999] [box=924,266,161,57]
+              - cell "Export PF-20260526-8312f908 Download DOCX PF-20260526-8312f908 Download PDF PF-20260526-8312f908" [ref=e1000] [box=1085,266,158,57]:
+                - generic [ref=e1001] [box=1097,277,134,36]
+            - row "PF-20260527-54588be9 CVE-2026-48172 Defer Pending Evidence Blocked Yes 27/05/2026, 01:37:56 Export PF-20260527-54588be9 Download DOCX PF-20260527-54588be9 Download PDF PF-20260527-54588be9" [ref=e1015] [box=263,323,980,57]:
+              - cell "PF-20260527-54588be9" [ref=e1016] [box=263,323,180,57]
+              - cell "CVE-2026-48172" [ref=e1017] [box=443,323,134,57]
+              - cell "Defer Pending Evidence" [ref=e1018] [box=577,323,179,57]
+              - cell "Blocked" [ref=e1019] [box=756,323,91,57]
+              - cell "Yes" [ref=e1020] [box=847,323,77,57]
+              - cell "27/05/2026, 01:37:56" [ref=e1021] [box=924,323,161,57]
+              - cell "Export PF-20260527-54588be9 Download DOCX PF-20260527-54588be9 Download PDF PF-20260527-54588be9" [ref=e1022] [box=1085,323,158,57]:
+                - generic [ref=e1023] [box=1097,334,134,36]
+      - complementary "PatchForge utility rail" [ref=e259] [box=1215,132,292,692]:
+        - generic [ref=e260] [box=1215,132,292,147]:
+          - heading "Session" [level=3] [ref=e261] [box=1230,146,262,22]
+          - paragraph [ref=e262] [box=1230,168,262,32]:
+            - img [ref=e263] [box=1230,177,15,15]
+            - text: n.bailey@diiac.io
+          - paragraph [ref=e266] [box=1230,200,262,32]:
+            - img [ref=e267] [box=1230,209,15,15]
+            - text: App roles enforced by API
+          - paragraph [ref=e271] [box=1230,232,262,32]:
+            - img [ref=e272] [box=1230,241,15,15]
+            - text: PatchForge.Admin
+        - generic [ref=e275] [box=1215,291,292,127]:
+          - heading "Queue" [level=3] [ref=e276] [box=1230,306,262,22]
+          - generic [ref=e277] [box=1230,327,262,38]:
+            - generic [ref=e278] [box=1230,335,56,22]: Records
+            - strong [ref=e279] [box=1458,332,34,28]: "10"
+          - generic [ref=e280] [box=1230,365,262,38]:
+            - generic [ref=e281] [box=1230,374,107,22]: Pending review
+            - strong [ref=e282] [box=1458,371,34,28]: "10"
+        - generic [ref=e283] [box=1215,430,292,127]:
+          - heading "Source Feeds" [level=3] [ref=e284] [box=1230,445,262,22]
+          - generic [ref=e285] [box=1230,466,262,38]:
+            - generic [ref=e286] [box=1230,475,41,22]: Feeds
+            - strong [ref=e287] [box=1465,471,27,28]: "2"
+          - generic [ref=e288] [box=1230,504,262,38]:
+            - generic [ref=e289] [box=1230,513,34,22]: Runs
+            - strong [ref=e290] [box=1458,510,34,28]: "13"
+        - generic [ref=e291] [box=1215,569,292,127]:
+          - heading "Signing Trust" [level=3] [ref=e292] [box=1230,584,262,22]
+          - generic [ref=e293] [box=1230,606,262,38]:
+            - generic [ref=e294] [box=1230,614,50,22]: Verifier
+            - strong [ref=e295] [box=1427,611,65,28]: Verified
+          - generic [ref=e296] [box=1230,644,262,38]:
+            - generic [ref=e297] [box=1230,652,34,22]: Trust
+            - strong [ref=e298] [box=1416,649,76,28]: Key-Vault
+        - generic [ref=e299] [box=1215,708,292,115]:
+          - heading "Recent Packs" [level=3] [ref=e300] [box=1230,723,262,22]
+          - paragraph [ref=e301] [box=1230,745,262,32]:
+            - img [ref=e302] [box=1230,753,15,15]
+            - text: PF-20260526-8312f908
+          - paragraph [ref=e799] [box=1230,777,262,32]:
+            - img [ref=e800] [box=1230,785,15,15]
+            - text: PF-20260527-54588be9

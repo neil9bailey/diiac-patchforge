@@ -1,0 +1,125 @@
+{
+  "status": 200,
+  "topLevelKeys": [
+    "artefacts",
+    "boundary",
+    "decision_pack",
+    "exported_at",
+    "pack_id",
+    "source_pack_immutable",
+    "tenant_context",
+    "tenant_id",
+    "verification"
+  ],
+  "artifactKeys": [],
+  "verification": {
+    "verified": true,
+    "artefacts": [
+      {
+        "ok": true,
+        "name": "affected_asset_scope.json",
+        "actual": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843",
+        "expected": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843"
+      },
+      {
+        "ok": true,
+        "name": "bayesian_patch_risk_snapshot.json",
+        "actual": "92dc5425f942fe9eccb1ce44fbe17c8f9ca30b667469c6787772d4d71537c3e5",
+        "expected": "92dc5425f942fe9eccb1ce44fbe17c8f9ca30b667469c6787772d4d71537c3e5"
+      },
+      {
+        "ok": true,
+        "name": "compensating_controls_plan.json",
+        "actual": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+        "expected": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+      },
+      {
+        "ok": true,
+        "name": "exploitability_assessment.json",
+        "actual": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843",
+        "expected": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843"
+      },
+      {
+        "ok": true,
+        "name": "human_review_state.json",
+        "actual": "f5f8227f3fa4f41292047918bc64d137e32d178ec0ec747dde4e0e5479863180",
+        "expected": "f5f8227f3fa4f41292047918bc64d137e32d178ec0ec747dde4e0e5479863180"
+      },
+      {
+        "ok": true,
+        "name": "patch_change_readiness.json",
+        "actual": "0f508a5b6ba0bb870b67ec8f9e2e3691cc0848893d9798cd484de6c1b865af6e",
+        "expected": "0f508a5b6ba0bb870b67ec8f9e2e3691cc0848893d9798cd484de6c1b865af6e"
+      },
+      {
+        "ok": true,
+        "name": "patch_decision_context.json",
+        "actual": "9d7e6e0a6b2b2487fa4fc30dcc37454adee8989ea9e70db82aa6d67424e0f927",
+        "expected": "9d7e6e0a6b2b2487fa4fc30dcc37454adee8989ea9e70db82aa6d67424e0f927"
+      },
+      {
+        "ok": true,
+        "name": "patch_feasibility_assessment.json",
+        "actual": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+        "expected": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+      },
+      {
+        "ok": true,
+        "name": "patch_prior_update_proposal.json",
+        "actual": "ebd17e0c3518ab9b4f9ec1402c52a30c51159eb7b324036c18a4ac825745debc",
+        "expected": "ebd17e0c3518ab9b4f9ec1402c52a30c51159eb7b324036c18a4ac825745debc"
+      },
+      {
+        "ok": true,
+        "name": "patch_prior_usage_manifest.json",
+        "actual": "a45aad0e5bf09d3b06448889c15e24e006636ab300d1c6dbbfde89cf18df834a",
+        "expected": "a45aad0e5bf09d3b06448889c15e24e006636ab300d1c6dbbfde89cf18df834a"
+      },
+      {
+        "ok": true,
+        "name": "patch_risk_acceptance_state.json",
+        "actual": "240fa9c55e6c6a5659a74edfc30c159d74c3616651fa672443d312682e6c66df",
+        "expected": "240fa9c55e6c6a5659a74edfc30c159d74c3616651fa672443d312682e6c66df"
+      },
+      {
+        "ok": true,
+        "name": "replay_certificate.json",
+        "actual": "988d378727a9a8a520d3b8b42423472a38efc19a5a8467e94c3b0e0037e5f04a",
+        "expected": "988d378727a9a8a520d3b8b42423472a38efc19a5a8467e94c3b0e0037e5f04a"
+      },
+      {
+        "ok": true,
+        "name": "sra_trace.json",
+        "actual": "47dbb360210fd7279ed2120f0e090807e8de6b6198ebe6d2bfac7f8a514b8292",
+        "expected": "47dbb360210fd7279ed2120f0e090807e8de6b6198ebe6d2bfac7f8a514b8292"
+      },
+      {
+        "ok": true,
+        "name": "threat_landscape_snapshot.json",
+        "actual": "fa13eaf181e6dd1d37a9266f6d254022a2967e82fbb1436c8ca5c30f2417ea75",
+        "expected": "fa13eaf181e6dd1d37a9266f6d254022a2967e82fbb1436c8ca5c30f2417ea75"
+      },
+      {
+        "ok": true,
+        "name": "trust_bundle.json",
+        "actual": "af2e7686ddf7befdc5df08c00811af347a9f944457285dc6ba6ac4f39a6de4ed",
+        "expected": "af2e7686ddf7befdc5df08c00811af347a9f944457285dc6ba6ac4f39a6de4ed"
+      },
+      {
+        "ok": true,
+        "name": "vendor_intelligence_snapshot.json",
+        "actual": "2e240f711b516376553cf0e1479b5d9a4e2df182c0723d207958448a90898a3f",
+        "expected": "2e240f711b516376553cf0e1479b5d9a4e2df182c0723d207958448a90898a3f"
+      },
+      {
+        "ok": true,
+        "name": "vulnerability_intelligence_snapshot.json",
+        "actual": "7a25ad48018d7d7c66005174f60e0effc5f34879909022b5419474a0ac5fe524",
+        "expected": "7a25ad48018d7d7c66005174f60e0effc5f34879909022b5419474a0ac5fe524"
+      }
+    ],
+    "manifest_ok": true,
+    "signature_ok": true
+  },
+  "source_pack_immutable": true
+}
