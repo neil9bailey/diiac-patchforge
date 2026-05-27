@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/network_firmware_version.schema.json",
+  "title": "PatchForge Network Firmware Version",
+  "type": "object",
+  "required": ["tenant_id", "firmware_id", "vendor_id", "product_family", "firmware_version", "review_state"],
+  "properties": {
+    "tenant_id": { "type": "string" },
+    "firmware_id": { "type": "string" },
+    "vendor_id": { "type": "string" },
+    "product_family": { "type": "string" },
+    "model": { "type": ["string", "null"] },
+    "firmware_version": { "type": "string" },
+    "release_date": { "type": ["string", "null"], "format": "date" },
+    "review_state": { "default": "pending_review", "type": "string" },
+    "source_bound": { "const": true }
+  }
+}

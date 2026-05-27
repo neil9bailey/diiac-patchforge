@@ -7,6 +7,20 @@ import { createSourceFeedClient } from "./patchforge/sourceFeeds.js";
 import { buildFindingIntelligence, buildIntelligenceForTenant } from "./patchforge/intelligence.js";
 import { REPORT_CATALOG, generateDecisionPackReport } from "./patchforge/reports.js";
 import { startScheduler } from "./patchforge/scheduler.js";
+import {
+  appendVendorLensChatMessage,
+  assessAndStoreConfigApplicability,
+  buildVendorLensDashboard,
+  createVendorLensChatSession,
+  getVendorLensChatSession,
+  ingestVendorSecurityAdvisory,
+  listCustomerNetworkAssets,
+  listNetworkVendors,
+  listVendorSecurityAdvisories,
+  refreshVendorLensSource,
+  upsertCustomerNetworkAsset,
+  upsertNetworkVendor
+} from "./patchforge/vendorLens.js";
 import { runSraTool } from "./sra/securityResearchAgent.js";
 
 const DEFAULT_PORT = Number(process.env.PORT || 8080);
@@ -56,6 +70,7 @@ export function createServer(options = {}) {
   const authConfig = options.auth || createAuthConfigFromEnv();
   const runtimeClient = options.runtimeClient || createRuntimeClientFromEnv();
   const sourceFeedClient = options.sourceFeedClient || createSourceFeedClient();
+  const vendorLensFetchImpl = options.vendorLensFetchImpl || globalThis.fetch;
   const corsConfig = options.cors || createCorsConfigFromEnv();
 
   return http.createServer(async (req, res) => {
@@ -257,6 +272,109 @@ export function createServer(options = {}) {
         }
       }
 
+      if (route === "GET /api/patchforge/vendorlens/dashboard") {
+        return sendJson(res, 200, {
+          tenant_context: baseTenantContext,
+          dashboard: await buildVendorLensDashboard(storage, tenantId)
+        });
+      }
+
+      if (route === "GET /api/patchforge/vendorlens/vendors") {
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          vendors: await listNetworkVendors(storage, tenantId)
+        });
+      }
+
+      if (route === "POST /api/patchforge/vendorlens/vendors/upsert") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const vendor = await upsertNetworkVendor(storage, tenantContext.effective_tenant_id, withLineage(body, tenantContext, authorization));
+        return sendJson(res, 200, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, vendor });
+      }
+
+      if (route === "GET /api/patchforge/vendorlens/assets") {
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          assets: await listCustomerNetworkAssets(storage, tenantId)
+        });
+      }
+
+      if (route === "POST /api/patchforge/vendorlens/assets") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const asset = await upsertCustomerNetworkAsset(storage, tenantContext.effective_tenant_id, withLineage(body, tenantContext, authorization));
+        return sendJson(res, 201, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, asset });
+      }
+
+      if (route === "GET /api/patchforge/vendorlens/advisories") {
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          advisories: await listVendorSecurityAdvisories(storage, tenantId)
+        });
+      }
+
+      if (route === "POST /api/patchforge/vendorlens/advisories/ingest") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const advisory = await ingestVendorSecurityAdvisory(storage, tenantContext.effective_tenant_id, withLineage(body, tenantContext, authorization));
+        return sendJson(res, 201, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, advisory });
+      }
+
+      if (route === "POST /api/patchforge/vendorlens/sources/refresh") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const run = await refreshVendorLensSource({
+          storage,
+          tenantId: tenantContext.effective_tenant_id,
+          body: withLineage(body, tenantContext, authorization),
+          fetchImpl: vendorLensFetchImpl
+        });
+        return sendJson(res, 202, {
+          tenant_id: tenantContext.effective_tenant_id,
+          tenant_context: tenantContext,
+          source_feed_run: run
+        });
+      }
+
+      if (route === "POST /api/patchforge/vendorlens/applicability/assess") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const assessment = await assessAndStoreConfigApplicability(storage, tenantContext.effective_tenant_id, withLineage(body, tenantContext, authorization));
+        return sendJson(res, 200, {
+          tenant_id: tenantContext.effective_tenant_id,
+          tenant_context: tenantContext,
+          assessment
+        });
+      }
+
+      if (route === "POST /api/patchforge/vendorlens/chat") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const chat = await createVendorLensChatSession(storage, tenantContext.effective_tenant_id, withLineage(body, tenantContext, authorization));
+        return sendJson(res, 201, {
+          tenant_id: tenantContext.effective_tenant_id,
+          tenant_context: tenantContext,
+          ...chat
+        });
+      }
+
+      const vendorLensChatMatch = url.pathname.match(/^\/api\/patchforge\/vendorlens\/chat\/([^/]+)$/);
+      if (req.method === "GET" && vendorLensChatMatch) {
+        const chat = await getVendorLensChatSession(storage, tenantId, decodeURIComponent(vendorLensChatMatch[1]));
+        return chat ? sendJson(res, 200, { tenant_id: tenantId, tenant_context: baseTenantContext, ...chat }) : sendJson(res, 404, { error: "vendorlens_chat_not_found" });
+      }
+
+      if (req.method === "POST" && vendorLensChatMatch) {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const chat = await appendVendorLensChatMessage(storage, tenantContext.effective_tenant_id, decodeURIComponent(vendorLensChatMatch[1]), withLineage(body, tenantContext, authorization));
+        return chat ? sendJson(res, 200, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, ...chat }) : sendJson(res, 404, { error: "vendorlens_chat_not_found" });
+      }
+
       if (route === "GET /api/patchforge/decision-packs") {
         return sendJson(res, 200, {
           tenant_id: tenantId,
@@ -371,6 +489,7 @@ export function createServer(options = {}) {
           reviews: await storage.list("reviews", resolvedTenant),
           bayesianSnapshot: body.bayesian_snapshot || buildBayesianAssessment({ vulnerability })
         });
+        const vendorLensContext = await buildVendorLensPackContext(storage, resolvedTenant, body);
 
         const runtimeResult = await runtimeClient.createDecisionPack({
           tenant_id: resolvedTenant,
@@ -387,6 +506,12 @@ export function createServer(options = {}) {
           threat_landscape_snapshot: body.threat_landscape_snapshot || await buildThreatLandscapeSummary(storage, resolvedTenant),
           finding_intelligence_snapshot: findingIntelligence,
           sra_trace: body.sra_trace || null,
+          network_vendor_profile_snapshot: vendorLensContext.network_vendor_profile_snapshot,
+          customer_network_asset_snapshot: vendorLensContext.customer_network_asset_snapshot,
+          vendor_security_advisory_snapshot: vendorLensContext.vendor_security_advisory_snapshot,
+          config_applicability_assessment: vendorLensContext.config_applicability_assessment,
+          sra_config_chat_session: vendorLensContext.sra_config_chat_session,
+          vendorlens_decision_context: vendorLensContext.vendorlens_decision_context,
           controls: body.controls || null,
           risk_acceptance: body.risk_acceptance || null,
           approval_events: body.approval_events || []
@@ -1044,6 +1169,80 @@ function lineageFieldsFromBody(body) {
     tenant_id_source: body.tenant_id_source || null,
     tenant_override_ignored: Boolean(body.tenant_override_ignored)
   };
+}
+
+async function buildVendorLensPackContext(storage, tenantId, body = {}) {
+  const assessments = await storage.list("config_applicability_assessments", tenantId);
+  const advisories = await listVendorSecurityAdvisories(storage, tenantId);
+  const assets = await listCustomerNetworkAssets(storage, tenantId);
+  const chats = await storage.list("vendorlens_chat_sessions", tenantId);
+  const assessment = body.config_applicability_assessment
+    || findRecord(assessments, "assessment_id", body.config_applicability_assessment_id)
+    || findRecord(assessments, "advisory_id", body.advisory_id)
+    || findRecord(assessments, "asset_id", body.asset_id)
+    || assessments.slice(-1)[0]
+    || null;
+  const advisory = body.vendor_security_advisory_snapshot
+    || body.advisory
+    || findRecord(advisories, "advisory_id", assessment?.advisory_id || body.advisory_id)
+    || null;
+  const asset = body.customer_network_asset_snapshot
+    || body.asset
+    || findRecord(assets, "asset_id", assessment?.asset_id || body.asset_id)
+    || null;
+  const vendorId = body.vendor_id || advisory?.vendor_id || asset?.vendor_id || assessment?.vendor_id;
+  const vendors = await listNetworkVendors(storage, tenantId);
+  const vendor = body.network_vendor_profile_snapshot
+    || findRecord(vendors, "vendor_id", vendorId)
+    || null;
+  const chat = body.sra_config_chat_session
+    || body.vendorlens_chat_session
+    || findRecord(chats, "session_id", body.session_id)
+    || findRecord(chats, "assessment_id", assessment?.assessment_id)
+    || chats.slice(-1)[0]
+    || null;
+
+  const vendorLensDecisionContext = body.vendorlens_decision_context || (assessment ? {
+    context_id: `vendorlens-${assessment.assessment_id}`,
+    source_bound: true,
+    advisory_only: true,
+    human_review_required: true,
+    final_approval_issued: false,
+    applicability_posture: assessment.applicability_posture,
+    urgency_posture: assessment.urgency_posture,
+    decision_not_allowed_yet: assessment.decision_not_allowed_yet,
+    recommended_next_action: nextActionForVendorLens(assessment.urgency_posture),
+    evidence_gaps: assessment.evidence_gaps || []
+  } : null);
+
+  return {
+    network_vendor_profile_snapshot: vendor,
+    customer_network_asset_snapshot: asset,
+    vendor_security_advisory_snapshot: advisory,
+    config_applicability_assessment: assessment,
+    sra_config_chat_session: chat,
+    vendorlens_decision_context: vendorLensDecisionContext
+  };
+}
+
+function findRecord(records, field, value) {
+  if (!value) {
+    return null;
+  }
+  return records.find((record) => String(record[field]) === String(value)) || null;
+}
+
+function nextActionForVendorLens(posture) {
+  if (posture === "emergency_patch_required") {
+    return "Confirm exposure, attach patch and rollback evidence, and request emergency CAB/security approval.";
+  }
+  if (posture === "patch_required") {
+    return "Attach reviewed patch feasibility evidence and request accountable approval.";
+  }
+  if (posture === "mitigate_temporarily") {
+    return "Attach compensating-control evidence and owner/expiry before requesting mitigation approval.";
+  }
+  return "Confirm vendor advisory source, customer asset, firmware, feature, and exposure evidence.";
 }
 
 function slug(value) {

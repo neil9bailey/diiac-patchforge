@@ -11,11 +11,6 @@
   "azure_resources_created": false,
   "azure_resource_group": "rg-diiac-patchforge-prod",
   "azure_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
-  "storage_state": "postgresql_live_previous_baseline",
-  "auth_state": "entra_rbac_required",
-  "signing_state": "azure_key_vault_required_for_production_runtime",
-  "image_tag": null,
-  "commit": null,
   "previous_live_baseline": {
     "baseline_id": "PF-AZ8A",
     "image_tag": "pfaz8a-20260527-4f3bbe8",
@@ -23,14 +18,15 @@
     "release_state": "azure_live_browser_validated"
   },
   "scope": [
-    "network vendor catalogue",
-    "vendor advisory source-bound ingest adapters",
-    "customer network asset and configuration evidence records",
-    "configuration applicability assessment",
-    "Ask PatchForge config-aware SRA/AIP chat",
-    "VendorLens UI and Admin source controls",
-    "VendorLens signed-pack artefacts",
-    "DOCX/PDF report network vendor applicability sections"
+    "network vendor catalogue for major network and security vendors",
+    "source-bound vendor advisory ingestion adapters",
+    "customer network asset and configuration records",
+    "configuration applicability assessment engine",
+    "SRA/AIP Ask PatchForge config-aware chat",
+    "VendorLens UI with dashboard, estate match, applicability, chat, evidence pack, and source admin tabs",
+    "Admin VendorLens source configuration defaults",
+    "signed decision-pack artefacts for VendorLens snapshots",
+    "DOCX/PDF report sections for network vendor applicability and customer configuration context"
   ],
   "local_validation": {
     "backend_syntax": "pass",
@@ -44,10 +40,6 @@
     "docx_pdf_report_generation": "pass",
     "docx_visual_render": "not_available_local_soffice_missing",
     "evidence_path": "docs/release/evidence/2026-05-27-patchforge-pfaz9-vendorlens/"
-  },
-  "live_validation": {
-    "status": "pending",
-    "required_before_complete": true
   },
   "excluded_capabilities": [
     "vulnerability_scanner",

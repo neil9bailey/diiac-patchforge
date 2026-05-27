@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/config_applicability_assessment.schema.json",
+  "title": "PatchForge Config Applicability Assessment",
+  "type": "object",
+  "required": ["tenant_id", "assessment_id", "applicability_posture", "urgency_posture", "human_review_required", "final_approval_issued"],
+  "properties": {
+    "tenant_id": { "type": "string" },
+    "assessment_id": { "type": "string" },
+    "advisory_id": { "type": ["string", "null"] },
+    "asset_id": { "type": ["string", "null"] },
+    "cve": { "type": ["string", "null"] },
+    "affected_version_status": { "type": "string" },
+    "affected_feature_status": { "type": "string" },
+    "feature_enabled_status": { "type": "string" },
+    "exposure_status": { "type": "string" },
+    "applicability_posture": { "enum": ["applicable", "not_applicable", "conditional", "unknown", "requires_review"] },
+    "urgency_posture": { "enum": ["emergency_patch_required", "patch_required", "mitigate_temporarily", "urgent_scope_confirmation_required", "monitor", "no_action_pending_review"] },
+    "evidence_required": { "type": "array", "items": { "type": "string" } },
+    "evidence_gaps": { "type": "array", "items": { "type": "object" } },
+    "human_review_required": { "const": true },
+    "advisory_only": { "const": true },
+    "can_close_hard_gates_alone": { "const": false },
+    "final_approval_issued": { "default": false, "type": "boolean" }
+  }
+}

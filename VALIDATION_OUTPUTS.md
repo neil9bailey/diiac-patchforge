@@ -1,3 +1,49 @@
+# PF-AZ9 VendorLens Validation Outputs
+
+## PF-AZ9 VendorLens Local Validation
+
+Date: 2026-05-27
+
+Status: LOCAL PASS. Azure deployment and live UI validation are pending.
+
+Scope:
+
+- Add VendorLens Network Vendor Intelligence and Config-Aware Patch Advisor.
+- Add source-bound network/security vendor catalogue and advisory ingest foundations.
+- Add customer network asset, model, firmware, feature, exposure, and review-state records.
+- Add config applicability engine and Ask PatchForge SRA/AIP chat.
+- Add VendorLens UI and Admin: Vendor Sources controls.
+- Add signed-pack artefacts and DOCX/PDF report sections for network vendor applicability.
+
+Local validation:
+
+- `node --check backend-api/server.js`: PASS
+- `node --check backend-api/auth.js`: PASS
+- `node --check backend-api/patchforge/reports.js`: PASS
+- `node --check backend-api/patchforge/scheduler.js`: PASS
+- `node --check backend-api/patchforge/configApplicability.js`: PASS
+- `node --check backend-api/sra/securityResearchAgent.js`: PASS
+- `npm --prefix backend-api test`: PASS, 27 tests
+- `npm --prefix Frontend test`: PASS, 11 tests
+- `npm --prefix Frontend run build`: PASS
+- `python -m pytest -q --basetemp .pytest_tmp`: PASS, 26 tests
+- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate_iac.ps1`: PASS
+- `az bicep build --file infra/bicep/main.bicep`: PASS
+- `docker build -f Frontend/Dockerfile -t diiac/patchforge-frontend:pfaz9-local Frontend`: PASS
+- `docker build -f backend-api/Dockerfile -t diiac/patchforge-bridge:pfaz9-local backend-api`: PASS
+- `docker build -f runtime/Dockerfile -t diiac/patchforge-runtime:pfaz9-local .`: PASS
+
+Document quality gate:
+
+- Customer Patch Governance Pack DOCX/PDF generated with VendorLens sections: PASS
+- Board Vulnerability Remediation Summary DOCX/PDF generated with VendorLens sections: PASS
+- CAB Patch Decision Report DOCX/PDF generated with VendorLens sections: PASS
+- DOCX structural wording checks: PASS
+- DOCX-to-PNG render: NOT AVAILABLE locally because LibreOffice/soffice is unavailable on PATH
+- QA evidence: `docs/release/evidence/2026-05-27-patchforge-pfaz9-vendorlens/local-reports/`
+
+Important boundary note: PF-AZ9 VendorLens does not add scanning, exploit generation, procedural exploit steps, patch deployment, production mutation from the UI, autonomous CAB approval, or autonomous risk acceptance.
+
 # PF-AZ8A Validation Outputs
 
 ## PF-AZ8A Local Validation

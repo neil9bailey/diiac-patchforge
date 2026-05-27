@@ -12,7 +12,16 @@ const COLLECTIONS = [
   "bayesian_assessments",
   "vendors",
   "vendor_advisories",
+  "vendor_security_advisories",
   "threat_signals",
+  "network_vendors",
+  "network_product_families",
+  "network_product_models",
+  "network_firmware_versions",
+  "customer_network_assets",
+  "config_applicability_assessments",
+  "vendorlens_chat_sessions",
+  "vendorlens_chat_messages",
   "source_feed_runs",
   "audit_events"
 ];
@@ -27,7 +36,16 @@ const COLLECTION_ID_FIELDS = {
   bayesian_assessments: "assessment_id",
   vendors: "vendor_id",
   vendor_advisories: "advisory_id",
+  vendor_security_advisories: "advisory_id",
   threat_signals: "signal_id",
+  network_vendors: "vendor_id",
+  network_product_families: "family_id",
+  network_product_models: "model_id",
+  network_firmware_versions: "firmware_id",
+  customer_network_assets: "asset_id",
+  config_applicability_assessments: "assessment_id",
+  vendorlens_chat_sessions: "session_id",
+  vendorlens_chat_messages: "message_id",
   source_feed_runs: "run_id",
   audit_events: "audit_id"
 };
@@ -82,6 +100,40 @@ const DEFAULT_ADMIN_CONFIG = {
     source_bound: true,
     review_required: true,
     can_close_hard_gates_alone: false
+  },
+  vendorlens: {
+    enabled: true,
+    source_bound: true,
+    review_required: true,
+    can_close_hard_gates_alone: false,
+    final_approval_requires_human: true,
+    source_refresh: {
+      nvd_cve_enabled: true,
+      cisco_psirt_enabled: true,
+      generic_vendor_sources_enabled: true
+    },
+    sources: [
+      {
+        source_id: "nvd-cve-2",
+        provider: "NVD",
+        source_type: "nvd_cve_api",
+        source_url: "https://services.nvd.nist.gov/rest/json/cves/2.0",
+        auth_required: false,
+        credentials_reference: null,
+        enabled: true,
+        refresh_cadence: "on_demand"
+      },
+      {
+        source_id: "cisco-psirt-openvuln",
+        provider: "Cisco",
+        source_type: "cisco_psirt_openvuln",
+        source_url: "https://developer.cisco.com/psirt/",
+        auth_required: true,
+        credentials_reference: "key-vault:cisco-psirt-api",
+        enabled: true,
+        refresh_cadence: "on_demand"
+      }
+    ]
   },
   integrations: {
     diiac_it_enabled: false,
@@ -498,6 +550,8 @@ export class PatchForgeJsonStorage {
     await this.ensureReady();
     const config = await this.readAdminConfig(tenantId);
     const sourceFeedRuns = await this.list("source_feed_runs", tenantId);
+    const networkVendors = await this.list("network_vendors", tenantId);
+    const networkAssets = await this.list("customer_network_assets", tenantId);
     const agentSources = (await this.list("sources", tenantId)).filter((source) =>
       ["mcp_agent_finding", "mythos_finding", "agi_agent_finding", "sra_trace"].includes(source.source_class)
     );
@@ -524,6 +578,11 @@ export class PatchForgeJsonStorage {
           name: "Public source feeds",
           status: sourceFeedsReady ? "ready" : "disabled",
           mode: publicSourceFeeds.length ? publicSourceFeeds.map((feed) => feed.feed_id).join(" / ") : "not-configured"
+        },
+        {
+          name: "VendorLens sources",
+          status: config.vendorlens?.enabled === false ? "disabled" : "ready",
+          mode: `${networkVendors.length || "catalogue"} vendor catalogue / ${networkAssets.length} customer network asset(s)`
         },
         {
           name: "Worker health",
@@ -773,6 +832,14 @@ function normalizeAdminConfig(config) {
     advisory_only: true,
     review_required: true,
     can_close_hard_gates_alone: false
+  };
+  next.vendorlens = {
+    ...DEFAULT_ADMIN_CONFIG.vendorlens,
+    ...(next.vendorlens || {}),
+    source_bound: true,
+    review_required: true,
+    can_close_hard_gates_alone: false,
+    final_approval_requires_human: true
   };
   next.telemetry = {
     ...(next.telemetry || {}),

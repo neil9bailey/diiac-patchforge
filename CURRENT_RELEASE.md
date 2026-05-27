@@ -1,5 +1,39 @@
 # Current Release
 
+## DIIaC PatchForge PF-AZ9 VendorLens
+
+Release state: local validation passed; Azure rollout and live UI validation pending for this VendorLens increment.
+
+Date: 2026-05-27
+
+PF-AZ9 VendorLens adds Network Vendor Intelligence and a Config-Aware Patch Advisor to PatchForge. It helps users review major network/security vendors, source-bound vendor advisories/CVEs, customer product/model/version exposure, configuration applicability, and SRA/AIP guided questions such as whether a vulnerable feature is enabled, whether urgent scope confirmation is required, and what evidence is needed to support not-applicable status.
+
+PF-AZ9 VendorLens local validation:
+
+- backend syntax and tests: PASS
+- frontend tests and production build: PASS
+- Python runtime tests: PASS
+- IaC validation and Bicep build: PASS
+- Docker frontend, bridge/API, and runtime build smoke: PASS
+- DOCX/PDF VendorLens report generation and structural wording checks: PASS
+- DOCX visual rendering: not available locally because LibreOffice/soffice is not installed or available on PATH
+
+PF-AZ9 VendorLens evidence path:
+
+- `docs/release/evidence/2026-05-27-patchforge-pfaz9-vendorlens/`
+
+PF-AZ9 VendorLens adds:
+
+- network/security vendor catalogue for Cisco, Fortinet, Palo Alto Networks, Juniper, F5, Citrix / NetScaler, Check Point, Sophos, SonicWall, WatchGuard, Aruba / HPE, Ubiquiti, MikroTik, Barracuda, Zscaler, Cloudflare, and Akamai
+- source-bound NVD CVE, Cisco PSIRT, and configured vendor RSS/JSON advisory adapter foundations
+- customer network asset records with product/model/firmware, enabled/disabled feature, exposure, and review-state evidence
+- configuration applicability engine with governed posture, urgency posture, evidence used, evidence missing, and final-approval false by default
+- Ask PatchForge config-aware SRA/AIP chat that remains advisory-only
+- VendorLens UI page and Admin: Vendor Sources controls
+- signed pack artefacts and DOCX/PDF report sections for Network Vendor Applicability and Customer Configuration Context
+
+PF-AZ9 VendorLens does not add vulnerability scanning, exploit generation, procedural exploit steps, patch deployment, production mutation, autonomous CAB approval, or autonomous risk acceptance.
+
 ## DIIaC PatchForge PF-AZ8A
 
 Release state: PF-AZ8A is deployed to Azure and live validated through the production UI/API as a signed-in PatchForge Admin user.

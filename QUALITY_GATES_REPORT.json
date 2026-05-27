@@ -1,13 +1,13 @@
 {
-  "release": "PF-AZ8A",
+  "release": "PF-AZ9-VENDORLENS",
   "date": "2026-05-27",
-  "status": "pass",
-  "image_tag": "pfaz8a-20260527-4f3bbe8",
-  "commit": "4f3bbe8",
+  "status": "local_pass_azure_pending",
+  "image_tag": null,
+  "commit": null,
   "previous_live_release": {
-    "release": "PF-AZ9",
-    "image_tag": "pfaz9-20260527-c494375",
-    "commit": "c494375",
+    "release": "PF-AZ8A",
+    "image_tag": "pfaz8a-20260527-4f3bbe8",
+    "commit": "4f3bbe8",
     "status": "azure_live_browser_validated"
   },
   "gates": [
@@ -15,69 +15,50 @@
     { "name": "backend_auth_syntax", "status": "pass" },
     { "name": "backend_reports_syntax", "status": "pass" },
     { "name": "backend_scheduler_syntax", "status": "pass" },
+    { "name": "backend_config_applicability_syntax", "status": "pass" },
     { "name": "sra_syntax", "status": "pass" },
-    { "name": "backend_tests", "status": "pass", "tests": 25 },
-    { "name": "frontend_tests", "status": "pass", "tests": 10 },
+    { "name": "backend_tests", "status": "pass", "tests": 27 },
+    { "name": "frontend_tests", "status": "pass", "tests": 11 },
     { "name": "frontend_build", "status": "pass" },
-    { "name": "python_runtime_tests", "status": "pass", "tests": 25 },
+    { "name": "python_runtime_tests", "status": "pass", "tests": 26 },
     { "name": "iac_validation", "status": "pass" },
     { "name": "bicep_build", "status": "pass" },
-    { "name": "frontend_docker_build", "status": "pass", "image": "diiac/patchforge-frontend:pfaz8a-local" },
-    { "name": "bridge_docker_build", "status": "pass", "image": "diiac/patchforge-bridge:pfaz8a-local" },
-    { "name": "runtime_docker_build", "status": "pass", "image": "diiac/patchforge-runtime:pfaz8a-local" },
+    { "name": "frontend_docker_build", "status": "pass", "image": "diiac/patchforge-frontend:pfaz9-local" },
+    { "name": "bridge_docker_build", "status": "pass", "image": "diiac/patchforge-bridge:pfaz9-local" },
+    { "name": "runtime_docker_build", "status": "pass", "image": "diiac/patchforge-runtime:pfaz9-local" },
     {
-      "name": "docx_pdf_report_quality",
+      "name": "vendorlens_docx_pdf_report_generation",
       "status": "pass",
-      "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz8a-report-specificity/local-report-qa/"
-    },
-    { "name": "github_push", "status": "pass", "commit": "4f3bbe8" },
-    {
-      "name": "azure_image_push",
-      "status": "pass",
-      "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz8a-report-specificity/build-push/acr-tag-verification.json"
+      "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz9-vendorlens/local-reports/"
     },
     {
-      "name": "azure_update",
-      "status": "pass",
-      "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz8a-report-specificity/deploy-apply/active-revisions-after-update.json"
+      "name": "docx_png_visual_render",
+      "status": "not_available",
+      "reason": "LibreOffice/soffice is unavailable on the local PATH"
     },
-    {
-      "name": "live_api_smoke",
-      "status": "pass",
-      "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz8a-report-specificity/live-ui/live-api-smoke.json"
-    },
-    {
-      "name": "live_ui_report_validation",
-      "status": "pass",
-      "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz8a-report-specificity/live-ui/ui-smoke-summary.json"
-    },
-    {
-      "name": "keyvault_signing_smoke",
-      "status": "pass",
-      "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz8a-report-specificity/live-ui/keyvault-signing-smoke.json"
-    },
-    {
-      "name": "postgres_smoke",
-      "status": "pass",
-      "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz8a-report-specificity/live-ui/postgres-smoke.json"
-    }
+    { "name": "github_push", "status": "pending" },
+    { "name": "azure_image_push", "status": "pending" },
+    { "name": "azure_update", "status": "pending" },
+    { "name": "live_api_smoke", "status": "pending" },
+    { "name": "live_ui_vendorlens_validation", "status": "pending" },
+    { "name": "keyvault_signing_smoke", "status": "pending" },
+    { "name": "postgres_smoke", "status": "pending" }
   ],
-  "wording_and_boundary_checks": {
-    "old_autonomous_heading_absent": true,
-    "automated_governance_heading_present": true,
-    "human_approval_notice_present": true,
-    "urgent_scope_confirmation_present": true,
-    "kev_epss_low_signal_explained": true,
-    "vendor_missing_evidence_explained": true,
-    "final_approval_false_until_human_review": true,
+  "vendorlens_boundary_checks": {
+    "source_bound_advisory_intelligence": true,
+    "human_review_required": true,
+    "final_approval_false_by_default": true,
     "exploit_instructions_absent": true,
-    "patch_deployment_implication_absent": true
+    "patch_deployment_endpoint_absent": true,
+    "scanner_endpoint_absent": true,
+    "autonomous_cab_approval_absent": true,
+    "autonomous_risk_acceptance_absent": true
   },
-  "live_pack": {
-    "pack_id": "PF-20260527-934d6e60",
-    "verified": true,
-    "manifest_ok": true,
-    "signature_ok": true,
-    "final_approval_issued": false
+  "report_checks": {
+    "network_vendor_applicability_section_present": true,
+    "customer_configuration_context_section_present": true,
+    "sra_aip_chat_summary_present": true,
+    "final_approval_not_issued_sentence_present": true,
+    "not_vulnerable_claim_absent": true
   }
 }

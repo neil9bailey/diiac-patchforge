@@ -61,6 +61,123 @@ export type VendorProfile = {
   review_state?: string;
 };
 
+export type NetworkVendorProfile = {
+  vendor_id: string;
+  vendor_name: string;
+  vendor_category: string;
+  advisory_source_type?: string;
+  advisory_source_url?: string | null;
+  product_families?: string[];
+  source_review_state?: string;
+  last_refresh_at?: string | null;
+  enabled?: boolean;
+};
+
+export type CustomerNetworkAsset = {
+  asset_id: string;
+  vendor_id: string;
+  product_family?: string | null;
+  model?: string | null;
+  firmware_version?: string | null;
+  environment?: string;
+  site?: string | null;
+  service_owner?: string | null;
+  internet_facing?: boolean;
+  management_exposure?: string;
+  enabled_features?: string[];
+  disabled_features?: string[];
+  config_evidence_refs?: string[];
+  review_state?: string;
+  evidence_state?: string;
+};
+
+export type VendorSecurityAdvisory = {
+  advisory_id: string;
+  vendor_id: string;
+  vendor_name?: string;
+  cve?: string | null;
+  title?: string;
+  severity?: string;
+  product_family?: string | null;
+  affected_products?: string[];
+  affected_models?: string[];
+  affected_versions?: string[];
+  fixed_versions?: string[];
+  affected_features?: string[];
+  known_exploited?: boolean;
+  patch_available?: boolean;
+  source_url?: string | null;
+  review_state?: string;
+  evidence_state?: string;
+};
+
+export type ConfigApplicabilityAssessment = {
+  assessment_id: string;
+  advisory_id?: string | null;
+  asset_id?: string | null;
+  cve?: string | null;
+  vendor_id?: string | null;
+  affected_feature?: string | null;
+  affected_version_status: string;
+  feature_enabled_status: string;
+  exposure_status: string;
+  applicability_posture: string;
+  urgency_posture: string;
+  evidence_required: string[];
+  evidence_gaps: Array<{
+    gap_id?: string;
+    plain_english_gap?: string;
+    why_it_matters?: string;
+    required_evidence?: string;
+    suggested_owner_role?: string;
+    next_decision_gate?: string;
+  }>;
+  decision_not_allowed_yet?: string;
+  human_review_required: boolean;
+  final_approval_issued: boolean;
+};
+
+export type VendorLensChatResponse = {
+  short_answer: string;
+  current_governed_posture: string;
+  why: string;
+  evidence_used: Array<Record<string, unknown>>;
+  evidence_missing: Array<Record<string, unknown>>;
+  configuration_assumptions: string[];
+  recommended_next_action: string;
+  decision_not_allowed_yet: string;
+  human_review_required: boolean;
+  final_approval_issued: boolean;
+};
+
+export type VendorLensChatSession = {
+  session_id: string;
+  title?: string;
+  advisory_id?: string | null;
+  asset_id?: string | null;
+  assessment_id?: string | null;
+  latest_response?: VendorLensChatResponse;
+};
+
+export type VendorLensDashboard = {
+  vendors_tracked: number;
+  active_advisories: number;
+  known_exploited_vendor_cves: number;
+  customer_estate_matches: number;
+  config_unknown_count: number;
+  emergency_attention_required: number;
+  recent_assessments?: ConfigApplicabilityAssessment[];
+};
+
+export type VendorLensState = {
+  dashboard: VendorLensDashboard | null;
+  vendors: NetworkVendorProfile[];
+  assets: CustomerNetworkAsset[];
+  advisories: VendorSecurityAdvisory[];
+  latestAssessment: ConfigApplicabilityAssessment | null;
+  latestChat: VendorLensChatSession | null;
+};
+
 export type FindingIntelligence = {
   intelligence_id: string;
   generated_at: string;
@@ -296,6 +413,16 @@ export type PatchForgeApi = {
   listVendors(tenantId: string): Promise<VendorProfile[]>;
   sourceFeeds(tenantId: string): Promise<SourceFeedState>;
   refreshSourceFeed(tenantId: string, payload: Record<string, unknown>): Promise<SourceFeedRun>;
+  vendorLensDashboard(tenantId: string): Promise<VendorLensDashboard>;
+  listNetworkVendors(tenantId: string): Promise<NetworkVendorProfile[]>;
+  listCustomerNetworkAssets(tenantId: string): Promise<CustomerNetworkAsset[]>;
+  upsertCustomerNetworkAsset(tenantId: string, payload: Record<string, unknown>): Promise<CustomerNetworkAsset>;
+  listVendorSecurityAdvisories(tenantId: string): Promise<VendorSecurityAdvisory[]>;
+  ingestVendorSecurityAdvisory(tenantId: string, payload: Record<string, unknown>): Promise<VendorSecurityAdvisory>;
+  refreshVendorLensSource(tenantId: string, payload: Record<string, unknown>): Promise<SourceFeedRun>;
+  assessConfigApplicability(tenantId: string, payload: Record<string, unknown>): Promise<ConfigApplicabilityAssessment>;
+  startVendorLensChat(tenantId: string, payload: Record<string, unknown>): Promise<{ session: VendorLensChatSession; response: VendorLensChatResponse }>;
+  sendVendorLensChatMessage(tenantId: string, sessionId: string, payload: Record<string, unknown>): Promise<{ session: VendorLensChatSession; response: VendorLensChatResponse }>;
   actionCenter(tenantId: string): Promise<FindingIntelligence[]>;
   findingIntelligence(tenantId: string, vulnerabilityId: string): Promise<FindingIntelligence>;
   analyseFinding(tenantId: string, vulnerabilityId: string, payload?: Record<string, unknown>): Promise<{ intelligence: FindingIntelligence; bayesian?: BayesianAssessment }>;
@@ -446,6 +573,64 @@ export function createPatchForgeApi(getAccessToken: () => Promise<string>, confi
         body: JSON.stringify(payload)
       });
       return body.source_feed_run;
+    },
+    async vendorLensDashboard(tenantId) {
+      const body = await request<{ dashboard: VendorLensDashboard }>("/api/patchforge/vendorlens/dashboard", tenantId);
+      return body.dashboard;
+    },
+    async listNetworkVendors(tenantId) {
+      const body = await request<{ vendors: NetworkVendorProfile[] }>("/api/patchforge/vendorlens/vendors", tenantId);
+      return body.vendors || [];
+    },
+    async listCustomerNetworkAssets(tenantId) {
+      const body = await request<{ assets: CustomerNetworkAsset[] }>("/api/patchforge/vendorlens/assets", tenantId);
+      return body.assets || [];
+    },
+    async upsertCustomerNetworkAsset(tenantId, payload) {
+      const body = await request<{ asset: CustomerNetworkAsset }>("/api/patchforge/vendorlens/assets", tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return body.asset;
+    },
+    async listVendorSecurityAdvisories(tenantId) {
+      const body = await request<{ advisories: VendorSecurityAdvisory[] }>("/api/patchforge/vendorlens/advisories", tenantId);
+      return body.advisories || [];
+    },
+    async ingestVendorSecurityAdvisory(tenantId, payload) {
+      const body = await request<{ advisory: VendorSecurityAdvisory }>("/api/patchforge/vendorlens/advisories/ingest", tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return body.advisory;
+    },
+    async refreshVendorLensSource(tenantId, payload) {
+      const body = await request<{ source_feed_run: SourceFeedRun }>("/api/patchforge/vendorlens/sources/refresh", tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return body.source_feed_run;
+    },
+    async assessConfigApplicability(tenantId, payload) {
+      const body = await request<{ assessment: ConfigApplicabilityAssessment }>("/api/patchforge/vendorlens/applicability/assess", tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return body.assessment;
+    },
+    async startVendorLensChat(tenantId, payload) {
+      const body = await request<{ session: VendorLensChatSession; response: VendorLensChatResponse }>("/api/patchforge/vendorlens/chat", tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return { session: body.session, response: body.response };
+    },
+    async sendVendorLensChatMessage(tenantId, sessionId, payload) {
+      const body = await request<{ session: VendorLensChatSession; response: VendorLensChatResponse }>(`/api/patchforge/vendorlens/chat/${encodeURIComponent(sessionId)}`, tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return { session: body.session, response: body.response };
     },
     async actionCenter(tenantId) {
       const body = await request<{ findings: FindingIntelligence[] }>("/api/patchforge/action-center", tenantId);

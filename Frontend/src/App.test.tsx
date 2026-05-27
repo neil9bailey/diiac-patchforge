@@ -221,6 +221,160 @@ function createApi(overrides: Partial<PatchForgeApi> = {}): PatchForgeApi {
       completed_at: "2026-05-27T08:00:00Z",
       can_close_hard_gates_alone: false
     })),
+    vendorLensDashboard: vi.fn(async () => ({
+      vendors_tracked: 17,
+      active_advisories: 1,
+      known_exploited_vendor_cves: 1,
+      customer_estate_matches: 0,
+      config_unknown_count: 1,
+      emergency_attention_required: 0,
+      recent_assessments: []
+    })),
+    listNetworkVendors: vi.fn(async () => [{
+      vendor_id: "fortinet",
+      vendor_name: "Fortinet",
+      vendor_category: "infrastructure_networking",
+      advisory_source_type: "public_vendor_advisory",
+      advisory_source_url: "https://www.fortiguard.com/psirt",
+      product_families: ["FortiGate", "FortiOS"],
+      source_review_state: "reference_catalogue",
+      enabled: true
+    }]),
+    listCustomerNetworkAssets: vi.fn(async () => [{
+      asset_id: "net-asset-1",
+      vendor_id: "fortinet",
+      product_family: "FortiGate",
+      model: "100F",
+      firmware_version: "7.2.7",
+      internet_facing: true,
+      management_exposure: "internet",
+      enabled_features: ["ipsec_vpn"],
+      disabled_features: ["ssl_vpn"],
+      config_evidence_refs: [],
+      review_state: "pending_review",
+      evidence_state: "referenced"
+    }]),
+    upsertCustomerNetworkAsset: vi.fn(async (_tenantId, payload) => ({
+      asset_id: "net-asset-2",
+      vendor_id: String(payload.vendor_id || "fortinet"),
+      product_family: String(payload.product_family || "FortiGate"),
+      model: String(payload.model || "100F"),
+      firmware_version: String(payload.firmware_version || "7.2.7"),
+      enabled_features: [],
+      disabled_features: [],
+      config_evidence_refs: [],
+      review_state: "pending_review",
+      evidence_state: "referenced"
+    })),
+    listVendorSecurityAdvisories: vi.fn(async () => [{
+      advisory_id: "fortinet-CVE-2026-REAL-001",
+      vendor_id: "fortinet",
+      vendor_name: "Fortinet",
+      cve: "CVE-2026-REAL-001",
+      title: "FortiGate SSL-VPN advisory",
+      severity: "critical",
+      product_family: "FortiGate",
+      affected_versions: ["7.2.7"],
+      affected_features: ["ssl_vpn"],
+      known_exploited: true,
+      patch_available: true,
+      review_state: "pending_review",
+      evidence_state: "referenced"
+    }]),
+    ingestVendorSecurityAdvisory: vi.fn(async (_tenantId, payload) => ({
+      advisory_id: "fortinet-CVE-2026-REAL-002",
+      vendor_id: String(payload.vendor_id || "fortinet"),
+      cve: String(payload.cve || "CVE-2026-REAL-002"),
+      title: String(payload.title || "Vendor advisory"),
+      severity: String(payload.severity || "high"),
+      affected_versions: [],
+      affected_features: [],
+      review_state: "pending_review",
+      evidence_state: "referenced"
+    })),
+    refreshVendorLensSource: vi.fn(async () => ({
+      run_id: "run-vendorlens-nvd",
+      feed_id: "nvd-cve-2",
+      feed_name: "NVD CVE 2.0",
+      status: "completed",
+      records_seen: 1,
+      records_ingested: 1,
+      records_enriched: 0,
+      message: "1 NVD CVE records ingested as source-bound pending-review vendor intelligence.",
+      completed_at: "2026-05-27T08:00:00Z",
+      can_close_hard_gates_alone: false
+    })),
+    assessConfigApplicability: vi.fn(async () => ({
+      assessment_id: "cfg-app-1",
+      advisory_id: "fortinet-CVE-2026-REAL-001",
+      asset_id: "net-asset-1",
+      cve: "CVE-2026-REAL-001",
+      vendor_id: "fortinet",
+      affected_feature: "ssl_vpn",
+      affected_version_status: "affected",
+      feature_enabled_status: "disabled_unreviewed",
+      exposure_status: "internet_or_management_exposed",
+      applicability_posture: "requires_review",
+      urgency_posture: "urgent_scope_confirmation_required",
+      evidence_required: ["reviewed_feature_configuration"],
+      evidence_gaps: [{
+        gap_id: "feature_disabled_review",
+        plain_english_gap: "SSL VPN is recorded as disabled, but that configuration evidence is not reviewed.",
+        why_it_matters: "PatchForge cannot support an accountable decision without reviewed evidence.",
+        required_evidence: "Reviewed configuration export.",
+        suggested_owner_role: "Network engineering lead",
+        next_decision_gate: "Configuration applicability review"
+      }],
+      human_review_required: true,
+      final_approval_issued: false
+    })),
+    startVendorLensChat: vi.fn(async () => ({
+      session: {
+        session_id: "vl-chat-1",
+        advisory_id: "fortinet-CVE-2026-REAL-001",
+        asset_id: "net-asset-1",
+        assessment_id: "cfg-app-1",
+        latest_response: {
+          short_answer: "PatchForge cannot safely declare this configuration unaffected yet; complete scope and configuration evidence review first.",
+          current_governed_posture: "urgent_scope_confirmation_required",
+          why: "Configuration evidence is incomplete.",
+          evidence_used: [],
+          evidence_missing: [],
+          configuration_assumptions: [],
+          recommended_next_action: "Confirm feature state.",
+          decision_not_allowed_yet: "Final decision requires reviewed evidence and named human approval.",
+          human_review_required: true,
+          final_approval_issued: false
+        }
+      },
+      response: {
+        short_answer: "PatchForge cannot safely declare this configuration unaffected yet; complete scope and configuration evidence review first.",
+        current_governed_posture: "urgent_scope_confirmation_required",
+        why: "Configuration evidence is incomplete.",
+        evidence_used: [],
+        evidence_missing: [],
+        configuration_assumptions: [],
+        recommended_next_action: "Confirm feature state.",
+        decision_not_allowed_yet: "Final decision requires reviewed evidence and named human approval.",
+        human_review_required: true,
+        final_approval_issued: false
+      }
+    })),
+    sendVendorLensChatMessage: vi.fn(async () => ({
+      session: { session_id: "vl-chat-1" },
+      response: {
+        short_answer: "Human review remains required.",
+        current_governed_posture: "urgent_scope_confirmation_required",
+        why: "Evidence is incomplete.",
+        evidence_used: [],
+        evidence_missing: [],
+        configuration_assumptions: [],
+        recommended_next_action: "Attach evidence.",
+        decision_not_allowed_yet: "Final decision requires reviewed evidence.",
+        human_review_required: true,
+        final_approval_issued: false
+      }
+    })),
     actionCenter: vi.fn(async () => [finding]),
     findingIntelligence: vi.fn(async () => finding),
     analyseFinding: vi.fn(async () => ({ intelligence: finding })),
@@ -287,6 +441,20 @@ describe("PatchForge guided shell", () => {
     await waitFor(() => expect(api.actionCenter).toHaveBeenCalled());
     fireEvent.click(screen.getByRole("button", { name: "Refresh KEV" }));
     await waitFor(() => expect(api.refreshSourceFeed).toHaveBeenCalledWith("diiac.io", expect.objectContaining({ feed_id: "cisa-kev", limit: 5 })));
+  });
+
+  it("renders VendorLens and runs config-aware advisory chat", async () => {
+    const api = createApi();
+    render(<App auth={auth} api={api} />);
+    fireEvent.click(await screen.findByRole("button", { name: "VendorLens" }));
+    expect(screen.getAllByRole("heading", { name: "VendorLens" }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Fortinet").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("CVE-2026-REAL-001").length).toBeGreaterThanOrEqual(1);
+    fireEvent.click(screen.getByRole("button", { name: "Assess" }));
+    await waitFor(() => expect(api.assessConfigApplicability).toHaveBeenCalled());
+    fireEvent.click(screen.getAllByRole("button", { name: "Ask PatchForge" })[0]);
+    await waitFor(() => expect(api.startVendorLensChat).toHaveBeenCalled());
+    expect(await screen.findByText(/cannot safely declare this configuration unaffected/i)).toBeInTheDocument();
   });
 
   it("renders reports and downloads DOCX from signed packs", async () => {

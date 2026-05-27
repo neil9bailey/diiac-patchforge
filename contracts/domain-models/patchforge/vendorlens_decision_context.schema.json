@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/vendorlens_decision_context.schema.json",
+  "title": "PatchForge VendorLens Decision Context",
+  "type": "object",
+  "required": ["context_id", "source_bound", "advisory_only", "human_review_required", "final_approval_issued"],
+  "properties": {
+    "context_id": { "type": "string" },
+    "assessment_id": { "type": ["string", "null"] },
+    "applicability_posture": { "type": ["string", "null"] },
+    "urgency_posture": { "type": ["string", "null"] },
+    "recommended_next_action": { "type": ["string", "null"] },
+    "decision_not_allowed_yet": { "type": ["string", "null"] },
+    "evidence_gaps": { "type": "array", "items": { "type": "object" } },
+    "source_bound": { "const": true },
+    "advisory_only": { "const": true },
+    "human_review_required": { "const": true },
+    "can_close_hard_gates_alone": { "const": false },
+    "final_approval_issued": { "default": false, "type": "boolean" }
+  }
+}

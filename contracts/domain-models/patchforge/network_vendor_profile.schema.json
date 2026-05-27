@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/network_vendor_profile.schema.json",
+  "title": "PatchForge Network Vendor Profile",
+  "type": "object",
+  "required": ["tenant_id", "vendor_id", "vendor_name", "vendor_category", "advisory_source_type", "source_review_state", "enabled"],
+  "properties": {
+    "tenant_id": { "type": "string" },
+    "vendor_id": { "type": "string" },
+    "vendor_name": { "type": "string" },
+    "vendor_category": { "enum": ["infrastructure_networking", "identity_endpoint_cloud", "virtualization_platform", "enterprise_apps", "ot_industrial"] },
+    "advisory_source_type": { "type": "string" },
+    "advisory_source_url": { "type": ["string", "null"], "format": "uri" },
+    "product_families": { "type": "array", "items": { "type": "string" } },
+    "source_review_state": { "default": "reference_catalogue", "type": "string" },
+    "last_refresh_at": { "type": ["string", "null"], "format": "date-time" },
+    "enabled": { "type": "boolean" },
+    "source_bound": { "const": true },
+    "can_close_hard_gates_alone": { "const": false }
+  }
+}

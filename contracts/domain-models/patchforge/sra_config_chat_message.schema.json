@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/sra_config_chat_message.schema.json",
+  "title": "PatchForge SRA Config Chat Message",
+  "type": "object",
+  "required": ["tenant_id", "message_id", "session_id", "role", "content", "advisory_only", "final_approval_issued"],
+  "properties": {
+    "tenant_id": { "type": "string" },
+    "message_id": { "type": "string" },
+    "session_id": { "type": "string" },
+    "role": { "enum": ["user", "assistant", "system"] },
+    "content": { "type": "string" },
+    "payload": { "type": "object" },
+    "advisory_only": { "const": true },
+    "final_approval_issued": { "default": false, "type": "boolean" }
+  }
+}

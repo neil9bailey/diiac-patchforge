@@ -1,0 +1,27 @@
+{
+  "release": "PF-AZ9 VendorLens",
+  "date": "2026-05-27",
+  "status": "pass_with_render_limitation",
+  "reports_generated": [
+    "PF-VENDORLENS-LOCAL-001-customer_patch_governance_pack.docx",
+    "PF-VENDORLENS-LOCAL-001-customer_patch_governance_pack.pdf",
+    "PF-VENDORLENS-LOCAL-001-board_vulnerability_remediation_summary.docx",
+    "PF-VENDORLENS-LOCAL-001-board_vulnerability_remediation_summary.pdf",
+    "PF-VENDORLENS-LOCAL-001-cab_patch_decision_report.docx",
+    "PF-VENDORLENS-LOCAL-001-cab_patch_decision_report.pdf"
+  ],
+  "docx_structural_checks": {
+    "network_vendor_applicability_section_present": true,
+    "customer_configuration_context_section_present": true,
+    "sra_aip_chat_summary_present": true,
+    "procedural_exploit_boundary_present": true,
+    "final_approval_not_issued_sentence_present": true,
+    "not_vulnerable_claim_absent": true
+  },
+  "pdf_generation": {
+    "customer_pack_pdf_generated": true,
+    "board_summary_pdf_generated": true,
+    "cab_report_pdf_generated": true
+  },
+  "visual_render_note": "DOCX-to-PNG visual rendering could not be completed in the local Codex environment because LibreOffice/soffice is not installed or available on PATH. The DOCX files were regenerated and structurally inspected; live UI exported reports will be rechecked after Azure deployment."
+}

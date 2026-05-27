@@ -779,7 +779,8 @@ td small {
 }
 
 input,
-select {
+select,
+textarea {
   width: 100%;
   min-height: 38px;
   border: 1px solid #35474d;
@@ -787,6 +788,13 @@ select {
   background: #0b1113;
   color: var(--text);
   padding: 0 10px;
+}
+
+textarea {
+  min-height: 112px;
+  padding: 10px;
+  resize: vertical;
+  line-height: 1.45;
 }
 
 .checkbox-grid {
@@ -976,6 +984,49 @@ select {
   gap: 8px;
 }
 
+.vendorlens-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.vendorlens-tab {
+  min-height: 34px;
+  border: 1px solid #34474d;
+  border-radius: 999px;
+  background: #11191c;
+  color: #dbe6e3;
+  padding: 0 10px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.vendorlens-tab:hover,
+.vendorlens-tab.active {
+  border-color: var(--teal);
+  color: #ffffff;
+  background: #142225;
+}
+
+.vendorlens-context {
+  margin-top: 0;
+}
+
+.chat-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.chat-layout label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
 .guide-fact {
   display: grid;
   gap: 4px;
@@ -1054,7 +1105,8 @@ select {
   .decision-controls,
   .action-hero,
   .finding-brief,
-  .review-runway {
+  .review-runway,
+  .chat-layout {
     grid-template-columns: 1fr;
   }
 

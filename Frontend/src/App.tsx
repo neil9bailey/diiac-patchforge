@@ -23,6 +23,7 @@ import {
   PanelLeft,
   Radar,
   RefreshCw,
+  MessageSquareText,
   ShieldAlert,
   SlidersHorizontal,
   TriangleAlert,
@@ -34,15 +35,21 @@ import {
   AdminHealth,
   AssetRecord,
   BayesianAssessment,
+  ConfigApplicabilityAssessment,
+  CustomerNetworkAsset,
   DecisionPackRecord,
   FindingIntelligence,
+  NetworkVendorProfile,
   PatchForgeApi,
   PatchForgeMetrics,
   ReportCatalogItem,
   ServiceRecord,
   SourceFeedState,
   ThreatLandscapeSummary,
+  VendorLensChatSession,
+  VendorLensState,
   VendorProfile,
+  VendorSecurityAdvisory,
   VulnerabilityRecord,
   createPatchForgeApi,
   getPatchForgeConfig
@@ -68,6 +75,7 @@ type PageKey =
   | "Reports"
   | "Source Feeds"
   | "Vendor & Threat Landscape"
+  | "VendorLens"
   | "Admin";
 
 type NavItem = {
@@ -92,6 +100,7 @@ type LiveState = {
   bayesian: BayesianAssessment | null;
   threatSummary: ThreatLandscapeSummary | null;
   vendors: VendorProfile[];
+  vendorLens: VendorLensState;
   sourceFeedState: SourceFeedState;
   adminHealth: AdminHealth | null;
   adminConfig: AdminConfig;
@@ -105,6 +114,7 @@ const navItems: NavItem[] = [
   { label: "Finding Detail", icon: ShieldAlert },
   { label: "Review & Approve", icon: ClipboardCheck },
   { label: "Reports & Packs", icon: FileText },
+  { label: "VendorLens", icon: Network },
   { label: "Guide", icon: BookOpenCheck },
   { label: "Admin", icon: SlidersHorizontal }
 ];
@@ -131,6 +141,7 @@ const adminSections = [
   "KRA / DIIaC IT Integration",
   "Scanner Integrations",
   "Source Feeds",
+  "VendorLens Sources",
   "Evidence Models",
   "Policy Packs",
   "Decision State Rules",
@@ -164,6 +175,37 @@ const emptyForm = {
   ot_relevant: false
 };
 
+const emptyNetworkAssetForm = {
+  vendor_id: "fortinet",
+  product_family: "FortiGate",
+  model: "",
+  firmware_version: "",
+  environment: "production",
+  site: "",
+  service_owner: "",
+  management_exposure: "unknown",
+  enabled_features: "",
+  disabled_features: "",
+  config_evidence_refs: "",
+  internet_facing: false,
+  review_state: "pending_review",
+  evidence_state: "referenced"
+};
+
+const emptyVendorAdvisoryForm = {
+  vendor_id: "fortinet",
+  cve: "",
+  title: "",
+  severity: "high",
+  product_family: "FortiGate",
+  affected_versions: "",
+  fixed_versions: "",
+  affected_features: "",
+  source_url: "",
+  known_exploited: false,
+  patch_available: false
+};
+
 export default function App({ auth, api, initialTenantId }: AppProps) {
   const contextAuth = usePatchForgeAuth();
   const session = auth || contextAuth;
@@ -180,6 +222,9 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
   const [adminEnvironment, setAdminEnvironment] = useState(config.environmentLabel);
   const [adminTier, setAdminTier] = useState("Enterprise Strict");
   const [sraResult, setSraResult] = useState<Record<string, unknown> | null>(null);
+  const [networkAssetForm, setNetworkAssetForm] = useState(emptyNetworkAssetForm);
+  const [vendorAdvisoryForm, setVendorAdvisoryForm] = useState(emptyVendorAdvisoryForm);
+  const [vendorLensQuestion, setVendorLensQuestion] = useState("We use this firewall model and this feature is disabled. Do we urgently need to patch?");
   const canWrite = hasAnyRole(session.roles, ["PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.Admin"]);
   const isAdmin = hasAnyRole(session.roles, ["PatchForge.Admin"]);
   const canReadAdmin = hasAnyRole(session.roles, ["PatchForge.Admin", "PatchForge.Auditor"]);
@@ -199,7 +244,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
     setRefreshing(true);
     setOperationError(null);
     try {
-      const [metrics, vulnerabilities, findings, assets, services, decisionPacks, reports, threatSummary, vendors, sourceFeedState, adminHealth, adminConfig] = await Promise.all([
+      const [metrics, vulnerabilities, findings, assets, services, decisionPacks, reports, threatSummary, vendors, sourceFeedState, vendorLensDashboard, networkVendors, customerNetworkAssets, vendorSecurityAdvisories, adminHealth, adminConfig] = await Promise.all([
         liveApi.metrics(tenantId),
         liveApi.listVulnerabilities(tenantId),
         liveApi.actionCenter(tenantId),
@@ -210,10 +255,36 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         liveApi.threatLandscapeSummary(tenantId),
         liveApi.listVendors(tenantId),
         liveApi.sourceFeeds(tenantId),
+        liveApi.vendorLensDashboard(tenantId),
+        liveApi.listNetworkVendors(tenantId),
+        liveApi.listCustomerNetworkAssets(tenantId),
+        liveApi.listVendorSecurityAdvisories(tenantId),
         canReadAdmin ? liveApi.adminHealth(tenantId) : Promise.resolve(null),
         canReadAdmin ? liveApi.adminConfig(tenantId) : Promise.resolve({} as AdminConfig)
       ]);
-      setState({ metrics, findings, vulnerabilities, assets, services, decisionPacks, reports, threatSummary, vendors, sourceFeedState, bayesian: null, adminHealth, adminConfig });
+      setState((current) => ({
+        metrics,
+        findings,
+        vulnerabilities,
+        assets,
+        services,
+        decisionPacks,
+        reports,
+        threatSummary,
+        vendors,
+        sourceFeedState,
+        vendorLens: {
+          dashboard: vendorLensDashboard,
+          vendors: networkVendors,
+          assets: customerNetworkAssets,
+          advisories: vendorSecurityAdvisories,
+          latestAssessment: current.vendorLens.latestAssessment,
+          latestChat: current.vendorLens.latestChat
+        },
+        bayesian: null,
+        adminHealth,
+        adminConfig
+      }));
       setSelectedVulnerabilityId((current) => current || vulnerabilities[0]?.vulnerability_id || "");
       const general = adminConfig.general as { environment?: string; governance_tier?: string } | undefined;
       setAdminEnvironment(general?.environment || config.environmentLabel);
@@ -282,7 +353,11 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
       const pack = await liveApi.generateDecisionPack(tenantId, {
         vulnerability_id: selectedVulnerabilityId,
         requested_posture: selectedPosture,
-        bayesian_snapshot: state.bayesian
+        bayesian_snapshot: state.bayesian,
+        config_applicability_assessment: state.vendorLens.latestAssessment,
+        sra_config_chat_session: state.vendorLens.latestChat,
+        asset_id: state.vendorLens.latestAssessment?.asset_id || state.vendorLens.assets[0]?.asset_id,
+        advisory_id: state.vendorLens.latestAssessment?.advisory_id || state.vendorLens.advisories[0]?.advisory_id
       });
       setOperationMessage(`Signed decision pack ${pack.pack_id} generated.`);
       await loadLiveState();
@@ -372,6 +447,115 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
       setActivePage("Source Feeds");
     } catch (error) {
       setOperationError(error instanceof Error ? error.message : "Source feed refresh failed.");
+    }
+  }
+
+  async function handleSaveNetworkAsset(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setOperationMessage(null);
+    setOperationError(null);
+    try {
+      const asset = await liveApi.upsertCustomerNetworkAsset(tenantId, {
+        ...networkAssetForm,
+        enabled_features: parseList(networkAssetForm.enabled_features),
+        disabled_features: parseList(networkAssetForm.disabled_features),
+        config_evidence_refs: parseList(networkAssetForm.config_evidence_refs)
+      });
+      setOperationMessage(`VendorLens asset ${asset.asset_id} saved as source-bound customer evidence.`);
+      await loadLiveState();
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : "VendorLens asset save failed.");
+    }
+  }
+
+  async function handleIngestVendorLensAdvisory(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setOperationMessage(null);
+    setOperationError(null);
+    try {
+      const advisory = await liveApi.ingestVendorSecurityAdvisory(tenantId, {
+        ...vendorAdvisoryForm,
+        affected_versions: parseList(vendorAdvisoryForm.affected_versions),
+        fixed_versions: parseList(vendorAdvisoryForm.fixed_versions),
+        affected_features: parseList(vendorAdvisoryForm.affected_features),
+        review_state: "pending_review",
+        evidence_state: "referenced"
+      });
+      setOperationMessage(`VendorLens advisory ${advisory.advisory_id} ingested as pending-review source intelligence.`);
+      await loadLiveState();
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : "VendorLens advisory ingest failed.");
+    }
+  }
+
+  async function handleAssessVendorLens() {
+    setOperationMessage(null);
+    setOperationError(null);
+    const asset = state.vendorLens.assets[0];
+    const advisory = state.vendorLens.advisories[0];
+    if (!asset || !advisory) {
+      setOperationError("VendorLens needs at least one customer network asset and one vendor advisory before assessing applicability.");
+      return;
+    }
+    try {
+      const assessment = await liveApi.assessConfigApplicability(tenantId, {
+        asset_id: asset.asset_id,
+        advisory_id: advisory.advisory_id
+      });
+      setState((current) => ({ ...current, vendorLens: { ...current.vendorLens, latestAssessment: assessment } }));
+      setOperationMessage(`VendorLens assessed ${humanize(assessment.urgency_posture)}. Final approval remains human-controlled.`);
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : "VendorLens applicability assessment failed.");
+    }
+  }
+
+  async function handleAskVendorLens() {
+    setOperationMessage(null);
+    setOperationError(null);
+    const asset = state.vendorLens.assets[0];
+    const advisory = state.vendorLens.advisories[0];
+    if (!asset || !advisory) {
+      setOperationError("Add or select a network asset and vendor advisory before asking PatchForge.");
+      return;
+    }
+    try {
+      const chat = await liveApi.startVendorLensChat(tenantId, {
+        question: vendorLensQuestion,
+        asset_id: asset.asset_id,
+        advisory_id: advisory.advisory_id,
+        assessment: state.vendorLens.latestAssessment || undefined
+      });
+      setState((current) => ({
+        ...current,
+        vendorLens: {
+          ...current.vendorLens,
+          latestChat: chat.session
+        }
+      }));
+      setOperationMessage(`Ask PatchForge response: ${chat.response.short_answer}`);
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : "Ask PatchForge request failed.");
+    }
+  }
+
+  async function handleRefreshVendorLensSource() {
+    setOperationMessage(null);
+    setOperationError(null);
+    const cve = vendorAdvisoryForm.cve.trim() || state.vendorLens.advisories[0]?.cve || selectedVulnerabilityId;
+    if (!cve) {
+      setOperationError("Enter a CVE before refreshing NVD metadata.");
+      return;
+    }
+    try {
+      const run = await liveApi.refreshVendorLensSource(tenantId, {
+        adapter: "nvd_cve_api",
+        cve,
+        vendor_id: vendorAdvisoryForm.vendor_id
+      });
+      setOperationMessage(`${run.feed_name} ${run.status}: ${run.message || "VendorLens source refresh recorded."}`);
+      await loadLiveState();
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : "VendorLens source refresh failed.");
     }
   }
 
@@ -560,6 +744,23 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
             {activePage === "Reports" && <Reports decisionPacks={state.decisionPacks} reports={state.reports} onDownloadReport={handleDownloadReport} />}
             {activePage === "Source Feeds" && <SourceFeeds sourceFeedState={state.sourceFeedState} onRefresh={handleRefreshSourceFeed} canWrite={canWrite} />}
             {activePage === "Vendor & Threat Landscape" && <VendorThreatLandscape vendors={state.vendors} threatSummary={state.threatSummary} />}
+            {activePage === "VendorLens" && (
+              <VendorLens
+                vendorLens={state.vendorLens}
+                assetForm={networkAssetForm}
+                setAssetForm={setNetworkAssetForm}
+                advisoryForm={vendorAdvisoryForm}
+                setAdvisoryForm={setVendorAdvisoryForm}
+                question={vendorLensQuestion}
+                setQuestion={setVendorLensQuestion}
+                onSaveAsset={handleSaveNetworkAsset}
+                onIngestAdvisory={handleIngestVendorLensAdvisory}
+                onAssess={handleAssessVendorLens}
+                onAsk={handleAskVendorLens}
+                onRefreshSource={handleRefreshVendorLensSource}
+                canWrite={canWrite}
+              />
+            )}
             {activePage === "Admin" && (
               isAdmin ? <Admin
                 tenantId={tenantId}
@@ -1607,6 +1808,323 @@ function VendorThreatLandscape({ vendors, threatSummary }: { vendors: VendorProf
   );
 }
 
+const vendorLensTabs = [
+  "Network Vendors",
+  "Product Families",
+  "Advisories & CVEs",
+  "Customer Estate Match",
+  "Config Applicability",
+  "Urgency & Recommended Posture",
+  "Ask PatchForge",
+  "Vendor Evidence Packs",
+  "Admin: Vendor Sources"
+];
+
+function VendorLens({
+  vendorLens,
+  assetForm,
+  setAssetForm,
+  advisoryForm,
+  setAdvisoryForm,
+  question,
+  setQuestion,
+  onSaveAsset,
+  onIngestAdvisory,
+  onAssess,
+  onAsk,
+  onRefreshSource,
+  canWrite
+}: {
+  vendorLens: VendorLensState;
+  assetForm: typeof emptyNetworkAssetForm;
+  setAssetForm: (value: typeof emptyNetworkAssetForm) => void;
+  advisoryForm: typeof emptyVendorAdvisoryForm;
+  setAdvisoryForm: (value: typeof emptyVendorAdvisoryForm) => void;
+  question: string;
+  setQuestion: (value: string) => void;
+  onSaveAsset: (event: FormEvent<HTMLFormElement>) => void;
+  onIngestAdvisory: (event: FormEvent<HTMLFormElement>) => void;
+  onAssess: () => void;
+  onAsk: () => void;
+  onRefreshSource: () => void;
+  canWrite: boolean;
+}) {
+  const [activeTab, setActiveTab] = useState(vendorLensTabs[0]);
+  const asset = vendorLens.assets[0];
+  const advisory = vendorLens.advisories[0];
+  const assessment = vendorLens.latestAssessment || vendorLens.dashboard?.recent_assessments?.[0] || null;
+  const chat = vendorLens.latestChat;
+  const cards = [
+    { label: "Vendors tracked", value: vendorLens.dashboard?.vendors_tracked || vendorLens.vendors.length, tone: "steel", icon: Network },
+    { label: "Active advisories", value: vendorLens.dashboard?.active_advisories || vendorLens.advisories.length, tone: "amber", icon: ShieldAlert },
+    { label: "Known exploited CVEs", value: vendorLens.dashboard?.known_exploited_vendor_cves || 0, tone: "danger", icon: TriangleAlert },
+    { label: "Estate matches", value: vendorLens.dashboard?.customer_estate_matches || 0, tone: "teal", icon: Layers3 },
+    { label: "Config unknown", value: vendorLens.dashboard?.config_unknown_count || 0, tone: "amber", icon: ListFilter },
+    { label: "Emergency attention", value: vendorLens.dashboard?.emergency_attention_required || 0, tone: "danger", icon: Clock3 }
+  ];
+
+  return (
+    <>
+      <div className="section-title">
+        <h3>VendorLens</h3>
+        <span className="pill amber">Source-bound advisory intelligence</span>
+      </div>
+
+      <div className="context-banner vendorlens-context" aria-label="VendorLens context">
+        <strong>{advisory?.cve || advisory?.advisory_id || "CVE pending"}</strong>
+        <span>{advisory?.vendor_name || asset?.vendor_id || "Vendor pending"}</span>
+        <span>{asset?.product_family || advisory?.product_family || "Product pending"}</span>
+        <span>{asset?.model || "Model pending"}</span>
+        <span>{asset?.firmware_version || "Firmware pending"}</span>
+        <span>{assessment?.affected_feature || advisory?.affected_features?.[0] || "Feature pending"}</span>
+        <span>{assessment?.exposure_status ? humanize(assessment.exposure_status) : "Exposure unconfirmed"}</span>
+        <span>{humanize(asset?.review_state || advisory?.review_state || "pending_review")}</span>
+        <span>Final approval {assessment?.final_approval_issued ? "issued" : "not issued"}</span>
+      </div>
+
+      <div className="metric-grid">
+        {cards.map(({ label, value, tone, icon: Icon }) => (
+          <article className={`metric-card ${tone}`} key={label}>
+            <Icon size={20} aria-hidden />
+            <span>{label}</span>
+            <strong>{value}</strong>
+          </article>
+        ))}
+      </div>
+
+      <section className="wide-band action-hero">
+        <div>
+          <p className="eyebrow">Config-aware network vendor governance</p>
+          <h3>Ask what the advisory means for a real firewall, gateway, or edge platform.</h3>
+          <p className="muted-copy">
+            VendorLens links public vendor/CVE intelligence to customer product, model, firmware, feature, and exposure evidence. It can recommend scope confirmation, patch governance, mitigation, or monitoring, but final decisions always require reviewed evidence and human approval.
+          </p>
+        </div>
+        <div className="hero-actions">
+          <button type="button" className="action-button" onClick={onRefreshSource} disabled={!canWrite}>
+            <RefreshCw size={16} aria-hidden /> Refresh NVD
+          </button>
+          <button type="button" className="action-button secondary-action" onClick={onAssess} disabled={!canWrite || !asset || !advisory}>
+            <Gauge size={16} aria-hidden /> Assess
+          </button>
+          <button type="button" className="action-button secondary-action" onClick={onAsk} disabled={!canWrite || !asset || !advisory}>
+            <MessageSquareText size={16} aria-hidden /> Ask PatchForge
+          </button>
+        </div>
+      </section>
+
+      <div className="vendorlens-tabs" role="tablist" aria-label="VendorLens tabs">
+        {vendorLensTabs.map((tab) => (
+          <button key={tab} type="button" className={activeTab === tab ? "vendorlens-tab active" : "vendorlens-tab"} onClick={() => setActiveTab(tab)}>
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "Network Vendors" && (
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Vendor</th>
+                <th>Category</th>
+                <th>Source</th>
+                <th>Families</th>
+                <th>Review</th>
+              </tr>
+            </thead>
+            <tbody>
+              {vendorLens.vendors.map((vendor) => (
+                <tr key={vendor.vendor_id}>
+                  <td>{vendor.vendor_name}</td>
+                  <td>{humanize(vendor.vendor_category)}</td>
+                  <td><small>{vendor.advisory_source_url || "Configured in Admin"}</small></td>
+                  <td>{(vendor.product_families || []).slice(0, 4).join(", ") || "Not recorded"}</td>
+                  <td>{humanize(vendor.source_review_state || "reference_catalogue")}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {!vendorLens.vendors.length && <EmptyState title="Vendor catalogue unavailable" detail="VendorLens vendor catalogue loads from the protected PatchForge API." />}
+        </div>
+      )}
+
+      {activeTab === "Product Families" && (
+        <div className="report-grid">
+          {vendorLens.vendors.slice(0, 12).map((vendor) => (
+            <section className="data-band report-card" key={vendor.vendor_id}>
+              <div className="section-title compact-title">
+                <h3>{vendor.vendor_name}</h3>
+                <span className="pill steel">{humanize(vendor.vendor_category)}</span>
+              </div>
+              {(vendor.product_families || []).map((family) => <StatusLine key={family} label={family} value="Tracked" tone="teal" />)}
+            </section>
+          ))}
+        </div>
+      )}
+
+      {activeTab === "Advisories & CVEs" && (
+        <div className="split-grid">
+          <section className="data-band">
+            <h3>Ingest Vendor Advisory</h3>
+            <form className="ingest-form" onSubmit={onIngestAdvisory}>
+              <div className="field-grid">
+                <label>Vendor<input value={advisoryForm.vendor_id} onChange={(event) => setAdvisoryForm({ ...advisoryForm, vendor_id: event.target.value })} /></label>
+                <label>CVE<input value={advisoryForm.cve} onChange={(event) => setAdvisoryForm({ ...advisoryForm, cve: event.target.value })} placeholder="CVE-2026-..." /></label>
+                <label>Severity<select value={advisoryForm.severity} onChange={(event) => setAdvisoryForm({ ...advisoryForm, severity: event.target.value })}><option>critical</option><option>high</option><option>medium</option><option>low</option></select></label>
+                <label>Product<input value={advisoryForm.product_family} onChange={(event) => setAdvisoryForm({ ...advisoryForm, product_family: event.target.value })} /></label>
+                <label>Affected versions<input value={advisoryForm.affected_versions} onChange={(event) => setAdvisoryForm({ ...advisoryForm, affected_versions: event.target.value })} /></label>
+                <label>Fixed versions<input value={advisoryForm.fixed_versions} onChange={(event) => setAdvisoryForm({ ...advisoryForm, fixed_versions: event.target.value })} /></label>
+                <label>Affected features<input value={advisoryForm.affected_features} onChange={(event) => setAdvisoryForm({ ...advisoryForm, affected_features: event.target.value })} placeholder="ssl_vpn, web_management" /></label>
+                <label>Source URL<input value={advisoryForm.source_url} onChange={(event) => setAdvisoryForm({ ...advisoryForm, source_url: event.target.value })} /></label>
+              </div>
+              <label>Title<input value={advisoryForm.title} onChange={(event) => setAdvisoryForm({ ...advisoryForm, title: event.target.value })} /></label>
+              <div className="checkbox-grid">
+                <label><input type="checkbox" checked={advisoryForm.known_exploited} onChange={(event) => setAdvisoryForm({ ...advisoryForm, known_exploited: event.target.checked })} /> Known exploited signal</label>
+                <label><input type="checkbox" checked={advisoryForm.patch_available} onChange={(event) => setAdvisoryForm({ ...advisoryForm, patch_available: event.target.checked })} /> Patch available</label>
+              </div>
+              <button type="submit" className="action-button" disabled={!canWrite}>Ingest Advisory</button>
+            </form>
+          </section>
+          <section className="data-band">
+            <h3>Current Advisory Queue</h3>
+            {vendorLens.advisories.slice(0, 8).map((item) => (
+              <StatusLine key={item.advisory_id} label={item.cve || item.advisory_id} value={humanize(item.review_state || "pending_review")} tone={item.known_exploited ? "danger" : "amber"} detail={item.title || item.vendor_name} />
+            ))}
+            {!vendorLens.advisories.length && <p className="muted-copy">No vendor advisories are attached yet.</p>}
+          </section>
+        </div>
+      )}
+
+      {activeTab === "Customer Estate Match" && (
+        <div className="split-grid">
+          <section className="data-band">
+            <h3>Customer Network Asset</h3>
+            <form className="ingest-form" onSubmit={onSaveAsset}>
+              <div className="field-grid">
+                <label>Vendor<input value={assetForm.vendor_id} onChange={(event) => setAssetForm({ ...assetForm, vendor_id: event.target.value })} /></label>
+                <label>Product<input value={assetForm.product_family} onChange={(event) => setAssetForm({ ...assetForm, product_family: event.target.value })} /></label>
+                <label>Model<input value={assetForm.model} onChange={(event) => setAssetForm({ ...assetForm, model: event.target.value })} /></label>
+                <label>Firmware<input value={assetForm.firmware_version} onChange={(event) => setAssetForm({ ...assetForm, firmware_version: event.target.value })} /></label>
+                <label>Site<input value={assetForm.site} onChange={(event) => setAssetForm({ ...assetForm, site: event.target.value })} /></label>
+                <label>Owner<input value={assetForm.service_owner} onChange={(event) => setAssetForm({ ...assetForm, service_owner: event.target.value })} /></label>
+                <label>Management exposure<select value={assetForm.management_exposure} onChange={(event) => setAssetForm({ ...assetForm, management_exposure: event.target.value })}><option>unknown</option><option>internet</option><option>public_management</option><option>internal</option><option>private</option></select></label>
+                <label>Review state<select value={assetForm.review_state} onChange={(event) => setAssetForm({ ...assetForm, review_state: event.target.value })}><option>pending_review</option><option>reviewed</option><option>rejected</option></select></label>
+              </div>
+              <label>Enabled features<input value={assetForm.enabled_features} onChange={(event) => setAssetForm({ ...assetForm, enabled_features: event.target.value })} placeholder="ipsec_vpn, snmp" /></label>
+              <label>Disabled features<input value={assetForm.disabled_features} onChange={(event) => setAssetForm({ ...assetForm, disabled_features: event.target.value })} placeholder="ssl_vpn, web_management" /></label>
+              <label>Configuration evidence refs<input value={assetForm.config_evidence_refs} onChange={(event) => setAssetForm({ ...assetForm, config_evidence_refs: event.target.value })} /></label>
+              <div className="checkbox-grid">
+                <label><input type="checkbox" checked={assetForm.internet_facing} onChange={(event) => setAssetForm({ ...assetForm, internet_facing: event.target.checked })} /> Internet facing</label>
+              </div>
+              <button type="submit" className="action-button" disabled={!canWrite}>Save Asset Evidence</button>
+            </form>
+          </section>
+          <section className="data-band">
+            <h3>Customer Estate Records</h3>
+            {vendorLens.assets.slice(0, 8).map((item) => (
+              <StatusLine key={item.asset_id} label={`${item.vendor_id} ${item.model || item.product_family || ""}`} value={humanize(item.review_state || "pending_review")} tone={item.internet_facing ? "amber" : "steel"} detail={`${item.firmware_version || "version pending"} | ${item.management_exposure || "exposure pending"}`} />
+            ))}
+            {!vendorLens.assets.length && <p className="muted-copy">No customer network assets are attached yet.</p>}
+          </section>
+        </div>
+      )}
+
+      {activeTab === "Config Applicability" && (
+        <div className="split-grid">
+          <section className="data-band">
+            <h3>Latest Applicability Assessment</h3>
+            <StatusLine label="Applicability" value={humanize(assessment?.applicability_posture || "not assessed")} tone="teal" />
+            <StatusLine label="Urgency" value={humanize(assessment?.urgency_posture || "not assessed")} tone={assessment?.urgency_posture === "emergency_patch_required" ? "danger" : "amber"} />
+            <StatusLine label="Version status" value={humanize(assessment?.affected_version_status || "not assessed")} tone="steel" />
+            <StatusLine label="Feature status" value={humanize(assessment?.feature_enabled_status || "not assessed")} tone="steel" />
+            <StatusLine label="Exposure status" value={humanize(assessment?.exposure_status || "not assessed")} tone="steel" />
+            <StatusLine label="Final approval" value={assessment?.final_approval_issued ? "Issued" : "Not issued"} tone="amber" />
+          </section>
+          <section className="data-band">
+            <h3>Evidence Gaps</h3>
+            {(assessment?.evidence_gaps || []).map((gap) => (
+              <div className="guide-fact" key={gap.gap_id || gap.plain_english_gap}>
+                <strong>{gap.plain_english_gap || humanize(gap.gap_id || "Evidence gap")}</strong>
+                <p>{gap.required_evidence || "Reviewed evidence required."}</p>
+              </div>
+            ))}
+            {!assessment?.evidence_gaps?.length && <p className="muted-copy">Run an applicability assessment to populate evidence gaps.</p>}
+          </section>
+        </div>
+      )}
+
+      {activeTab === "Urgency & Recommended Posture" && (
+        <section className="wide-band review-runway">
+          <div>
+            <p className="eyebrow">Recommended posture remains advisory</p>
+            <h3>{humanize(assessment?.urgency_posture || "Urgent scope confirmation required")}</h3>
+            <p className="muted-copy">{assessment?.decision_not_allowed_yet || "PatchForge cannot approve patching, risk acceptance, closure, or not-applicable status without reviewed evidence and named human approval."}</p>
+          </div>
+          <div className="finding-score">
+            <strong>{humanize(assessment?.applicability_posture || "requires_review")}</strong>
+            <small>Applicability posture</small>
+          </div>
+        </section>
+      )}
+
+      {activeTab === "Ask PatchForge" && (
+        <section className="wide-band">
+          <div className="section-title">
+            <h3>Ask PatchForge</h3>
+            <span className="pill teal">SRA/AIP advisory only</span>
+          </div>
+          <div className="chat-layout">
+            <label>
+              Question
+              <textarea value={question} onChange={(event) => setQuestion(event.target.value)} rows={4} />
+            </label>
+            <button type="button" className="action-button" onClick={onAsk} disabled={!canWrite || !asset || !advisory}>
+              <MessageSquareText size={16} aria-hidden /> Ask PatchForge
+            </button>
+          </div>
+          <div className="data-band">
+            <h3>Latest Answer</h3>
+            <p className="muted-copy">{chat?.latest_response?.short_answer || "No VendorLens chat response yet."}</p>
+            <StatusLine label="Governed posture" value={humanize(chat?.latest_response?.current_governed_posture || "not assessed")} tone="amber" />
+            <StatusLine label="Human review" value={chat?.latest_response?.human_review_required === false ? "Not recorded" : "Required"} tone="trust" />
+            <StatusLine label="Final approval" value={chat?.latest_response?.final_approval_issued ? "Issued" : "False"} tone="amber" />
+          </div>
+        </section>
+      )}
+
+      {activeTab === "Vendor Evidence Packs" && (
+        <section className="wide-band">
+          <h3>Vendor Evidence Pack Inputs</h3>
+          <p className="muted-copy">Signed packs can now include network vendor profile, customer network asset, vendor advisory, config applicability, VendorLens decision context, and SRA/AIP chat artefacts.</p>
+          <div className="decision-option-grid">
+            {["network_vendor_profile_snapshot.json", "customer_network_asset_snapshot.json", "vendor_security_advisory_snapshot.json", "config_applicability_assessment.json", "sra_config_chat_session.json", "vendorlens_decision_context.json"].map((artefact) => (
+              <div className="decision-option" key={artefact}>
+                <h4>{artefact}</h4>
+                <p>Preserved in signed pack when VendorLens context is attached to pack generation.</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {activeTab === "Admin: Vendor Sources" && (
+        <section className="wide-band">
+          <h3>VendorLens Sources</h3>
+          <p className="muted-copy">NVD CVE 2.0 metadata enrichment, Cisco PSIRT with credentials reference, and configured vendor RSS/JSON sources are source-bound. Credentials are referenced only and secret values are never displayed.</p>
+          <div className="decision-option-grid">
+            <div className="decision-option"><h4>NVD CVE API</h4><p>On-demand CVE metadata enrichment. Public source-bound records start pending review.</p></div>
+            <div className="decision-option"><h4>Cisco PSIRT</h4><p>Credential-reference gated. Refresh records run ledger entries when credentials or source URLs are missing.</p></div>
+            <div className="decision-option"><h4>Generic Vendor RSS/JSON</h4><p>Admin-configured source URLs for Fortinet, Palo Alto, Juniper, F5, Citrix/NetScaler, Check Point, SonicWall, and other vendors.</p></div>
+          </div>
+        </section>
+      )}
+
+      {!canWrite && <EmptyState title="Read-only role" detail="VendorLens asset, advisory, refresh, assessment, and chat actions require a PatchForge write role." />}
+    </>
+  );
+}
+
 function DecisionPacks({
   decisionPacks,
   reports,
@@ -1909,6 +2427,14 @@ function emptyLiveState(tenantId: string): LiveState {
     bayesian: null,
     threatSummary: null,
     vendors: [],
+    vendorLens: {
+      dashboard: null,
+      vendors: [],
+      assets: [],
+      advisories: [],
+      latestAssessment: null,
+      latestChat: null
+    },
     sourceFeedState: { feeds: [], recent_runs: [] },
     adminHealth: null,
     adminConfig: {}

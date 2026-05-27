@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/vendor_cve_mapping.schema.json",
+  "title": "PatchForge Vendor CVE Mapping",
+  "type": "object",
+  "required": ["tenant_id", "mapping_id", "vendor_id", "advisory_id", "cve", "review_state"],
+  "properties": {
+    "tenant_id": { "type": "string" },
+    "mapping_id": { "type": "string" },
+    "vendor_id": { "type": "string" },
+    "advisory_id": { "type": "string" },
+    "cve": { "type": "string" },
+    "affected_products": { "type": "array", "items": { "type": "string" } },
+    "affected_versions": { "type": "array", "items": { "type": "string" } },
+    "affected_features": { "type": "array", "items": { "type": "string" } },
+    "review_state": { "default": "pending_review", "type": "string" },
+    "source_bound": { "const": true },
+    "can_close_hard_gates_alone": { "const": false }
+  }
+}

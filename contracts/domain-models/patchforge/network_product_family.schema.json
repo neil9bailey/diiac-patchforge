@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/network_product_family.schema.json",
+  "title": "PatchForge Network Product Family",
+  "type": "object",
+  "required": ["tenant_id", "family_id", "vendor_id", "family_name", "source_review_state"],
+  "properties": {
+    "tenant_id": { "type": "string" },
+    "family_id": { "type": "string" },
+    "vendor_id": { "type": "string" },
+    "family_name": { "type": "string" },
+    "product_category": { "type": "string" },
+    "models": { "type": "array", "items": { "type": "string" } },
+    "source_review_state": { "default": "reference_catalogue", "type": "string" },
+    "source_bound": { "const": true }
+  }
+}

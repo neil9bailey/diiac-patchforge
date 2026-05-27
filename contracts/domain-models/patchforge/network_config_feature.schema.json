@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/network_config_feature.schema.json",
+  "title": "PatchForge Network Config Feature",
+  "type": "object",
+  "required": ["tenant_id", "feature_id", "feature_name", "feature_state", "review_state"],
+  "properties": {
+    "tenant_id": { "type": "string" },
+    "feature_id": { "type": "string" },
+    "feature_name": { "type": "string" },
+    "feature_state": { "enum": ["enabled", "disabled", "unknown"] },
+    "asset_id": { "type": ["string", "null"] },
+    "config_evidence_refs": { "type": "array", "items": { "type": "string" } },
+    "review_state": { "default": "pending_review", "type": "string" },
+    "source_bound": { "const": true }
+  }
+}

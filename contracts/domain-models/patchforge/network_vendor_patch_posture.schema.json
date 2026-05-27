@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/network_vendor_patch_posture.schema.json",
+  "title": "PatchForge Network Vendor Patch Posture",
+  "type": "object",
+  "required": ["tenant_id", "posture_id", "vendor_id", "posture", "human_review_required", "final_approval_issued"],
+  "properties": {
+    "tenant_id": { "type": "string" },
+    "posture_id": { "type": "string" },
+    "vendor_id": { "type": "string" },
+    "advisory_id": { "type": ["string", "null"] },
+    "asset_id": { "type": ["string", "null"] },
+    "posture": { "type": "string" },
+    "rationale": { "type": "string" },
+    "evidence_refs": { "type": "array", "items": { "type": "string" } },
+    "human_review_required": { "const": true },
+    "final_approval_issued": { "default": false, "type": "boolean" }
+  }
+}

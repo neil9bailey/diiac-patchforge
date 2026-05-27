@@ -110,6 +110,12 @@ export function buildReportContext({ reportType, pack, vulnerability = null, int
   const findingIntelligence = intelligence || artefacts["finding_intelligence_snapshot.json"] || null;
   const vendor = artefacts["vendor_intelligence_snapshot.json"] || null;
   const threat = artefacts["threat_landscape_snapshot.json"] || null;
+  const networkVendor = artefacts["network_vendor_profile_snapshot.json"] || null;
+  const customerNetworkAsset = artefacts["customer_network_asset_snapshot.json"] || null;
+  const vendorSecurityAdvisory = artefacts["vendor_security_advisory_snapshot.json"] || null;
+  const configApplicability = artefacts["config_applicability_assessment.json"] || null;
+  const sraConfigChat = artefacts["sra_config_chat_session.json"] || null;
+  const vendorLensDecisionContext = artefacts["vendorlens_decision_context.json"] || null;
   const sraTrace = artefacts["sra_trace.json"] || null;
   const governanceManifest = artefacts["governance_manifest.json"] || {};
   const verificationManifest = artefacts["verification_manifest.json"] || {};
@@ -161,6 +167,12 @@ export function buildReportContext({ reportType, pack, vulnerability = null, int
     bayesian,
     vendor,
     threat,
+    networkVendor,
+    customerNetworkAsset,
+    vendorSecurityAdvisory,
+    configApplicability,
+    sraConfigChat,
+    vendorLensDecisionContext,
     sraTrace,
     controls,
     riskAcceptance,
@@ -232,6 +244,7 @@ async function buildDocxReport(context) {
         leadCallout(context),
         heading("Executive Decision Summary", HeadingLevel.HEADING_1),
         para(context.executiveReadout || `${context.vulnerabilityId} is currently governed as ${displayPosture(context)}. Final approval has not been issued unless explicitly recorded in the signed pack.`),
+        para(finalApprovalSentence(context)),
         decisionSummaryTable(context),
         ...customerSpecificSections(context),
         heading("What This Vulnerability Means", HeadingLevel.HEADING_1),
@@ -279,6 +292,7 @@ async function buildDocxReport(context) {
         ...keyValueBlocks(bayesianRows(context)),
         heading("Vendor and Threat Landscape", HeadingLevel.HEADING_1),
         ...keyValueBlocks(threatRows(context)),
+        ...vendorLensDocxSections(context),
         heading("Blockers and Required Human Actions", HeadingLevel.HEADING_1),
         ...blockerBlocks(context),
         heading("Automated Governance Analysis Completed", HeadingLevel.HEADING_1),
@@ -329,10 +343,11 @@ function titleBlock(context) {
 }
 
 function leadCallout(context) {
+  const approvalLine = finalApprovalSentence(context);
   const lines = [
     new TextRun({ text: context.title, bold: true, size: 32, color: COLORS.navy, break: 1 }),
     new TextRun({ text: `${context.audience} | ${context.vulnerabilityId} | Pack ${context.packId}`, size: 20, color: COLORS.muted, break: 1 }),
-    new TextRun({ text: `Generated ${formatDate(context.generatedAt)}. Governed posture: ${displayPosture(context)}. Readiness: ${humanize(context.readinessState)}.`, size: 20, color: COLORS.ink, break: 1 })
+    new TextRun({ text: `Generated ${formatDate(context.generatedAt)}. Governed posture: ${displayPosture(context)}. Readiness: ${humanize(context.readinessState)}. ${approvalLine}`, size: 20, color: COLORS.ink, break: 1 })
   ];
   return new Paragraph({
     shading: { type: ShadingType.CLEAR, fill: COLORS.softBlue },
@@ -341,6 +356,12 @@ function leadCallout(context) {
     indent: { left: 160 },
     children: lines
   });
+}
+
+function finalApprovalSentence(context) {
+  return context.finalApprovalIssued
+    ? "Final approval issued by recorded human approval event."
+    : "Final approval not issued.";
 }
 
 function heading(text, level, options = {}) {
@@ -763,6 +784,90 @@ function threatRows(context) {
   ];
 }
 
+function vendorLensDocxSections(context) {
+  const assessment = context.configApplicability || {};
+  const asset = context.customerNetworkAsset || {};
+  const advisory = context.vendorSecurityAdvisory || {};
+  const chat = context.sraConfigChat || {};
+  const decision = context.vendorLensDecisionContext || {};
+  const hasVendorLens = Boolean(
+    context.networkVendor
+    || context.customerNetworkAsset
+    || context.vendorSecurityAdvisory
+    || context.configApplicability
+    || context.sraConfigChat
+    || context.vendorLensDecisionContext
+  );
+  const availability = hasVendorLens
+    ? "VendorLens context is attached to this signed pack as source-bound advisory intelligence."
+    : "VendorLens network vendor applicability context was not attached to this signed pack.";
+  return [
+    heading("Network Vendor Applicability", HeadingLevel.HEADING_1),
+    para(availability),
+    ...keyValueBlocks([
+      ["Vendor", context.networkVendor?.vendor_name || advisory.vendor_name || assessment.vendor_id || "Not attached"],
+      ["Advisory / CVE", advisory.cve || assessment.cve || advisory.advisory_id || "Not attached"],
+      ["Applicability posture", humanize(assessment.applicability_posture || decision.applicability_posture || "not assessed")],
+      ["Urgency posture", humanize(assessment.urgency_posture || decision.urgency_posture || "not assessed")],
+      ["Human review", assessment.human_review_required === false ? "Not recorded" : "Required"],
+      ["Final approval", assessment.final_approval_issued ? "Issued" : "Not issued"]
+    ]),
+    heading("Customer Configuration Context", HeadingLevel.HEADING_2),
+    ...keyValueBlocks([
+      ["Asset", asset.asset_id || "Not attached"],
+      ["Product family", asset.product_family || advisory.product_family || "Not recorded"],
+      ["Model", asset.model || "Not recorded"],
+      ["Firmware / version", asset.firmware_version || "Not recorded"],
+      ["Enabled features", listText(asset.enabled_features)],
+      ["Disabled features", listText(asset.disabled_features)],
+      ["Configuration evidence", listText(asset.config_evidence_refs)],
+      ["Review state", humanize(asset.review_state || "pending_review")]
+    ]),
+    heading("Affected Feature Assessment", HeadingLevel.HEADING_2),
+    ...keyValueBlocks([
+      ["Affected feature", humanize(assessment.affected_feature || listText(advisory.affected_features))],
+      ["Affected version status", humanize(assessment.affected_version_status || "not assessed")],
+      ["Affected feature status", humanize(assessment.affected_feature_status || "not assessed")],
+      ["Feature enabled status", humanize(assessment.feature_enabled_status || "not assessed")]
+    ]),
+    heading("Exposure Assessment", HeadingLevel.HEADING_2),
+    ...keyValueBlocks([
+      ["Internet-facing", asset.internet_facing ? "Yes, source-bound pending review unless accepted" : "Not recorded or not reviewed"],
+      ["Management exposure", humanize(asset.management_exposure || "unknown")],
+      ["Exposure status", humanize(assessment.exposure_status || "not assessed")]
+    ]),
+    heading("Evidence Required to Prove Not Applicable", HeadingLevel.HEADING_2),
+    ...vendorLensGapBlocks(assessment),
+    heading("Urgent Patch / Mitigation / Scope Confirmation Recommendation", HeadingLevel.HEADING_2),
+    para(decision.recommended_next_action || assessment.decision_not_allowed_yet || "PatchForge cannot issue a final remediation, risk acceptance, closure, or not-applicable decision without reviewed evidence and named human approval."),
+    heading("SRA/AIP Chat Summary", HeadingLevel.HEADING_2),
+    ...keyValueBlocks([
+      ["Session", chat.session_id || "Not attached"],
+      ["Short answer", chat.latest_response?.short_answer || "No VendorLens chat summary attached."],
+      ["Governed posture", humanize(chat.latest_response?.current_governed_posture || assessment.urgency_posture || "not assessed")],
+      ["Decision not allowed yet", chat.latest_response?.decision_not_allowed_yet || assessment.decision_not_allowed_yet || "Human review remains required."]
+    ])
+  ];
+}
+
+function vendorLensGapBlocks(assessment = {}) {
+  const gaps = Array.isArray(assessment.evidence_gaps) && assessment.evidence_gaps.length ? assessment.evidence_gaps : [{
+    gap_id: "vendorlens_context",
+    plain_english_gap: "VendorLens evidence was not attached to this pack.",
+    why_it_matters: "The report cannot prove network vendor applicability without customer asset, version, feature, and source-advisory evidence.",
+    required_evidence: "Reviewed vendor advisory, customer network asset inventory, firmware/version evidence, feature configuration evidence, and exposure evidence.",
+    suggested_owner_role: "Network engineering lead",
+    next_decision_gate: "Configuration applicability review"
+  }];
+  return gaps.slice(0, 8).flatMap((gap) => detailBlock(humanize(gap.gap_id || gap.plain_english_gap), [
+    ["Plain English gap", gap.plain_english_gap || "Evidence gap"],
+    ["Why it matters", gap.why_it_matters || "PatchForge cannot support the decision without reviewed evidence."],
+    ["Required evidence", gap.required_evidence || "Reviewed evidence required"],
+    ["Suggested owner", gap.suggested_owner_role || "Network engineering lead"],
+    ["Next decision gate", gap.next_decision_gate || "Configuration applicability review"]
+  ]));
+}
+
 async function buildPdfReport(context) {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: "LETTER", margin: 54, compress: false, info: { Title: context.title, Author: "DIIaC PatchForge" } });
@@ -774,6 +879,7 @@ async function buildPdfReport(context) {
     pdfTitle(doc, context);
     pdfSection(doc, "Executive Decision Summary");
     pdfParagraph(doc, context.executiveReadout || `${context.vulnerabilityId} is currently governed as ${humanize(context.decisionPosture)}. Final approval remains human-controlled.`);
+    pdfParagraph(doc, finalApprovalSentence(context));
     pdfKeyValues(doc, [
       ["Recommended posture", displayPosture(context)],
       ["Next best action", context.recommendation?.next_best_action || "Review evidence and compile the signed decision pack."],
@@ -826,6 +932,7 @@ async function buildPdfReport(context) {
     pdfKeyValues(doc, bayesianRows(context));
     pdfSection(doc, "Vendor and Threat Landscape");
     pdfKeyValues(doc, threatRows(context));
+    pdfVendorLensSections(doc, context);
     pdfSection(doc, "Blockers and Next Actions");
     for (const blocker of (context.evidenceGapDetails?.length ? context.evidenceGapDetails : (context.blockers.length ? context.blockers : ["Human review required"]))) {
       const detail = typeof blocker === "string" ? gapDetailForReport(blocker) : blocker;
@@ -880,6 +987,58 @@ function pdfCustomerSections(doc, context) {
   pdfSection(doc, "What Cannot Yet Be Claimed");
   pdfBullet(doc, "Do not claim customer exposure, patch applicability, successful remediation, closure, certification, or risk acceptance unless reviewed evidence records those facts.");
   pdfBullet(doc, "Do not imply PatchForge deployed a patch or approved the decision autonomously.");
+}
+
+function pdfVendorLensSections(doc, context) {
+  const assessment = context.configApplicability || {};
+  const asset = context.customerNetworkAsset || {};
+  const advisory = context.vendorSecurityAdvisory || {};
+  const chat = context.sraConfigChat || {};
+  pdfSection(doc, "Network Vendor Applicability");
+  pdfParagraph(doc, context.configApplicability
+    ? "VendorLens context is attached as source-bound advisory intelligence. It does not verify customer configuration or approve a decision by itself."
+    : "VendorLens network vendor applicability context was not attached to this signed pack.");
+  pdfKeyValues(doc, [
+    ["Vendor", context.networkVendor?.vendor_name || advisory.vendor_name || assessment.vendor_id || "Not attached"],
+    ["Advisory / CVE", advisory.cve || assessment.cve || advisory.advisory_id || "Not attached"],
+    ["Applicability posture", humanize(assessment.applicability_posture || "not assessed")],
+    ["Urgency posture", humanize(assessment.urgency_posture || "not assessed")],
+    ["Final approval", assessment.final_approval_issued ? "Issued" : "Not issued"]
+  ]);
+  pdfSection(doc, "Customer Configuration Context");
+  pdfKeyValues(doc, [
+    ["Asset", asset.asset_id || "Not attached"],
+    ["Product family", asset.product_family || advisory.product_family || "Not recorded"],
+    ["Model", asset.model || "Not recorded"],
+    ["Firmware / version", asset.firmware_version || "Not recorded"],
+    ["Enabled features", listText(asset.enabled_features)],
+    ["Disabled features", listText(asset.disabled_features)]
+  ]);
+  pdfSection(doc, "Affected Feature Assessment");
+  pdfKeyValues(doc, [
+    ["Affected feature", humanize(assessment.affected_feature || listText(advisory.affected_features))],
+    ["Affected version status", humanize(assessment.affected_version_status || "not assessed")],
+    ["Feature enabled status", humanize(assessment.feature_enabled_status || "not assessed")],
+    ["Exposure status", humanize(assessment.exposure_status || "not assessed")]
+  ]);
+  pdfSection(doc, "Evidence Required to Prove Not Applicable");
+  const gaps = Array.isArray(assessment.evidence_gaps) && assessment.evidence_gaps.length ? assessment.evidence_gaps : [{
+    plain_english_gap: "VendorLens evidence was not attached to this pack.",
+    required_evidence: "Reviewed vendor advisory, customer network asset inventory, firmware/version evidence, feature configuration evidence, and exposure evidence.",
+    suggested_owner_role: "Network engineering lead"
+  }];
+  for (const gap of gaps.slice(0, 6)) {
+    pdfBullet(doc, `${gap.plain_english_gap || gap.gap_id}: ${gap.required_evidence || "Reviewed evidence required"} Owner: ${gap.suggested_owner_role || "Network engineering lead"}.`);
+  }
+  pdfSection(doc, "Urgent Patch / Mitigation / Scope Confirmation Recommendation");
+  pdfParagraph(doc, context.vendorLensDecisionContext?.recommended_next_action || assessment.decision_not_allowed_yet || "Final decision requires reviewed evidence and named human approval.");
+  pdfSection(doc, "SRA/AIP Chat Summary");
+  pdfKeyValues(doc, [
+    ["Session", chat.session_id || "Not attached"],
+    ["Short answer", chat.latest_response?.short_answer || "No VendorLens chat summary attached."],
+    ["Governed posture", humanize(chat.latest_response?.current_governed_posture || assessment.urgency_posture || "not assessed")],
+    ["Decision not allowed yet", chat.latest_response?.decision_not_allowed_yet || assessment.decision_not_allowed_yet || "Human review remains required."]
+  ]);
 }
 
 function pdfSection(doc, title) {
@@ -1025,6 +1184,16 @@ function fileNameFor(context, extension) {
 }
 
 function safeText(value) {
+  if (value === null || value === undefined || value === "") {
+    return "Not recorded";
+  }
+  return String(value);
+}
+
+function listText(value) {
+  if (Array.isArray(value)) {
+    return value.length ? value.join(", ") : "Not recorded";
+  }
   if (value === null || value === undefined || value === "") {
     return "Not recorded";
   }

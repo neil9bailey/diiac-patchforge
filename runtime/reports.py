@@ -26,6 +26,7 @@ REPORT_SECTIONS = [
     "Human Review State",
     "Bayesian Advisory Snapshot",
     "Vendor and Threat Landscape",
+    "Network Vendor Applicability",
     "SRA Advisory Trace",
     "Signed Pack Metadata",
     "Source Pack / Current State",
@@ -88,6 +89,7 @@ def _render_section(section: str, context: dict[str, Any]) -> list[str]:
         "Human Review State": summary.get("human_review", "Final approval is false until an explicit approval event is recorded."),
         "Bayesian Advisory Snapshot": _bayesian_summary(context.get("bayesian_patch_risk_snapshot")),
         "Vendor and Threat Landscape": _vendor_summary(context.get("vendor_intelligence_snapshot"), context.get("threat_landscape_snapshot")),
+        "Network Vendor Applicability": _vendorlens_summary(context.get("config_applicability_assessment"), context.get("customer_network_asset_snapshot"), context.get("vendor_security_advisory_snapshot")),
         "SRA Advisory Trace": summary.get("sra", "SRA output is advisory only and cannot close hard gates alone."),
         "Signed Pack Metadata": _signed_pack_summary(context.get("signed_pack", {})),
         "Source Pack / Current State": "Signed source-pack state is preserved separately from current-state overlays and post-pack evidence events.",
@@ -114,6 +116,19 @@ def _vendor_summary(vendor: dict[str, Any] | None, threat: dict[str, Any] | None
         "Vendor and threat signals are source-bound and pending review unless explicitly accepted. "
         f"Vendor: {(vendor or {}).get('vendor_id', 'not recorded')}. "
         f"Active exploitation signals: {((threat or {}).get('metrics') or {}).get('active_exploitation_count', 'n/a')}."
+    )
+
+
+def _vendorlens_summary(assessment: dict[str, Any] | None, asset: dict[str, Any] | None, advisory: dict[str, Any] | None) -> str:
+    if not assessment:
+        return "VendorLens network vendor applicability context has not been attached. Customer configuration, feature state, firmware version, and exposure remain unverified."
+    return (
+        "VendorLens is source-bound advisory intelligence. "
+        f"Asset: {(asset or {}).get('asset_id', 'not recorded')}. "
+        f"Advisory/CVE: {(advisory or {}).get('cve', (advisory or {}).get('advisory_id', 'not recorded'))}. "
+        f"Applicability posture: {assessment.get('applicability_posture', 'not assessed')}. "
+        f"Urgency posture: {assessment.get('urgency_posture', 'not assessed')}. "
+        "Final approval not issued unless a named human approval event exists."
     )
 
 

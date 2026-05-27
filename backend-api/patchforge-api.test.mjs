@@ -17,7 +17,8 @@ async function withApi(run, options = {}) {
     storage,
     auth: { required: false },
     runtimeClient: fakeRuntimeClient(),
-    sourceFeedClient: options.sourceFeedClient
+    sourceFeedClient: options.sourceFeedClient,
+    vendorLensFetchImpl: options.vendorLensFetchImpl
   });
   const baseUrl = await listenOnFetchSafePort(server);
   try {
@@ -72,7 +73,7 @@ async function listenOnFetchSafePort(server) {
       return `http://127.0.0.1:${port}`;
     } catch (error) {
       lastError = error;
-      if (error.code !== "EADDRINUSE") {
+      if (!["EADDRINUSE", "EACCES"].includes(error.code)) {
         throw error;
       }
     }
@@ -394,6 +395,221 @@ test("vendor and threat landscape intelligence remains source-bound", async () =
     assert.equal(summary.response.status, 200);
     assert.equal(summary.body.source_bound, true);
     assert.equal(summary.body.review_required, true);
+  });
+});
+
+test("VendorLens catalogue, assets, advisories, config applicability, chat, and packs stay governed", async () => {
+  await withApi(async (baseUrl) => {
+    const vendors = await request(baseUrl, "/api/patchforge/vendorlens/vendors", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(vendors.response.status, 200);
+    assert.ok(vendors.body.vendors.some((vendor) => vendor.vendor_name === "Fortinet"));
+
+    const asset = await request(baseUrl, "/api/patchforge/vendorlens/assets", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        asset_id: "net-fw-1",
+        vendor_id: "fortinet",
+        product_family: "FortiGate",
+        model: "100F",
+        firmware_version: "7.2.7",
+        internet_facing: true,
+        management_exposure: "internet",
+        enabled_features: ["ipsec_vpn"],
+        disabled_features: ["ssl_vpn"],
+        review_state: "pending_review",
+        evidence_state: "referenced"
+      })
+    });
+    assert.equal(asset.response.status, 201);
+    assert.equal(asset.body.asset.source_state, "source_bound");
+
+    const advisory = await request(baseUrl, "/api/patchforge/vendorlens/advisories/ingest", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        advisory_id: "FG-ADV-CVE-2026-REAL-001",
+        vendor_id: "fortinet",
+        vendor_name: "Fortinet",
+        cve: "CVE-2026-REAL-001",
+        title: "FortiGate SSL-VPN source-bound advisory",
+        severity: "critical",
+        product_family: "FortiGate",
+        affected_versions: ["7.2.7"],
+        affected_features: ["ssl_vpn"],
+        known_exploited: true,
+        patch_available: true,
+        source_url: "https://www.fortiguard.com/psirt/example"
+      })
+    });
+    assert.equal(advisory.response.status, 201);
+    assert.equal(advisory.body.advisory.review_state, "pending_review");
+    assert.equal(advisory.body.advisory.can_close_hard_gates_alone, false);
+
+    const disabledUnreviewed = await request(baseUrl, "/api/patchforge/vendorlens/applicability/assess", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        asset_id: "net-fw-1",
+        advisory_id: "FG-ADV-CVE-2026-REAL-001"
+      })
+    });
+    assert.equal(disabledUnreviewed.response.status, 200);
+    assert.equal(disabledUnreviewed.body.assessment.applicability_posture, "requires_review");
+    assert.equal(disabledUnreviewed.body.assessment.urgency_posture, "urgent_scope_confirmation_required");
+    assert.equal(disabledUnreviewed.body.assessment.final_approval_issued, false);
+
+    await request(baseUrl, "/api/patchforge/vendorlens/assets", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        asset_id: "net-fw-2",
+        vendor_id: "fortinet",
+        product_family: "FortiGate",
+        model: "100F",
+        firmware_version: "7.2.7",
+        internet_facing: true,
+        management_exposure: "internet",
+        enabled_features: ["ssl_vpn"],
+        config_evidence_refs: ["cfg-reviewed-1"],
+        review_state: "reviewed",
+        evidence_state: "accepted_positive_evidence"
+      })
+    });
+    const enabledKev = await request(baseUrl, "/api/patchforge/vendorlens/applicability/assess", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ asset_id: "net-fw-2", advisory_id: "FG-ADV-CVE-2026-REAL-001" })
+    });
+    assert.equal(enabledKev.body.assessment.applicability_posture, "applicable");
+    assert.equal(enabledKev.body.assessment.urgency_posture, "emergency_patch_required");
+
+    await request(baseUrl, "/api/patchforge/vendorlens/assets", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        asset_id: "net-fw-3",
+        vendor_id: "fortinet",
+        product_family: "FortiGate",
+        model: "40F",
+        firmware_version: "7.4.9",
+        not_in_estate: true,
+        config_evidence_refs: ["asset-owner-reviewed"],
+        review_state: "reviewed",
+        evidence_state: "accepted_positive_evidence"
+      })
+    });
+    const notApplicable = await request(baseUrl, "/api/patchforge/vendorlens/applicability/assess", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ asset_id: "net-fw-3", advisory_id: "FG-ADV-CVE-2026-REAL-001" })
+    });
+    assert.equal(notApplicable.body.assessment.applicability_posture, "not_applicable");
+    assert.equal(notApplicable.body.assessment.final_approval_issued, false);
+
+    await request(baseUrl, "/api/patchforge/vendorlens/assets", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        asset_id: "net-fw-4",
+        vendor_id: "fortinet",
+        product_family: "FortiGate",
+        model: "100F",
+        internet_facing: true,
+        enabled_features: ["ssl_vpn"]
+      })
+    });
+    const unknownFirmware = await request(baseUrl, "/api/patchforge/vendorlens/applicability/assess", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ asset_id: "net-fw-4", advisory_id: "FG-ADV-CVE-2026-REAL-001" })
+    });
+    assert.equal(unknownFirmware.body.assessment.affected_version_status, "unknown");
+    assert.equal(unknownFirmware.body.assessment.urgency_posture, "urgent_scope_confirmation_required");
+
+    const chat = await request(baseUrl, "/api/patchforge/vendorlens/chat", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        asset_id: "net-fw-1",
+        advisory_id: "FG-ADV-CVE-2026-REAL-001",
+        question: "We use FortiGate 100F FortiOS 7.2.7 with SSL-VPN disabled. Do we urgently need to patch?"
+      })
+    });
+    assert.equal(chat.response.status, 201);
+    assert.ok(chat.body.response.short_answer);
+    assert.ok(chat.body.response.evidence_missing);
+    assert.equal(chat.body.response.final_approval_issued, false);
+    assert.doesNotMatch(JSON.stringify(chat.body), /procedural exploitation instructions|exploit steps|how to exploit/i);
+
+    await request(baseUrl, "/api/patchforge/vulnerabilities/ingest", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        vulnerability_id: "CVE-2026-REAL-001",
+        title: "FortiGate source-bound CVE",
+        severity: "critical",
+        known_exploited: true,
+        patch_status: "patch_available",
+        sources: [{ source_record_id: "src-fortinet-1", source_class: "vendor_advisory", source_name: "Fortinet PSIRT" }]
+      })
+    });
+    const generated = await request(baseUrl, "/api/patchforge/decision-packs/generate", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        vulnerability_id: "CVE-2026-REAL-001",
+        advisory_id: "FG-ADV-CVE-2026-REAL-001",
+        asset_id: "net-fw-1",
+        config_applicability_assessment_id: disabledUnreviewed.body.assessment.assessment_id,
+        session_id: chat.body.session.session_id
+      })
+    });
+    assert.equal(generated.response.status, 201);
+    assert.ok(generated.body.decision_pack.artefacts["config_applicability_assessment.json"]);
+    assert.ok(generated.body.decision_pack.artefacts["vendorlens_decision_context.json"]);
+
+    const context = buildReportContext({
+      reportType: "cab_patch_decision_report",
+      pack: generated.body.decision_pack
+    });
+    assert.equal(context.configApplicability.final_approval_issued, false);
+    assert.equal(context.configApplicability.urgency_posture, "urgent_scope_confirmation_required");
+  });
+});
+
+test("VendorLens NVD source refresh is source-bound and pending review", async () => {
+  await withApi(async (baseUrl) => {
+    const refresh = await request(baseUrl, "/api/patchforge/vendorlens/sources/refresh", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ adapter: "nvd_cve_api", cve: "CVE-2026-REAL-1234", vendor_id: "cisco" })
+    });
+    assert.equal(refresh.response.status, 202);
+    assert.equal(refresh.body.source_feed_run.status, "completed");
+    assert.equal(refresh.body.source_feed_run.records_ingested, 1);
+
+    const advisories = await request(baseUrl, "/api/patchforge/vendorlens/advisories", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(advisories.body.advisories[0].review_state, "pending_review");
+    assert.equal(advisories.body.advisories[0].source_state, "source_bound");
+  }, {
+    vendorLensFetchImpl: async (url) => {
+      assert.match(String(url), /services\.nvd\.nist\.gov\/rest\/json\/cves\/2\.0/);
+      return jsonResponse({
+        vulnerabilities: [{
+          cve: {
+            id: "CVE-2026-REAL-1234",
+            descriptions: [{ lang: "en", value: "Cisco example product contains a source-bound vulnerability record." }],
+            metrics: { cvssMetricV31: [{ cvssData: { baseSeverity: "HIGH" } }] },
+            configurations: [{ nodes: [{ cpeMatch: [{ criteria: "cpe:2.3:o:cisco:asa_software:9.18:*:*:*:*:*:*:*" }] }] }]
+          }
+        }]
+      });
+    }
   });
 });
 
@@ -943,6 +1159,39 @@ function fakeRuntimeClient() {
               critical_open_advisory_count: 1,
               patch_maturity: "unknown"
             }
+          },
+          "network_vendor_profile_snapshot.json": payload.network_vendor_profile_snapshot || {
+            available: false,
+            source_bound: true,
+            review_required: true
+          },
+          "customer_network_asset_snapshot.json": payload.customer_network_asset_snapshot || {
+            available: false,
+            source_bound: true,
+            review_required: true
+          },
+          "vendor_security_advisory_snapshot.json": payload.vendor_security_advisory_snapshot || {
+            available: false,
+            source_bound: true,
+            review_required: true
+          },
+          "config_applicability_assessment.json": payload.config_applicability_assessment || {
+            available: false,
+            advisory_only: true,
+            human_review_required: true,
+            final_approval_issued: false
+          },
+          "sra_config_chat_session.json": payload.sra_config_chat_session || {
+            available: false,
+            advisory_only: true,
+            human_review_required: true,
+            final_approval_issued: false
+          },
+          "vendorlens_decision_context.json": payload.vendorlens_decision_context || {
+            available: false,
+            advisory_only: true,
+            human_review_required: true,
+            final_approval_issued: false
           },
           "human_review_state.json": {
             final_approval_issued: false

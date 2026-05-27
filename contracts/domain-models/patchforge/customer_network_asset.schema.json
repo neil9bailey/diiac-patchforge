@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/customer_network_asset.schema.json",
+  "title": "PatchForge Customer Network Asset",
+  "type": "object",
+  "required": ["tenant_id", "asset_id", "vendor_id", "product_family", "model", "review_state", "evidence_state"],
+  "properties": {
+    "tenant_id": { "type": "string" },
+    "asset_id": { "type": "string" },
+    "vendor_id": { "type": "string" },
+    "product_family": { "type": "string" },
+    "model": { "type": "string" },
+    "firmware_version": { "type": ["string", "null"] },
+    "serial_or_asset_ref": { "type": ["string", "null"] },
+    "environment": { "type": "string" },
+    "site": { "type": ["string", "null"] },
+    "service_owner": { "type": ["string", "null"] },
+    "internet_facing": { "type": "boolean" },
+    "management_exposure": { "type": "string" },
+    "enabled_features": { "type": "array", "items": { "type": "string" } },
+    "disabled_features": { "type": "array", "items": { "type": "string" } },
+    "config_evidence_refs": { "type": "array", "items": { "type": "string" } },
+    "review_state": { "default": "pending_review", "type": "string" },
+    "evidence_state": { "default": "referenced", "type": "string" },
+    "source_bound": { "const": true }
+  }
+}

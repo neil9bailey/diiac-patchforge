@@ -17,6 +17,28 @@
       "initial_review_state": "pending_review",
       "can_close_hard_gate_alone": false
     },
+    "vendor_security_advisory": {
+      "initial_evidence_state": "referenced",
+      "initial_review_state": "pending_review",
+      "can_close_hard_gate_alone": false
+    },
+    "nvd_cve_record": {
+      "initial_evidence_state": "referenced",
+      "initial_review_state": "pending_review",
+      "can_close_hard_gate_alone": false
+    },
+    "config_applicability_assessment": {
+      "initial_evidence_state": "referenced",
+      "initial_review_state": "pending_review",
+      "advisory_only": true,
+      "can_close_hard_gate_alone": false
+    },
+    "sra_config_chat_session": {
+      "initial_evidence_state": "referenced",
+      "initial_review_state": "pending_review",
+      "advisory_only": true,
+      "can_close_hard_gate_alone": false
+    },
     "threat_intel_report": {
       "initial_evidence_state": "referenced",
       "initial_review_state": "pending_review",
@@ -57,6 +79,10 @@
     "scanner_output",
     "scanner_finding",
     "vendor_advisory",
+    "vendor_security_advisory",
+    "nvd_cve_record",
+    "config_applicability_assessment",
+    "sra_config_chat_session",
     "threat_intel_report",
     "vendor_patch_note",
     "exploitability_report",

@@ -32,6 +32,19 @@ EXPECTED_SCHEMAS = {
     "vendor_advisory.schema.json",
     "threat_landscape_signal.schema.json",
     "vendor_intelligence_snapshot.schema.json",
+    "network_vendor_profile.schema.json",
+    "network_product_family.schema.json",
+    "network_product_model.schema.json",
+    "network_firmware_version.schema.json",
+    "vendor_security_advisory.schema.json",
+    "vendor_cve_mapping.schema.json",
+    "customer_network_asset.schema.json",
+    "network_config_feature.schema.json",
+    "config_applicability_assessment.schema.json",
+    "network_vendor_patch_posture.schema.json",
+    "sra_config_chat_session.schema.json",
+    "sra_config_chat_message.schema.json",
+    "vendorlens_decision_context.schema.json",
 }
 
 COMMON_REQUIRED_CLASSES = {
@@ -138,3 +151,17 @@ def test_ot_model_requires_safety_window_and_vendor_support():
     evidence_models = load_json(EVIDENCE_MODELS)
     ot_required = set(evidence_models["models"]["ot_vuln_patch_governance"]["required_evidence_classes"])
     assert {"safety_impact", "maintenance_window", "vendor_support"} <= ot_required
+
+
+def test_vendorlens_schemas_are_advisory_and_human_reviewed():
+    assessment = load_json(SCHEMA_DIR / "config_applicability_assessment.schema.json")
+    chat = load_json(SCHEMA_DIR / "sra_config_chat_session.schema.json")
+    advisory = load_json(SCHEMA_DIR / "vendor_security_advisory.schema.json")
+
+    assert assessment["properties"]["human_review_required"]["const"] is True
+    assert assessment["properties"]["advisory_only"]["const"] is True
+    assert assessment["properties"]["can_close_hard_gates_alone"]["const"] is False
+    assert assessment["properties"]["final_approval_issued"]["default"] is False
+    assert chat["properties"]["final_approval_issued"]["default"] is False
+    assert advisory["properties"]["review_state"]["default"] == "pending_review"
+    assert advisory["properties"]["can_close_hard_gates_alone"]["const"] is False

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/sra_config_chat_session.schema.json",
+  "title": "PatchForge SRA Config Chat Session",
+  "type": "object",
+  "required": ["tenant_id", "session_id", "advisory_only", "human_review_required", "final_approval_issued"],
+  "properties": {
+    "tenant_id": { "type": "string" },
+    "session_id": { "type": "string" },
+    "title": { "type": "string" },
+    "advisory_id": { "type": ["string", "null"] },
+    "asset_id": { "type": ["string", "null"] },
+    "assessment_id": { "type": ["string", "null"] },
+    "latest_response": { "type": "object" },
+    "advisory_only": { "const": true },
+    "human_review_required": { "const": true },
+    "can_close_hard_gates_alone": { "const": false },
+    "final_approval_issued": { "default": false, "type": "boolean" }
+  }
+}
