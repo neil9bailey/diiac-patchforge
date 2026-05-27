@@ -13,9 +13,9 @@ PatchForge is live on Azure Container Apps under the DIIaC tenant with:
 - source-bound evidence and signed pack governance controls
 - guided Action Center, Finding Detail, Review & Approve, Reports & Packs, Guide, and Admin workflow
 - professional protected DOCX/PDF report generation from signed decision packs
-- PF-AZ8 image tag `pfaz8-20260527-cc708fd` on all PatchForge Container Apps
+- PF-AZ9 image tag `pfaz9-20260527-c494375` on all PatchForge Container Apps
 
-PF-AZ8 adds the customer-demo workflow hardening requested after report/UI review:
+PF-AZ8 added the customer-demo workflow hardening requested after report/UI review:
 
 - Action Center that translates findings into decision-ready work
 - plain-English finding intelligence
@@ -26,9 +26,17 @@ PF-AZ8 adds the customer-demo workflow hardening requested after report/UI revie
 - board/CAB DOCX and PDF reports generated from live signed evidence
 - Admin health visibility for database, storage, Key Vault, signing, bridge, runtime, and frontend status
 
+PF-AZ9 completes the operational health checks:
+
+- MCP agent intake reports `governed`
+- public source feeds report `ready`
+- worker health reports `ready`
+- scheduler health reports `ready`
+- Admin health shows operational mode detail
+
 ## Live Validation
 
-PF-AZ8 Azure update and live UI user validation are complete for the current commit and image tag.
+PF-AZ9 Azure update and live Admin UI/API validation are complete for the current commit and image tag.
 
 - User: `n.bailey@diiac.io`
 - Role displayed: `PatchForge.Admin`
@@ -44,6 +52,7 @@ PF-AZ8 Azure update and live UI user validation are complete for the current com
 - PostgreSQL readiness: PASS
 - Protected unauthenticated route returns: HTTP 401
 - Evidence path: `docs/release/evidence/2026-05-27-patchforge-pfaz8-guided-intelligence-workflow/live-ui/`
+- PF-AZ9 operational health evidence path: `docs/release/evidence/2026-05-27-patchforge-pfaz9-operational-health-enablement/live-ui/`
 
 ## Remaining Gaps
 

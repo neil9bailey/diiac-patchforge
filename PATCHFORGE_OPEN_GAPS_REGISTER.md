@@ -14,6 +14,7 @@ Date: 2026-05-27
 | Synthetic validation data | Closed for PF-AZ6 | Earlier PF-AZ5 synthetic record `CVE-2026-PF-DEMO-001` and linked production PostgreSQL records were removed and verified absent. |
 | Professional DOCX/PDF board packs | Closed for PF-AZ7 | Protected report APIs, UI export actions, live downloads, and DOCX/PDF visual QA were validated against signed pack `PF-20260527-54588be9`. |
 | Guided intelligence workflow | Closed for PF-AZ8 | Action Center, Finding Detail, Review & Approve, Reports & Packs, finding intelligence API, improved DOCX/PDF reports, live signed pack generation, and protected report export passed Azure live UI validation. |
+| Operational Admin health checks | Closed for PF-AZ9 | MCP agent intake is governed, public source feeds are ready, worker health is ready, and scheduler health is ready in the live Admin UI/API. |
 | Scheduled live public-source refresh | Closed for PF-AZ7 | Scheduler Container App is running one replica and completed CISA KEV/FIRST EPSS refresh as `patchforge-scheduler@diiac.io`. |
 | Customer production validation | Not claimed | Evidence covers DIIaC live platform validation, not third-party customer signoff. |
 | Azure CLI custom API token consent | Open | Azure CLI token acquisition for the PatchForge API returned AADSTS65001; browser/MSAL validation succeeded and was used for the live user workflow. |

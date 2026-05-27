@@ -1,0 +1,68 @@
+﻿[
+    {
+        "value":  [
+                      {
+                          "app":  "ca-patchforge-ui-prod",
+                          "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-frontend:pfaz8-20260527-cc708fd",
+                          "revision":  "ca-patchforge-ui-prod--0000010",
+                          "traffic":  100
+                      }
+                  ],
+        "Count":  1
+    },
+    {
+        "value":  [
+                      {
+                          "app":  "ca-patchforge-bridge-prod",
+                          "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-bridge:pfaz8-20260527-cc708fd",
+                          "revision":  "ca-patchforge-bridge-prod--0000009",
+                          "traffic":  100
+                      }
+                  ],
+        "Count":  1
+    },
+    {
+        "value":  [
+                      {
+                          "app":  "ca-patchforge-runtime-prod",
+                          "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-runtime:pfaz8-20260527-cc708fd",
+                          "revision":  "ca-patchforge-runtime-prod--0000008",
+                          "traffic":  100
+                      }
+                  ],
+        "Count":  1
+    },
+    {
+        "value":  [
+                      {
+                          "app":  "ca-patchforge-sra-prod",
+                          "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-sra-agent:pfaz8-20260527-cc708fd",
+                          "revision":  "ca-patchforge-sra-prod--0000007",
+                          "traffic":  100
+                      }
+                  ],
+        "Count":  1
+    },
+    {
+        "value":  [
+                      {
+                          "app":  "ca-patchforge-worker-prod",
+                          "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-ingest-worker:pfaz8-20260527-cc708fd",
+                          "revision":  "ca-patchforge-worker-prod--0000007",
+                          "traffic":  100
+                      }
+                  ],
+        "Count":  1
+    },
+    {
+        "value":  [
+                      {
+                          "app":  "ca-patchforge-scheduler-prod",
+                          "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-scheduler:pfaz8-20260527-cc708fd",
+                          "revision":  "ca-patchforge-scheduler-prod--0000007",
+                          "traffic":  100
+                      }
+                  ],
+        "Count":  1
+    }
+]

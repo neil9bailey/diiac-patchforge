@@ -1,3 +1,62 @@
+# PF-AZ9 Validation Outputs
+
+## PF-AZ9 Operational Health Enablement
+
+Date: 2026-05-27
+
+Status: PASS. PF-AZ9 is deployed to Azure and validated through the live Admin UI/API.
+
+Scope:
+
+- Enable MCP agent intake health as governed.
+- Enable public source feeds health as ready.
+- Enable worker health as ready.
+- Enable scheduler health as ready.
+- Preserve source-feed and agent-intake defaults during Admin config saves.
+- Show health mode detail in the Admin UI.
+
+Local validation:
+
+- `node --check backend-api/server.js`: PASS
+- `node --check backend-api/patchforge/storage.js`: PASS
+- `npm --prefix backend-api test`: PASS, 25 tests
+- `npm --prefix Frontend test`: PASS, 10 tests
+- `npm --prefix Frontend run build`: PASS
+- `python -m pytest -q --basetemp .pytest_tmp`: PASS, 25 tests
+- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate_iac.ps1`: PASS
+- `az bicep build --file infra/bicep/main.bicep`: PASS
+- `git diff --check`: PASS
+
+Azure rollout:
+
+- GitHub push: PASS, commit `c494375`
+- Image tag: `pfaz9-20260527-c494375`
+- ACR tag verification: PASS for frontend, bridge/API, runtime, SRA, worker, and scheduler images
+- Targeted Container Apps update: PASS
+- Active revisions:
+  - UI: `ca-patchforge-ui-prod--0000011`
+  - Bridge/API: `ca-patchforge-bridge-prod--0000010`
+  - Runtime: `ca-patchforge-runtime-prod--0000009`
+  - SRA: `ca-patchforge-sra-prod--0000008`
+  - Worker: `ca-patchforge-worker-prod--0000008`
+  - Scheduler: `ca-patchforge-scheduler-prod--0000008`
+
+Live validation:
+
+- UI HTTP 200: PASS
+- API readiness HTTP 200 with `storage=postgresql`, `auth_required=true`, and `tenant_required=true`: PASS
+- Protected Admin health unauthenticated HTTP 401: PASS
+- Browser/MSAL session as `n.bailey@diiac.io`: PASS
+- Displayed role `PatchForge.Admin`: PASS
+- MCP agent intake: PASS, `governed`
+- Public source feeds: PASS, `ready`
+- Worker health: PASS, `ready`
+- Scheduler health: PASS, `ready`
+
+PF-AZ9 evidence path:
+
+`docs/release/evidence/2026-05-27-patchforge-pfaz9-operational-health-enablement/`
+
 # PF-AZ8 Validation Outputs
 
 ## PF-AZ8 Local Validation

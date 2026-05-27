@@ -1,0 +1,75 @@
+{
+  "ok": true,
+  "status": 200,
+  "captured_at": "2026-05-27T08:38:43.159Z",
+  "signed_in_user_visible": true,
+  "admin_role_visible": true,
+  "statuses": {
+    "Frontend health": {
+      "status": "ready",
+      "mode": "read-only"
+    },
+    "Bridge health": {
+      "status": "ready",
+      "mode": "postgresql"
+    },
+    "Runtime health": {
+      "status": "ready",
+      "mode": "local"
+    },
+    "SRA health": {
+      "status": "advisory",
+      "mode": "advisory-only"
+    },
+    "MCP agent intake": {
+      "status": "governed",
+      "mode": "agent-led-human-approved"
+    },
+    "Public source feeds": {
+      "status": "ready",
+      "mode": "cisa-kev / first-epss"
+    },
+    "Worker health": {
+      "status": "ready",
+      "mode": "ingest-export-worker"
+    },
+    "Scheduler health": {
+      "status": "ready",
+      "mode": "last source refresh 2026-05-27T08:36:08.315Z"
+    },
+    "Database health": {
+      "status": "ready",
+      "mode": "postgresql"
+    },
+    "Storage health": {
+      "status": "ready",
+      "mode": "postgresql"
+    },
+    "Key Vault health": {
+      "status": "ready",
+      "mode": "managed-identity"
+    },
+    "Signing trust": {
+      "status": "key-vault",
+      "mode": "key-vault"
+    }
+  },
+  "required_operational_checks": {
+    "mcp_agent_intake": {
+      "status": "governed",
+      "mode": "agent-led-human-approved"
+    },
+    "public_source_feeds": {
+      "status": "ready",
+      "mode": "cisa-kev / first-epss"
+    },
+    "worker_health": {
+      "status": "ready",
+      "mode": "ingest-export-worker"
+    },
+    "scheduler_health": {
+      "status": "ready",
+      "mode": "last source refresh 2026-05-27T08:36:08.315Z"
+    }
+  }
+}

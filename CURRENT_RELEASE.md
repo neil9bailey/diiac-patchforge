@@ -1,8 +1,39 @@
 # Current Release
 
+## DIIaC PatchForge PF-AZ9
+
+Release state: PF-AZ9 is deployed to Azure and live validated through the production Admin UI/API as a signed-in PatchForge Admin user.
+
+Date: 2026-05-27
+
+PF-AZ9 completes and enables the operational Admin health checks requested after live UI review.
+
+PF-AZ9 image tag:
+
+- `pfaz9-20260527-c494375`
+
+PF-AZ9 commit:
+
+- `c494375`
+
+PF-AZ9 evidence path:
+
+- `docs/release/evidence/2026-05-27-patchforge-pfaz9-operational-health-enablement/`
+
+PF-AZ9 enables:
+
+- MCP agent intake health: `governed`
+- public source feeds health: `ready`
+- worker health: `ready`
+- scheduler health: `ready`
+- Admin health mode detail
+- Admin config deep-merge normalisation so agent/source-feed defaults are preserved
+
+PF-AZ9 does not add seeded demo data, synthetic vulnerability data, scanning, exploit generation, procedural exploit steps, patch deployment, production mutation from the UI, autonomous CAB approval, or autonomous risk acceptance.
+
 ## DIIaC PatchForge PF-AZ8
 
-Release state: PF-AZ8 is deployed to Azure and live validated through the production UI/API as a signed-in PatchForge Admin user.
+Release state: PF-AZ8 was the previous live guided intelligence baseline.
 
 Date: 2026-05-27
 
@@ -38,7 +69,7 @@ Release state: PF-AZ7 was the previous live operational customer-demo baseline.
 
 Date: 2026-05-27
 
-PF-AZ8 is now the currently deployed Azure baseline.
+PF-AZ9 is now the currently deployed Azure baseline.
 
 ## PF-AZ7 Operational Demo Increment
 
@@ -227,6 +258,8 @@ PF-AZ7 Azure rollout, scheduler validation, live browser validation, fresh signe
 
 PF-AZ8 Azure rollout, guided workflow validation, signed-in browser validation, signed pack verification, DOCX/PDF live protected report checks, Key Vault signing smoke, and PostgreSQL readiness evidence is recorded under `docs/release/evidence/2026-05-27-patchforge-pfaz8-guided-intelligence-workflow/`.
 
+PF-AZ9 Azure rollout and live Admin health validation evidence is recorded under `docs/release/evidence/2026-05-27-patchforge-pfaz9-operational-health-enablement/`.
+
 ## Runtime State
 
 PatchForge bootstrap services are live in Azure Container Apps.
@@ -269,6 +302,38 @@ Deployment evidence:
 - `docs/release/evidence/2026-05-26-patchforge-pfaz6-live-source-intelligence/`
 - `docs/release/evidence/2026-05-27-patchforge-pfaz7-operational-demo/`
 - `docs/release/evidence/2026-05-27-patchforge-pfaz8-guided-intelligence-workflow/`
+- `docs/release/evidence/2026-05-27-patchforge-pfaz9-operational-health-enablement/`
+
+Latest PF-AZ9 operational health revisions:
+
+- UI: `ca-patchforge-ui-prod--0000011`
+- Bridge/API: `ca-patchforge-bridge-prod--0000010`
+- Runtime: `ca-patchforge-runtime-prod--0000009`
+- SRA: `ca-patchforge-sra-prod--0000008`
+- Worker: `ca-patchforge-worker-prod--0000008`
+- Scheduler: `ca-patchforge-scheduler-prod--0000008`
+- Image tag: `pfaz9-20260527-c494375`
+
+## PF-AZ9 Live Validation
+
+Live UI validation result: PASS
+
+Live API validation result: PASS
+
+Validated Admin health outcome:
+
+- signed in at `https://patchforge.diiac.io` as `n.bailey@diiac.io`
+- confirmed displayed role `PatchForge.Admin`
+- confirmed MCP agent intake reports `governed`
+- confirmed public source feeds report `ready`
+- confirmed worker health reports `ready`
+- confirmed scheduler health reports `ready` with latest source refresh timestamp
+- confirmed protected Admin health API returns HTTP 401 without a bearer token
+- confirmed API readiness reports PostgreSQL storage and Entra auth required
+
+Live evidence path:
+
+- `docs/release/evidence/2026-05-27-patchforge-pfaz9-operational-health-enablement/live-ui/`
 
 Latest PF-AZ8 guided intelligence revisions:
 

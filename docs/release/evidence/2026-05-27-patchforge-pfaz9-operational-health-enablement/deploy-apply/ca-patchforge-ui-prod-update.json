@@ -1,0 +1,175 @@
+﻿{
+  "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/containerapps/ca-patchforge-ui-prod",
+  "identity": {
+    "type": "UserAssigned",
+    "userAssignedIdentities": {
+      "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourcegroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-ui-prod": {
+        "clientId": "bfe97bcf-de61-4349-844f-d1fee1403d42",
+        "principalId": "178e6987-cc7a-445f-8020-0f2424e79b45"
+      }
+    }
+  },
+  "location": "UK South",
+  "name": "ca-patchforge-ui-prod",
+  "properties": {
+    "configuration": {
+      "activeRevisionsMode": "Single",
+      "dapr": null,
+      "identitySettings": [],
+      "ingress": {
+        "additionalPortMappings": null,
+        "allowInsecure": false,
+        "clientCertificateMode": null,
+        "corsPolicy": null,
+        "customDomains": [
+          {
+            "bindingType": "SniEnabled",
+            "certificateId": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/managedEnvironments/acae-diiac-patchforge-prod/managedCertificates/mc-acae-diiac-pat-patchforge-diiac-9158",
+            "name": "patchforge.diiac.io"
+          }
+        ],
+        "exposedPort": 0,
+        "external": true,
+        "fqdn": "ca-patchforge-ui-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io",
+        "ipSecurityRestrictions": null,
+        "stickySessions": null,
+        "targetPort": 8080,
+        "traffic": [
+          {
+            "latestRevision": true,
+            "weight": 100
+          }
+        ],
+        "transport": "Auto"
+      },
+      "maxInactiveRevisions": null,
+      "registries": [
+        {
+          "identity": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-ui-prod",
+          "passwordSecretRef": "",
+          "server": "acrdiiacpatchforgeprod.azurecr.io",
+          "username": ""
+        }
+      ],
+      "runtime": null,
+      "secrets": null,
+      "service": null
+    },
+    "customDomainVerificationId": "D815E8B3470ADCCFE09104F6B9557CC8DC05A4BF8DFED6FC65F27D87B54195E5",
+    "delegatedIdentities": [],
+    "environmentId": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/managedEnvironments/acae-diiac-patchforge-prod",
+    "eventStreamEndpoint": "https://uksouth.azurecontainerapps.dev/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/containerApps/ca-patchforge-ui-prod/eventstream",
+    "latestReadyRevisionName": "ca-patchforge-ui-prod--0000010",
+    "latestRevisionFqdn": "ca-patchforge-ui-prod--0000011.lemonpebble-11b2e331.uksouth.azurecontainerapps.io",
+    "latestRevisionName": "ca-patchforge-ui-prod--0000011",
+    "managedEnvironmentId": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/managedEnvironments/acae-diiac-patchforge-prod",
+    "outboundIpAddresses": [
+      "51.145.61.244"
+    ],
+    "provisioningState": "Succeeded",
+    "runningStatus": "Running",
+    "template": {
+      "containers": [
+        {
+          "env": [
+            {
+              "name": "PATCHFORGE_ENVIRONMENT"
+            },
+            {
+              "name": "PATCHFORGE_BOUNDARY"
+            },
+            {
+              "name": "PATCHFORGE_STORAGE_ACCOUNT"
+            },
+            {
+              "name": "PATCHFORGE_KEYVAULT_URI"
+            },
+            {
+              "name": "PATCHFORGE_DATABASE_HOST"
+            },
+            {
+              "name": "PATCHFORGE_DATABASE_NAME"
+            },
+            {
+              "name": "PATCHFORGE_DATABASE_USER"
+            },
+            {
+              "name": "PATCHFORGE_DATABASE_PASSWORD_SECRET_NAME"
+            },
+            {
+              "name": "PATCHFORGE_STORAGE_MODE"
+            },
+            {
+              "name": "PATCHFORGE_ENTRA_TENANT_ID"
+            },
+            {
+              "name": "PATCHFORGE_ENTRA_AUDIENCE"
+            },
+            {
+              "name": "PATCHFORGE_AUTH_REQUIRED"
+            },
+            {
+              "name": "PATCHFORGE_KEYVAULT_SIGNING_KEY_ID"
+            },
+            {
+              "name": "AZURE_CLIENT_ID"
+            },
+            {
+              "name": "PATCHFORGE_COMPONENT"
+            },
+            {
+              "name": "PATCHFORGE_AGENT_INTAKE_ENABLED"
+            },
+            {
+              "name": "PATCHFORGE_PUBLIC_SOURCE_FEEDS_ENABLED"
+            },
+            {
+              "name": "PATCHFORGE_WORKER_ENABLED"
+            },
+            {
+              "name": "PATCHFORGE_SCHEDULER_ENABLED"
+            }
+          ],
+          "image": "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-frontend:pfaz9-20260527-c494375",
+          "name": "patchforge-ui",
+          "resources": {
+            "cpu": 0.5,
+            "ephemeralStorage": "2Gi",
+            "memory": "1Gi"
+          }
+        }
+      ],
+      "initContainers": null,
+      "revisionSuffix": "",
+      "scale": {
+        "cooldownPeriod": 300,
+        "maxReplicas": 3,
+        "minReplicas": 1,
+        "pollingInterval": 30,
+        "rules": null
+      },
+      "serviceBinds": null,
+      "terminationGracePeriodSeconds": null,
+      "volumes": null
+    },
+    "workloadProfileName": null
+  },
+  "resourceGroup": "rg-diiac-patchforge-prod",
+  "systemData": {
+    "createdAt": "2026-05-26T16:11:34.0122591",
+    "createdBy": "nbailey@diiac.io",
+    "createdByType": "User",
+    "lastModifiedAt": "2026-05-27T08:34:06.8098887",
+    "lastModifiedBy": "nbailey@diiac.io",
+    "lastModifiedByType": "User"
+  },
+  "tags": {
+    "boundary": "governance-only",
+    "component": "frontend",
+    "environment": "prod",
+    "managedBy": "bicep",
+    "owner": "DIIaC",
+    "product": "DIIaC PatchForge"
+  },
+  "type": "Microsoft.App/containerApps"
+}

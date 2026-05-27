@@ -1,0 +1,42 @@
+{
+  "product": "DIIaC PatchForge",
+  "baseline_id": "PF-AZ9",
+  "baseline_name": "Operational Admin health enablement",
+  "baseline_date": "2026-05-27",
+  "release_state": "azure_live_browser_validated",
+  "target_url": "https://patchforge.diiac.io",
+  "api_url": "https://api.patchforge.diiac.io",
+  "remote_target": "neil9bailey/diiac-patchforge",
+  "azure_resource_group": "rg-diiac-patchforge-prod",
+  "azure_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+  "image_tag": "pfaz9-20260527-c494375",
+  "commit": "c494375",
+  "capabilities_enabled": [
+    "mcp_agent_intake_governed",
+    "public_source_feeds_ready",
+    "ingest_export_worker_ready",
+    "scheduler_ready",
+    "admin_health_mode_details",
+    "admin_config_deep_merge_normalisation"
+  ],
+  "live_validation": {
+    "signed_in_user": "n.bailey@diiac.io",
+    "displayed_role": "PatchForge.Admin",
+    "admin_health_api": "pass",
+    "mcp_agent_intake": "governed",
+    "public_source_feeds": "ready",
+    "worker_health": "ready",
+    "scheduler_health": "ready",
+    "postgresql_readiness": "pass",
+    "protected_route_unauthenticated": 401,
+    "evidence_path": "docs/release/evidence/2026-05-27-patchforge-pfaz9-operational-health-enablement/"
+  },
+  "excluded_capabilities": [
+    "vulnerability_scanner",
+    "exploit_generation",
+    "patch_deployment",
+    "production_mutation_from_ui",
+    "autonomous_cab_approval",
+    "autonomous_risk_acceptance"
+  ]
+}

@@ -1,11 +1,10 @@
 {
-  "release": "PF-AZ8",
+  "release": "PF-AZ9",
   "date": "2026-05-27",
   "status": "pass",
-  "image_tag": "pfaz8-20260527-cc708fd",
-  "commit": "cc708fd",
+  "image_tag": "pfaz9-20260527-c494375",
+  "commit": "c494375",
   "gates": [
-    { "name": "repo_preflight", "status": "pass" },
     { "name": "backend_syntax", "status": "pass" },
     { "name": "backend_tests", "status": "pass", "tests": 25 },
     { "name": "python_runtime_tests", "status": "pass", "tests": 25 },
@@ -13,57 +12,16 @@
     { "name": "frontend_build", "status": "pass" },
     { "name": "iac_validation", "status": "pass" },
     { "name": "bicep_build", "status": "pass" },
-    { "name": "docker_build_smoke", "status": "pass" },
-    { "name": "git_diff_check", "status": "pass" },
-    {
-      "name": "docx_pdf_visual_qa",
-      "status": "pass",
-      "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz8-guided-intelligence-workflow/report-qa/"
-    },
-    { "name": "github_push", "status": "pass", "commit": "cc708fd" },
-    {
-      "name": "azure_image_push",
-      "status": "pass",
-      "image_tag": "pfaz8-20260527-cc708fd",
-      "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz8-guided-intelligence-workflow/build-push/acr-tag-verification.json"
-    },
-    {
-      "name": "azure_update",
-      "status": "pass",
-      "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz8-guided-intelligence-workflow/deploy-apply/active-revisions-after.json"
-    },
-    {
-      "name": "live_api_smoke",
-      "status": "pass",
-      "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz8-guided-intelligence-workflow/live-ui/live-api-smoke.json"
-    },
-    {
-      "name": "live_ui_user_validation",
-      "status": "pass",
-      "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz8-guided-intelligence-workflow/live-ui/ui-smoke-summary.json"
-    },
-    {
-      "name": "key_vault_signing_smoke",
-      "status": "pass",
-      "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz8-guided-intelligence-workflow/live-ui/keyvault-signing-smoke.json"
-    },
-    {
-      "name": "postgresql_readiness",
-      "status": "pass",
-      "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz8-guided-intelligence-workflow/live-ui/postgres-smoke.json"
-    }
+    { "name": "github_push", "status": "pass", "commit": "c494375" },
+    { "name": "azure_image_push", "status": "pass", "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz9-operational-health-enablement/build-push/acr-tag-verification.json" },
+    { "name": "azure_update", "status": "pass", "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz9-operational-health-enablement/deploy-apply/active-revisions-after.json" },
+    { "name": "live_api_smoke", "status": "pass", "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz9-operational-health-enablement/live-ui/live-api-smoke.json" },
+    { "name": "live_admin_health_validation", "status": "pass", "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz9-operational-health-enablement/live-ui/admin-health-live-smoke.json" }
   ],
-  "pfaz8_features": {
-    "guided_action_center": "azure_live_validated",
-    "finding_detail_plain_english_intelligence": "azure_live_validated",
-    "review_approve_workflow": "azure_live_validated",
-    "reports_packs_workflow": "azure_live_validated",
-    "finding_intelligence_api": "azure_live_validated",
-    "decision_grade_docx_pdf_reports": "azure_live_validated",
-    "signed_pack_finding_intelligence_snapshot": "azure_live_validated",
-    "source_bound_review_required": true,
-    "can_close_hard_gates_alone": false,
-    "no_patch_deployment": true,
-    "no_exploit_generation": true
+  "operational_health": {
+    "mcp_agent_intake": "governed",
+    "public_source_feeds": "ready",
+    "worker_health": "ready",
+    "scheduler_health": "ready"
   }
 }

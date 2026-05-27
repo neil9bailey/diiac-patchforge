@@ -1,7 +1,7 @@
 {
   "product": "DIIaC PatchForge",
-  "baseline_id": "PF-AZ8",
-  "baseline_name": "Guided intelligence workflow and decision-grade reports",
+  "baseline_id": "PF-AZ9",
+  "baseline_name": "Operational Admin health enablement",
   "baseline_date": "2026-05-27",
   "target_url": "https://patchforge.diiac.io",
   "api_url": "https://api.patchforge.diiac.io",
@@ -14,128 +14,47 @@
   "storage_state": "postgresql",
   "auth_state": "entra_rbac_required",
   "signing_state": "azure_key_vault_required_for_production_runtime",
-  "pfaz5_image_tag": "pfaz5-20260526-8a145e8",
-  "pfaz5_commit": "8a145e849a2c57fed3bc00440f2f2f8b29585f72",
-  "pfaz6_image_tag": "pfaz6-20260526-473b055",
-  "pfaz6_commit": "473b055005cb2bb212e47f46aaf4e660faeb7d3a",
-  "pfaz6_public_source_intelligence": "azure_live_browser_validated",
-  "pfaz7_image_tag": "pfaz7-20260527-71643ce",
-  "pfaz7_commit": "71643ce4123bed543c9b0b55c39347b4775946d1",
-  "pfaz7_operational_demo_hardening": "azure_live_browser_validated",
   "pfaz8_image_tag": "pfaz8-20260527-cc708fd",
   "pfaz8_commit": "cc708fd",
   "pfaz8_guided_intelligence_workflow": "azure_live_browser_validated",
-  "capabilities_created": [
-    "repository_skeleton",
-    "azure_container_apps_deployment",
-    "entra_msal_ui_sign_in",
-    "token_backed_api_calls",
-    "tenant_context_hardening",
-    "actor_tenant_lineage",
-    "bayesian_patch_risk_inference",
-    "vendor_threat_landscape_intelligence",
-    "live_cisa_kev_source_feed",
-    "live_first_epss_source_feed",
-    "source_feed_run_ledger",
-    "source_feed_ui",
-    "protected_docx_pdf_report_exports",
-    "professional_report_catalog_api",
-    "ui_reports_page",
-    "decision_pack_docx_pdf_export_actions",
-    "scheduler_backed_public_source_refresh",
-    "guided_action_center",
-    "finding_detail_plain_english_intelligence",
-    "review_approve_workflow",
-    "reports_packs_workflow",
-    "finding_intelligence_api",
-    "signed_pack_finding_intelligence_snapshot",
-    "decision_grade_docx_pdf_reports",
-    "source_bound_agent_finding_intake",
-    "runtime_signed_decision_packs",
-    "board_grade_reports",
-    "live_release_evidence"
+  "pfaz9_image_tag": "pfaz9-20260527-c494375",
+  "pfaz9_commit": "c494375",
+  "pfaz9_operational_admin_health": "azure_live_browser_validated",
+  "capabilities_enabled": [
+    "mcp_agent_intake_governed",
+    "public_source_feeds_ready",
+    "ingest_export_worker_ready",
+    "scheduler_ready",
+    "admin_health_mode_details",
+    "admin_config_deep_merge_normalisation"
   ],
   "live_validation": {
     "ui": "pass",
     "api": "pass",
     "signed_in_user": "n.bailey@diiac.io",
     "displayed_role": "PatchForge.Admin",
-    "validated_real_cve": "CVE-2026-48172",
-    "decision_pack_id": "PF-20260527-9fc7f010",
-    "pack_verified": true,
-    "manifest_ok": true,
-    "signature_ok": true,
-    "signing_provider": "azure_key_vault",
-    "final_approval_issued": false,
-    "docx_report_download": "pass",
-    "pdf_report_download": "pass",
-    "key_vault_signing_smoke": "pass",
+    "mcp_agent_intake": "governed",
+    "public_source_feeds": "ready",
+    "worker_health": "ready",
+    "scheduler_health": "ready",
     "postgresql_readiness": "pass",
     "protected_route_unauthenticated": 401,
-    "evidence_path": "docs/release/evidence/2026-05-27-patchforge-pfaz8-guided-intelligence-workflow/live-ui/",
-    "previous_pfaz7_evidence_path": "docs/release/evidence/2026-05-27-patchforge-pfaz7-operational-demo/"
+    "evidence_path": "docs/release/evidence/2026-05-27-patchforge-pfaz9-operational-health-enablement/"
   },
   "active_revisions": [
-    {
-      "app": "ca-patchforge-ui-prod",
-      "revision": "ca-patchforge-ui-prod--0000010",
-      "image": "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-frontend:pfaz8-20260527-cc708fd",
-      "traffic": 100
-    },
-    {
-      "app": "ca-patchforge-bridge-prod",
-      "revision": "ca-patchforge-bridge-prod--0000009",
-      "image": "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-bridge:pfaz8-20260527-cc708fd",
-      "traffic": 100
-    },
-    {
-      "app": "ca-patchforge-runtime-prod",
-      "revision": "ca-patchforge-runtime-prod--0000008",
-      "image": "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-runtime:pfaz8-20260527-cc708fd",
-      "traffic": 100
-    },
-    {
-      "app": "ca-patchforge-sra-prod",
-      "revision": "ca-patchforge-sra-prod--0000007",
-      "image": "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-sra-agent:pfaz8-20260527-cc708fd",
-      "traffic": 100
-    },
-    {
-      "app": "ca-patchforge-worker-prod",
-      "revision": "ca-patchforge-worker-prod--0000007",
-      "image": "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-ingest-worker:pfaz8-20260527-cc708fd",
-      "traffic": 100
-    },
-    {
-      "app": "ca-patchforge-scheduler-prod",
-      "revision": "ca-patchforge-scheduler-prod--0000007",
-      "image": "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-scheduler:pfaz8-20260527-cc708fd",
-      "traffic": 100
-    }
+    { "app": "ca-patchforge-ui-prod", "revision": "ca-patchforge-ui-prod--0000011", "image": "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-frontend:pfaz9-20260527-c494375", "traffic": 100 },
+    { "app": "ca-patchforge-bridge-prod", "revision": "ca-patchforge-bridge-prod--0000010", "image": "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-bridge:pfaz9-20260527-c494375", "traffic": 100 },
+    { "app": "ca-patchforge-runtime-prod", "revision": "ca-patchforge-runtime-prod--0000009", "image": "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-runtime:pfaz9-20260527-c494375", "traffic": 100 },
+    { "app": "ca-patchforge-sra-prod", "revision": "ca-patchforge-sra-prod--0000008", "image": "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-sra-agent:pfaz9-20260527-c494375", "traffic": 100 },
+    { "app": "ca-patchforge-worker-prod", "revision": "ca-patchforge-worker-prod--0000008", "image": "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-ingest-worker:pfaz9-20260527-c494375", "traffic": 100 },
+    { "app": "ca-patchforge-scheduler-prod", "revision": "ca-patchforge-scheduler-prod--0000008", "image": "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-scheduler:pfaz9-20260527-c494375", "traffic": 100 }
   ],
-  "local_validation": {
-    "backend_tests": "pass",
-    "frontend_tests": "pass",
-    "frontend_build": "pass",
-    "python_tests": "pass",
-    "iac_validation": "pass",
-    "bicep_build": "pass",
-    "docker_build_smoke": "pass",
-    "docx_pdf_visual_qa": "pass",
-    "docx_pdf_visual_qa_record": "docs/release/evidence/2026-05-27-patchforge-pfaz8-guided-intelligence-workflow/report-qa/"
-  },
   "excluded_capabilities": [
     "vulnerability_scanner",
     "exploit_generation",
     "patch_deployment",
     "production_mutation_from_ui",
-    "siem_soar_replacement",
-    "itsm_replacement",
-    "cmdb_replacement",
-    "edr_xdr_replacement",
-    "ot_engineering_replacement",
     "autonomous_cab",
-    "autonomous_risk_acceptance",
-    "unreviewed_agent_source_truth"
+    "autonomous_risk_acceptance"
   ]
 }
