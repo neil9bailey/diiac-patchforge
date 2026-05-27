@@ -465,6 +465,9 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         <div className="content-grid">
           <section className="primary-panel" aria-label={activePage}>
             <OperationMessages message={operationMessage} error={operationError} />
+            {selectedFinding && ["Action Center", "Finding Detail", "Review & Approve", "Reports & Packs"].includes(activePage) && (
+              <FindingContextBanner finding={selectedFinding} />
+            )}
             {activePage === "Action Center" && (
               <ActionCenter
                 metrics={state.metrics}
@@ -634,6 +637,51 @@ function OperationMessages({ message, error }: { message: string | null; error: 
   );
 }
 
+function FindingContextBanner({ finding }: { finding: FindingIntelligence }) {
+  const product = finding.product || "Product pending";
+  const scope = finding.exposure.unmapped_scope ? "Customer exposure unconfirmed" : "Customer exposure mapped";
+  const approval = finding.recommendation.final_approval_issued || finding.latest_signed_pack?.final_approval_issued ? "Final approval issued" : "Final approval not issued";
+  return (
+    <section className="context-banner" aria-label="Current finding context">
+      <ShieldAlert size={18} aria-hidden />
+      <strong>{finding.vulnerability_id}</strong>
+      <span>{product}</span>
+      <span>Source-bound</span>
+      <span>{scope}</span>
+      <span>{approval}</span>
+    </section>
+  );
+}
+
+function NextActionCards() {
+  const cards = [
+    ["Confirm customer exposure", "Map affected assets, services, owner, and customer-facing status before a final remediation decision."],
+    ["Attach vendor patch evidence", "Add reviewed patch notes, affected version mapping, testing evidence, and rollback plan."],
+    ["Review source intelligence", "Accept, reject, or supersede CISA/CVE/vendor/SRA/agent records with a named reviewer event."],
+    ["Generate customer pack", "Export the customer assurance pack only after it clearly states what can and cannot be claimed."],
+    ["Request approval only after blockers close", "CAB, risk acceptance, patch closure, and customer remediation assurance remain human-approved."]
+  ];
+  return (
+    <section className="wide-band next-actions">
+      <div className="section-title">
+        <h3>Next Actions</h3>
+        <span className="pill amber">Human approval required</span>
+      </div>
+      <div className="next-action-grid">
+        {cards.map(([title, detail], index) => (
+          <article className="next-action-card" key={title}>
+            <strong>{index + 1}</strong>
+            <div>
+              <h4>{title}</h4>
+              <p>{detail}</p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function ActionCenter({
   metrics,
   findings,
@@ -675,7 +723,7 @@ function ActionCenter({
 
       <section className="wide-band action-hero">
         <div>
-          <p className="eyebrow">Autonomous analysis, human-approved decisions</p>
+          <p className="eyebrow">Automated governance analysis, human-approved decisions</p>
           <h3>PatchForge has already translated the queue into decision-ready work.</h3>
           <p className="muted-copy">
             The engine reviews source-bound intelligence, exposure signals, Bayesian advisory output, vendor context, and signed-pack state. The user journey is to understand the finding, approve or withhold the governance decision, then export a board/CAB pack.
@@ -690,13 +738,14 @@ function ActionCenter({
           </button>
         </div>
       </section>
+      <NextActionCards />
 
       <div className="finding-grid">
         {topFindings.map((finding) => (
           <article className="finding-card" key={finding.vulnerability_id}>
             <div className="finding-card-head">
               <span className={`pill ${severityTone(finding.severity)}`}>{humanize(finding.severity || "unknown")}</span>
-              <span className="pill teal">{humanize(finding.recommendation?.posture || "defer_pending_evidence")}</span>
+              <span className="pill teal">{postureLabel(finding)}</span>
             </div>
             <h3>{finding.vulnerability_id}</h3>
             <p>{finding.summary.executive_readout}</p>
@@ -759,10 +808,11 @@ function FindingDetail({
         </div>
         <div className="finding-score">
           <span className={`pill ${severityTone(finding.severity)}`}>{humanize(finding.severity)}</span>
-          <strong>{humanize(finding.recommendation.posture)}</strong>
+          <strong>{postureLabel(finding)}</strong>
           <small>{humanize(finding.recommendation.confidence)} confidence</small>
         </div>
       </section>
+      <NextActionCards />
 
       <div className="split-grid">
         <section className="data-band narrative-panel">
@@ -773,6 +823,7 @@ function FindingDetail({
         <section className="data-band narrative-panel">
           <h3>Exploitability Intelligence</h3>
           <p>{finding.exploitability.safe_description}</p>
+          {finding.exploitability.kev_epss_interpretation && <p>{finding.exploitability.kev_epss_interpretation}</p>}
           <p className="boundary-copy">{finding.exploitability.prohibited_detail}</p>
         </section>
       </div>
@@ -811,10 +862,11 @@ function FindingDetail({
         <div className="decision-option-grid">
           {finding.decision_options.map((option) => (
             <article className={option.recommended ? "decision-option recommended" : "decision-option"} key={option.posture}>
-              <span className={option.recommended ? "pill trust" : "pill steel"}>{option.recommended ? "Recommended" : "Available"}</span>
+              <span className={option.recommended ? "pill trust" : "pill steel"}>{humanize(option.current_status || (option.recommended ? "recommended" : "available"))}</span>
               <h4>{humanize(option.posture)}</h4>
-              <p>{option.when_to_choose}</p>
-              <small>Evidence: {option.evidence_needed.join(", ") || "Reviewed evidence required"}</small>
+              <p>{option.reason || option.when_to_choose}</p>
+              <small>Evidence: {(option.required_evidence || option.evidence_needed).join(", ") || "Reviewed evidence required"}</small>
+              <small>Approval: {option.required_approval || (option.approval_needed ? "Required" : "Not required at this stage")}</small>
             </article>
           ))}
         </div>
@@ -868,7 +920,7 @@ function ReviewApprove({
       <section className="wide-band review-runway">
         <div>
           <p className="eyebrow">Decision runway</p>
-          <h3>{finding ? `${finding.vulnerability_id}: ${humanize(finding.recommendation.posture)}` : "Select a finding to review"}</h3>
+          <h3>{finding ? `${finding.vulnerability_id}: ${postureLabel(finding)}` : "Select a finding to review"}</h3>
           <p className="muted-copy">
             PatchForge performs the analysis, keeps agent and source output advisory-only, and leaves the accountable decision to the user. Use this page to compile the signed pack and export professional DOCX/PDF reports.
           </p>
@@ -889,10 +941,12 @@ function ReviewApprove({
           </label>
         </div>
       </section>
+      {finding && <NextActionCards />}
 
       <div className="split-grid">
         <section className="data-band">
-          <h3>Autonomous Analysis Completed</h3>
+          <h3>Automated Governance Analysis Completed</h3>
+          <p className="boundary-copy">{finding?.recommendation.approval_notice || "Human approval remains required. PatchForge does not approve CAB decisions, risk acceptance, patch deployment, or closure autonomously."}</p>
           {(finding?.automation.completed || ["Select a finding to load analysis."]).map((item) => (
             <p className="rail-note" key={item}><CheckCircle2 size={15} aria-hidden /> {item}</p>
           ))}
@@ -931,7 +985,7 @@ function ReviewApprove({
           <StatusLine label="Latest signed pack" value={latestPack?.pack_id || "Generate after review"} tone={latestPack ? "trust" : "amber"} />
           <StatusLine label="Final approval" value={latestPack?.final_approval_issued ? "Issued" : "Not issued"} tone={latestPack?.final_approval_issued ? "trust" : "amber"} />
           <StatusLine label="SRA output" value={sraResult ? "Advisory returned" : "Not run this session"} tone="teal" />
-          <StatusLine label="Autonomous approval" value="Blocked" tone="amber" />
+          <StatusLine label="Automated approval" value="Blocked" tone="amber" />
         </div>
       </section>
 
@@ -1880,6 +1934,10 @@ function severityTone(severity = "") {
     return "steel";
   }
   return "teal";
+}
+
+function postureLabel(finding: FindingIntelligence) {
+  return finding.recommendation.customer_posture || humanize(finding.recommendation.display_posture || finding.recommendation.posture || "defer_pending_evidence");
 }
 
 function hasAnyRole(actual: string[], required: string[]) {

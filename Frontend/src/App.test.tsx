@@ -47,6 +47,7 @@ const finding: FindingIntelligence = {
     epss_percentile: 0.97,
     ransomware_use: "Unknown",
     safe_description: "Source-bound intelligence indicates this vulnerability is known to be exploited in the wild.",
+    kev_epss_interpretation: "CISA KEV indicates the vulnerability appears in a known exploited vulnerability source feed.",
     prohibited_detail: "Exploit code, exploit payloads, and procedural exploitation steps are intentionally not provided."
   },
   exposure: {
@@ -69,10 +70,17 @@ const finding: FindingIntelligence = {
     do_next: ["Attach rollback evidence."],
     due_date: "2026-06-03",
     advisory_only: true,
-    final_approval_issued: false
+    final_approval_issued: false,
+    customer_posture: "Emergency Change Required",
+    display_posture: "emergency_change_required",
+    approval_notice: "Human approval remains required. PatchForge does not approve CAB decisions, risk acceptance, patch deployment, or closure autonomously."
   },
   decision_options: [{
     posture: "emergency_change_required",
+    current_status: "available",
+    reason: "Reviewed scope and patch applicability can support emergency change review.",
+    required_evidence: ["Rollback plan", "Human approval"],
+    required_approval: "CAB/security lead emergency approval.",
     when_to_choose: "Use when known exploitation and customer-facing impact make normal change cadence too slow.",
     benefits: "Fast accountable response.",
     risks: "Higher change risk if evidence is incomplete.",
@@ -85,6 +93,13 @@ const finding: FindingIntelligence = {
     pending_review_count: 1,
     rejected_source_count: 0,
     gaps: ["Affected asset scope", "Rollback plan"],
+    gap_details: [{
+      gap: "Affected asset scope",
+      why_it_matters: "The organisation cannot confirm estate exposure without reviewed asset scope.",
+      required_evidence: "CMDB, hosting control panel inventory, scanner output, asset owner confirmation.",
+      suggested_owner_role: "Asset owner",
+      next_decision_gate: "Asset exposure confirmation"
+    }],
     warning: "Source and agent outputs remain source-bound until reviewed."
   },
   automation: {
@@ -236,7 +251,9 @@ describe("PatchForge guided shell", () => {
     await waitFor(() => expect(api.actionCenter).toHaveBeenCalled());
     expect(screen.getByText("PatchForge has already translated the queue into decision-ready work.")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Action Center" })).toBeInTheDocument();
-    expect(screen.getByText("CVE-2026-REAL-001")).toBeInTheDocument();
+    expect(screen.getAllByText("CVE-2026-REAL-001").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("Customer exposure mapped")).toBeInTheDocument();
+    expect(screen.getByText("Confirm customer exposure")).toBeInTheDocument();
     expect(screen.getByText(/customer-facing service exposure/i)).toBeInTheDocument();
   });
 
@@ -257,7 +274,9 @@ describe("PatchForge guided shell", () => {
     await waitFor(() => expect(api.actionCenter).toHaveBeenCalled());
     fireEvent.click(screen.getByRole("button", { name: "Review" }));
     expect(screen.getByRole("heading", { name: "Review & Approve" })).toBeInTheDocument();
-    expect(screen.getByText("Autonomous Analysis Completed")).toBeInTheDocument();
+    expect(screen.getByText("Automated Governance Analysis Completed")).toBeInTheDocument();
+    expect(screen.queryByText(["Autonomous", "Analysis", "Completed"].join(" "))).not.toBeInTheDocument();
+    expect(screen.getByText(/Human approval remains required/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Generate Signed Pack" }));
     await waitFor(() => expect(api.generateDecisionPack).toHaveBeenCalled());
   });

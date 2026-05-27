@@ -1,5 +1,40 @@
 # Current Release
 
+## DIIaC PatchForge PF-AZ8A
+
+Release state: PF-AZ8A is locally validated and pending Azure rollout/live UI validation.
+
+Date: 2026-05-27
+
+PF-AZ8A is the customer report specificity and guided decision-usefulness increment applied after the PF-AZ9 operational health baseline.
+
+PF-AZ8A local evidence path:
+
+- `docs/release/evidence/2026-05-27-patchforge-pfaz8a-report-specificity/`
+
+PF-AZ8A adds:
+
+- safer enterprise wording: `Automated Governance Analysis Completed`
+- explicit human-approval boundary below automated evidence preparation language
+- urgent scope confirmation posture for known-exploited public-source records with unconfirmed customer exposure
+- KEV/EPSS plain-English explanation when those signals appear contradictory
+- vendor-advisory missing-evidence wording and source-bound threat metric labelling
+- specific evidence gaps with why it matters, required evidence, examples, owner role, and next decision gate
+- customer-specific report sections for assurance position, impact status, evidence required, customer communication, shareable position, and claims not yet supportable
+- decision-option statuses, reasons, required evidence, and required approvals
+- persistent UI context banner and simple next-action cards
+
+PF-AZ8A local validation:
+
+- backend syntax and tests: PASS
+- frontend tests and production build: PASS
+- Python runtime tests: PASS
+- IaC validation and Bicep build: PASS
+- Docker frontend, bridge/API, and runtime build smoke: PASS
+- DOCX structural/open QA and PDF render QA for customer, board, and CAB reports: PASS
+
+PF-AZ8A still requires Azure image rollout and live UI validation before it can be treated as the live production baseline.
+
 ## DIIaC PatchForge PF-AZ9
 
 Release state: PF-AZ9 is deployed to Azure and live validated through the production Admin UI/API as a signed-in PatchForge Admin user.
@@ -55,7 +90,7 @@ PF-AZ8 adds:
 
 - Action Center, Finding Detail, Review & Approve, and Reports & Packs workflow
 - human-readable finding intelligence API
-- autonomous analysis summary with human approval still required
+- automated governance analysis summary with human approval still required
 - exploitability intelligence without exploit code or procedural steps
 - decision options matrix and evidence gaps in the UI and reports
 - signed-pack artefact support for `finding_intelligence_snapshot.json`
@@ -360,7 +395,7 @@ Validated user workflow:
 - loaded the simplified Action Center from live protected APIs
 - opened Finding Detail for `CVE-2026-48172` and confirmed plain-English vulnerability explanation, affected scope, exploitability intelligence, and decision options
 - confirmed exploit code, exploit payloads, and procedural exploitation steps are not provided
-- opened Review & Approve and confirmed autonomous analysis completed while human approval remained required
+- opened Review & Approve and confirmed automated governance analysis completed while human approval remained required
 - ran SRA advisory and confirmed advisory-only output
 - generated fresh signed pack `PF-20260527-9fc7f010`
 - verified the exported pack reports `verified=true`, `manifest_ok=true`, `signature_ok=true`, `signing_provider=azure_key_vault`, and `final_approval_issued=false`

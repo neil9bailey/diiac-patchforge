@@ -8,6 +8,7 @@ import { PatchForgeJsonStorage } from "./patchforge/storage.js";
 import { createSourceFeedClient } from "./patchforge/sourceFeeds.js";
 import { runSchedulerOnce } from "./patchforge/scheduler.js";
 import { createAuthConfigFromEnv } from "./auth.js";
+import { buildReportContext } from "./patchforge/reports.js";
 
 async function withApi(run, options = {}) {
   const storageRoot = await mkdtemp(path.join(os.tmpdir(), "patchforge-api-"));
@@ -631,7 +632,23 @@ test("decision packs are generated only from ingested tenant vulnerabilities", a
   });
 });
 
-test("professional decision pack reports export as DOCX and PDF", async () => {
+test("professional decision pack reports export as specific DOCX and PDF decision packs", async () => {
+  const sourceFeedClient = createSourceFeedClient({
+    fetchImpl: async (url) => {
+      assert.match(String(url), /api\.first\.org\/data\/v1\/epss/);
+      return jsonResponse({
+        status: "OK",
+        total: 1,
+        data: [{
+          cve: "CVE-2026-PF-REPORT-001",
+          epss: "0.000300000",
+          percentile: "0.030000000",
+          date: "2026-05-27"
+        }]
+      });
+    }
+  });
+
   await withApi(async (baseUrl) => {
     await request(baseUrl, "/api/patchforge/vulnerabilities/ingest", {
       method: "POST",
@@ -652,6 +669,13 @@ test("professional decision pack reports export as DOCX and PDF", async () => {
       })
     });
 
+    const epss = await request(baseUrl, "/api/patchforge/source-feeds/refresh", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ feed_id: "first-epss", cve: "CVE-2026-PF-REPORT-001" })
+    });
+    assert.equal(epss.response.status, 202);
+
     const generated = await request(baseUrl, "/api/patchforge/decision-packs/generate", {
       method: "POST",
       headers: { "x-tenant-id": "tenant-a" },
@@ -661,6 +685,16 @@ test("professional decision pack reports export as DOCX and PDF", async () => {
       })
     });
     assert.equal(generated.response.status, 201);
+    const customerContext = buildReportContext({
+      reportType: "customer_patch_governance_pack",
+      pack: generated.body.decision_pack
+    });
+    assert.match(customerContext.recommendation.customer_posture, /Urgent scope confirmation required/i);
+    assert.equal(customerContext.finalApprovalIssued, false);
+    assert.ok(customerContext.evidenceGapDetails.every((detail) => detail.why_it_matters && detail.required_evidence));
+    assert.equal(customerContext.vendor.available, false);
+    assert.equal(customerContext.exploitability.known_exploited, true);
+    assert.match(customerContext.exploitability.kev_epss_interpretation, /Known exploited signal is present, but EPSS is low/);
 
     const catalog = await request(baseUrl, "/api/patchforge/reports/catalog", {
       headers: { "x-tenant-id": "tenant-a" }
@@ -684,12 +718,26 @@ test("professional decision pack reports export as DOCX and PDF", async () => {
     const pdfBytes = Buffer.from(await pdf.arrayBuffer());
     assert.equal(pdfBytes.subarray(0, 4).toString("utf8"), "%PDF");
 
+    const customerDocx = await fetch(`${baseUrl}/api/patchforge/decision-packs/PF-TEST-0001/reports/customer_patch_governance_pack.docx`, {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(customerDocx.status, 200);
+    const customerDocxBytes = Buffer.from(await customerDocx.arrayBuffer());
+    assert.equal(customerDocxBytes.subarray(0, 2).toString("utf8"), "PK");
+
+    const customerPdf = await fetch(`${baseUrl}/api/patchforge/decision-packs/PF-TEST-0001/reports/customer_patch_governance_pack.pdf`, {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(customerPdf.status, 200);
+    const customerPdfBytes = Buffer.from(await customerPdf.arrayBuffer());
+    assert.equal(customerPdfBytes.subarray(0, 4).toString("utf8"), "%PDF");
+
     const unknown = await request(baseUrl, "/api/patchforge/decision-packs/PF-TEST-0001/reports/not-a-report.pdf", {
       headers: { "x-tenant-id": "tenant-a" }
     });
     assert.equal(unknown.response.status, 400);
     assert.equal(unknown.body.error, "unknown_report_type");
-  });
+  }, { sourceFeedClient });
 });
 
 test("finding intelligence explains queue records in human-readable governance terms", async () => {
@@ -725,9 +773,16 @@ test("finding intelligence explains queue records in human-readable governance t
     assert.equal(analysis.body.intelligence.vulnerability_id, "CVE-2026-PF-INTEL-001");
     assert.equal(analysis.body.intelligence.boundary.no_exploit_code, true);
     assert.equal(analysis.body.intelligence.boundary.no_patch_deployment, true);
-    assert.equal(analysis.body.intelligence.recommendation.posture, "emergency_change_required");
+    assert.equal(analysis.body.intelligence.recommendation.posture, "defer_pending_evidence");
+    assert.equal(analysis.body.intelligence.recommendation.display_posture, "urgent_scope_confirmation_required");
+    assert.match(analysis.body.intelligence.recommendation.customer_posture, /Urgent scope confirmation required/i);
     assert.match(analysis.body.intelligence.summary.plain_english, /governance decision/i);
+    assert.match(analysis.body.intelligence.summary.what_it_affects, /customer asset and service exposure are not yet confirmed/i);
+    assert.doesNotMatch(analysis.body.intelligence.summary.executive_readout, /enterprise service exposure/i);
     assert.match(analysis.body.intelligence.exploitability.prohibited_detail, /procedural exploitation steps/i);
+    assert.ok(analysis.body.intelligence.evidence.gap_details.every((detail) => detail.why_it_matters && detail.required_evidence));
+    assert.ok(analysis.body.intelligence.decision_options.every((option) => option.current_status && option.reason));
+    assert.equal(analysis.body.intelligence.recommendation.final_approval_issued, false);
 
     const detail = await request(baseUrl, "/api/patchforge/vulnerabilities/CVE-2026-PF-INTEL-001/intelligence", {
       headers: { "x-tenant-id": "tenant-a" }
@@ -828,6 +883,7 @@ function fakeRuntimeClient() {
             title: payload.vulnerability.title,
             severity: payload.vulnerability.severity,
             known_exploited: payload.vulnerability.known_exploited,
+            internet_exposed: payload.vulnerability.internet_exposed,
             patch_status: payload.vulnerability.patch_status,
             sources: payload.vulnerability.sources || []
           },
@@ -867,9 +923,17 @@ function fakeRuntimeClient() {
             change_risk_posterior: 0.42,
             deferral_risk_posterior: 0.49
           },
+          "finding_intelligence_snapshot.json": payload.finding_intelligence_snapshot || {
+            available: false,
+            advisory_only: true,
+            human_approval_required: true,
+            no_exploit_code: true,
+            no_patch_deployment: true
+          },
           "vendor_intelligence_snapshot.json": {
             source_bound: true,
-            review_required: true
+            review_required: true,
+            available: false
           },
           "threat_landscape_snapshot.json": {
             source_bound: true,

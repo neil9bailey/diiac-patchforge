@@ -1,0 +1,77 @@
+{
+  "pack_id": "PF-AZ8A-LOCAL-CVE-2026-48172",
+  "posture": "Urgent scope confirmation required - final remediation decision blocked pending evidence.",
+  "gaps": [
+    {
+      "gap": "Reviewed vulnerability identity evidence",
+      "plain_english_gap": "The finding identity has not yet been accepted by a named reviewer.",
+      "why_it_matters": "CAB and customer assurance need confidence that the CVE, affected product, affected versions, and source provenance are correct before remediation decisions are presented as evidence-led.",
+      "required_evidence": "Reviewed CISA/CVE/vendor advisory record confirming CVE, product, affected versions, and source provenance.",
+      "evidence_examples": [
+        "CISA KEV record",
+        "NVD/CVE record",
+        "vendor advisory",
+        "source review event"
+      ],
+      "suggested_owner_role": "Security lead or vulnerability manager",
+      "next_decision_gate": "Source identity review"
+    },
+    {
+      "gap": "Affected asset scope",
+      "plain_english_gap": "Customer asset exposure is not confirmed.",
+      "why_it_matters": "Without asset scope, the organisation cannot tell whether the public-source finding affects the customer estate or what operational risk a change would introduce.",
+      "required_evidence": "CMDB, hosting control panel inventory, scanner output, asset owner confirmation.",
+      "evidence_examples": [
+        "CMDB asset record",
+        "hosting control panel inventory",
+        "scanner output",
+        "asset owner confirmation"
+      ],
+      "suggested_owner_role": "Asset owner or infrastructure lead",
+      "next_decision_gate": "Asset exposure confirmation"
+    },
+    {
+      "gap": "Business service impact",
+      "plain_english_gap": "Business service and customer impact are not confirmed.",
+      "why_it_matters": "Severity alone does not tell the CAB which service, customer journey, SLA, or owner is affected.",
+      "required_evidence": "Service map, customer-facing flag, SLA/OLA impact, service owner.",
+      "evidence_examples": [
+        "service catalogue map",
+        "customer-facing flag",
+        "SLA/OLA record",
+        "service owner confirmation"
+      ],
+      "suggested_owner_role": "Service owner",
+      "next_decision_gate": "Business impact review"
+    },
+    {
+      "gap": "Patch availability and feasibility",
+      "plain_english_gap": "Patch availability and feasibility are not yet reviewed.",
+      "why_it_matters": "The decision cannot responsibly select patch, mitigation, deferral, or customer assurance until affected versions, testing, rollback, and applicability are understood.",
+      "required_evidence": "Vendor patch note, affected version mapping, test evidence, rollback plan.",
+      "evidence_examples": [
+        "vendor patch note",
+        "affected version mapping",
+        "test evidence",
+        "rollback plan"
+      ],
+      "suggested_owner_role": "Change owner or platform engineer",
+      "next_decision_gate": "Patch feasibility review"
+    },
+    {
+      "gap": "Human source review event",
+      "plain_english_gap": "No named human source review event is recorded.",
+      "why_it_matters": "Source-bound intelligence cannot become accepted positive evidence without a reviewer accepting or rejecting the source record.",
+      "required_evidence": "Named reviewer decision accepting or rejecting source records.",
+      "evidence_examples": [
+        "source review event",
+        "reviewer name or role",
+        "accepted/rejected/superseded outcome",
+        "review notes"
+      ],
+      "suggested_owner_role": "Security lead or CAB reviewer",
+      "next_decision_gate": "Human evidence review"
+    }
+  ],
+  "kev_epss": "CISA KEV indicates the vulnerability appears in a known exploited vulnerability source feed. EPSS provides a probability-style signal and may be lower. PatchForge treats these as prioritisation signals, not proof of tenant exposure. Customer exposure must be confirmed through asset and service evidence. Known exploited signal is present, but EPSS is low. This does not remove the need for scope confirmation."
+}

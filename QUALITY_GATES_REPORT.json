@@ -1,27 +1,48 @@
 {
-  "release": "PF-AZ9",
+  "release": "PF-AZ8A",
   "date": "2026-05-27",
-  "status": "pass",
-  "image_tag": "pfaz9-20260527-c494375",
-  "commit": "c494375",
+  "status": "local_pass_pending_azure_rollout",
+  "previous_live_release": {
+    "release": "PF-AZ9",
+    "image_tag": "pfaz9-20260527-c494375",
+    "commit": "c494375",
+    "status": "azure_live_browser_validated"
+  },
   "gates": [
-    { "name": "backend_syntax", "status": "pass" },
+    { "name": "backend_server_syntax", "status": "pass" },
+    { "name": "backend_auth_syntax", "status": "pass" },
+    { "name": "backend_reports_syntax", "status": "pass" },
+    { "name": "backend_scheduler_syntax", "status": "pass" },
+    { "name": "sra_syntax", "status": "pass" },
     { "name": "backend_tests", "status": "pass", "tests": 25 },
-    { "name": "python_runtime_tests", "status": "pass", "tests": 25 },
     { "name": "frontend_tests", "status": "pass", "tests": 10 },
     { "name": "frontend_build", "status": "pass" },
+    { "name": "python_runtime_tests", "status": "pass", "tests": 25 },
     { "name": "iac_validation", "status": "pass" },
     { "name": "bicep_build", "status": "pass" },
-    { "name": "github_push", "status": "pass", "commit": "c494375" },
-    { "name": "azure_image_push", "status": "pass", "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz9-operational-health-enablement/build-push/acr-tag-verification.json" },
-    { "name": "azure_update", "status": "pass", "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz9-operational-health-enablement/deploy-apply/active-revisions-after.json" },
-    { "name": "live_api_smoke", "status": "pass", "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz9-operational-health-enablement/live-ui/live-api-smoke.json" },
-    { "name": "live_admin_health_validation", "status": "pass", "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz9-operational-health-enablement/live-ui/admin-health-live-smoke.json" }
+    { "name": "frontend_docker_build", "status": "pass", "image": "diiac/patchforge-frontend:pfaz8a-local" },
+    { "name": "bridge_docker_build", "status": "pass", "image": "diiac/patchforge-bridge:pfaz8a-local" },
+    { "name": "runtime_docker_build", "status": "pass", "image": "diiac/patchforge-runtime:pfaz8a-local" },
+    {
+      "name": "docx_pdf_report_quality",
+      "status": "pass",
+      "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz8a-report-specificity/local-report-qa/"
+    },
+    { "name": "github_push", "status": "pending" },
+    { "name": "azure_image_push", "status": "pending" },
+    { "name": "azure_update", "status": "pending" },
+    { "name": "live_api_smoke", "status": "pending" },
+    { "name": "live_ui_report_validation", "status": "pending" }
   ],
-  "operational_health": {
-    "mcp_agent_intake": "governed",
-    "public_source_feeds": "ready",
-    "worker_health": "ready",
-    "scheduler_health": "ready"
+  "wording_and_boundary_checks": {
+    "old_autonomous_heading_absent": true,
+    "automated_governance_heading_present": true,
+    "human_approval_notice_present": true,
+    "urgent_scope_confirmation_present": true,
+    "kev_epss_low_signal_explained": true,
+    "vendor_missing_evidence_explained": true,
+    "final_approval_false_until_human_review": true,
+    "exploit_instructions_absent": true,
+    "patch_deployment_implication_absent": true
   }
 }

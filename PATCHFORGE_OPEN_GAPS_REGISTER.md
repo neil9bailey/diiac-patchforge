@@ -15,6 +15,7 @@ Date: 2026-05-27
 | Professional DOCX/PDF board packs | Closed for PF-AZ7 | Protected report APIs, UI export actions, live downloads, and DOCX/PDF visual QA were validated against signed pack `PF-20260527-54588be9`. |
 | Guided intelligence workflow | Closed for PF-AZ8 | Action Center, Finding Detail, Review & Approve, Reports & Packs, finding intelligence API, improved DOCX/PDF reports, live signed pack generation, and protected report export passed Azure live UI validation. |
 | Operational Admin health checks | Closed for PF-AZ9 | MCP agent intake is governed, public source feeds are ready, worker health is ready, and scheduler health is ready in the live Admin UI/API. |
+| Customer report specificity and guided decision-usefulness | Local PASS, Azure pending for PF-AZ8A | Safer automation wording, urgent scope confirmation posture, KEV/EPSS explanation, customer-specific pack sections, specific evidence gaps, and UI context guidance passed local validation. Azure rollout and live UI report validation are pending. |
 | Scheduled live public-source refresh | Closed for PF-AZ7 | Scheduler Container App is running one replica and completed CISA KEV/FIRST EPSS refresh as `patchforge-scheduler@diiac.io`. |
 | Customer production validation | Not claimed | Evidence covers DIIaC live platform validation, not third-party customer signoff. |
 | Azure CLI custom API token consent | Open | Azure CLI token acquisition for the PatchForge API returned AADSTS65001; browser/MSAL validation succeeded and was used for the live user workflow. |

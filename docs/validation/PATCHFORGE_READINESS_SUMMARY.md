@@ -20,7 +20,7 @@ PF-AZ8 added the customer-demo workflow hardening requested after report/UI revi
 - Action Center that translates findings into decision-ready work
 - plain-English finding intelligence
 - exploitability intelligence without exploit code, payloads, or procedural steps
-- autonomous analysis summary with human approval still required
+- automated governance analysis summary with human approval still required
 - SRA advisory-only workflow
 - signed-pack support for `finding_intelligence_snapshot.json`
 - board/CAB DOCX and PDF reports generated from live signed evidence

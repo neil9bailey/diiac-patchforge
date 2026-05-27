@@ -1,3 +1,59 @@
+# PF-AZ8A Validation Outputs
+
+## PF-AZ8A Local Validation
+
+Date: 2026-05-27
+
+Status: LOCAL PASS. Azure rollout and live UI validation are pending and are not yet claimed as complete.
+
+Scope:
+
+- Replace risky autonomous-analysis wording with safer automated-governance wording.
+- Improve customer-facing posture for known-exploited public-source records with unconfirmed exposure.
+- Add KEV/EPSS interpretation and source-bound vendor/threat intelligence wording.
+- Make evidence gaps specific enough for customer, CAB, and board decisions.
+- Add customer-specific assurance, impact, communication, shareable-position, and not-yet-claimable report sections.
+- Add decision-option status, reason, required evidence, and approval fields.
+- Add persistent UI context banner and simple next-action cards.
+
+Local validation:
+
+- `node --check backend-api/server.js`: PASS
+- `node --check backend-api/auth.js`: PASS
+- `node --check backend-api/patchforge/reports.js`: PASS
+- `node --check backend-api/patchforge/scheduler.js`: PASS
+- `node --check backend-api/sra/securityResearchAgent.js`: PASS
+- `npm --prefix backend-api test`: PASS, 25 tests
+- `npm --prefix Frontend test`: PASS, 10 tests
+- `npm --prefix Frontend run build`: PASS
+- `python -m pytest -q --basetemp .pytest_tmp`: PASS, 25 tests
+- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate_iac.ps1`: PASS
+- `az bicep build --file infra/bicep/main.bicep`: PASS
+- `docker build -f Frontend/Dockerfile -t diiac/patchforge-frontend:pfaz8a-local Frontend`: PASS
+- `docker build -f backend-api/Dockerfile -t diiac/patchforge-bridge:pfaz8a-local backend-api`: PASS
+- `docker build -f runtime/Dockerfile -t diiac/patchforge-runtime:pfaz8a-local .`: PASS
+
+Document quality gate:
+
+- Customer Patch Governance Pack DOCX generated from PF-AZ8A report context: PASS
+- Board Vulnerability Remediation Summary DOCX generated from PF-AZ8A report context: PASS
+- CAB Patch Decision Report DOCX generated from PF-AZ8A report context: PASS
+- Matching PDF artefacts generated and rendered to page PNGs: PASS
+- DOCX structural checks: PASS
+- Microsoft Word open checks: PASS
+- Required wording and boundary checks: PASS
+- QA evidence: `docs/release/evidence/2026-05-27-patchforge-pfaz8a-report-specificity/local-report-qa/`
+
+Important boundary note: PF-AZ8A does not add scanning, exploit generation, procedural exploit steps, patch deployment, production mutation from the UI, autonomous CAB approval, or autonomous risk acceptance.
+
+Azure rollout:
+
+- Pending.
+
+Live validation:
+
+- Pending.
+
 # PF-AZ9 Validation Outputs
 
 ## PF-AZ9 Operational Health Enablement
@@ -128,7 +184,7 @@ Live validation:
 - Real public-source record validated: `CVE-2026-48172`
 - Finding Detail plain-English intelligence: PASS
 - Exploitability intelligence boundary: PASS, no exploit code, payloads, or procedural exploitation steps shown
-- Review & Approve autonomous analysis summary: PASS
+- Review & Approve automated governance analysis summary: PASS
 - SRA advisory: PASS, advisory-only
 - Fresh signed pack generated after PF-AZ8 rollout: `PF-20260527-9fc7f010`
 - Pack verification: PASS, `verified=true`, `manifest_ok=true`, `signature_ok=true`

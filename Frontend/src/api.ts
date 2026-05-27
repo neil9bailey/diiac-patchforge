@@ -83,6 +83,7 @@ export type FindingIntelligence = {
     epss_percentile: number | null;
     ransomware_use: string;
     safe_description: string;
+    kev_epss_interpretation?: string;
     prohibited_detail: string;
   };
   exposure: {
@@ -106,9 +107,17 @@ export type FindingIntelligence = {
     due_date?: string | null;
     advisory_only: boolean;
     final_approval_issued: boolean;
+    customer_posture?: string;
+    customer_posture_detail?: string;
+    display_posture?: string;
+    approval_notice?: string;
   };
   decision_options: Array<{
     posture: string;
+    current_status?: string;
+    reason?: string;
+    required_evidence?: string[];
+    required_approval?: string;
     when_to_choose: string;
     benefits: string;
     risks: string;
@@ -121,6 +130,15 @@ export type FindingIntelligence = {
     pending_review_count: number;
     rejected_source_count: number;
     gaps: string[];
+    gap_details?: Array<{
+      gap: string;
+      plain_english_gap?: string;
+      why_it_matters: string;
+      required_evidence: string;
+      evidence_examples?: string[];
+      suggested_owner_role?: string;
+      next_decision_gate?: string;
+    }>;
     warning: string;
   };
   automation: {

@@ -12,6 +12,7 @@
     "@azure/keyvault-secrets": "^4.11.2",
     "docx": "^9.7.0",
     "jose": "^6.2.3",
+    "jszip": "^3.10.1",
     "pdfkit": "^0.18.0",
     "pg": "^8.21.0"
   }

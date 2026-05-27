@@ -207,7 +207,7 @@ export function createServer(options = {}) {
           tenant_context: baseTenantContext,
           findings: intelligence.filter(Boolean).sort(compareFindingPriority),
           boundary: {
-            autonomous_analysis: true,
+            automated_governance_analysis: true,
             human_approval_required: true,
             no_exploit_code: true,
             no_patch_deployment: true,
@@ -772,12 +772,13 @@ function compareFindingPriority(a, b) {
 function priorityScore(finding = {}) {
   const severity = String(finding.severity || "").toLowerCase();
   const posture = String(finding.recommendation?.posture || "").toLowerCase();
+  const displayPosture = String(finding.recommendation?.display_posture || "").toLowerCase();
   return [
     severity === "critical" ? 40 : severity === "high" ? 25 : severity === "medium" ? 10 : 0,
     finding.exploitability?.known_exploited ? 35 : 0,
     finding.exposure?.internet_exposed ? 20 : 0,
     finding.exposure?.customer_facing ? 15 : 0,
-    posture === "emergency_change_required" ? 30 : posture === "patch_required" ? 18 : 0,
+    displayPosture === "urgent_scope_confirmation_required" ? 24 : posture === "emergency_change_required" ? 30 : posture === "patch_required" ? 18 : 0,
     finding.evidence?.gaps?.length ? 6 : 0
   ].reduce((total, value) => total + value, 0);
 }

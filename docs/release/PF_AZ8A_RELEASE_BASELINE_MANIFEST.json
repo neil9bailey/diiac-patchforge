@@ -1,0 +1,36 @@
+{
+  "product": "DIIaC PatchForge",
+  "baseline_id": "PF-AZ8A",
+  "baseline_name": "Customer report specificity and guided decision usefulness",
+  "baseline_date": "2026-05-27",
+  "status": "local_validated_pending_azure_rollout",
+  "target_url": "https://patchforge.diiac.io",
+  "api_url": "https://api.patchforge.diiac.io",
+  "remote_target": "neil9bailey/diiac-patchforge",
+  "previous_live_release": {
+    "baseline_id": "PF-AZ9",
+    "image_tag": "pfaz9-20260527-c494375",
+    "commit": "c494375"
+  },
+  "local_validation": {
+    "backend_tests": "pass",
+    "frontend_tests": "pass",
+    "frontend_build": "pass",
+    "python_runtime_tests": "pass",
+    "iac_validation": "pass",
+    "bicep_build": "pass",
+    "docker_builds": "pass",
+    "docx_pdf_report_quality": "pass"
+  },
+  "azure_rollout": "pending",
+  "live_ui_validation": "pending",
+  "boundary": {
+    "scanner": "excluded",
+    "exploit_generation": "excluded",
+    "procedural_exploit_steps": "excluded",
+    "patch_deployment": "excluded",
+    "production_mutation": "excluded",
+    "autonomous_cab_approval": "excluded",
+    "autonomous_risk_acceptance": "excluded"
+  }
+}

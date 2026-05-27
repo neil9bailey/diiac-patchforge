@@ -1,0 +1,32 @@
+[
+  {
+    "file": "PF-AZ8A-LOCAL-CVE-2026-48172-board_vulnerability_remediation_summary.docx",
+    "paragraphs": 171,
+    "tables": 4,
+    "automated_governance_heading": true,
+    "old_autonomous_heading": false,
+    "customer_assurance_position": false,
+    "urgent_scope_posture": true,
+    "final_approval_false": true
+  },
+  {
+    "file": "PF-AZ8A-LOCAL-CVE-2026-48172-cab_patch_decision_report.docx",
+    "paragraphs": 171,
+    "tables": 4,
+    "automated_governance_heading": true,
+    "old_autonomous_heading": false,
+    "customer_assurance_position": false,
+    "urgent_scope_posture": true,
+    "final_approval_false": true
+  },
+  {
+    "file": "PF-AZ8A-LOCAL-CVE-2026-48172-customer_patch_governance_pack.docx",
+    "paragraphs": 225,
+    "tables": 4,
+    "automated_governance_heading": true,
+    "old_autonomous_heading": false,
+    "customer_assurance_position": true,
+    "urgent_scope_posture": true,
+    "final_approval_false": true
+  }
+]

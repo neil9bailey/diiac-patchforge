@@ -1,0 +1,25 @@
+{
+    "release":  "PF-AZ8A",
+    "generated_at":  "2026-05-27T10:51:12.9753247Z",
+    "local_pack_id":  "PF-AZ8A-LOCAL-CVE-2026-48172",
+    "report_types":  [
+                         "customer_patch_governance_pack",
+                         "board_vulnerability_remediation_summary",
+                         "cab_patch_decision_report"
+                     ],
+    "docx_structural_qa":  "pass",
+    "docx_word_open_qa":  "pass",
+    "pdf_render_qa":  "pass",
+    "docx_export_note":  "DOCX files open successfully in Word COM. PDF visual QA used the exported PDF artefacts rendered to PNG with PyMuPDF to avoid Word COM fixed-format export instability on long report paths.",
+    "wording_checks":  {
+                           "safer_heading":  "Automated Governance Analysis Completed",
+                           "old_heading_absent":  true,
+                           "urgent_scope_posture_present":  true,
+                           "customer_assurance_position_present":  true,
+                           "kev_epss_explanation_present":  true,
+                           "vendor_missing_evidence_wording_present":  true,
+                           "final_approval_false":  true,
+                           "exploit_instructions_absent":  true,
+                           "patch_deployment_implication_absent":  true
+                       }
+}

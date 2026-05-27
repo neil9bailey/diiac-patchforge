@@ -17,7 +17,7 @@ PF-AZ8 responds to customer-demo feedback that the product needed to feel less l
   - `GET /api/patchforge/action-center`
   - `GET /api/patchforge/vulnerabilities/:id/intelligence`
   - `POST /api/patchforge/vulnerabilities/:id/analyse`
-- Autonomous analysis wording and behaviour for normalisation, source binding, exploitability interpretation, evidence gaps, recommended posture, and next actions.
+- Automated governance analysis wording and behaviour for normalisation, source binding, exploitability interpretation, evidence gaps, recommended posture, and next actions.
 - Signed-pack artefact support for `finding_intelligence_snapshot.json`.
 - Decision-grade DOCX/PDF reports with:
   - executive decision summary
@@ -100,4 +100,4 @@ Live evidence:
 
 PF-AZ8 does not add vulnerability scanning, exploit generation, procedural exploit steps, patch deployment, production mutation from UI, autonomous CAB approval, or autonomous risk acceptance.
 
-PatchForge performs autonomous analysis and recommendation drafting only. Accountable human review remains required for approval, closure, and risk acceptance.
+PatchForge performs automated governance analysis and recommendation drafting only. Accountable human review remains required for approval, closure, and risk acceptance.

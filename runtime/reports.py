@@ -54,7 +54,7 @@ def render_report(report_type: str, context: dict[str, Any]) -> str:
         f"Vulnerability: {vulnerability_id}",
         f"Service: {service}",
         f"Decision posture: {posture}",
-        f"Signed pack: {pack.get('pack_id', 'not generated')}",
+        f"Signed pack: {pack.get('pack_id', 'not recorded')}",
         f"Readiness: {readiness.get('readiness_state', 'pending evidence')}",
         "",
     ]
@@ -99,7 +99,7 @@ def _render_section(section: str, context: dict[str, Any]) -> list[str]:
 
 def _bayesian_summary(snapshot: dict[str, Any] | None) -> str:
     if not snapshot:
-        return "Bayesian patch risk advisory was not generated for this report."
+        return "Bayesian patch risk advisory has not been attached to this report."
     return (
         f"Advisory only. Recommended posture: {snapshot.get('recommended_governance_posture', 'not recorded')}. "
         f"Exploit probability posterior: {snapshot.get('exploit_probability_posterior', 'n/a')}. "
@@ -109,7 +109,7 @@ def _bayesian_summary(snapshot: dict[str, Any] | None) -> str:
 
 def _vendor_summary(vendor: dict[str, Any] | None, threat: dict[str, Any] | None) -> str:
     if not vendor and not threat:
-        return "Vendor and threat landscape context was not generated for this report."
+        return "Reviewed vendor advisory evidence has not yet been attached. Patch maturity, affected versions, workaround guidance, and remediation applicability remain unverified."
     return (
         "Vendor and threat signals are source-bound and pending review unless explicitly accepted. "
         f"Vendor: {(vendor or {}).get('vendor_id', 'not recorded')}. "
