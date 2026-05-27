@@ -670,6 +670,39 @@ test("VendorLens NVD catalogue refresh pages vendor CVEs without requiring a sin
   });
 });
 
+test("VendorLens NVD catalogue refresh records rate limits without failing the UI path", async () => {
+  await withApi(async (baseUrl) => {
+    const refresh = await request(baseUrl, "/api/patchforge/vendorlens/sources/refresh", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ adapter: "nvd_cve_api", mode: "catalogue", vendor_id: "fortinet", results_per_page: 2, max_pages: 2 })
+    });
+    assert.equal(refresh.response.status, 202);
+    assert.equal(refresh.body.source_feed_run.status, "completed_with_warnings");
+    assert.equal(refresh.body.source_feed_run.records_ingested, 2);
+    assert.match(refresh.body.source_feed_run.message, /rate limit/i);
+    assert.equal(refresh.body.source_feed_run.source_failures[0].status, 429);
+  }, {
+    vendorLensFetchImpl: async (url) => {
+      const start = new URL(String(url)).searchParams.get("startIndex");
+      if (start === "2") {
+        return jsonResponse({ message: "rate limited" }, 429);
+      }
+      return jsonResponse({
+        totalResults: 3,
+        vulnerabilities: ["CVE-2026-NVD-RATE-001", "CVE-2026-NVD-RATE-002"].map((id) => ({
+          cve: {
+            id,
+            descriptions: [{ lang: "en", value: "Fortinet catalogue record before rate limit." }],
+            metrics: { cvssMetricV31: [{ cvssData: { baseSeverity: "HIGH" } }] },
+            configurations: [{ nodes: [{ cpeMatch: [{ criteria: "cpe:2.3:o:fortinet:fortios:7.2.7:*:*:*:*:*:*:*" }] }] }]
+          }
+        }))
+      });
+    }
+  });
+});
+
 test("public source feeds ingest CISA KEV as source-bound pending-review intelligence", async () => {
   const sourceFeedClient = createSourceFeedClient({
     fetchImpl: async (url) => {

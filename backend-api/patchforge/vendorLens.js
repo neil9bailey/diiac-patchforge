@@ -347,9 +347,12 @@ async function refreshNvdCatalogue({ storage, tenantId, body, fetchImpl, started
   const resultsPerPage = boundedLimit(body.results_per_page || body.limit_per_query, 100, 1, 500);
   const maxPages = boundedLimit(body.max_pages, 1, 1, 5);
   const sourceUrls = [];
+  const sourceFailures = [];
   let recordsSeen = 0;
   let recordsMatched = 0;
   let recordsIngested = 0;
+  let rateLimited = false;
+  catalogueLoop:
   for (const vendorItem of queries) {
     const keyword = body.keyword_search || vendorItem.vendor_name;
     for (let page = 0; page < maxPages; page += 1) {
@@ -364,7 +367,22 @@ async function refreshNvdCatalogue({ storage, tenantId, body, fetchImpl, started
         lastModEndDate: body.last_mod_end_date || body.lastModEndDate || null
       });
       sourceUrls.push(url);
-      const payload = await fetchJson(url, fetchImpl);
+      let payload;
+      try {
+        payload = await fetchJson(url, fetchImpl);
+      } catch (error) {
+        sourceFailures.push({
+          vendor_id: vendorItem.vendor_id,
+          source_url: url,
+          status: error.status || null,
+          message: error.message
+        });
+        if (error.status === 429) {
+          rateLimited = true;
+          break catalogueLoop;
+        }
+        break;
+      }
       const records = Array.isArray(payload.vulnerabilities) ? payload.vulnerabilities : [];
       recordsSeen += Number(payload.totalResults || records.length || 0);
       recordsMatched += records.length;
@@ -391,8 +409,20 @@ async function refreshNvdCatalogue({ storage, tenantId, body, fetchImpl, started
     });
   }
   return recordRun(storage, tenantId, {
-    ...runRecord(body, "nvd-cve-2-catalogue", "NVD CVE 2.0 VendorLens Catalogue", "NVD", "completed", `${recordsIngested} NVD vendor CVE records catalogued as source-bound pending-review intelligence across ${queries.length} vendor reference(s).`, startedAt, sourceUrls[0] || null),
+    ...runRecord(
+      body,
+      "nvd-cve-2-catalogue",
+      "NVD CVE 2.0 VendorLens Catalogue",
+      "NVD",
+      rateLimited ? (recordsIngested ? "completed_with_warnings" : "rate_limited") : "completed",
+      rateLimited
+        ? `${recordsIngested} NVD vendor CVE records catalogued before the public NVD API rate limit was reached. Existing catalogue records remain available; configure an NVD API key or narrow the vendor/date window for a fuller refresh.`
+        : `${recordsIngested} NVD vendor CVE records catalogued as source-bound pending-review intelligence across ${queries.length} vendor reference(s).`,
+      startedAt,
+      sourceUrls[0] || null
+    ),
     source_urls: sourceUrls,
+    source_failures: sourceFailures,
     records_seen: recordsSeen,
     records_matched: recordsMatched,
     records_ingested: recordsIngested
@@ -718,14 +748,20 @@ function parseGenericSource(text) {
 }
 
 async function fetchJson(url, fetchImpl) {
+  const headers = {
+    accept: "application/json",
+    "user-agent": "DIIaC-PatchForge-VendorLens/1.0 source-bound-governance"
+  };
+  if (process.env.PATCHFORGE_NVD_API_KEY) {
+    headers.apiKey = process.env.PATCHFORGE_NVD_API_KEY;
+  }
   const response = await fetchImpl(url, {
-    headers: {
-      accept: "application/json",
-      "user-agent": "DIIaC-PatchForge-VendorLens/1.0 source-bound-governance"
-    }
+    headers
   });
   if (!response.ok) {
-    throw new Error(`VendorLens source request failed with HTTP ${response.status}`);
+    const error = new Error(`VendorLens source request failed with HTTP ${response.status}`);
+    error.status = response.status;
+    throw error;
   }
   return response.json();
 }
