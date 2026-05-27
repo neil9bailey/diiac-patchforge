@@ -53,7 +53,22 @@
     "integrations": {
       "diiac_it_enabled": false,
       "scanner_integrations": [],
-      "source_feeds": []
+      "source_feeds": [
+        {
+          "feed_id": "cisa-kev",
+          "provider": "CISA",
+          "mode": "public_source_bound",
+          "enabled": true,
+          "review_required": true
+        },
+        {
+          "feed_id": "first-epss",
+          "provider": "FIRST",
+          "mode": "public_source_bound",
+          "enabled": true,
+          "review_required": true
+        }
+      ]
     },
     "signing": {
       "trust_state": "dev-local",

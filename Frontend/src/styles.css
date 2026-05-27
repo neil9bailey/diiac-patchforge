@@ -434,6 +434,16 @@ nav {
   border-top: 1px solid rgba(149, 163, 160, 0.16);
 }
 
+.status-line span {
+  display: grid;
+  gap: 2px;
+}
+
+.status-line small {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
 .status-line:first-of-type {
   border-top: 0;
 }

@@ -91,6 +91,10 @@ async function request(baseUrl, pathName, options = {}) {
   return { response, body };
 }
 
+function statusFor(checks, name) {
+  return checks.find((check) => check.name === name)?.status;
+}
+
 async function withEnv(values, run) {
   const previous = {};
   for (const [key, value] of Object.entries(values)) {
@@ -543,6 +547,10 @@ test("admin config saves locally, masks secrets, and blocks live Azure mutation"
     assert.equal(health.response.status, 200);
     assert.equal(health.body.live_azure_mutation_enabled, false);
     assert.ok(health.body.checks.some((check) => check.name === "Key Vault health"));
+    assert.equal(statusFor(health.body.checks, "MCP agent intake"), "governed");
+    assert.equal(statusFor(health.body.checks, "Public source feeds"), "ready");
+    assert.notEqual(statusFor(health.body.checks, "Worker health"), "planned");
+    assert.notEqual(statusFor(health.body.checks, "Scheduler health"), "planned");
 
     const blocked = await request(baseUrl, "/api/patchforge/admin/config", {
       method: "PUT",

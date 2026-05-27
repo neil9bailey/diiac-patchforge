@@ -107,6 +107,22 @@ var commonEnv = [
     value: allowedOrigins
   }
   {
+    name: 'PATCHFORGE_AGENT_INTAKE_ENABLED'
+    value: 'true'
+  }
+  {
+    name: 'PATCHFORGE_PUBLIC_SOURCE_FEEDS_ENABLED'
+    value: 'true'
+  }
+  {
+    name: 'PATCHFORGE_WORKER_ENABLED'
+    value: 'true'
+  }
+  {
+    name: 'PATCHFORGE_SCHEDULER_ENABLED'
+    value: 'true'
+  }
+  {
     name: 'PATCHFORGE_SCHEDULER_INTERVAL_MS'
     value: '21600000'
   }

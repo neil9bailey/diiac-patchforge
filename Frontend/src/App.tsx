@@ -1732,7 +1732,7 @@ function Admin({
           <h4>Health Checks</h4>
           <div className="health-list">
             {(adminHealth?.checks || []).map((check) => (
-              <StatusLine key={check.name} label={check.name} value={humanize(check.status)} tone={healthTone(check.status)} />
+              <StatusLine key={check.name} label={check.name} value={humanize(check.status)} tone={healthTone(check.status)} detail={check.mode} />
             ))}
             {!adminHealth?.checks?.length && <p className="muted-copy">Health checks load from the protected bridge API.</p>}
           </div>
@@ -1763,10 +1763,13 @@ function PageBand({ icon: Icon, title, lines }: { icon: typeof Gauge; title: str
   );
 }
 
-function StatusLine({ label, value, tone }: { label: string; value: string; tone: string }) {
+function StatusLine({ label, value, tone, detail }: { label: string; value: string; tone: string; detail?: string }) {
   return (
     <div className="status-line">
-      <span>{label}</span>
+      <span>
+        {label}
+        {detail && <small>{humanize(detail)}</small>}
+      </span>
       <strong className={`pill ${tone}`}>{value}</strong>
     </div>
   );
@@ -1884,7 +1887,7 @@ function hasAnyRole(actual: string[], required: string[]) {
 }
 
 function healthTone(status = "") {
-  if (["ready", "verified", "advisory"].includes(status.toLowerCase())) {
+  if (["ready", "verified", "advisory", "governed"].includes(status.toLowerCase())) {
     return "trust";
   }
   if (["planned", "pending", "placeholder"].includes(status.toLowerCase())) {

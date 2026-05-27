@@ -213,7 +213,13 @@ function createApi(overrides: Partial<PatchForgeApi> = {}): PatchForgeApi {
     adminHealth: vi.fn(async () => ({
       tenant_id: "diiac.io",
       live_azure_mutation_enabled: false,
-      checks: [{ name: "Signing trust", status: "ready", mode: "key-vault" }]
+      checks: [
+        { name: "MCP agent intake", status: "governed", mode: "agent-led-human-approved" },
+        { name: "Public source feeds", status: "ready", mode: "cisa-kev / first-epss" },
+        { name: "Worker health", status: "ready", mode: "ingest-export-worker" },
+        { name: "Scheduler health", status: "ready", mode: "last source refresh 2026-05-27T08:00:00Z" },
+        { name: "Signing trust", status: "ready", mode: "key-vault" }
+      ]
     })),
     adminConfig: vi.fn(async () => ({
       general: { environment: "Production", governance_tier: "Enterprise Strict" }
@@ -303,6 +309,10 @@ describe("PatchForge guided shell", () => {
     expect(screen.getByRole("heading", { name: "Admin" })).toBeInTheDocument();
     expect(screen.getByText("Entra ID / RBAC")).toBeInTheDocument();
     expect(screen.getByText("Signing & Trust")).toBeInTheDocument();
+    expect(screen.getByText("MCP agent intake")).toBeInTheDocument();
+    expect(screen.getByText("Governed")).toBeInTheDocument();
+    expect(screen.getByText("Public source feeds")).toBeInTheDocument();
+    expect(screen.getAllByText("Ready").length).toBeGreaterThanOrEqual(3);
     expect(container.textContent?.toLowerCase()).not.toContain("autonomous patching");
     expect(container.textContent?.toLowerCase()).not.toContain("exploit generation");
   });

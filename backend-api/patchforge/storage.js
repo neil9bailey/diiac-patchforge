@@ -463,16 +463,15 @@ export class PatchForgeJsonStorage {
 
   async readAdminConfig(tenantId) {
     const allConfig = await this._readAdminConfigFile();
-    const config = allConfig[tenantId] || { ...DEFAULT_ADMIN_CONFIG, tenant_id: tenantId };
+    const baseConfig = defaultAdminConfigForMode(this.storageMode);
+    const config = normalizeAdminConfig(deepMerge(baseConfig, allConfig[tenantId] || {}, { tenant_id: tenantId }));
     return maskSecretValues(config);
   }
 
   async saveAdminConfig(tenantId, payload) {
     const allConfig = await this._readAdminConfigFile();
-    const previous = allConfig[tenantId] || { ...DEFAULT_ADMIN_CONFIG, tenant_id: tenantId };
-    const next = {
-      ...previous,
-      ...payload,
+    const previous = normalizeAdminConfig(deepMerge(defaultAdminConfigForMode(this.storageMode), allConfig[tenantId] || {}, { tenant_id: tenantId }));
+    const next = normalizeAdminConfig(deepMerge(previous, payload, {
       tenant_id: tenantId,
       telemetry: {
         ...(previous.telemetry || {}),
@@ -486,7 +485,7 @@ export class PatchForgeJsonStorage {
         azure_mutation_enabled: false
       },
       updated_at: new Date().toISOString()
-    };
+    }));
 
     const sanitized = maskSecretValues(next);
     allConfig[tenantId] = sanitized;
@@ -498,6 +497,16 @@ export class PatchForgeJsonStorage {
   async adminHealth(tenantId) {
     await this.ensureReady();
     const config = await this.readAdminConfig(tenantId);
+    const sourceFeedRuns = await this.list("source_feed_runs", tenantId);
+    const agentSources = (await this.list("sources", tenantId)).filter((source) =>
+      ["mcp_agent_finding", "mythos_finding", "agi_agent_finding", "sra_trace"].includes(source.source_class)
+    );
+    const publicSourceFeeds = configuredSourceFeeds(config);
+    const agentReady = agentIntakeEnabled(config) || parseEnvBoolean(process.env.PATCHFORGE_AGENT_INTAKE_ENABLED, false);
+    const sourceFeedsReady = publicSourceFeeds.length > 0 || parseEnvBoolean(process.env.PATCHFORGE_PUBLIC_SOURCE_FEEDS_ENABLED, false);
+    const lastSourceFeedRun = sourceFeedRuns[sourceFeedRuns.length - 1] || null;
+    const schedulerReady = Boolean(process.env.PATCHFORGE_SCHEDULER_ENABLED || sourceFeedRuns.length > 0);
+    const workerReady = Boolean(process.env.PATCHFORGE_WORKER_ENABLED || process.env.PATCHFORGE_COMPONENT === "ingest-export-worker" || this.storageMode === "postgresql");
     return {
       tenant_id: tenantId,
       live_azure_mutation_enabled: false,
@@ -506,10 +515,26 @@ export class PatchForgeJsonStorage {
         { name: "Bridge health", status: "ready", mode: this.storageMode || "local-json" },
         { name: "Runtime health", status: "ready", mode: "local" },
         { name: "SRA health", status: config.sra?.advisory_only ? "advisory" : "disabled", mode: "advisory-only" },
-        { name: "MCP agent intake", status: config.agent_intelligence?.review_required ? "governed" : "disabled", mode: "agent-led-human-approved" },
-        { name: "Public source feeds", status: config.vendor_intelligence?.enabled ? "ready" : "disabled", mode: "CISA KEV / FIRST EPSS" },
-        { name: "Worker health", status: "planned", mode: "not-deployed" },
-        { name: "Scheduler health", status: "planned", mode: "not-deployed" },
+        {
+          name: "MCP agent intake",
+          status: agentReady ? "governed" : "disabled",
+          mode: agentSources.length ? `${agentSources.length} source-bound agent finding(s)` : "agent-led-human-approved"
+        },
+        {
+          name: "Public source feeds",
+          status: sourceFeedsReady ? "ready" : "disabled",
+          mode: publicSourceFeeds.length ? publicSourceFeeds.map((feed) => feed.feed_id).join(" / ") : "not-configured"
+        },
+        {
+          name: "Worker health",
+          status: workerReady ? "ready" : "pending",
+          mode: workerReady ? "ingest-export-worker" : "awaiting-worker-deployment"
+        },
+        {
+          name: "Scheduler health",
+          status: schedulerReady ? "ready" : "pending",
+          mode: lastSourceFeedRun?.completed_at ? `last source refresh ${lastSourceFeedRun.completed_at}` : "scheduler-enabled-awaiting-first-run"
+        },
         {
           name: "Database health",
           status: this.storageMode === "postgresql" ? "ready" : "placeholder",
@@ -727,6 +752,91 @@ function productionAdminConfig() {
     },
     updated_at: new Date().toISOString()
   };
+}
+
+function defaultAdminConfigForMode(storageMode) {
+  return storageMode === "postgresql" ? productionAdminConfig() : { ...DEFAULT_ADMIN_CONFIG };
+}
+
+function normalizeAdminConfig(config) {
+  const next = deepMerge(DEFAULT_ADMIN_CONFIG, config || {});
+  const feeds = configuredSourceFeeds(next);
+  if (!feeds.length && next.vendor_intelligence?.enabled !== false) {
+    next.integrations = {
+      ...(next.integrations || {}),
+      source_feeds: DEFAULT_ADMIN_CONFIG.integrations.source_feeds
+    };
+  }
+  next.agent_intelligence = {
+    ...DEFAULT_ADMIN_CONFIG.agent_intelligence,
+    ...(next.agent_intelligence || {}),
+    advisory_only: true,
+    review_required: true,
+    can_close_hard_gates_alone: false
+  };
+  next.telemetry = {
+    ...(next.telemetry || {}),
+    health_checks_read_only: true,
+    azure_mutation_enabled: false
+  };
+  next.feature_flags = {
+    ...(next.feature_flags || {}),
+    azure_mutation_enabled: false
+  };
+  return next;
+}
+
+function configuredSourceFeeds(config) {
+  return (config.integrations?.source_feeds || []).filter((feed) => feed && feed.enabled !== false);
+}
+
+function agentIntakeEnabled(config) {
+  return Boolean(
+    config.agent_intelligence?.review_required &&
+    config.agent_intelligence?.advisory_only &&
+    config.agent_intelligence?.can_close_hard_gates_alone === false &&
+    (
+      config.agent_intelligence?.mcp_agent_findings_enabled ||
+      config.agent_intelligence?.mythos_findings_enabled ||
+      config.agent_intelligence?.agi_agent_findings_enabled
+    )
+  );
+}
+
+function deepMerge(...values) {
+  const output = {};
+  for (const value of values) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      continue;
+    }
+    for (const [key, nested] of Object.entries(value)) {
+      if (Array.isArray(nested)) {
+        output[key] = nested.map((item) => deepClone(item));
+      } else if (nested && typeof nested === "object") {
+        output[key] = deepMerge(output[key] || {}, nested);
+      } else if (nested !== undefined) {
+        output[key] = nested;
+      }
+    }
+  }
+  return output;
+}
+
+function deepClone(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => deepClone(item));
+  }
+  if (value && typeof value === "object") {
+    return deepMerge(value);
+  }
+  return value;
+}
+
+function parseEnvBoolean(value, fallback) {
+  if (value === undefined || value === null || value === "") {
+    return fallback;
+  }
+  return ["1", "true", "yes", "on"].includes(String(value).toLowerCase());
 }
 
 function assertKnownCollection(collection) {
