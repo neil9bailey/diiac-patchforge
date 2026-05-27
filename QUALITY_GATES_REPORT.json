@@ -1,9 +1,9 @@
 {
   "release": "PF-AZ9-VENDORLENS",
   "date": "2026-05-27",
-  "status": "local_pass_azure_pending",
-  "image_tag": null,
-  "commit": null,
+  "status": "azure_live_browser_validated",
+  "image_tag": "pfaz9-20260527-e8a0de2",
+  "commit": "e8a0de2",
   "previous_live_release": {
     "release": "PF-AZ8A",
     "image_tag": "pfaz8a-20260527-4f3bbe8",
@@ -36,13 +36,14 @@
       "status": "not_available",
       "reason": "LibreOffice/soffice is unavailable on the local PATH"
     },
-    { "name": "github_push", "status": "pending" },
-    { "name": "azure_image_push", "status": "pending" },
-    { "name": "azure_update", "status": "pending" },
-    { "name": "live_api_smoke", "status": "pending" },
-    { "name": "live_ui_vendorlens_validation", "status": "pending" },
-    { "name": "keyvault_signing_smoke", "status": "pending" },
-    { "name": "postgres_smoke", "status": "pending" }
+    { "name": "github_push", "status": "pass", "commit": "e8a0de2" },
+    { "name": "azure_image_push", "status": "pass", "image_tag": "pfaz9-20260527-e8a0de2" },
+    { "name": "azure_update", "status": "pass", "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz9-vendorlens/deploy-apply/" },
+    { "name": "live_api_smoke", "status": "pass", "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz9-vendorlens/live-ui/live-api-smoke.json" },
+    { "name": "live_ui_vendorlens_validation", "status": "pass", "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz9-vendorlens/live-ui/ui-smoke-summary.json" },
+    { "name": "keyvault_signing_smoke", "status": "pass", "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz9-vendorlens/live-ui/keyvault-signing-smoke.json" },
+    { "name": "postgres_smoke", "status": "pass", "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz9-vendorlens/live-ui/postgres-smoke.json" },
+    { "name": "production_validation_data_cleanup", "status": "pass", "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz9-vendorlens/live-ui/production-validation-data-cleanup.json" }
   ],
   "vendorlens_boundary_checks": {
     "source_bound_advisory_intelligence": true,

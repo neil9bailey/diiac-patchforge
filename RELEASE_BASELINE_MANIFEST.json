@@ -6,16 +6,16 @@
   "target_url": "https://patchforge.diiac.io",
   "api_url": "https://api.patchforge.diiac.io",
   "remote_target": "neil9bailey/diiac-patchforge",
-  "release_state": "local_validated_azure_pending",
-  "deployment_performed": false,
+  "release_state": "azure_live_browser_validated",
+  "deployment_performed": true,
   "azure_resources_created": false,
   "azure_resource_group": "rg-diiac-patchforge-prod",
   "azure_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
   "storage_state": "postgresql_live_previous_baseline",
   "auth_state": "entra_rbac_required",
   "signing_state": "azure_key_vault_required_for_production_runtime",
-  "image_tag": null,
-  "commit": null,
+  "image_tag": "pfaz9-20260527-e8a0de2",
+  "commit": "e8a0de2",
   "previous_live_baseline": {
     "baseline_id": "PF-AZ8A",
     "image_tag": "pfaz8a-20260527-4f3bbe8",
@@ -45,9 +45,32 @@
     "docx_visual_render": "not_available_local_soffice_missing",
     "evidence_path": "docs/release/evidence/2026-05-27-patchforge-pfaz9-vendorlens/"
   },
+  "azure_rollout": {
+    "github_push": "pass",
+    "acr_image_push": "pass",
+    "targeted_containerapp_update": "pass",
+    "active_revisions": {
+      "ui": "ca-patchforge-ui-prod--0000013",
+      "bridge_api": "ca-patchforge-bridge-prod--0000012",
+      "runtime": "ca-patchforge-runtime-prod--0000011",
+      "sra": "ca-patchforge-sra-prod--0000010",
+      "worker": "ca-patchforge-worker-prod--0000010",
+      "scheduler": "ca-patchforge-scheduler-prod--0000010"
+    }
+  },
   "live_validation": {
-    "status": "pending",
-    "required_before_complete": true
+    "status": "pass",
+    "browser_msal_user": "n.bailey@diiac.io",
+    "displayed_role": "PatchForge.Admin",
+    "vendor_catalogue_count": 17,
+    "config_applicability_posture": "requires_review",
+    "urgency_posture": "urgent_scope_confirmation_required",
+    "signed_pack_id": "PF-20260527-2d9f160a",
+    "signed_pack_verified": true,
+    "keyvault_signing": "pass",
+    "postgresql": "pass",
+    "validation_records_removed_after_evidence_capture": true,
+    "evidence_path": "docs/release/evidence/2026-05-27-patchforge-pfaz9-vendorlens/live-ui/"
   },
   "excluded_capabilities": [
     "vulnerability_scanner",

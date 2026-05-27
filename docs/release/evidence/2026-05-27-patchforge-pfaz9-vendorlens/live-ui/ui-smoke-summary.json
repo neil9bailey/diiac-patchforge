@@ -1,0 +1,33 @@
+{
+    "timestamp":  "2026-05-27T13:22:02.3859771Z",
+    "release":  "PF-AZ9",
+    "image_tag":  "pfaz9-20260527-e8a0de2",
+    "commit":  "e8a0de2",
+    "ui_url":  "https://patchforge.diiac.io",
+    "api_url":  "https://api.patchforge.diiac.io",
+    "signed_in_user":  "n.bailey@diiac.io",
+    "displayed_role":  "PatchForge.Admin",
+    "vendor_catalogue_count":  17,
+    "live_asset_id":  "net-asset-dd162874-c76a-4a7a-8b54-5f8dbbc614e9",
+    "live_advisory_id":  "fortinet-CVE-2026-VENDORLENS-LIVE-001",
+    "applicability_posture":  "requires_review",
+    "urgency_posture":  "urgent_scope_confirmation_required",
+    "feature_status":  "disabled_unreviewed",
+    "final_approval_issued":  false,
+    "chat_short_answer":  "PatchForge cannot safely declare this configuration unaffected yet; complete scope and configuration evidence review first.",
+    "pack_id":  "PF-20260527-2d9f160a",
+    "pack_verified":  true,
+    "screenshots":  [
+                        "browser-screenshots/pfaz9-vendorlens-action-center.png",
+                        "browser-screenshots/pfaz9-vendorlens-dashboard.png",
+                        "browser-screenshots/pfaz9-vendorlens-asset.png",
+                        "browser-screenshots/pfaz9-vendorlens-assessment.png",
+                        "browser-screenshots/pfaz9-vendorlens-chat.png"
+                    ],
+    "exported_reports":  [
+                             "exports/PF-20260527-2d9f160a-board-vulnerability-remediation-summary.docx",
+                             "exports/PF-20260527-2d9f160a-board-vulnerability-remediation-summary.pdf"
+                         ],
+    "production_validation_records_cleaned":  true,
+    "cleanup_evidence":  "production-validation-data-cleanup.json"
+}

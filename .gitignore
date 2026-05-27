@@ -29,3 +29,6 @@ artifacts/generated/
 artifacts/tmp/
 artifacts/pfaz5-validation-pack/
 infra/bicep/*.json
+
+# Browser automation scratch
+.playwright-mcp/

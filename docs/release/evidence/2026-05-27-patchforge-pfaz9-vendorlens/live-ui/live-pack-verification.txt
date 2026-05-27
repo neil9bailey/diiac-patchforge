@@ -1,0 +1,10 @@
+﻿PatchForge PF-AZ9 live pack verification
+Timestamp: 2026-05-27T13:22:50.9497519Z
+Pack ID: PF-20260527-2d9f160a
+Signature verified: True
+Manifest OK: True
+Signature OK: True
+Signing mode: azure_key_vault
+Key ID: https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod
+Final approval issued: False
+VendorLens artefacts present: network_vendor_profile_snapshot.json=True, customer_network_asset_snapshot.json=True, vendor_security_advisory_snapshot.json=True, config_applicability_assessment.json=True, sra_config_chat_session.json=True, vendorlens_decision_context.json=True

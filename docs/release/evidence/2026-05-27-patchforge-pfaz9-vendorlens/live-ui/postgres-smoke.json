@@ -1,0 +1,8 @@
+{
+    "timestamp":  "2026-05-27T13:22:02.1592453Z",
+    "readiness_storage":  "postgresql",
+    "readiness_auth_required":  true,
+    "readiness_tenant_required":  true,
+    "ui_workflow_confirmed_postgresql_path":  true,
+    "evidence":  "Live UI wrote VendorLens customer network asset, advisory, applicability assessment, chat session, and signed pack through token-backed API. Readiness endpoint reported storage=postgresql."
+}

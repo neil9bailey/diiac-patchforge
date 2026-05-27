@@ -1,0 +1,50 @@
+[
+    {
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-frontend:pfaz9-20260527-e8a0de2",
+        "latestReadyRevision":  "ca-patchforge-ui-prod--0000013",
+        "latestRevision":  "ca-patchforge-ui-prod--0000013",
+        "name":  "ca-patchforge-ui-prod",
+        "provisioningState":  "Succeeded",
+        "runningStatus":  "Running"
+    },
+    {
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-bridge:pfaz9-20260527-e8a0de2",
+        "latestReadyRevision":  "ca-patchforge-bridge-prod--0000012",
+        "latestRevision":  "ca-patchforge-bridge-prod--0000012",
+        "name":  "ca-patchforge-bridge-prod",
+        "provisioningState":  "Succeeded",
+        "runningStatus":  "Running"
+    },
+    {
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-runtime:pfaz9-20260527-e8a0de2",
+        "latestReadyRevision":  "ca-patchforge-runtime-prod--0000011",
+        "latestRevision":  "ca-patchforge-runtime-prod--0000011",
+        "name":  "ca-patchforge-runtime-prod",
+        "provisioningState":  "Succeeded",
+        "runningStatus":  "Running"
+    },
+    {
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-sra-agent:pfaz9-20260527-e8a0de2",
+        "latestReadyRevision":  "ca-patchforge-sra-prod--0000010",
+        "latestRevision":  "ca-patchforge-sra-prod--0000010",
+        "name":  "ca-patchforge-sra-prod",
+        "provisioningState":  "Succeeded",
+        "runningStatus":  "Running"
+    },
+    {
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-ingest-worker:pfaz9-20260527-e8a0de2",
+        "latestReadyRevision":  "ca-patchforge-worker-prod--0000010",
+        "latestRevision":  "ca-patchforge-worker-prod--0000010",
+        "name":  "ca-patchforge-worker-prod",
+        "provisioningState":  "Succeeded",
+        "runningStatus":  "Running"
+    },
+    {
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-scheduler:pfaz9-20260527-e8a0de2",
+        "latestReadyRevision":  "ca-patchforge-scheduler-prod--0000010",
+        "latestRevision":  "ca-patchforge-scheduler-prod--0000010",
+        "name":  "ca-patchforge-scheduler-prod",
+        "provisioningState":  "Succeeded",
+        "runningStatus":  "Running"
+    }
+]

@@ -1,0 +1,2510 @@
+{
+  "tenant_id": "diiac.io",
+  "tenant_context": {
+    "requested_tenant_id": "diiac.io",
+    "effective_tenant_id": "diiac.io",
+    "token_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+    "tenant_id_source": "token_mapping",
+    "tenant_override_ignored": false
+  },
+  "pack_id": "PF-20260527-2d9f160a",
+  "exported_at": "2026-05-27T13:15:17.325Z",
+  "source_pack_immutable": true,
+  "verification": {
+    "verified": true,
+    "artefacts": [
+      {
+        "ok": true,
+        "name": "affected_asset_scope.json",
+        "actual": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843",
+        "expected": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843"
+      },
+      {
+        "ok": true,
+        "name": "bayesian_patch_risk_snapshot.json",
+        "actual": "0eaf006e8ac1de029cdea21620371f99667f409098ab883a44271e6ee7c02edc",
+        "expected": "0eaf006e8ac1de029cdea21620371f99667f409098ab883a44271e6ee7c02edc"
+      },
+      {
+        "ok": true,
+        "name": "compensating_controls_plan.json",
+        "actual": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+        "expected": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+      },
+      {
+        "ok": true,
+        "name": "config_applicability_assessment.json",
+        "actual": "4ad93cc9d83e1be81c42a11dda0c90b293ce504cd381784635c1efc3d79e3980",
+        "expected": "4ad93cc9d83e1be81c42a11dda0c90b293ce504cd381784635c1efc3d79e3980"
+      },
+      {
+        "ok": true,
+        "name": "customer_network_asset_snapshot.json",
+        "actual": "78e75ba4cbe5ce1af0222b4d34d55cc7356ae731431f2364884f860092ad3e70",
+        "expected": "78e75ba4cbe5ce1af0222b4d34d55cc7356ae731431f2364884f860092ad3e70"
+      },
+      {
+        "ok": true,
+        "name": "exploitability_assessment.json",
+        "actual": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843",
+        "expected": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843"
+      },
+      {
+        "ok": true,
+        "name": "finding_intelligence_snapshot.json",
+        "actual": "8af46e630c536af23343bdb6a48f5a60b5d23065dc17a58716e372ce5a86eba7",
+        "expected": "8af46e630c536af23343bdb6a48f5a60b5d23065dc17a58716e372ce5a86eba7"
+      },
+      {
+        "ok": true,
+        "name": "human_review_state.json",
+        "actual": "f5f8227f3fa4f41292047918bc64d137e32d178ec0ec747dde4e0e5479863180",
+        "expected": "f5f8227f3fa4f41292047918bc64d137e32d178ec0ec747dde4e0e5479863180"
+      },
+      {
+        "ok": true,
+        "name": "network_vendor_profile_snapshot.json",
+        "actual": "cbf69d3867857a5ee015c3a68fe555063f46913733a6e58ae55307706cd7c5fd",
+        "expected": "cbf69d3867857a5ee015c3a68fe555063f46913733a6e58ae55307706cd7c5fd"
+      },
+      {
+        "ok": true,
+        "name": "patch_change_readiness.json",
+        "actual": "0f508a5b6ba0bb870b67ec8f9e2e3691cc0848893d9798cd484de6c1b865af6e",
+        "expected": "0f508a5b6ba0bb870b67ec8f9e2e3691cc0848893d9798cd484de6c1b865af6e"
+      },
+      {
+        "ok": true,
+        "name": "patch_decision_context.json",
+        "actual": "f0ebca5ff758b0b5a2ef542f1bb29d12f19d0b2a197b4df41b15f52fdb1bcb30",
+        "expected": "f0ebca5ff758b0b5a2ef542f1bb29d12f19d0b2a197b4df41b15f52fdb1bcb30"
+      },
+      {
+        "ok": true,
+        "name": "patch_feasibility_assessment.json",
+        "actual": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+        "expected": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+      },
+      {
+        "ok": true,
+        "name": "patch_prior_update_proposal.json",
+        "actual": "ebd17e0c3518ab9b4f9ec1402c52a30c51159eb7b324036c18a4ac825745debc",
+        "expected": "ebd17e0c3518ab9b4f9ec1402c52a30c51159eb7b324036c18a4ac825745debc"
+      },
+      {
+        "ok": true,
+        "name": "patch_prior_usage_manifest.json",
+        "actual": "513092c211bcc382352bf299d65d5feeac28b9d4fcb1a86c9ee5d3566cda4db2",
+        "expected": "513092c211bcc382352bf299d65d5feeac28b9d4fcb1a86c9ee5d3566cda4db2"
+      },
+      {
+        "ok": true,
+        "name": "patch_risk_acceptance_state.json",
+        "actual": "240fa9c55e6c6a5659a74edfc30c159d74c3616651fa672443d312682e6c66df",
+        "expected": "240fa9c55e6c6a5659a74edfc30c159d74c3616651fa672443d312682e6c66df"
+      },
+      {
+        "ok": true,
+        "name": "replay_certificate.json",
+        "actual": "2f569a94d9ba6c5e2aff73aed7d9a7dc6cc323aa980bdcb86c50f9b89187f906",
+        "expected": "2f569a94d9ba6c5e2aff73aed7d9a7dc6cc323aa980bdcb86c50f9b89187f906"
+      },
+      {
+        "ok": true,
+        "name": "sra_config_chat_session.json",
+        "actual": "164b2b53ef7ef16dca53bbb4d7fbd864552620cad5855f8e1ac4d75e6ca24a78",
+        "expected": "164b2b53ef7ef16dca53bbb4d7fbd864552620cad5855f8e1ac4d75e6ca24a78"
+      },
+      {
+        "ok": true,
+        "name": "sra_trace.json",
+        "actual": "47dbb360210fd7279ed2120f0e090807e8de6b6198ebe6d2bfac7f8a514b8292",
+        "expected": "47dbb360210fd7279ed2120f0e090807e8de6b6198ebe6d2bfac7f8a514b8292"
+      },
+      {
+        "ok": true,
+        "name": "threat_landscape_snapshot.json",
+        "actual": "321e063bb30851383117797112522760c0b3e2d9348433667775375b62ad6b8d",
+        "expected": "321e063bb30851383117797112522760c0b3e2d9348433667775375b62ad6b8d"
+      },
+      {
+        "ok": true,
+        "name": "trust_bundle.json",
+        "actual": "af2e7686ddf7befdc5df08c00811af347a9f944457285dc6ba6ac4f39a6de4ed",
+        "expected": "af2e7686ddf7befdc5df08c00811af347a9f944457285dc6ba6ac4f39a6de4ed"
+      },
+      {
+        "ok": true,
+        "name": "vendor_intelligence_snapshot.json",
+        "actual": "2e240f711b516376553cf0e1479b5d9a4e2df182c0723d207958448a90898a3f",
+        "expected": "2e240f711b516376553cf0e1479b5d9a4e2df182c0723d207958448a90898a3f"
+      },
+      {
+        "ok": true,
+        "name": "vendor_security_advisory_snapshot.json",
+        "actual": "456466f5408ab834b3f29f15e703130c0878b8c3950f0ad6e31ae01aca822280",
+        "expected": "456466f5408ab834b3f29f15e703130c0878b8c3950f0ad6e31ae01aca822280"
+      },
+      {
+        "ok": true,
+        "name": "vendorlens_decision_context.json",
+        "actual": "95fa37052502be455f790cbc568cdba3a1c0709474041e648a699e3000e5a09d",
+        "expected": "95fa37052502be455f790cbc568cdba3a1c0709474041e648a699e3000e5a09d"
+      },
+      {
+        "ok": true,
+        "name": "vulnerability_intelligence_snapshot.json",
+        "actual": "d10a79af30d3176c6cbe34c68221ad452666b1dfb7fe6e9d933b9606c2facc19",
+        "expected": "d10a79af30d3176c6cbe34c68221ad452666b1dfb7fe6e9d933b9606c2facc19"
+      }
+    ],
+    "manifest_ok": true,
+    "signature_ok": true
+  },
+  "decision_pack": {
+    "pack_id": "PF-20260527-2d9f160a",
+    "blockers": [
+      "affected_asset_scope",
+      "human_review_signoff",
+      "patch_availability",
+      "vulnerability_identity"
+    ],
+    "actor_oid": "2d2f273d-a815-4a19-a258-c48c858252f3",
+    "actor_upn": "n.bailey@diiac.io",
+    "artefacts": {
+      "sra_trace.json": {
+        "available": false,
+        "advisory_only": true,
+        "can_close_hard_gates_alone": false
+      },
+      "signed_export.sig": "rHulhfxDGGW6IbO33y1fa4wDMhY7jCahfEF6XvAA94NeL_NvNgp0abdKQXvdJjREN9fFeGWYW1E6JbQfWhmfrA",
+      "trust_bundle.json": {
+        "key_id": "https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod",
+        "signing_mode": "azure_key_vault",
+        "signature_scope": "artefact_integrity_not_source_truth"
+      },
+      "human_review_state.json": {
+        "approval_events": [],
+        "final_approval_issued": false,
+        "no_autonomous_approval": true
+      },
+      "replay_certificate.json": {
+        "pack_id": "PF-20260527-2d9f160a",
+        "created_at": "2026-05-27T13:14:52+00:00",
+        "source_pack_immutable": true
+      },
+      "governance_manifest.json": {
+        "pack_id": "PF-20260527-2d9f160a",
+        "boundary": {
+          "no_scanner": true,
+          "no_patch_deployment": true,
+          "no_exploit_generation": true,
+          "no_autonomous_approval": true,
+          "no_production_mutation": true
+        },
+        "artefacts": [
+          {
+            "name": "affected_asset_scope.json",
+            "sha256": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843"
+          },
+          {
+            "name": "bayesian_patch_risk_snapshot.json",
+            "sha256": "0eaf006e8ac1de029cdea21620371f99667f409098ab883a44271e6ee7c02edc"
+          },
+          {
+            "name": "compensating_controls_plan.json",
+            "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+          },
+          {
+            "name": "config_applicability_assessment.json",
+            "sha256": "4ad93cc9d83e1be81c42a11dda0c90b293ce504cd381784635c1efc3d79e3980"
+          },
+          {
+            "name": "customer_network_asset_snapshot.json",
+            "sha256": "78e75ba4cbe5ce1af0222b4d34d55cc7356ae731431f2364884f860092ad3e70"
+          },
+          {
+            "name": "exploitability_assessment.json",
+            "sha256": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843"
+          },
+          {
+            "name": "finding_intelligence_snapshot.json",
+            "sha256": "8af46e630c536af23343bdb6a48f5a60b5d23065dc17a58716e372ce5a86eba7"
+          },
+          {
+            "name": "human_review_state.json",
+            "sha256": "f5f8227f3fa4f41292047918bc64d137e32d178ec0ec747dde4e0e5479863180"
+          },
+          {
+            "name": "network_vendor_profile_snapshot.json",
+            "sha256": "cbf69d3867857a5ee015c3a68fe555063f46913733a6e58ae55307706cd7c5fd"
+          },
+          {
+            "name": "patch_change_readiness.json",
+            "sha256": "0f508a5b6ba0bb870b67ec8f9e2e3691cc0848893d9798cd484de6c1b865af6e"
+          },
+          {
+            "name": "patch_decision_context.json",
+            "sha256": "f0ebca5ff758b0b5a2ef542f1bb29d12f19d0b2a197b4df41b15f52fdb1bcb30"
+          },
+          {
+            "name": "patch_feasibility_assessment.json",
+            "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+          },
+          {
+            "name": "patch_prior_update_proposal.json",
+            "sha256": "ebd17e0c3518ab9b4f9ec1402c52a30c51159eb7b324036c18a4ac825745debc"
+          },
+          {
+            "name": "patch_prior_usage_manifest.json",
+            "sha256": "513092c211bcc382352bf299d65d5feeac28b9d4fcb1a86c9ee5d3566cda4db2"
+          },
+          {
+            "name": "patch_risk_acceptance_state.json",
+            "sha256": "240fa9c55e6c6a5659a74edfc30c159d74c3616651fa672443d312682e6c66df"
+          },
+          {
+            "name": "replay_certificate.json",
+            "sha256": "2f569a94d9ba6c5e2aff73aed7d9a7dc6cc323aa980bdcb86c50f9b89187f906"
+          },
+          {
+            "name": "sra_config_chat_session.json",
+            "sha256": "164b2b53ef7ef16dca53bbb4d7fbd864552620cad5855f8e1ac4d75e6ca24a78"
+          },
+          {
+            "name": "sra_trace.json",
+            "sha256": "47dbb360210fd7279ed2120f0e090807e8de6b6198ebe6d2bfac7f8a514b8292"
+          },
+          {
+            "name": "threat_landscape_snapshot.json",
+            "sha256": "321e063bb30851383117797112522760c0b3e2d9348433667775375b62ad6b8d"
+          },
+          {
+            "name": "trust_bundle.json",
+            "sha256": "af2e7686ddf7befdc5df08c00811af347a9f944457285dc6ba6ac4f39a6de4ed"
+          },
+          {
+            "name": "vendor_intelligence_snapshot.json",
+            "sha256": "2e240f711b516376553cf0e1479b5d9a4e2df182c0723d207958448a90898a3f"
+          },
+          {
+            "name": "vendor_security_advisory_snapshot.json",
+            "sha256": "456466f5408ab834b3f29f15e703130c0878b8c3950f0ad6e31ae01aca822280"
+          },
+          {
+            "name": "vendorlens_decision_context.json",
+            "sha256": "95fa37052502be455f790cbc568cdba3a1c0709474041e648a699e3000e5a09d"
+          },
+          {
+            "name": "vulnerability_intelligence_snapshot.json",
+            "sha256": "d10a79af30d3176c6cbe34c68221ad452666b1dfb7fe6e9d933b9606c2facc19"
+          }
+        ],
+        "tenant_id": "diiac.io",
+        "created_at": "2026-05-27T13:14:52+00:00",
+        "decision_id": "decision-6044932b-7436-4a1b-90f8-b3e44edc1039",
+        "decision_posture": "defer_pending_evidence",
+        "final_approval_issued": false,
+        "source_pack_immutable": true
+      },
+      "affected_asset_scope.json": {
+        "evidence": []
+      },
+      "signed_export.sigmeta.json": {
+        "key_id": "https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod/2e348fdeaaaf448ebba206130ef86b52",
+        "algorithm": "ES256",
+        "public_jwk": {
+          "x": "yzeI7iI0iH9eeQugSaJFdOkessqDo9fEo1Bmofm5JwA",
+          "y": "IaBFNHG2ZaWZSyCcagh5hUu_BPPdA_piXNwE9eS2APc",
+          "crv": "JsonWebKeyCurveName.P256",
+          "kty": "JsonWebKeyType.EC"
+        },
+        "dev_key_hint": null,
+        "signed_payload": {
+          "pack_id": "PF-20260527-2d9f160a",
+          "governance_manifest_sha256": "4743bcebeb0c61d0b0f46aede06ee88578068711726c48e921c4f376b70551da",
+          "verification_manifest_sha256": "87cbec24395b0a31f311abd3fda39366776c1189a317970d8f12c94d8ad29577"
+        },
+        "signing_provider": "azure_key_vault",
+        "signature_encoding": "base64url_raw_ecdsa"
+      },
+      "verification_manifest.json": {
+        "pack_id": "PF-20260527-2d9f160a",
+        "expected_artefacts": [
+          "vulnerability_intelligence_snapshot.json",
+          "patch_decision_context.json",
+          "affected_asset_scope.json",
+          "exploitability_assessment.json",
+          "patch_feasibility_assessment.json",
+          "compensating_controls_plan.json",
+          "patch_change_readiness.json",
+          "patch_risk_acceptance_state.json",
+          "human_review_state.json",
+          "bayesian_patch_risk_snapshot.json",
+          "patch_prior_usage_manifest.json",
+          "patch_prior_update_proposal.json",
+          "finding_intelligence_snapshot.json",
+          "vendor_intelligence_snapshot.json",
+          "threat_landscape_snapshot.json",
+          "network_vendor_profile_snapshot.json",
+          "customer_network_asset_snapshot.json",
+          "vendor_security_advisory_snapshot.json",
+          "config_applicability_assessment.json",
+          "sra_config_chat_session.json",
+          "vendorlens_decision_context.json",
+          "sra_trace.json",
+          "governance_manifest.json",
+          "verification_manifest.json",
+          "trust_bundle.json",
+          "replay_certificate.json"
+        ],
+        "verification_scope": "local_artefact_hashes_and_signature",
+        "governance_manifest_sha256": "4743bcebeb0c61d0b0f46aede06ee88578068711726c48e921c4f376b70551da"
+      },
+      "patch_change_readiness.json": {
+        "blockers": [
+          "affected_asset_scope",
+          "human_review_signoff",
+          "patch_availability",
+          "vulnerability_identity"
+        ],
+        "readiness_score": 0,
+        "readiness_state": "blocked",
+        "final_approval_issued": false
+      },
+      "patch_decision_context.json": {
+        "blockers": [
+          "affected_asset_scope",
+          "human_review_signoff",
+          "patch_availability",
+          "vulnerability_identity"
+        ],
+        "readiness": {
+          "blockers": [
+            "affected_asset_scope",
+            "human_review_signoff",
+            "patch_availability",
+            "vulnerability_identity"
+          ],
+          "readiness_score": 0,
+          "readiness_state": "blocked",
+          "final_approval_issued": false
+        },
+        "tenant_id": "diiac.io",
+        "created_at": "2026-05-27T13:14:52+00:00",
+        "decision_id": "decision-6044932b-7436-4a1b-90f8-b3e44edc1039",
+        "evidence_refs": [
+          "src-cisa-kev-CVE-2026-48172",
+          "src-first-epss-CVE-2026-48172-2026-05-26"
+        ],
+        "evidence_model": "vuln_patch_governance",
+        "decision_posture": "defer_pending_evidence",
+        "vulnerability_id": "CVE-2026-48172",
+        "decision_rationale": "Deterministic PatchForge governance context compiled from source-bound evidence.",
+        "human_review_state": "pending",
+        "final_approval_issued": false
+      },
+      "sra_config_chat_session.json": {
+        "title": "We use this firewall model and this feature is disabled. Do we urgently need to patch?",
+        "asset_id": "net-asset-dd162874-c76a-4a7a-8b54-5f8dbbc614e9",
+        "actor_oid": "2d2f273d-a815-4a19-a258-c48c858252f3",
+        "actor_upn": "n.bailey@diiac.io",
+        "tenant_id": "diiac.io",
+        "created_at": "2026-05-27T13:13:43.314Z",
+        "session_id": "vl-chat-1779887623314-a7f2ec78",
+        "updated_at": "2026-05-27T13:13:43.314Z",
+        "actor_roles": [
+          "PatchForge.Admin"
+        ],
+        "advisory_id": "fortinet-CVE-2026-VENDORLENS-LIVE-001",
+        "advisory_only": true,
+        "assessment_id": "cfg-app-1779887579990",
+        "actor_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+        "latest_response": {
+          "why": "Customer product, version, feature, exposure, or advisory evidence is incomplete. PatchForge therefore keeps the decision in reviewed scope-confirmation mode.",
+          "boundary": {
+            "no_patch_deployment": true,
+            "no_autonomous_approval": true,
+            "no_autonomous_risk_acceptance": true,
+            "no_procedural_exploitation_steps": true
+          },
+          "short_answer": "PatchForge cannot safely declare this configuration unaffected yet; complete scope and configuration evidence review first.",
+          "advisory_only": true,
+          "evidence_used": [
+            {
+              "ref": "fortinet-CVE-2026-VENDORLENS-LIVE-001",
+              "review_state": "pending_review",
+              "evidence_type": "vendor_advisory"
+            },
+            {
+              "ref": "net-asset-dd162874-c76a-4a7a-8b54-5f8dbbc614e9",
+              "review_state": "pending_review",
+              "evidence_type": "customer_network_asset"
+            },
+            {
+              "ref": "asset-owner-attestation-pending",
+              "review_state": "pending_review",
+              "evidence_type": "configuration_evidence"
+            }
+          ],
+          "evidence_missing": [
+            {
+              "gap": "ssl vpn is recorded as disabled, but that configuration evidence is not reviewed.",
+              "owner": "Network engineering lead",
+              "required_evidence": "Reviewed configuration export, change record, service owner attestation, or device configuration evidence."
+            },
+            {
+              "gap": "The vendor/CVE source record has not been accepted as positive evidence.",
+              "owner": "Security lead",
+              "required_evidence": "Named reviewer event accepting the source record, affected versions, affected feature, and source provenance."
+            }
+          ],
+          "final_approval_issued": false,
+          "human_review_required": true,
+          "recommended_next_action": "Confirm customer exposure, affected feature state, firmware/version, and vendor advisory source review.",
+          "current_governed_posture": "urgent_scope_confirmation_required",
+          "decision_not_allowed_yet": "Final remediation, risk acceptance, closure, and not-applicable decisions cannot be issued until the evidence gaps are resolved and a human reviewer approves the outcome.",
+          "configuration_assumptions": [
+            "We use this firewall model and this feature is disabled. Do we urgently need to patch?",
+            "Feature considered: Ssl Vpn",
+            "Firmware/version considered: 7.2.7"
+          ],
+          "can_close_hard_gates_alone": false
+        },
+        "tenant_id_source": "token_mapping",
+        "effective_tenant_id": "diiac.io",
+        "requested_tenant_id": "diiac.io",
+        "final_approval_issued": false,
+        "human_review_required": true,
+        "tenant_override_ignored": false
+      },
+      "exploitability_assessment.json": {
+        "evidence": []
+      },
+      "threat_landscape_snapshot.json": {
+        "metrics": {
+          "ot_relevance": 0,
+          "patch_maturity": "unknown",
+          "known_exploited_rate": 1,
+          "patch_available_rate": 0,
+          "false_positive_history": 0,
+          "customer_estate_exposure": 0,
+          "active_exploitation_count": 10,
+          "superseded_advisory_count": 0,
+          "vendor_response_timeliness": "source_bound_pending_review",
+          "critical_open_advisory_count": 2,
+          "internet_exposed_asset_count": 0,
+          "open_customer_decision_count": 10
+        },
+        "tenant_id": "diiac.io",
+        "generated_at": "2026-05-27T13:14:52.639Z",
+        "source_bound": true,
+        "vendor_count": 28,
+        "review_required": true,
+        "top_exposed_vendors": [
+          {
+            "vendor_id": "microsoft",
+            "active_exploitation_count": 5,
+            "open_customer_decision_count": 5
+          },
+          {
+            "vendor_id": "litespeed",
+            "active_exploitation_count": 1,
+            "open_customer_decision_count": 1
+          },
+          {
+            "vendor_id": "drupal",
+            "active_exploitation_count": 1,
+            "open_customer_decision_count": 1
+          },
+          {
+            "vendor_id": "langflow",
+            "active_exploitation_count": 1,
+            "open_customer_decision_count": 1
+          },
+          {
+            "vendor_id": "trend-micro",
+            "active_exploitation_count": 1,
+            "open_customer_decision_count": 1
+          },
+          {
+            "vendor_id": "adobe",
+            "active_exploitation_count": 1,
+            "open_customer_decision_count": 1
+          }
+        ]
+      },
+      "compensating_controls_plan.json": {},
+      "patch_prior_usage_manifest.json": {
+        "dry_run_only": true,
+        "prior_set_id": "patchforge-default-v1",
+        "advisory_only": true,
+        "prior_usage_id": "prior-1779887692636",
+        "live_prior_mutation_performed": false
+      },
+      "patch_prior_update_proposal.json": {
+        "dry_run": true,
+        "proposal_id": "not-generated",
+        "live_update_applied": false,
+        "admin_approval_required": true
+      },
+      "patch_risk_acceptance_state.json": {
+        "final_approval_issued": false
+      },
+      "vendorlens_decision_context.json": {
+        "context_id": "vendorlens-cfg-app-1779887579990",
+        "source_bound": true,
+        "advisory_only": true,
+        "evidence_gaps": [
+          {
+            "gap_id": "feature_disabled_review",
+            "why_it_matters": "PatchForge cannot support an accountable customer/CAB decision without reviewed evidence for this point.",
+            "plain_english_gap": "ssl vpn is recorded as disabled, but that configuration evidence is not reviewed.",
+            "required_evidence": "Reviewed configuration export, change record, service owner attestation, or device configuration evidence.",
+            "next_decision_gate": "Configuration applicability review",
+            "suggested_owner_role": "Network engineering lead"
+          },
+          {
+            "gap_id": "advisory_source_review",
+            "why_it_matters": "PatchForge cannot support an accountable customer/CAB decision without reviewed evidence for this point.",
+            "plain_english_gap": "The vendor/CVE source record has not been accepted as positive evidence.",
+            "required_evidence": "Named reviewer event accepting the source record, affected versions, affected feature, and source provenance.",
+            "next_decision_gate": "Source review",
+            "suggested_owner_role": "Security lead"
+          }
+        ],
+        "urgency_posture": "urgent_scope_confirmation_required",
+        "applicability_posture": "requires_review",
+        "final_approval_issued": false,
+        "human_review_required": true,
+        "recommended_next_action": "Confirm vendor advisory source, customer asset, firmware, feature, and exposure evidence.",
+        "decision_not_allowed_yet": "Final remediation, risk acceptance, closure, and not-applicable decisions cannot be issued until the evidence gaps are resolved and a human reviewer approves the outcome."
+      },
+      "bayesian_patch_risk_snapshot.json": {
+        "boundary": {
+          "no_patch_deployment": true,
+          "no_autonomous_approval": true,
+          "prior_update_dry_run_only": true
+        },
+        "prior_usage": {
+          "dry_run_only": true,
+          "prior_set_id": "patchforge-default-v1",
+          "advisory_only": true,
+          "prior_usage_id": "prior-1779887692636",
+          "live_prior_mutation_performed": false
+        },
+        "generated_at": "2026-05-27T13:14:52.636Z",
+        "advisory_only": true,
+        "assessment_id": "bayes-1779887692636",
+        "change_risk_posterior": 0.52,
+        "final_approval_issued": false,
+        "deferral_risk_posterior": 0.543,
+        "business_impact_posterior": 0.35,
+        "can_close_hard_gates_alone": false,
+        "patch_feasibility_posterior": 0.27,
+        "exploit_probability_posterior": 0.5,
+        "recommended_governance_posture": "defer_pending_evidence"
+      },
+      "patch_feasibility_assessment.json": {},
+      "vendor_intelligence_snapshot.json": {
+        "available": false,
+        "source_bound": true,
+        "review_required": true,
+        "can_close_hard_gates_alone": false
+      },
+      "finding_intelligence_snapshot.json": {
+        "title": "LiteSpeed cPanel Plugin Privilege Escalation Vulnerability",
+        "vendor": "Litespeed",
+        "product": "Cpanel Plugin",
+        "summary": {
+          "why_now": "It is flagged as known exploited in source-bound intelligence. FIRST EPSS source-bound signal is 0% with percentile 3%. The recorded remediation due date is 2026-05-29.",
+          "plain_english": "LiteSpeed cPanel Plugin contains privilege escalation vulnerability that is exposed via the user-end cPanel plugin, which can be abused by any cPanel user account to execute arbitrary scripts with root privileges. PatchForge treats this as a governance decision until source evidence, affected scope, and human approval are complete.",
+          "what_it_affects": "PatchForge has public-source vulnerability intelligence, but customer asset and service exposure are not yet confirmed. This gap matters because severity alone does not tell the CAB what could break, who owns it, or whether customer-facing operations are affected.",
+          "operational_risk": "Unmapped scope could cause under-remediation or unnecessary disruption. Patch availability is not yet confirmed, so mitigation and monitoring may be needed while evidence is completed.",
+          "decision_required": "Urgent scope confirmation required - final remediation decision blocked pending evidence. Human approval remains required. PatchForge does not approve CAB decisions, risk acceptance, patch deployment, or closure autonomously.",
+          "executive_readout": "CVE-2026-48172: Urgent scope confirmation required - final remediation decision blocked pending evidence. PatchForge has public-source vulnerability intelligence, but customer asset and service exposure are not yet confirmed. 5 evidence gap(s) remain, and final approval has not been issued."
+        },
+        "boundary": {
+          "no_scanner": true,
+          "source_bound": true,
+          "advisory_only": true,
+          "no_exploit_code": true,
+          "no_patch_deployment": true,
+          "no_production_mutation": true,
+          "human_approval_required": true,
+          "no_autonomous_cab_approval": true,
+          "no_procedural_exploit_steps": true,
+          "no_autonomous_risk_acceptance": true
+        },
+        "evidence": {
+          "gaps": [
+            "Reviewed vulnerability identity evidence",
+            "Affected asset scope",
+            "Business service impact",
+            "Patch availability and feasibility",
+            "Human source review event"
+          ],
+          "warning": "Source and agent outputs remain source-bound until reviewed. Rejected evidence cannot support positive gates.",
+          "gap_details": [
+            {
+              "gap": "Reviewed vulnerability identity evidence",
+              "why_it_matters": "CAB and customer assurance need confidence that the CVE, affected product, affected versions, and source provenance are correct before remediation decisions are presented as evidence-led.",
+              "evidence_examples": [
+                "CISA KEV record",
+                "NVD/CVE record",
+                "vendor advisory",
+                "source review event"
+              ],
+              "plain_english_gap": "The finding identity has not yet been accepted by a named reviewer.",
+              "required_evidence": "Reviewed CISA/CVE/vendor advisory record confirming CVE, product, affected versions, and source provenance.",
+              "next_decision_gate": "Source identity review",
+              "suggested_owner_role": "Security lead or vulnerability manager"
+            },
+            {
+              "gap": "Affected asset scope",
+              "why_it_matters": "Without asset scope, the organisation cannot tell whether the public-source finding affects the customer estate or what operational risk a change would introduce.",
+              "evidence_examples": [
+                "CMDB asset record",
+                "hosting control panel inventory",
+                "scanner output",
+                "asset owner confirmation"
+              ],
+              "plain_english_gap": "Customer asset exposure is not confirmed.",
+              "required_evidence": "CMDB, hosting control panel inventory, scanner output, asset owner confirmation.",
+              "next_decision_gate": "Asset exposure confirmation",
+              "suggested_owner_role": "Asset owner or infrastructure lead"
+            },
+            {
+              "gap": "Business service impact",
+              "why_it_matters": "Severity alone does not tell the CAB which service, customer journey, SLA, or owner is affected.",
+              "evidence_examples": [
+                "service catalogue map",
+                "customer-facing flag",
+                "SLA/OLA record",
+                "service owner confirmation"
+              ],
+              "plain_english_gap": "Business service and customer impact are not confirmed.",
+              "required_evidence": "Service map, customer-facing flag, SLA/OLA impact, service owner.",
+              "next_decision_gate": "Business impact review",
+              "suggested_owner_role": "Service owner"
+            },
+            {
+              "gap": "Patch availability and feasibility",
+              "why_it_matters": "The decision cannot responsibly select patch, mitigation, deferral, or customer assurance until affected versions, testing, rollback, and applicability are understood.",
+              "evidence_examples": [
+                "vendor patch note",
+                "affected version mapping",
+                "test evidence",
+                "rollback plan"
+              ],
+              "plain_english_gap": "Patch availability and feasibility are not yet reviewed.",
+              "required_evidence": "Vendor patch note, affected version mapping, test evidence, rollback plan.",
+              "next_decision_gate": "Patch feasibility review",
+              "suggested_owner_role": "Change owner or platform engineer"
+            },
+            {
+              "gap": "Human source review event",
+              "why_it_matters": "Source-bound intelligence cannot become accepted positive evidence without a reviewer accepting or rejecting the source record.",
+              "evidence_examples": [
+                "source review event",
+                "reviewer name or role",
+                "accepted/rejected/superseded outcome",
+                "review notes"
+              ],
+              "plain_english_gap": "No named human source review event is recorded.",
+              "required_evidence": "Named reviewer decision accepting or rejecting source records.",
+              "next_decision_gate": "Human evidence review",
+              "suggested_owner_role": "Security lead or CAB reviewer"
+            }
+          ],
+          "usable_sources": [],
+          "pending_sources": [
+            "src-cisa-kev-CVE-2026-48172",
+            "src-first-epss-CVE-2026-48172-2026-05-26"
+          ],
+          "pending_review_count": 4,
+          "rejected_source_count": 0,
+          "accepted_positive_evidence_count": 0
+        },
+        "exposure": {
+          "ot_relevant": false,
+          "interpretation": [
+            "Affected asset and service scope is not fully mapped. PatchForge can recommend a posture, but closure should wait for reviewed scope evidence."
+          ],
+          "unmapped_scope": true,
+          "affected_assets": [],
+          "customer_facing": false,
+          "internet_exposed": false,
+          "affected_services": [],
+          "affected_asset_count": 0,
+          "affected_service_count": 0
+        },
+        "severity": "critical",
+        "component": "Not recorded",
+        "automation": {
+          "completed": [
+            "Normalised finding identity",
+            "Bound source provenance",
+            "Applied governance boundary",
+            "Correlated vendor/KEV advisory context",
+            "Attached exploit-probability signal",
+            "Generated Bayesian advisory snapshot",
+            "Recorded live source-feed refresh history"
+          ],
+          "available_actions": [
+            "Open Finding Detail",
+            "Review exploitability intelligence",
+            "Run or refresh Bayesian advisory",
+            "Download board/CAB DOCX or PDF report",
+            "Record reviewed evidence or status outcome"
+          ],
+          "remaining_human_decisions": [
+            "Review or attach missing evidence: Reviewed vulnerability identity evidence, Affected asset scope, Business service impact, Patch availability and feasibility, Human source review event.",
+            "Issue or withhold CAB/security/service-owner approval. PatchForge will not approve automatically."
+          ]
+        },
+        "generated_at": "2026-05-27T13:14:52.631Z",
+        "exploitability": {
+          "epss_score": 0.00014,
+          "ransomware_use": "Unknown",
+          "epss_percentile": 0.02696,
+          "known_exploited": true,
+          "safe_description": "Source-bound intelligence indicates this vulnerability is known to be exploited in the wild. EPSS gives a source-bound probability signal of 0% and percentile 3%. This informs prioritisation but does not prove exploitability in the tenant estate. CISA KEV indicates the vulnerability appears in a known exploited vulnerability source feed. EPSS provides a probability-style signal and may be lower. PatchForge treats these as prioritisation signals, not proof of tenant exposure. Customer exposure must be confirmed through asset and service evidence. Known exploited signal is present, but EPSS is low. This does not remove the need for scope confirmation. The safe governance question is whether exposure, service impact, patch feasibility, and compensating controls justify patch, mitigation, deferral, or risk acceptance.",
+          "prohibited_detail": "Exploit code, exploit payloads, and procedural exploitation steps are intentionally not provided.",
+          "kev_epss_interpretation": "CISA KEV indicates the vulnerability appears in a known exploited vulnerability source feed. EPSS provides a probability-style signal and may be lower. PatchForge treats these as prioritisation signals, not proof of tenant exposure. Customer exposure must be confirmed through asset and service evidence. Known exploited signal is present, but EPSS is low. This does not remove the need for scope confirmation.",
+          "active_exploitation_signal": true
+        },
+        "recommendation": {
+          "do_now": [
+            "Confirm customer exposure and patch applicability before selecting emergency change, patch, mitigation, or risk acceptance."
+          ],
+          "do_next": [
+            "Confirm vendor patch availability or record mitigation-only posture.",
+            "Attach affected asset scope evidence.",
+            "Attach business service impact evidence."
+          ],
+          "posture": "defer_pending_evidence",
+          "due_date": "2026-05-29",
+          "rationale": [
+            "A known-exploited public-source signal is present, but reviewed customer asset and service exposure are not confirmed."
+          ],
+          "confidence": "low",
+          "advisory_only": true,
+          "approval_notice": "Human approval remains required. PatchForge does not approve CAB decisions, risk acceptance, patch deployment, or closure autonomously.",
+          "display_posture": "urgent_scope_confirmation_required",
+          "customer_posture": "Urgent scope confirmation required - final remediation decision blocked pending evidence.",
+          "next_best_action": "Confirm customer exposure and patch applicability before selecting emergency change, patch, mitigation, or risk acceptance.",
+          "final_approval_issued": false,
+          "customer_posture_detail": "PatchForge has public-source vulnerability intelligence, but customer asset and service exposure are not yet confirmed. Known-exploited status increases urgency, but it does not prove tenant exposure or patch applicability."
+        },
+        "source_context": {
+          "source_count": 2,
+          "threat_signal_count": 1,
+          "reviewed_source_count": 0,
+          "vendor_advisory_count": 1,
+          "latest_source_feed_run_at": "2026-05-27T13:08:34.780Z"
+        },
+        "intelligence_id": "intel-CVE-2026-48172-20260527131452",
+        "decision_options": [
+          {
+            "risks": "Remediation assurance cannot be issued until customer exposure and patch applicability are reviewed.",
+            "reason": "Known-exploited public intelligence exists, but customer asset and service exposure are not confirmed.",
+            "posture": "urgent_scope_confirmation_required",
+            "benefits": "Turns an ambiguous queue item into a concrete evidence task without implying patch approval.",
+            "recommended": true,
+            "current_status": "recommended now",
+            "when_to_choose": "Use now when a known-exploited public-source record needs customer estate scope confirmed before a final remediation decision.",
+            "approval_needed": false,
+            "evidence_needed": [
+              "Affected asset scope",
+              "Business service impact",
+              "Human source review event"
+            ],
+            "required_approval": "Security lead or service owner confirms the affected scope.",
+            "required_evidence": [
+              "Reviewed asset scope",
+              "Reviewed service impact",
+              "Source identity review"
+            ]
+          },
+          {
+            "risks": "Higher change risk if test, rollback, or service-impact evidence is incomplete.",
+            "reason": "Emergency Change Required is blocked pending asset/service exposure and patch applicability.",
+            "posture": "emergency_change_required",
+            "benefits": "Fast accountable response with rollback and post-change validation gates preserved.",
+            "recommended": false,
+            "current_status": "blocked",
+            "when_to_choose": "Use when known exploitation and exposed/customer-facing impact make normal change cadence too slow.",
+            "approval_needed": true,
+            "evidence_needed": [
+              "Vulnerability identity",
+              "Affected scope",
+              "Patch availability",
+              "Rollback plan",
+              "Human approval"
+            ],
+            "required_approval": "CAB/security lead emergency approval.",
+            "required_evidence": [
+              "Reviewed affected scope",
+              "Patch applicability",
+              "Rollback plan",
+              "Customer/service impact",
+              "Human approval"
+            ]
+          },
+          {
+            "risks": "Delay remains accountable and should be tracked against SLA.",
+            "reason": "Patch Required is blocked pending patch availability, feasibility, and reviewed exposure scope.",
+            "posture": "patch_required",
+            "benefits": "Clear remediation direction while allowing scheduled change control.",
+            "recommended": false,
+            "current_status": "blocked",
+            "when_to_choose": "Use when patch is available and deferral risk is high but emergency criteria are not fully met.",
+            "approval_needed": true,
+            "evidence_needed": [
+              "Patch feasibility",
+              "Test evidence",
+              "Service owner review"
+            ],
+            "required_approval": "Change owner, service owner, and CAB/security approval.",
+            "required_evidence": [
+              "Vendor patch note",
+              "Affected version mapping",
+              "Test evidence",
+              "Rollback plan",
+              "Service owner review"
+            ]
+          },
+          {
+            "risks": "Controls can degrade or be bypassed; expiry and reassessment are required.",
+            "reason": "Mitigate Temporarily is available only if compensating-control evidence is attached and reviewed.",
+            "posture": "mitigate_temporarily",
+            "benefits": "Controls exposure while preserving evidence for later patch or acceptance.",
+            "recommended": false,
+            "current_status": "blocked",
+            "when_to_choose": "Use when patching is not immediately feasible, especially for OT, unsupported, or change-sensitive assets.",
+            "approval_needed": true,
+            "evidence_needed": [
+              "Compensating controls",
+              "Owner",
+              "Expiry",
+              "Residual risk"
+            ],
+            "required_approval": "Security lead and service owner approve temporary mitigation.",
+            "required_evidence": [
+              "Compensating control plan",
+              "Control owner",
+              "Monitoring evidence",
+              "Expiry or reassessment date"
+            ]
+          },
+          {
+            "risks": "Cannot be used to quietly park an exposed known-exploited condition.",
+            "reason": "Risk Accept Temporarily is blocked until risk owner, rationale, expiry, compensating controls, and accountable approval exist.",
+            "posture": "risk_accept_temporarily",
+            "benefits": "Makes deferral explicit, time-bounded, and auditable.",
+            "recommended": false,
+            "current_status": "blocked",
+            "when_to_choose": "Use only when an accountable risk owner accepts residual risk with rationale and expiry.",
+            "approval_needed": true,
+            "evidence_needed": [
+              "Risk owner",
+              "Rationale",
+              "Expiry",
+              "Compensating controls"
+            ],
+            "required_approval": "Named accountable risk owner approval.",
+            "required_evidence": [
+              "Risk owner",
+              "Rationale",
+              "Expiry",
+              "Compensating controls",
+              "Residual risk statement"
+            ]
+          },
+          {
+            "risks": "Deferral can become unmanaged if no owner or SLA is set.",
+            "reason": "Plain deferral is too passive for a known-exploited finding; use urgent scope confirmation as the active evidence posture.",
+            "posture": "defer_pending_evidence",
+            "benefits": "Avoids false certainty and drives evidence completion.",
+            "recommended": true,
+            "current_status": "not recommended",
+            "when_to_choose": "Use when source, scope, or feasibility evidence is incomplete.",
+            "approval_needed": false,
+            "evidence_needed": [
+              "Reviewed vulnerability identity evidence",
+              "Affected asset scope",
+              "Business service impact",
+              "Patch availability and feasibility",
+              "Human source review event"
+            ],
+            "required_approval": "Evidence owner confirms blocker resolution before approval is requested.",
+            "required_evidence": [
+              "Reviewed vulnerability identity evidence",
+              "Affected asset scope",
+              "Business service impact",
+              "Patch availability and feasibility",
+              "Human source review event"
+            ]
+          }
+        ],
+        "vulnerability_id": "CVE-2026-48172",
+        "latest_signed_pack": {
+          "pack_id": "PF-20260527-934d6e60",
+          "verified": true,
+          "readiness_state": "blocked",
+          "decision_posture": "defer_pending_evidence",
+          "final_approval_issued": false
+        }
+      },
+      "config_applicability_assessment.json": {
+        "cve": "CVE-2026-VENDORLENS-LIVE-001",
+        "model": "FortiGate 100F",
+        "asset_id": "net-asset-dd162874-c76a-4a7a-8b54-5f8dbbc614e9",
+        "boundary": {
+          "no_scanner": true,
+          "no_patch_deployment": true,
+          "no_autonomous_approval": true,
+          "no_production_mutation": true,
+          "no_autonomous_risk_acceptance": true,
+          "no_procedural_exploitation_steps": true
+        },
+        "actor_oid": "2d2f273d-a815-4a19-a258-c48c858252f3",
+        "actor_upn": "n.bailey@diiac.io",
+        "tenant_id": "diiac.io",
+        "vendor_id": "fortinet",
+        "actor_roles": [
+          "PatchForge.Admin"
+        ],
+        "advisory_id": "fortinet-CVE-2026-VENDORLENS-LIVE-001",
+        "generated_at": "2026-05-27T13:12:59.990Z",
+        "source_bound": true,
+        "advisory_only": true,
+        "assessment_id": "cfg-app-1779887579990",
+        "evidence_gaps": [
+          {
+            "gap_id": "feature_disabled_review",
+            "why_it_matters": "PatchForge cannot support an accountable customer/CAB decision without reviewed evidence for this point.",
+            "plain_english_gap": "ssl vpn is recorded as disabled, but that configuration evidence is not reviewed.",
+            "required_evidence": "Reviewed configuration export, change record, service owner attestation, or device configuration evidence.",
+            "next_decision_gate": "Configuration applicability review",
+            "suggested_owner_role": "Network engineering lead"
+          },
+          {
+            "gap_id": "advisory_source_review",
+            "why_it_matters": "PatchForge cannot support an accountable customer/CAB decision without reviewed evidence for this point.",
+            "plain_english_gap": "The vendor/CVE source record has not been accepted as positive evidence.",
+            "required_evidence": "Named reviewer event accepting the source record, affected versions, affected feature, and source provenance.",
+            "next_decision_gate": "Source review",
+            "suggested_owner_role": "Security lead"
+          }
+        ],
+        "evidence_used": [
+          {
+            "ref": "fortinet-CVE-2026-VENDORLENS-LIVE-001",
+            "review_state": "pending_review",
+            "evidence_type": "vendor_advisory"
+          },
+          {
+            "ref": "net-asset-dd162874-c76a-4a7a-8b54-5f8dbbc614e9",
+            "review_state": "pending_review",
+            "evidence_type": "customer_network_asset"
+          },
+          {
+            "ref": "asset-owner-attestation-pending",
+            "review_state": "pending_review",
+            "evidence_type": "configuration_evidence"
+          }
+        ],
+        "product_family": "FortiGate",
+        "actor_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+        "exposure_status": "internet_or_management_exposed",
+        "urgency_posture": "urgent_scope_confirmation_required",
+        "affected_feature": "ssl_vpn",
+        "firmware_version": "7.2.7",
+        "tenant_id_source": "token_mapping",
+        "evidence_required": [
+          "reviewed_feature_configuration",
+          "reviewed_vendor_advisory"
+        ],
+        "effective_tenant_id": "diiac.io",
+        "requested_tenant_id": "diiac.io",
+        "applicability_posture": "requires_review",
+        "final_approval_issued": false,
+        "human_review_required": true,
+        "feature_enabled_status": "disabled_unreviewed",
+        "affected_feature_status": "disabled_unreviewed",
+        "affected_version_status": "affected",
+        "tenant_override_ignored": false,
+        "decision_not_allowed_yet": "Final remediation, risk acceptance, closure, and not-applicable decisions cannot be issued until the evidence gaps are resolved and a human reviewer approves the outcome.",
+        "can_close_hard_gates_alone": false
+      },
+      "customer_network_asset_snapshot.json": {
+        "site": "Customer perimeter",
+        "model": "FortiGate 100F",
+        "asset_id": "net-asset-dd162874-c76a-4a7a-8b54-5f8dbbc614e9",
+        "actor_oid": "2d2f273d-a815-4a19-a258-c48c858252f3",
+        "actor_upn": "n.bailey@diiac.io",
+        "tenant_id": "diiac.io",
+        "vendor_id": "fortinet",
+        "created_at": "2026-05-27T13:11:53.282Z",
+        "updated_at": "2026-05-27T13:11:53.282Z",
+        "actor_roles": [
+          "PatchForge.Admin"
+        ],
+        "environment": "production",
+        "review_state": "pending_review",
+        "source_state": "source_bound",
+        "not_in_estate": false,
+        "service_owner": "Network operations",
+        "evidence_state": "referenced",
+        "product_family": "FortiGate",
+        "actor_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+        "internet_facing": true,
+        "enabled_features": [
+          "ipsec_vpn",
+          "bgp_edge"
+        ],
+        "firmware_version": "7.2.7",
+        "tenant_id_source": "token_mapping",
+        "disabled_features": [
+          "ssl_vpn",
+          "web_management"
+        ],
+        "effective_tenant_id": "diiac.io",
+        "management_exposure": "internal",
+        "requested_tenant_id": "diiac.io",
+        "serial_or_asset_ref": null,
+        "config_evidence_refs": [
+          "asset-owner-attestation-pending"
+        ],
+        "tenant_override_ignored": false
+      },
+      "network_vendor_profile_snapshot.json": {
+        "enabled": true,
+        "tenant_id": "diiac.io",
+        "vendor_id": "fortinet",
+        "vendor_name": "Fortinet",
+        "source_bound": true,
+        "last_refresh_at": null,
+        "review_required": true,
+        "vendor_category": "infrastructure_networking",
+        "product_families": [
+          "FortiGate",
+          "FortiOS",
+          "FortiProxy",
+          "FortiManager"
+        ],
+        "advisory_source_url": "https://www.fortiguard.com/psirt",
+        "source_review_state": "reference_catalogue",
+        "advisory_source_type": "public_vendor_advisory",
+        "can_close_hard_gates_alone": false
+      },
+      "vendor_security_advisory_snapshot.json": {
+        "cve": "CVE-2026-VENDORLENS-LIVE-001",
+        "cves": [
+          "CVE-2026-VENDORLENS-LIVE-001"
+        ],
+        "title": "VendorLens live validation advisory for FortiGate SSL-VPN applicability",
+        "summary": "",
+        "severity": "critical",
+        "actor_oid": "2d2f273d-a815-4a19-a258-c48c858252f3",
+        "actor_upn": "n.bailey@diiac.io",
+        "tenant_id": "diiac.io",
+        "vendor_id": "fortinet",
+        "created_at": "2026-05-27T13:12:45.104Z",
+        "epss_score": null,
+        "source_url": "https://www.fortiguard.com/psirt",
+        "superseded": false,
+        "actor_roles": [
+          "PatchForge.Admin"
+        ],
+        "advisory_id": "fortinet-CVE-2026-VENDORLENS-LIVE-001",
+        "source_hash": "30eb946d99983270cc1164a10c3b54ec694d0e38c98d98fe2cafffc00de9c19b",
+        "vendor_name": "Fortinet",
+        "retrieved_at": "2026-05-27T13:12:45.104Z",
+        "review_state": "pending_review",
+        "source_class": "vendor_advisory",
+        "source_state": "source_bound",
+        "advisory_only": true,
+        "superseded_by": null,
+        "evidence_state": "referenced",
+        "fixed_versions": [
+          "7.2.8"
+        ],
+        "product_family": "FortiGate",
+        "actor_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+        "affected_models": [],
+        "known_exploited": true,
+        "patch_available": true,
+        "tenant_id_source": "token_mapping",
+        "affected_features": [
+          "ssl_vpn"
+        ],
+        "affected_products": [
+          "FortiGate"
+        ],
+        "affected_versions": [
+          "7.2.7"
+        ],
+        "workaround_status": "unverified",
+        "effective_tenant_id": "diiac.io",
+        "requested_tenant_id": "diiac.io",
+        "final_approval_issued": false,
+        "tenant_override_ignored": false,
+        "can_close_hard_gates_alone": false
+      },
+      "vulnerability_intelligence_snapshot.json": {
+        "tags": [
+          "live_source_feed",
+          "cisa_kev",
+          "litespeed",
+          "cpanel-plugin"
+        ],
+        "title": "LiteSpeed cPanel Plugin Privilege Escalation Vulnerability",
+        "sources": [
+          {
+            "actor_oid": "patchforge-scheduler",
+            "actor_upn": "patchforge-scheduler@diiac.io",
+            "tenant_id": "diiac.io",
+            "source_url": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+            "actor_roles": [
+              "PatchForge.SystemScheduler"
+            ],
+            "ingested_at": "2026-05-27T13:08:34.261Z",
+            "reviewed_at": null,
+            "reviewed_by": null,
+            "source_name": "CISA Known Exploited Vulnerabilities Catalog",
+            "payload_hash": "65e9aedaf9a05c82bacbefab1b42a79273ec8d749a4799cf85951325b5a6050f",
+            "review_state": "pending_review",
+            "source_class": "kev_record",
+            "evidence_state": "referenced",
+            "actor_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+            "source_record_id": "src-cisa-kev-CVE-2026-48172",
+            "tenant_id_source": "scheduler_config",
+            "vulnerability_id": "CVE-2026-48172",
+            "effective_tenant_id": "diiac.io",
+            "requested_tenant_id": "diiac.io",
+            "tenant_override_ignored": false
+          },
+          {
+            "actor_oid": "patchforge-scheduler",
+            "actor_upn": "patchforge-scheduler@diiac.io",
+            "tenant_id": "diiac.io",
+            "source_url": "https://api.first.org/data/v1/epss?cve=CVE-2026-48172",
+            "actor_roles": [
+              "PatchForge.SystemScheduler"
+            ],
+            "ingested_at": "2026-05-27T13:08:34.623Z",
+            "reviewed_at": null,
+            "reviewed_by": null,
+            "source_name": "FIRST Exploit Prediction Scoring System",
+            "payload_hash": "47307921fdf85ab7ec3828fc2e99113d0277b93f71fb0e171b553559734ff7d1",
+            "review_state": "pending_review",
+            "source_class": "epss_signal",
+            "evidence_state": "referenced",
+            "actor_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+            "source_record_id": "src-first-epss-CVE-2026-48172-2026-05-26",
+            "tenant_id_source": "scheduler_config",
+            "vulnerability_id": "CVE-2026-48172",
+            "effective_tenant_id": "diiac.io",
+            "requested_tenant_id": "diiac.io",
+            "tenant_override_ignored": false
+          }
+        ],
+        "severity": "critical",
+        "actor_oid": "patchforge-scheduler",
+        "actor_upn": "patchforge-scheduler@diiac.io",
+        "tenant_id": "diiac.io",
+        "created_at": "2026-05-27T13:08:34.261Z",
+        "cvss_score": null,
+        "sla_due_at": "2026-05-29",
+        "updated_at": null,
+        "actor_roles": [
+          "PatchForge.SystemScheduler"
+        ],
+        "description": "LiteSpeed cPanel Plugin contains privilege escalation vulnerability that is exposed via the user-end cPanel plugin, which can be abused by any cPanel user account to execute arbitrary scripts with root privileges.",
+        "ot_relevant": false,
+        "canonical_id": "CVE-2026-48172",
+        "patch_status": "unknown",
+        "review_state": "pending_review",
+        "source_state": "source_bound",
+        "actor_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+        "known_exploited": true,
+        "internet_exposed": false,
+        "tenant_id_source": "scheduler_config",
+        "vulnerability_id": "CVE-2026-48172",
+        "source_record_ids": [
+          "src-cisa-kev-CVE-2026-48172"
+        ],
+        "affected_asset_ids": [],
+        "effective_tenant_id": "diiac.io",
+        "requested_tenant_id": "diiac.io",
+        "affected_service_ids": [],
+        "tenant_override_ignored": false,
+        "usable_evidence_sources": []
+      }
+    },
+    "readiness": {
+      "blockers": [
+        "affected_asset_scope",
+        "human_review_signoff",
+        "patch_availability",
+        "vulnerability_identity"
+      ],
+      "readiness_score": 0,
+      "readiness_state": "blocked",
+      "final_approval_issued": false
+    },
+    "tenant_id": "diiac.io",
+    "created_at": "2026-05-27T13:14:52+00:00",
+    "actor_roles": [
+      "PatchForge.Admin"
+    ],
+    "decision_id": "decision-6044932b-7436-4a1b-90f8-b3e44edc1039",
+    "verification": {
+      "verified": true,
+      "artefacts": [
+        {
+          "ok": true,
+          "name": "affected_asset_scope.json",
+          "actual": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843",
+          "expected": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843"
+        },
+        {
+          "ok": true,
+          "name": "bayesian_patch_risk_snapshot.json",
+          "actual": "0eaf006e8ac1de029cdea21620371f99667f409098ab883a44271e6ee7c02edc",
+          "expected": "0eaf006e8ac1de029cdea21620371f99667f409098ab883a44271e6ee7c02edc"
+        },
+        {
+          "ok": true,
+          "name": "compensating_controls_plan.json",
+          "actual": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+          "expected": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+        },
+        {
+          "ok": true,
+          "name": "config_applicability_assessment.json",
+          "actual": "4ad93cc9d83e1be81c42a11dda0c90b293ce504cd381784635c1efc3d79e3980",
+          "expected": "4ad93cc9d83e1be81c42a11dda0c90b293ce504cd381784635c1efc3d79e3980"
+        },
+        {
+          "ok": true,
+          "name": "customer_network_asset_snapshot.json",
+          "actual": "78e75ba4cbe5ce1af0222b4d34d55cc7356ae731431f2364884f860092ad3e70",
+          "expected": "78e75ba4cbe5ce1af0222b4d34d55cc7356ae731431f2364884f860092ad3e70"
+        },
+        {
+          "ok": true,
+          "name": "exploitability_assessment.json",
+          "actual": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843",
+          "expected": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843"
+        },
+        {
+          "ok": true,
+          "name": "finding_intelligence_snapshot.json",
+          "actual": "8af46e630c536af23343bdb6a48f5a60b5d23065dc17a58716e372ce5a86eba7",
+          "expected": "8af46e630c536af23343bdb6a48f5a60b5d23065dc17a58716e372ce5a86eba7"
+        },
+        {
+          "ok": true,
+          "name": "human_review_state.json",
+          "actual": "f5f8227f3fa4f41292047918bc64d137e32d178ec0ec747dde4e0e5479863180",
+          "expected": "f5f8227f3fa4f41292047918bc64d137e32d178ec0ec747dde4e0e5479863180"
+        },
+        {
+          "ok": true,
+          "name": "network_vendor_profile_snapshot.json",
+          "actual": "cbf69d3867857a5ee015c3a68fe555063f46913733a6e58ae55307706cd7c5fd",
+          "expected": "cbf69d3867857a5ee015c3a68fe555063f46913733a6e58ae55307706cd7c5fd"
+        },
+        {
+          "ok": true,
+          "name": "patch_change_readiness.json",
+          "actual": "0f508a5b6ba0bb870b67ec8f9e2e3691cc0848893d9798cd484de6c1b865af6e",
+          "expected": "0f508a5b6ba0bb870b67ec8f9e2e3691cc0848893d9798cd484de6c1b865af6e"
+        },
+        {
+          "ok": true,
+          "name": "patch_decision_context.json",
+          "actual": "f0ebca5ff758b0b5a2ef542f1bb29d12f19d0b2a197b4df41b15f52fdb1bcb30",
+          "expected": "f0ebca5ff758b0b5a2ef542f1bb29d12f19d0b2a197b4df41b15f52fdb1bcb30"
+        },
+        {
+          "ok": true,
+          "name": "patch_feasibility_assessment.json",
+          "actual": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+          "expected": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+        },
+        {
+          "ok": true,
+          "name": "patch_prior_update_proposal.json",
+          "actual": "ebd17e0c3518ab9b4f9ec1402c52a30c51159eb7b324036c18a4ac825745debc",
+          "expected": "ebd17e0c3518ab9b4f9ec1402c52a30c51159eb7b324036c18a4ac825745debc"
+        },
+        {
+          "ok": true,
+          "name": "patch_prior_usage_manifest.json",
+          "actual": "513092c211bcc382352bf299d65d5feeac28b9d4fcb1a86c9ee5d3566cda4db2",
+          "expected": "513092c211bcc382352bf299d65d5feeac28b9d4fcb1a86c9ee5d3566cda4db2"
+        },
+        {
+          "ok": true,
+          "name": "patch_risk_acceptance_state.json",
+          "actual": "240fa9c55e6c6a5659a74edfc30c159d74c3616651fa672443d312682e6c66df",
+          "expected": "240fa9c55e6c6a5659a74edfc30c159d74c3616651fa672443d312682e6c66df"
+        },
+        {
+          "ok": true,
+          "name": "replay_certificate.json",
+          "actual": "2f569a94d9ba6c5e2aff73aed7d9a7dc6cc323aa980bdcb86c50f9b89187f906",
+          "expected": "2f569a94d9ba6c5e2aff73aed7d9a7dc6cc323aa980bdcb86c50f9b89187f906"
+        },
+        {
+          "ok": true,
+          "name": "sra_config_chat_session.json",
+          "actual": "164b2b53ef7ef16dca53bbb4d7fbd864552620cad5855f8e1ac4d75e6ca24a78",
+          "expected": "164b2b53ef7ef16dca53bbb4d7fbd864552620cad5855f8e1ac4d75e6ca24a78"
+        },
+        {
+          "ok": true,
+          "name": "sra_trace.json",
+          "actual": "47dbb360210fd7279ed2120f0e090807e8de6b6198ebe6d2bfac7f8a514b8292",
+          "expected": "47dbb360210fd7279ed2120f0e090807e8de6b6198ebe6d2bfac7f8a514b8292"
+        },
+        {
+          "ok": true,
+          "name": "threat_landscape_snapshot.json",
+          "actual": "321e063bb30851383117797112522760c0b3e2d9348433667775375b62ad6b8d",
+          "expected": "321e063bb30851383117797112522760c0b3e2d9348433667775375b62ad6b8d"
+        },
+        {
+          "ok": true,
+          "name": "trust_bundle.json",
+          "actual": "af2e7686ddf7befdc5df08c00811af347a9f944457285dc6ba6ac4f39a6de4ed",
+          "expected": "af2e7686ddf7befdc5df08c00811af347a9f944457285dc6ba6ac4f39a6de4ed"
+        },
+        {
+          "ok": true,
+          "name": "vendor_intelligence_snapshot.json",
+          "actual": "2e240f711b516376553cf0e1479b5d9a4e2df182c0723d207958448a90898a3f",
+          "expected": "2e240f711b516376553cf0e1479b5d9a4e2df182c0723d207958448a90898a3f"
+        },
+        {
+          "ok": true,
+          "name": "vendor_security_advisory_snapshot.json",
+          "actual": "456466f5408ab834b3f29f15e703130c0878b8c3950f0ad6e31ae01aca822280",
+          "expected": "456466f5408ab834b3f29f15e703130c0878b8c3950f0ad6e31ae01aca822280"
+        },
+        {
+          "ok": true,
+          "name": "vendorlens_decision_context.json",
+          "actual": "95fa37052502be455f790cbc568cdba3a1c0709474041e648a699e3000e5a09d",
+          "expected": "95fa37052502be455f790cbc568cdba3a1c0709474041e648a699e3000e5a09d"
+        },
+        {
+          "ok": true,
+          "name": "vulnerability_intelligence_snapshot.json",
+          "actual": "d10a79af30d3176c6cbe34c68221ad452666b1dfb7fe6e9d933b9606c2facc19",
+          "expected": "d10a79af30d3176c6cbe34c68221ad452666b1dfb7fe6e9d933b9606c2facc19"
+        }
+      ],
+      "manifest_ok": true,
+      "signature_ok": true
+    },
+    "actor_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+    "decision_pack_id": "PF-20260527-2d9f160a",
+    "decision_posture": "defer_pending_evidence",
+    "signing_provider": "azure_key_vault",
+    "tenant_id_source": "token_mapping",
+    "vulnerability_id": "CVE-2026-48172",
+    "runtime_component": "patchforge-runtime",
+    "effective_tenant_id": "diiac.io",
+    "requested_tenant_id": "diiac.io",
+    "final_approval_issued": false,
+    "source_pack_immutable": true,
+    "tenant_override_ignored": false
+  },
+  "artefacts": {
+    "sra_trace.json": {
+      "available": false,
+      "advisory_only": true,
+      "can_close_hard_gates_alone": false
+    },
+    "signed_export.sig": "rHulhfxDGGW6IbO33y1fa4wDMhY7jCahfEF6XvAA94NeL_NvNgp0abdKQXvdJjREN9fFeGWYW1E6JbQfWhmfrA",
+    "trust_bundle.json": {
+      "key_id": "https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod",
+      "signing_mode": "azure_key_vault",
+      "signature_scope": "artefact_integrity_not_source_truth"
+    },
+    "human_review_state.json": {
+      "approval_events": [],
+      "final_approval_issued": false,
+      "no_autonomous_approval": true
+    },
+    "replay_certificate.json": {
+      "pack_id": "PF-20260527-2d9f160a",
+      "created_at": "2026-05-27T13:14:52+00:00",
+      "source_pack_immutable": true
+    },
+    "governance_manifest.json": {
+      "pack_id": "PF-20260527-2d9f160a",
+      "boundary": {
+        "no_scanner": true,
+        "no_patch_deployment": true,
+        "no_exploit_generation": true,
+        "no_autonomous_approval": true,
+        "no_production_mutation": true
+      },
+      "artefacts": [
+        {
+          "name": "affected_asset_scope.json",
+          "sha256": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843"
+        },
+        {
+          "name": "bayesian_patch_risk_snapshot.json",
+          "sha256": "0eaf006e8ac1de029cdea21620371f99667f409098ab883a44271e6ee7c02edc"
+        },
+        {
+          "name": "compensating_controls_plan.json",
+          "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+        },
+        {
+          "name": "config_applicability_assessment.json",
+          "sha256": "4ad93cc9d83e1be81c42a11dda0c90b293ce504cd381784635c1efc3d79e3980"
+        },
+        {
+          "name": "customer_network_asset_snapshot.json",
+          "sha256": "78e75ba4cbe5ce1af0222b4d34d55cc7356ae731431f2364884f860092ad3e70"
+        },
+        {
+          "name": "exploitability_assessment.json",
+          "sha256": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843"
+        },
+        {
+          "name": "finding_intelligence_snapshot.json",
+          "sha256": "8af46e630c536af23343bdb6a48f5a60b5d23065dc17a58716e372ce5a86eba7"
+        },
+        {
+          "name": "human_review_state.json",
+          "sha256": "f5f8227f3fa4f41292047918bc64d137e32d178ec0ec747dde4e0e5479863180"
+        },
+        {
+          "name": "network_vendor_profile_snapshot.json",
+          "sha256": "cbf69d3867857a5ee015c3a68fe555063f46913733a6e58ae55307706cd7c5fd"
+        },
+        {
+          "name": "patch_change_readiness.json",
+          "sha256": "0f508a5b6ba0bb870b67ec8f9e2e3691cc0848893d9798cd484de6c1b865af6e"
+        },
+        {
+          "name": "patch_decision_context.json",
+          "sha256": "f0ebca5ff758b0b5a2ef542f1bb29d12f19d0b2a197b4df41b15f52fdb1bcb30"
+        },
+        {
+          "name": "patch_feasibility_assessment.json",
+          "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+        },
+        {
+          "name": "patch_prior_update_proposal.json",
+          "sha256": "ebd17e0c3518ab9b4f9ec1402c52a30c51159eb7b324036c18a4ac825745debc"
+        },
+        {
+          "name": "patch_prior_usage_manifest.json",
+          "sha256": "513092c211bcc382352bf299d65d5feeac28b9d4fcb1a86c9ee5d3566cda4db2"
+        },
+        {
+          "name": "patch_risk_acceptance_state.json",
+          "sha256": "240fa9c55e6c6a5659a74edfc30c159d74c3616651fa672443d312682e6c66df"
+        },
+        {
+          "name": "replay_certificate.json",
+          "sha256": "2f569a94d9ba6c5e2aff73aed7d9a7dc6cc323aa980bdcb86c50f9b89187f906"
+        },
+        {
+          "name": "sra_config_chat_session.json",
+          "sha256": "164b2b53ef7ef16dca53bbb4d7fbd864552620cad5855f8e1ac4d75e6ca24a78"
+        },
+        {
+          "name": "sra_trace.json",
+          "sha256": "47dbb360210fd7279ed2120f0e090807e8de6b6198ebe6d2bfac7f8a514b8292"
+        },
+        {
+          "name": "threat_landscape_snapshot.json",
+          "sha256": "321e063bb30851383117797112522760c0b3e2d9348433667775375b62ad6b8d"
+        },
+        {
+          "name": "trust_bundle.json",
+          "sha256": "af2e7686ddf7befdc5df08c00811af347a9f944457285dc6ba6ac4f39a6de4ed"
+        },
+        {
+          "name": "vendor_intelligence_snapshot.json",
+          "sha256": "2e240f711b516376553cf0e1479b5d9a4e2df182c0723d207958448a90898a3f"
+        },
+        {
+          "name": "vendor_security_advisory_snapshot.json",
+          "sha256": "456466f5408ab834b3f29f15e703130c0878b8c3950f0ad6e31ae01aca822280"
+        },
+        {
+          "name": "vendorlens_decision_context.json",
+          "sha256": "95fa37052502be455f790cbc568cdba3a1c0709474041e648a699e3000e5a09d"
+        },
+        {
+          "name": "vulnerability_intelligence_snapshot.json",
+          "sha256": "d10a79af30d3176c6cbe34c68221ad452666b1dfb7fe6e9d933b9606c2facc19"
+        }
+      ],
+      "tenant_id": "diiac.io",
+      "created_at": "2026-05-27T13:14:52+00:00",
+      "decision_id": "decision-6044932b-7436-4a1b-90f8-b3e44edc1039",
+      "decision_posture": "defer_pending_evidence",
+      "final_approval_issued": false,
+      "source_pack_immutable": true
+    },
+    "affected_asset_scope.json": {
+      "evidence": []
+    },
+    "signed_export.sigmeta.json": {
+      "key_id": "https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod/2e348fdeaaaf448ebba206130ef86b52",
+      "algorithm": "ES256",
+      "public_jwk": {
+        "x": "yzeI7iI0iH9eeQugSaJFdOkessqDo9fEo1Bmofm5JwA",
+        "y": "IaBFNHG2ZaWZSyCcagh5hUu_BPPdA_piXNwE9eS2APc",
+        "crv": "JsonWebKeyCurveName.P256",
+        "kty": "JsonWebKeyType.EC"
+      },
+      "dev_key_hint": null,
+      "signed_payload": {
+        "pack_id": "PF-20260527-2d9f160a",
+        "governance_manifest_sha256": "4743bcebeb0c61d0b0f46aede06ee88578068711726c48e921c4f376b70551da",
+        "verification_manifest_sha256": "87cbec24395b0a31f311abd3fda39366776c1189a317970d8f12c94d8ad29577"
+      },
+      "signing_provider": "azure_key_vault",
+      "signature_encoding": "base64url_raw_ecdsa"
+    },
+    "verification_manifest.json": {
+      "pack_id": "PF-20260527-2d9f160a",
+      "expected_artefacts": [
+        "vulnerability_intelligence_snapshot.json",
+        "patch_decision_context.json",
+        "affected_asset_scope.json",
+        "exploitability_assessment.json",
+        "patch_feasibility_assessment.json",
+        "compensating_controls_plan.json",
+        "patch_change_readiness.json",
+        "patch_risk_acceptance_state.json",
+        "human_review_state.json",
+        "bayesian_patch_risk_snapshot.json",
+        "patch_prior_usage_manifest.json",
+        "patch_prior_update_proposal.json",
+        "finding_intelligence_snapshot.json",
+        "vendor_intelligence_snapshot.json",
+        "threat_landscape_snapshot.json",
+        "network_vendor_profile_snapshot.json",
+        "customer_network_asset_snapshot.json",
+        "vendor_security_advisory_snapshot.json",
+        "config_applicability_assessment.json",
+        "sra_config_chat_session.json",
+        "vendorlens_decision_context.json",
+        "sra_trace.json",
+        "governance_manifest.json",
+        "verification_manifest.json",
+        "trust_bundle.json",
+        "replay_certificate.json"
+      ],
+      "verification_scope": "local_artefact_hashes_and_signature",
+      "governance_manifest_sha256": "4743bcebeb0c61d0b0f46aede06ee88578068711726c48e921c4f376b70551da"
+    },
+    "patch_change_readiness.json": {
+      "blockers": [
+        "affected_asset_scope",
+        "human_review_signoff",
+        "patch_availability",
+        "vulnerability_identity"
+      ],
+      "readiness_score": 0,
+      "readiness_state": "blocked",
+      "final_approval_issued": false
+    },
+    "patch_decision_context.json": {
+      "blockers": [
+        "affected_asset_scope",
+        "human_review_signoff",
+        "patch_availability",
+        "vulnerability_identity"
+      ],
+      "readiness": {
+        "blockers": [
+          "affected_asset_scope",
+          "human_review_signoff",
+          "patch_availability",
+          "vulnerability_identity"
+        ],
+        "readiness_score": 0,
+        "readiness_state": "blocked",
+        "final_approval_issued": false
+      },
+      "tenant_id": "diiac.io",
+      "created_at": "2026-05-27T13:14:52+00:00",
+      "decision_id": "decision-6044932b-7436-4a1b-90f8-b3e44edc1039",
+      "evidence_refs": [
+        "src-cisa-kev-CVE-2026-48172",
+        "src-first-epss-CVE-2026-48172-2026-05-26"
+      ],
+      "evidence_model": "vuln_patch_governance",
+      "decision_posture": "defer_pending_evidence",
+      "vulnerability_id": "CVE-2026-48172",
+      "decision_rationale": "Deterministic PatchForge governance context compiled from source-bound evidence.",
+      "human_review_state": "pending",
+      "final_approval_issued": false
+    },
+    "sra_config_chat_session.json": {
+      "title": "We use this firewall model and this feature is disabled. Do we urgently need to patch?",
+      "asset_id": "net-asset-dd162874-c76a-4a7a-8b54-5f8dbbc614e9",
+      "actor_oid": "2d2f273d-a815-4a19-a258-c48c858252f3",
+      "actor_upn": "n.bailey@diiac.io",
+      "tenant_id": "diiac.io",
+      "created_at": "2026-05-27T13:13:43.314Z",
+      "session_id": "vl-chat-1779887623314-a7f2ec78",
+      "updated_at": "2026-05-27T13:13:43.314Z",
+      "actor_roles": [
+        "PatchForge.Admin"
+      ],
+      "advisory_id": "fortinet-CVE-2026-VENDORLENS-LIVE-001",
+      "advisory_only": true,
+      "assessment_id": "cfg-app-1779887579990",
+      "actor_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+      "latest_response": {
+        "why": "Customer product, version, feature, exposure, or advisory evidence is incomplete. PatchForge therefore keeps the decision in reviewed scope-confirmation mode.",
+        "boundary": {
+          "no_patch_deployment": true,
+          "no_autonomous_approval": true,
+          "no_autonomous_risk_acceptance": true,
+          "no_procedural_exploitation_steps": true
+        },
+        "short_answer": "PatchForge cannot safely declare this configuration unaffected yet; complete scope and configuration evidence review first.",
+        "advisory_only": true,
+        "evidence_used": [
+          {
+            "ref": "fortinet-CVE-2026-VENDORLENS-LIVE-001",
+            "review_state": "pending_review",
+            "evidence_type": "vendor_advisory"
+          },
+          {
+            "ref": "net-asset-dd162874-c76a-4a7a-8b54-5f8dbbc614e9",
+            "review_state": "pending_review",
+            "evidence_type": "customer_network_asset"
+          },
+          {
+            "ref": "asset-owner-attestation-pending",
+            "review_state": "pending_review",
+            "evidence_type": "configuration_evidence"
+          }
+        ],
+        "evidence_missing": [
+          {
+            "gap": "ssl vpn is recorded as disabled, but that configuration evidence is not reviewed.",
+            "owner": "Network engineering lead",
+            "required_evidence": "Reviewed configuration export, change record, service owner attestation, or device configuration evidence."
+          },
+          {
+            "gap": "The vendor/CVE source record has not been accepted as positive evidence.",
+            "owner": "Security lead",
+            "required_evidence": "Named reviewer event accepting the source record, affected versions, affected feature, and source provenance."
+          }
+        ],
+        "final_approval_issued": false,
+        "human_review_required": true,
+        "recommended_next_action": "Confirm customer exposure, affected feature state, firmware/version, and vendor advisory source review.",
+        "current_governed_posture": "urgent_scope_confirmation_required",
+        "decision_not_allowed_yet": "Final remediation, risk acceptance, closure, and not-applicable decisions cannot be issued until the evidence gaps are resolved and a human reviewer approves the outcome.",
+        "configuration_assumptions": [
+          "We use this firewall model and this feature is disabled. Do we urgently need to patch?",
+          "Feature considered: Ssl Vpn",
+          "Firmware/version considered: 7.2.7"
+        ],
+        "can_close_hard_gates_alone": false
+      },
+      "tenant_id_source": "token_mapping",
+      "effective_tenant_id": "diiac.io",
+      "requested_tenant_id": "diiac.io",
+      "final_approval_issued": false,
+      "human_review_required": true,
+      "tenant_override_ignored": false
+    },
+    "exploitability_assessment.json": {
+      "evidence": []
+    },
+    "threat_landscape_snapshot.json": {
+      "metrics": {
+        "ot_relevance": 0,
+        "patch_maturity": "unknown",
+        "known_exploited_rate": 1,
+        "patch_available_rate": 0,
+        "false_positive_history": 0,
+        "customer_estate_exposure": 0,
+        "active_exploitation_count": 10,
+        "superseded_advisory_count": 0,
+        "vendor_response_timeliness": "source_bound_pending_review",
+        "critical_open_advisory_count": 2,
+        "internet_exposed_asset_count": 0,
+        "open_customer_decision_count": 10
+      },
+      "tenant_id": "diiac.io",
+      "generated_at": "2026-05-27T13:14:52.639Z",
+      "source_bound": true,
+      "vendor_count": 28,
+      "review_required": true,
+      "top_exposed_vendors": [
+        {
+          "vendor_id": "microsoft",
+          "active_exploitation_count": 5,
+          "open_customer_decision_count": 5
+        },
+        {
+          "vendor_id": "litespeed",
+          "active_exploitation_count": 1,
+          "open_customer_decision_count": 1
+        },
+        {
+          "vendor_id": "drupal",
+          "active_exploitation_count": 1,
+          "open_customer_decision_count": 1
+        },
+        {
+          "vendor_id": "langflow",
+          "active_exploitation_count": 1,
+          "open_customer_decision_count": 1
+        },
+        {
+          "vendor_id": "trend-micro",
+          "active_exploitation_count": 1,
+          "open_customer_decision_count": 1
+        },
+        {
+          "vendor_id": "adobe",
+          "active_exploitation_count": 1,
+          "open_customer_decision_count": 1
+        }
+      ]
+    },
+    "compensating_controls_plan.json": {},
+    "patch_prior_usage_manifest.json": {
+      "dry_run_only": true,
+      "prior_set_id": "patchforge-default-v1",
+      "advisory_only": true,
+      "prior_usage_id": "prior-1779887692636",
+      "live_prior_mutation_performed": false
+    },
+    "patch_prior_update_proposal.json": {
+      "dry_run": true,
+      "proposal_id": "not-generated",
+      "live_update_applied": false,
+      "admin_approval_required": true
+    },
+    "patch_risk_acceptance_state.json": {
+      "final_approval_issued": false
+    },
+    "vendorlens_decision_context.json": {
+      "context_id": "vendorlens-cfg-app-1779887579990",
+      "source_bound": true,
+      "advisory_only": true,
+      "evidence_gaps": [
+        {
+          "gap_id": "feature_disabled_review",
+          "why_it_matters": "PatchForge cannot support an accountable customer/CAB decision without reviewed evidence for this point.",
+          "plain_english_gap": "ssl vpn is recorded as disabled, but that configuration evidence is not reviewed.",
+          "required_evidence": "Reviewed configuration export, change record, service owner attestation, or device configuration evidence.",
+          "next_decision_gate": "Configuration applicability review",
+          "suggested_owner_role": "Network engineering lead"
+        },
+        {
+          "gap_id": "advisory_source_review",
+          "why_it_matters": "PatchForge cannot support an accountable customer/CAB decision without reviewed evidence for this point.",
+          "plain_english_gap": "The vendor/CVE source record has not been accepted as positive evidence.",
+          "required_evidence": "Named reviewer event accepting the source record, affected versions, affected feature, and source provenance.",
+          "next_decision_gate": "Source review",
+          "suggested_owner_role": "Security lead"
+        }
+      ],
+      "urgency_posture": "urgent_scope_confirmation_required",
+      "applicability_posture": "requires_review",
+      "final_approval_issued": false,
+      "human_review_required": true,
+      "recommended_next_action": "Confirm vendor advisory source, customer asset, firmware, feature, and exposure evidence.",
+      "decision_not_allowed_yet": "Final remediation, risk acceptance, closure, and not-applicable decisions cannot be issued until the evidence gaps are resolved and a human reviewer approves the outcome."
+    },
+    "bayesian_patch_risk_snapshot.json": {
+      "boundary": {
+        "no_patch_deployment": true,
+        "no_autonomous_approval": true,
+        "prior_update_dry_run_only": true
+      },
+      "prior_usage": {
+        "dry_run_only": true,
+        "prior_set_id": "patchforge-default-v1",
+        "advisory_only": true,
+        "prior_usage_id": "prior-1779887692636",
+        "live_prior_mutation_performed": false
+      },
+      "generated_at": "2026-05-27T13:14:52.636Z",
+      "advisory_only": true,
+      "assessment_id": "bayes-1779887692636",
+      "change_risk_posterior": 0.52,
+      "final_approval_issued": false,
+      "deferral_risk_posterior": 0.543,
+      "business_impact_posterior": 0.35,
+      "can_close_hard_gates_alone": false,
+      "patch_feasibility_posterior": 0.27,
+      "exploit_probability_posterior": 0.5,
+      "recommended_governance_posture": "defer_pending_evidence"
+    },
+    "patch_feasibility_assessment.json": {},
+    "vendor_intelligence_snapshot.json": {
+      "available": false,
+      "source_bound": true,
+      "review_required": true,
+      "can_close_hard_gates_alone": false
+    },
+    "finding_intelligence_snapshot.json": {
+      "title": "LiteSpeed cPanel Plugin Privilege Escalation Vulnerability",
+      "vendor": "Litespeed",
+      "product": "Cpanel Plugin",
+      "summary": {
+        "why_now": "It is flagged as known exploited in source-bound intelligence. FIRST EPSS source-bound signal is 0% with percentile 3%. The recorded remediation due date is 2026-05-29.",
+        "plain_english": "LiteSpeed cPanel Plugin contains privilege escalation vulnerability that is exposed via the user-end cPanel plugin, which can be abused by any cPanel user account to execute arbitrary scripts with root privileges. PatchForge treats this as a governance decision until source evidence, affected scope, and human approval are complete.",
+        "what_it_affects": "PatchForge has public-source vulnerability intelligence, but customer asset and service exposure are not yet confirmed. This gap matters because severity alone does not tell the CAB what could break, who owns it, or whether customer-facing operations are affected.",
+        "operational_risk": "Unmapped scope could cause under-remediation or unnecessary disruption. Patch availability is not yet confirmed, so mitigation and monitoring may be needed while evidence is completed.",
+        "decision_required": "Urgent scope confirmation required - final remediation decision blocked pending evidence. Human approval remains required. PatchForge does not approve CAB decisions, risk acceptance, patch deployment, or closure autonomously.",
+        "executive_readout": "CVE-2026-48172: Urgent scope confirmation required - final remediation decision blocked pending evidence. PatchForge has public-source vulnerability intelligence, but customer asset and service exposure are not yet confirmed. 5 evidence gap(s) remain, and final approval has not been issued."
+      },
+      "boundary": {
+        "no_scanner": true,
+        "source_bound": true,
+        "advisory_only": true,
+        "no_exploit_code": true,
+        "no_patch_deployment": true,
+        "no_production_mutation": true,
+        "human_approval_required": true,
+        "no_autonomous_cab_approval": true,
+        "no_procedural_exploit_steps": true,
+        "no_autonomous_risk_acceptance": true
+      },
+      "evidence": {
+        "gaps": [
+          "Reviewed vulnerability identity evidence",
+          "Affected asset scope",
+          "Business service impact",
+          "Patch availability and feasibility",
+          "Human source review event"
+        ],
+        "warning": "Source and agent outputs remain source-bound until reviewed. Rejected evidence cannot support positive gates.",
+        "gap_details": [
+          {
+            "gap": "Reviewed vulnerability identity evidence",
+            "why_it_matters": "CAB and customer assurance need confidence that the CVE, affected product, affected versions, and source provenance are correct before remediation decisions are presented as evidence-led.",
+            "evidence_examples": [
+              "CISA KEV record",
+              "NVD/CVE record",
+              "vendor advisory",
+              "source review event"
+            ],
+            "plain_english_gap": "The finding identity has not yet been accepted by a named reviewer.",
+            "required_evidence": "Reviewed CISA/CVE/vendor advisory record confirming CVE, product, affected versions, and source provenance.",
+            "next_decision_gate": "Source identity review",
+            "suggested_owner_role": "Security lead or vulnerability manager"
+          },
+          {
+            "gap": "Affected asset scope",
+            "why_it_matters": "Without asset scope, the organisation cannot tell whether the public-source finding affects the customer estate or what operational risk a change would introduce.",
+            "evidence_examples": [
+              "CMDB asset record",
+              "hosting control panel inventory",
+              "scanner output",
+              "asset owner confirmation"
+            ],
+            "plain_english_gap": "Customer asset exposure is not confirmed.",
+            "required_evidence": "CMDB, hosting control panel inventory, scanner output, asset owner confirmation.",
+            "next_decision_gate": "Asset exposure confirmation",
+            "suggested_owner_role": "Asset owner or infrastructure lead"
+          },
+          {
+            "gap": "Business service impact",
+            "why_it_matters": "Severity alone does not tell the CAB which service, customer journey, SLA, or owner is affected.",
+            "evidence_examples": [
+              "service catalogue map",
+              "customer-facing flag",
+              "SLA/OLA record",
+              "service owner confirmation"
+            ],
+            "plain_english_gap": "Business service and customer impact are not confirmed.",
+            "required_evidence": "Service map, customer-facing flag, SLA/OLA impact, service owner.",
+            "next_decision_gate": "Business impact review",
+            "suggested_owner_role": "Service owner"
+          },
+          {
+            "gap": "Patch availability and feasibility",
+            "why_it_matters": "The decision cannot responsibly select patch, mitigation, deferral, or customer assurance until affected versions, testing, rollback, and applicability are understood.",
+            "evidence_examples": [
+              "vendor patch note",
+              "affected version mapping",
+              "test evidence",
+              "rollback plan"
+            ],
+            "plain_english_gap": "Patch availability and feasibility are not yet reviewed.",
+            "required_evidence": "Vendor patch note, affected version mapping, test evidence, rollback plan.",
+            "next_decision_gate": "Patch feasibility review",
+            "suggested_owner_role": "Change owner or platform engineer"
+          },
+          {
+            "gap": "Human source review event",
+            "why_it_matters": "Source-bound intelligence cannot become accepted positive evidence without a reviewer accepting or rejecting the source record.",
+            "evidence_examples": [
+              "source review event",
+              "reviewer name or role",
+              "accepted/rejected/superseded outcome",
+              "review notes"
+            ],
+            "plain_english_gap": "No named human source review event is recorded.",
+            "required_evidence": "Named reviewer decision accepting or rejecting source records.",
+            "next_decision_gate": "Human evidence review",
+            "suggested_owner_role": "Security lead or CAB reviewer"
+          }
+        ],
+        "usable_sources": [],
+        "pending_sources": [
+          "src-cisa-kev-CVE-2026-48172",
+          "src-first-epss-CVE-2026-48172-2026-05-26"
+        ],
+        "pending_review_count": 4,
+        "rejected_source_count": 0,
+        "accepted_positive_evidence_count": 0
+      },
+      "exposure": {
+        "ot_relevant": false,
+        "interpretation": [
+          "Affected asset and service scope is not fully mapped. PatchForge can recommend a posture, but closure should wait for reviewed scope evidence."
+        ],
+        "unmapped_scope": true,
+        "affected_assets": [],
+        "customer_facing": false,
+        "internet_exposed": false,
+        "affected_services": [],
+        "affected_asset_count": 0,
+        "affected_service_count": 0
+      },
+      "severity": "critical",
+      "component": "Not recorded",
+      "automation": {
+        "completed": [
+          "Normalised finding identity",
+          "Bound source provenance",
+          "Applied governance boundary",
+          "Correlated vendor/KEV advisory context",
+          "Attached exploit-probability signal",
+          "Generated Bayesian advisory snapshot",
+          "Recorded live source-feed refresh history"
+        ],
+        "available_actions": [
+          "Open Finding Detail",
+          "Review exploitability intelligence",
+          "Run or refresh Bayesian advisory",
+          "Download board/CAB DOCX or PDF report",
+          "Record reviewed evidence or status outcome"
+        ],
+        "remaining_human_decisions": [
+          "Review or attach missing evidence: Reviewed vulnerability identity evidence, Affected asset scope, Business service impact, Patch availability and feasibility, Human source review event.",
+          "Issue or withhold CAB/security/service-owner approval. PatchForge will not approve automatically."
+        ]
+      },
+      "generated_at": "2026-05-27T13:14:52.631Z",
+      "exploitability": {
+        "epss_score": 0.00014,
+        "ransomware_use": "Unknown",
+        "epss_percentile": 0.02696,
+        "known_exploited": true,
+        "safe_description": "Source-bound intelligence indicates this vulnerability is known to be exploited in the wild. EPSS gives a source-bound probability signal of 0% and percentile 3%. This informs prioritisation but does not prove exploitability in the tenant estate. CISA KEV indicates the vulnerability appears in a known exploited vulnerability source feed. EPSS provides a probability-style signal and may be lower. PatchForge treats these as prioritisation signals, not proof of tenant exposure. Customer exposure must be confirmed through asset and service evidence. Known exploited signal is present, but EPSS is low. This does not remove the need for scope confirmation. The safe governance question is whether exposure, service impact, patch feasibility, and compensating controls justify patch, mitigation, deferral, or risk acceptance.",
+        "prohibited_detail": "Exploit code, exploit payloads, and procedural exploitation steps are intentionally not provided.",
+        "kev_epss_interpretation": "CISA KEV indicates the vulnerability appears in a known exploited vulnerability source feed. EPSS provides a probability-style signal and may be lower. PatchForge treats these as prioritisation signals, not proof of tenant exposure. Customer exposure must be confirmed through asset and service evidence. Known exploited signal is present, but EPSS is low. This does not remove the need for scope confirmation.",
+        "active_exploitation_signal": true
+      },
+      "recommendation": {
+        "do_now": [
+          "Confirm customer exposure and patch applicability before selecting emergency change, patch, mitigation, or risk acceptance."
+        ],
+        "do_next": [
+          "Confirm vendor patch availability or record mitigation-only posture.",
+          "Attach affected asset scope evidence.",
+          "Attach business service impact evidence."
+        ],
+        "posture": "defer_pending_evidence",
+        "due_date": "2026-05-29",
+        "rationale": [
+          "A known-exploited public-source signal is present, but reviewed customer asset and service exposure are not confirmed."
+        ],
+        "confidence": "low",
+        "advisory_only": true,
+        "approval_notice": "Human approval remains required. PatchForge does not approve CAB decisions, risk acceptance, patch deployment, or closure autonomously.",
+        "display_posture": "urgent_scope_confirmation_required",
+        "customer_posture": "Urgent scope confirmation required - final remediation decision blocked pending evidence.",
+        "next_best_action": "Confirm customer exposure and patch applicability before selecting emergency change, patch, mitigation, or risk acceptance.",
+        "final_approval_issued": false,
+        "customer_posture_detail": "PatchForge has public-source vulnerability intelligence, but customer asset and service exposure are not yet confirmed. Known-exploited status increases urgency, but it does not prove tenant exposure or patch applicability."
+      },
+      "source_context": {
+        "source_count": 2,
+        "threat_signal_count": 1,
+        "reviewed_source_count": 0,
+        "vendor_advisory_count": 1,
+        "latest_source_feed_run_at": "2026-05-27T13:08:34.780Z"
+      },
+      "intelligence_id": "intel-CVE-2026-48172-20260527131452",
+      "decision_options": [
+        {
+          "risks": "Remediation assurance cannot be issued until customer exposure and patch applicability are reviewed.",
+          "reason": "Known-exploited public intelligence exists, but customer asset and service exposure are not confirmed.",
+          "posture": "urgent_scope_confirmation_required",
+          "benefits": "Turns an ambiguous queue item into a concrete evidence task without implying patch approval.",
+          "recommended": true,
+          "current_status": "recommended now",
+          "when_to_choose": "Use now when a known-exploited public-source record needs customer estate scope confirmed before a final remediation decision.",
+          "approval_needed": false,
+          "evidence_needed": [
+            "Affected asset scope",
+            "Business service impact",
+            "Human source review event"
+          ],
+          "required_approval": "Security lead or service owner confirms the affected scope.",
+          "required_evidence": [
+            "Reviewed asset scope",
+            "Reviewed service impact",
+            "Source identity review"
+          ]
+        },
+        {
+          "risks": "Higher change risk if test, rollback, or service-impact evidence is incomplete.",
+          "reason": "Emergency Change Required is blocked pending asset/service exposure and patch applicability.",
+          "posture": "emergency_change_required",
+          "benefits": "Fast accountable response with rollback and post-change validation gates preserved.",
+          "recommended": false,
+          "current_status": "blocked",
+          "when_to_choose": "Use when known exploitation and exposed/customer-facing impact make normal change cadence too slow.",
+          "approval_needed": true,
+          "evidence_needed": [
+            "Vulnerability identity",
+            "Affected scope",
+            "Patch availability",
+            "Rollback plan",
+            "Human approval"
+          ],
+          "required_approval": "CAB/security lead emergency approval.",
+          "required_evidence": [
+            "Reviewed affected scope",
+            "Patch applicability",
+            "Rollback plan",
+            "Customer/service impact",
+            "Human approval"
+          ]
+        },
+        {
+          "risks": "Delay remains accountable and should be tracked against SLA.",
+          "reason": "Patch Required is blocked pending patch availability, feasibility, and reviewed exposure scope.",
+          "posture": "patch_required",
+          "benefits": "Clear remediation direction while allowing scheduled change control.",
+          "recommended": false,
+          "current_status": "blocked",
+          "when_to_choose": "Use when patch is available and deferral risk is high but emergency criteria are not fully met.",
+          "approval_needed": true,
+          "evidence_needed": [
+            "Patch feasibility",
+            "Test evidence",
+            "Service owner review"
+          ],
+          "required_approval": "Change owner, service owner, and CAB/security approval.",
+          "required_evidence": [
+            "Vendor patch note",
+            "Affected version mapping",
+            "Test evidence",
+            "Rollback plan",
+            "Service owner review"
+          ]
+        },
+        {
+          "risks": "Controls can degrade or be bypassed; expiry and reassessment are required.",
+          "reason": "Mitigate Temporarily is available only if compensating-control evidence is attached and reviewed.",
+          "posture": "mitigate_temporarily",
+          "benefits": "Controls exposure while preserving evidence for later patch or acceptance.",
+          "recommended": false,
+          "current_status": "blocked",
+          "when_to_choose": "Use when patching is not immediately feasible, especially for OT, unsupported, or change-sensitive assets.",
+          "approval_needed": true,
+          "evidence_needed": [
+            "Compensating controls",
+            "Owner",
+            "Expiry",
+            "Residual risk"
+          ],
+          "required_approval": "Security lead and service owner approve temporary mitigation.",
+          "required_evidence": [
+            "Compensating control plan",
+            "Control owner",
+            "Monitoring evidence",
+            "Expiry or reassessment date"
+          ]
+        },
+        {
+          "risks": "Cannot be used to quietly park an exposed known-exploited condition.",
+          "reason": "Risk Accept Temporarily is blocked until risk owner, rationale, expiry, compensating controls, and accountable approval exist.",
+          "posture": "risk_accept_temporarily",
+          "benefits": "Makes deferral explicit, time-bounded, and auditable.",
+          "recommended": false,
+          "current_status": "blocked",
+          "when_to_choose": "Use only when an accountable risk owner accepts residual risk with rationale and expiry.",
+          "approval_needed": true,
+          "evidence_needed": [
+            "Risk owner",
+            "Rationale",
+            "Expiry",
+            "Compensating controls"
+          ],
+          "required_approval": "Named accountable risk owner approval.",
+          "required_evidence": [
+            "Risk owner",
+            "Rationale",
+            "Expiry",
+            "Compensating controls",
+            "Residual risk statement"
+          ]
+        },
+        {
+          "risks": "Deferral can become unmanaged if no owner or SLA is set.",
+          "reason": "Plain deferral is too passive for a known-exploited finding; use urgent scope confirmation as the active evidence posture.",
+          "posture": "defer_pending_evidence",
+          "benefits": "Avoids false certainty and drives evidence completion.",
+          "recommended": true,
+          "current_status": "not recommended",
+          "when_to_choose": "Use when source, scope, or feasibility evidence is incomplete.",
+          "approval_needed": false,
+          "evidence_needed": [
+            "Reviewed vulnerability identity evidence",
+            "Affected asset scope",
+            "Business service impact",
+            "Patch availability and feasibility",
+            "Human source review event"
+          ],
+          "required_approval": "Evidence owner confirms blocker resolution before approval is requested.",
+          "required_evidence": [
+            "Reviewed vulnerability identity evidence",
+            "Affected asset scope",
+            "Business service impact",
+            "Patch availability and feasibility",
+            "Human source review event"
+          ]
+        }
+      ],
+      "vulnerability_id": "CVE-2026-48172",
+      "latest_signed_pack": {
+        "pack_id": "PF-20260527-934d6e60",
+        "verified": true,
+        "readiness_state": "blocked",
+        "decision_posture": "defer_pending_evidence",
+        "final_approval_issued": false
+      }
+    },
+    "config_applicability_assessment.json": {
+      "cve": "CVE-2026-VENDORLENS-LIVE-001",
+      "model": "FortiGate 100F",
+      "asset_id": "net-asset-dd162874-c76a-4a7a-8b54-5f8dbbc614e9",
+      "boundary": {
+        "no_scanner": true,
+        "no_patch_deployment": true,
+        "no_autonomous_approval": true,
+        "no_production_mutation": true,
+        "no_autonomous_risk_acceptance": true,
+        "no_procedural_exploitation_steps": true
+      },
+      "actor_oid": "2d2f273d-a815-4a19-a258-c48c858252f3",
+      "actor_upn": "n.bailey@diiac.io",
+      "tenant_id": "diiac.io",
+      "vendor_id": "fortinet",
+      "actor_roles": [
+        "PatchForge.Admin"
+      ],
+      "advisory_id": "fortinet-CVE-2026-VENDORLENS-LIVE-001",
+      "generated_at": "2026-05-27T13:12:59.990Z",
+      "source_bound": true,
+      "advisory_only": true,
+      "assessment_id": "cfg-app-1779887579990",
+      "evidence_gaps": [
+        {
+          "gap_id": "feature_disabled_review",
+          "why_it_matters": "PatchForge cannot support an accountable customer/CAB decision without reviewed evidence for this point.",
+          "plain_english_gap": "ssl vpn is recorded as disabled, but that configuration evidence is not reviewed.",
+          "required_evidence": "Reviewed configuration export, change record, service owner attestation, or device configuration evidence.",
+          "next_decision_gate": "Configuration applicability review",
+          "suggested_owner_role": "Network engineering lead"
+        },
+        {
+          "gap_id": "advisory_source_review",
+          "why_it_matters": "PatchForge cannot support an accountable customer/CAB decision without reviewed evidence for this point.",
+          "plain_english_gap": "The vendor/CVE source record has not been accepted as positive evidence.",
+          "required_evidence": "Named reviewer event accepting the source record, affected versions, affected feature, and source provenance.",
+          "next_decision_gate": "Source review",
+          "suggested_owner_role": "Security lead"
+        }
+      ],
+      "evidence_used": [
+        {
+          "ref": "fortinet-CVE-2026-VENDORLENS-LIVE-001",
+          "review_state": "pending_review",
+          "evidence_type": "vendor_advisory"
+        },
+        {
+          "ref": "net-asset-dd162874-c76a-4a7a-8b54-5f8dbbc614e9",
+          "review_state": "pending_review",
+          "evidence_type": "customer_network_asset"
+        },
+        {
+          "ref": "asset-owner-attestation-pending",
+          "review_state": "pending_review",
+          "evidence_type": "configuration_evidence"
+        }
+      ],
+      "product_family": "FortiGate",
+      "actor_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+      "exposure_status": "internet_or_management_exposed",
+      "urgency_posture": "urgent_scope_confirmation_required",
+      "affected_feature": "ssl_vpn",
+      "firmware_version": "7.2.7",
+      "tenant_id_source": "token_mapping",
+      "evidence_required": [
+        "reviewed_feature_configuration",
+        "reviewed_vendor_advisory"
+      ],
+      "effective_tenant_id": "diiac.io",
+      "requested_tenant_id": "diiac.io",
+      "applicability_posture": "requires_review",
+      "final_approval_issued": false,
+      "human_review_required": true,
+      "feature_enabled_status": "disabled_unreviewed",
+      "affected_feature_status": "disabled_unreviewed",
+      "affected_version_status": "affected",
+      "tenant_override_ignored": false,
+      "decision_not_allowed_yet": "Final remediation, risk acceptance, closure, and not-applicable decisions cannot be issued until the evidence gaps are resolved and a human reviewer approves the outcome.",
+      "can_close_hard_gates_alone": false
+    },
+    "customer_network_asset_snapshot.json": {
+      "site": "Customer perimeter",
+      "model": "FortiGate 100F",
+      "asset_id": "net-asset-dd162874-c76a-4a7a-8b54-5f8dbbc614e9",
+      "actor_oid": "2d2f273d-a815-4a19-a258-c48c858252f3",
+      "actor_upn": "n.bailey@diiac.io",
+      "tenant_id": "diiac.io",
+      "vendor_id": "fortinet",
+      "created_at": "2026-05-27T13:11:53.282Z",
+      "updated_at": "2026-05-27T13:11:53.282Z",
+      "actor_roles": [
+        "PatchForge.Admin"
+      ],
+      "environment": "production",
+      "review_state": "pending_review",
+      "source_state": "source_bound",
+      "not_in_estate": false,
+      "service_owner": "Network operations",
+      "evidence_state": "referenced",
+      "product_family": "FortiGate",
+      "actor_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+      "internet_facing": true,
+      "enabled_features": [
+        "ipsec_vpn",
+        "bgp_edge"
+      ],
+      "firmware_version": "7.2.7",
+      "tenant_id_source": "token_mapping",
+      "disabled_features": [
+        "ssl_vpn",
+        "web_management"
+      ],
+      "effective_tenant_id": "diiac.io",
+      "management_exposure": "internal",
+      "requested_tenant_id": "diiac.io",
+      "serial_or_asset_ref": null,
+      "config_evidence_refs": [
+        "asset-owner-attestation-pending"
+      ],
+      "tenant_override_ignored": false
+    },
+    "network_vendor_profile_snapshot.json": {
+      "enabled": true,
+      "tenant_id": "diiac.io",
+      "vendor_id": "fortinet",
+      "vendor_name": "Fortinet",
+      "source_bound": true,
+      "last_refresh_at": null,
+      "review_required": true,
+      "vendor_category": "infrastructure_networking",
+      "product_families": [
+        "FortiGate",
+        "FortiOS",
+        "FortiProxy",
+        "FortiManager"
+      ],
+      "advisory_source_url": "https://www.fortiguard.com/psirt",
+      "source_review_state": "reference_catalogue",
+      "advisory_source_type": "public_vendor_advisory",
+      "can_close_hard_gates_alone": false
+    },
+    "vendor_security_advisory_snapshot.json": {
+      "cve": "CVE-2026-VENDORLENS-LIVE-001",
+      "cves": [
+        "CVE-2026-VENDORLENS-LIVE-001"
+      ],
+      "title": "VendorLens live validation advisory for FortiGate SSL-VPN applicability",
+      "summary": "",
+      "severity": "critical",
+      "actor_oid": "2d2f273d-a815-4a19-a258-c48c858252f3",
+      "actor_upn": "n.bailey@diiac.io",
+      "tenant_id": "diiac.io",
+      "vendor_id": "fortinet",
+      "created_at": "2026-05-27T13:12:45.104Z",
+      "epss_score": null,
+      "source_url": "https://www.fortiguard.com/psirt",
+      "superseded": false,
+      "actor_roles": [
+        "PatchForge.Admin"
+      ],
+      "advisory_id": "fortinet-CVE-2026-VENDORLENS-LIVE-001",
+      "source_hash": "30eb946d99983270cc1164a10c3b54ec694d0e38c98d98fe2cafffc00de9c19b",
+      "vendor_name": "Fortinet",
+      "retrieved_at": "2026-05-27T13:12:45.104Z",
+      "review_state": "pending_review",
+      "source_class": "vendor_advisory",
+      "source_state": "source_bound",
+      "advisory_only": true,
+      "superseded_by": null,
+      "evidence_state": "referenced",
+      "fixed_versions": [
+        "7.2.8"
+      ],
+      "product_family": "FortiGate",
+      "actor_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+      "affected_models": [],
+      "known_exploited": true,
+      "patch_available": true,
+      "tenant_id_source": "token_mapping",
+      "affected_features": [
+        "ssl_vpn"
+      ],
+      "affected_products": [
+        "FortiGate"
+      ],
+      "affected_versions": [
+        "7.2.7"
+      ],
+      "workaround_status": "unverified",
+      "effective_tenant_id": "diiac.io",
+      "requested_tenant_id": "diiac.io",
+      "final_approval_issued": false,
+      "tenant_override_ignored": false,
+      "can_close_hard_gates_alone": false
+    },
+    "vulnerability_intelligence_snapshot.json": {
+      "tags": [
+        "live_source_feed",
+        "cisa_kev",
+        "litespeed",
+        "cpanel-plugin"
+      ],
+      "title": "LiteSpeed cPanel Plugin Privilege Escalation Vulnerability",
+      "sources": [
+        {
+          "actor_oid": "patchforge-scheduler",
+          "actor_upn": "patchforge-scheduler@diiac.io",
+          "tenant_id": "diiac.io",
+          "source_url": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+          "actor_roles": [
+            "PatchForge.SystemScheduler"
+          ],
+          "ingested_at": "2026-05-27T13:08:34.261Z",
+          "reviewed_at": null,
+          "reviewed_by": null,
+          "source_name": "CISA Known Exploited Vulnerabilities Catalog",
+          "payload_hash": "65e9aedaf9a05c82bacbefab1b42a79273ec8d749a4799cf85951325b5a6050f",
+          "review_state": "pending_review",
+          "source_class": "kev_record",
+          "evidence_state": "referenced",
+          "actor_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+          "source_record_id": "src-cisa-kev-CVE-2026-48172",
+          "tenant_id_source": "scheduler_config",
+          "vulnerability_id": "CVE-2026-48172",
+          "effective_tenant_id": "diiac.io",
+          "requested_tenant_id": "diiac.io",
+          "tenant_override_ignored": false
+        },
+        {
+          "actor_oid": "patchforge-scheduler",
+          "actor_upn": "patchforge-scheduler@diiac.io",
+          "tenant_id": "diiac.io",
+          "source_url": "https://api.first.org/data/v1/epss?cve=CVE-2026-48172",
+          "actor_roles": [
+            "PatchForge.SystemScheduler"
+          ],
+          "ingested_at": "2026-05-27T13:08:34.623Z",
+          "reviewed_at": null,
+          "reviewed_by": null,
+          "source_name": "FIRST Exploit Prediction Scoring System",
+          "payload_hash": "47307921fdf85ab7ec3828fc2e99113d0277b93f71fb0e171b553559734ff7d1",
+          "review_state": "pending_review",
+          "source_class": "epss_signal",
+          "evidence_state": "referenced",
+          "actor_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+          "source_record_id": "src-first-epss-CVE-2026-48172-2026-05-26",
+          "tenant_id_source": "scheduler_config",
+          "vulnerability_id": "CVE-2026-48172",
+          "effective_tenant_id": "diiac.io",
+          "requested_tenant_id": "diiac.io",
+          "tenant_override_ignored": false
+        }
+      ],
+      "severity": "critical",
+      "actor_oid": "patchforge-scheduler",
+      "actor_upn": "patchforge-scheduler@diiac.io",
+      "tenant_id": "diiac.io",
+      "created_at": "2026-05-27T13:08:34.261Z",
+      "cvss_score": null,
+      "sla_due_at": "2026-05-29",
+      "updated_at": null,
+      "actor_roles": [
+        "PatchForge.SystemScheduler"
+      ],
+      "description": "LiteSpeed cPanel Plugin contains privilege escalation vulnerability that is exposed via the user-end cPanel plugin, which can be abused by any cPanel user account to execute arbitrary scripts with root privileges.",
+      "ot_relevant": false,
+      "canonical_id": "CVE-2026-48172",
+      "patch_status": "unknown",
+      "review_state": "pending_review",
+      "source_state": "source_bound",
+      "actor_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+      "known_exploited": true,
+      "internet_exposed": false,
+      "tenant_id_source": "scheduler_config",
+      "vulnerability_id": "CVE-2026-48172",
+      "source_record_ids": [
+        "src-cisa-kev-CVE-2026-48172"
+      ],
+      "affected_asset_ids": [],
+      "effective_tenant_id": "diiac.io",
+      "requested_tenant_id": "diiac.io",
+      "affected_service_ids": [],
+      "tenant_override_ignored": false,
+      "usable_evidence_sources": []
+    }
+  },
+  "boundary": {
+    "no_scanner": true,
+    "no_exploit_generation": true,
+    "no_patch_deployment": true,
+    "no_production_mutation": true,
+    "no_autonomous_approval": true
+  }
+}

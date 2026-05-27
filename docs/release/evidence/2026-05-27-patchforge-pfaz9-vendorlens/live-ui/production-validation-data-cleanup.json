@@ -1,0 +1,42 @@
+{
+  "timestamp": "2026-05-27T13:28:43.365Z",
+  "cleanup": "pfaz9_vendorlens_live_validation_records_removed",
+  "tenant": "diiac.io",
+  "asset_id": "net-asset-dd162874-c76a-4a7a-8b54-5f8dbbc614e9",
+  "advisory_id": "fortinet-CVE-2026-VENDORLENS-LIVE-001",
+  "cve": "CVE-2026-VENDORLENS-LIVE-001",
+  "pack_id": "PF-20260527-2d9f160a",
+  "retained_evidence": "Downloaded pack/report/screenshots retained under docs/release/evidence/2026-05-27-patchforge-pfaz9-vendorlens/live-ui/",
+  "matched_before": [
+    {
+      "collection": "audit_events",
+      "count": 3
+    },
+    {
+      "collection": "config_applicability_assessments",
+      "count": 1
+    },
+    {
+      "collection": "customer_network_assets",
+      "count": 1
+    },
+    {
+      "collection": "decision_packs",
+      "count": 1
+    },
+    {
+      "collection": "vendorlens_chat_messages",
+      "count": 1
+    },
+    {
+      "collection": "vendorlens_chat_sessions",
+      "count": 1
+    },
+    {
+      "collection": "vendor_security_advisories",
+      "count": 1
+    }
+  ],
+  "matched_after": [],
+  "verification_absent": true
+}

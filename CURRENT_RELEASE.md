@@ -2,11 +2,19 @@
 
 ## DIIaC PatchForge PF-AZ9 VendorLens
 
-Release state: local validation passed; Azure rollout and live UI validation pending for this VendorLens increment.
+Release state: deployed to Azure and live validated through the production UI/API as a signed-in PatchForge Admin user.
 
 Date: 2026-05-27
 
 PF-AZ9 VendorLens adds Network Vendor Intelligence and a Config-Aware Patch Advisor to PatchForge. It helps users review major network/security vendors, source-bound vendor advisories/CVEs, customer product/model/version exposure, configuration applicability, and SRA/AIP guided questions such as whether a vulnerable feature is enabled, whether urgent scope confirmation is required, and what evidence is needed to support not-applicable status.
+
+PF-AZ9 VendorLens image tag:
+
+- `pfaz9-20260527-e8a0de2`
+
+PF-AZ9 VendorLens commit:
+
+- `e8a0de2`
 
 PF-AZ9 VendorLens local validation:
 
@@ -17,6 +25,38 @@ PF-AZ9 VendorLens local validation:
 - Docker frontend, bridge/API, and runtime build smoke: PASS
 - DOCX/PDF VendorLens report generation and structural wording checks: PASS
 - DOCX visual rendering: not available locally because LibreOffice/soffice is not installed or available on PATH
+
+PF-AZ9 VendorLens Azure rollout:
+
+- GitHub push: PASS, commit `e8a0de2`
+- ACR build/push: PASS for frontend, bridge/API, runtime, SRA, worker, and scheduler images
+- Targeted image-only Container Apps update: PASS
+- Active revisions:
+  - UI: `ca-patchforge-ui-prod--0000013`
+  - Bridge/API: `ca-patchforge-bridge-prod--0000012`
+  - Runtime: `ca-patchforge-runtime-prod--0000011`
+  - SRA: `ca-patchforge-sra-prod--0000010`
+  - Worker: `ca-patchforge-worker-prod--0000010`
+  - Scheduler: `ca-patchforge-scheduler-prod--0000010`
+
+PF-AZ9 VendorLens live validation:
+
+- UI HTTP 200: PASS
+- API health HTTP 200: PASS
+- API readiness HTTP 200 with `storage=postgresql`, `auth_required=true`, and `tenant_required=true`: PASS
+- Protected VendorLens route unauthenticated HTTP 401: PASS
+- Browser/MSAL sign-in as `n.bailey@diiac.io`: PASS
+- Displayed role `PatchForge.Admin`: PASS
+- VendorLens catalogue loaded: PASS, 17 vendors
+- Customer network asset workflow: PASS
+- Source-bound vendor advisory ingest workflow: PASS
+- Config applicability assessment: PASS, `requires_review` with `urgent_scope_confirmation_required`
+- Ask PatchForge config-aware chat: PASS, advisory-only with final approval false
+- Signed pack generated and verified: PASS, `PF-20260527-2d9f160a`
+- Key Vault signing: PASS, `azure_key_vault`, `pf-pack-signing-prod`
+- PostgreSQL readiness and live write path: PASS
+- Board DOCX/PDF report export with VendorLens sections: PASS
+- Validation records removed from production PostgreSQL after evidence capture: PASS
 
 PF-AZ9 VendorLens evidence path:
 

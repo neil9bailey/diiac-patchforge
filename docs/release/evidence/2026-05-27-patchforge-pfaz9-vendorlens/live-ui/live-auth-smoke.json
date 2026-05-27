@@ -1,0 +1,8 @@
+{
+    "timestamp":  "2026-05-27T13:22:02.1506541Z",
+    "unauthenticated_protected_route_status":  401,
+    "signed_in_user":  "n.bailey@diiac.io",
+    "displayed_role":  "PatchForge.Admin",
+    "auth_result":  "PASS",
+    "notes":  "Browser/MSAL validation showed n.bailey@diiac.io signed in with PatchForge.Admin role. Unauthenticated VendorLens route returned HTTP 401 with required PatchForge roles listed."
+}

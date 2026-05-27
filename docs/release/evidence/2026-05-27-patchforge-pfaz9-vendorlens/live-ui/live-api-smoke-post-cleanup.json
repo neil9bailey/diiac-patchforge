@@ -1,0 +1,8 @@
+{
+    "timestamp":  "2026-05-27T13:33:19.3117244Z",
+    "ui_http_200":  true,
+    "readiness_http_200":  true,
+    "readiness_postgresql":  true,
+    "readiness_auth_required":  true,
+    "protected_route_401":  true
+}

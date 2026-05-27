@@ -8,17 +8,17 @@ DIIaC™ PatchForge
 
 | Document | Owner | Status | Version | Date |
 | --- | --- | --- | --- | --- |
-| README.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
-| CURRENT_RELEASE.md | DIIaC | Active | 1.3.0 | 2026-05-27 |
-| RELEASE_BASELINE_MANIFEST.json | DIIaC | Active | 1.3.0 | 2026-05-27 |
-| QUALITY_GATES_REPORT.json | DIIaC | Active | 0.8.0 | 2026-05-27 |
-| VALIDATION_OUTPUTS.md | DIIaC | Active | 0.8.0 | 2026-05-27 |
-| PATCHFORGE_OPEN_GAPS_REGISTER.md | DIIaC | Active | 0.7.0 | 2026-05-27 |
+| README.md | DIIaC | Active | 0.2.0 | 2026-05-27 |
+| CURRENT_RELEASE.md | DIIaC | Active | 1.4.0 | 2026-05-27 |
+| RELEASE_BASELINE_MANIFEST.json | DIIaC | Active | 1.4.0 | 2026-05-27 |
+| QUALITY_GATES_REPORT.json | DIIaC | Active | 0.9.0 | 2026-05-27 |
+| VALIDATION_OUTPUTS.md | DIIaC | Active | 0.9.0 | 2026-05-27 |
+| PATCHFORGE_OPEN_GAPS_REGISTER.md | DIIaC | Active | 0.8.0 | 2026-05-27 |
 | docs/features/VENDORLENS_NETWORK_VENDOR_INTELLIGENCE.md | DIIaC | Active | 0.1.0 | 2026-05-27 |
 | docs/product/VENDORLENS_PRODUCT_BOUNDARY.md | DIIaC | Active | 0.1.0 | 2026-05-27 |
 | docs/operations/VENDORLENS_OPERATOR_GUIDE.md | DIIaC | Active | 0.1.0 | 2026-05-27 |
-| docs/release/PF_AZ9_VENDORLENS_RELEASE_BASELINE_MANIFEST.json | DIIaC | Active | 0.1.0 | 2026-05-27 |
-| docs/release/PF_AZ9_VENDORLENS_PRODUCTION_READINESS_SUMMARY.md | DIIaC | Active | 0.1.0 | 2026-05-27 |
+| docs/release/PF_AZ9_VENDORLENS_RELEASE_BASELINE_MANIFEST.json | DIIaC | Active | 0.2.0 | 2026-05-27 |
+| docs/release/PF_AZ9_VENDORLENS_PRODUCTION_READINESS_SUMMARY.md | DIIaC | Active | 0.2.0 | 2026-05-27 |
 | CODEX_WORKING_MEMORY.md | DIIaC | Active | 0.5.0 | 2026-05-26 |
 | docs/product/PATCHFORGE_MASTER_WORKING_BRIEF.md | DIIaC | Active | 0.1.0 | 2026-05-26 |
 | docs/product/PATCHFORGE_PRODUCT_POSITIONING.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |

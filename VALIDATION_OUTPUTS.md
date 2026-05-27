@@ -4,7 +4,7 @@
 
 Date: 2026-05-27
 
-Status: LOCAL PASS. Azure deployment and live UI validation are pending.
+Status: PASS. PF-AZ9 VendorLens is deployed to Azure and validated through the live UI/API as a signed-in PatchForge Admin user.
 
 Scope:
 
@@ -43,6 +43,47 @@ Document quality gate:
 - QA evidence: `docs/release/evidence/2026-05-27-patchforge-pfaz9-vendorlens/local-reports/`
 
 Important boundary note: PF-AZ9 VendorLens does not add scanning, exploit generation, procedural exploit steps, patch deployment, production mutation from the UI, autonomous CAB approval, or autonomous risk acceptance.
+
+Azure rollout:
+
+- GitHub push: PASS, commit `e8a0de2`
+- Image tag: `pfaz9-20260527-e8a0de2`
+- ACR image push: PASS for frontend, bridge/API, runtime, SRA, worker, and scheduler
+- ACR tag verification: PASS for all six repositories
+- Bicep what-if: captured; not applied because it included broader drift/noise than the image rollout required
+- Targeted image-only Container Apps update: PASS
+- Active revisions:
+  - UI: `ca-patchforge-ui-prod--0000013`
+  - Bridge/API: `ca-patchforge-bridge-prod--0000012`
+  - Runtime: `ca-patchforge-runtime-prod--0000011`
+  - SRA: `ca-patchforge-sra-prod--0000010`
+  - Worker: `ca-patchforge-worker-prod--0000010`
+  - Scheduler: `ca-patchforge-scheduler-prod--0000010`
+
+Live validation:
+
+- UI HTTP 200: PASS
+- API health HTTP 200: PASS
+- API readiness HTTP 200 with `storage=postgresql`, `auth_required=true`, and `tenant_required=true`: PASS
+- Protected VendorLens route unauthenticated HTTP 401: PASS
+- Browser/MSAL sign-in as `n.bailey@diiac.io`: PASS
+- Displayed role `PatchForge.Admin`: PASS
+- VendorLens catalogue loaded: PASS, 17 tracked vendors
+- Customer network asset create workflow: PASS
+- Source-bound vendor advisory ingest workflow: PASS
+- Config applicability assessment: PASS, `requires_review` with `urgent_scope_confirmation_required`
+- Ask PatchForge chat: PASS, advisory-only with short answer, governed posture, evidence used, evidence missing, and final approval false
+- Signed pack generated: `PF-20260527-2d9f160a`
+- Pack verification: PASS, `verified=true`, `manifest_ok=true`, `signature_ok=true`
+- Key Vault signing smoke: PASS, `azure_key_vault`, `pf-pack-signing-prod`
+- PostgreSQL readiness and live write path: PASS
+- Board DOCX/PDF report export: PASS
+- DOCX structural QA for VendorLens report sections and final-approval boundary: PASS
+- PF-AZ9 live validation records removed from production PostgreSQL after evidence capture: PASS
+
+PF-AZ9 VendorLens evidence path:
+
+`docs/release/evidence/2026-05-27-patchforge-pfaz9-vendorlens/`
 
 # PF-AZ8A Validation Outputs
 

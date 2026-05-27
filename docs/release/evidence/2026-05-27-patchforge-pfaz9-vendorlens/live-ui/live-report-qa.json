@@ -1,0 +1,13 @@
+{
+    "timestamp":  "2026-05-27T13:22:02.3555957Z",
+    "report":  "docs\\release\\evidence\\2026-05-27-patchforge-pfaz9-vendorlens\\live-ui\\exports\\PF-20260527-2d9f160a-board-vulnerability-remediation-summary.docx",
+    "pdf":  "docs\\release\\evidence\\2026-05-27-patchforge-pfaz9-vendorlens\\live-ui\\exports\\PF-20260527-2d9f160a-board-vulnerability-remediation-summary.pdf",
+    "network_vendor_applicability_section":  true,
+    "customer_configuration_context_section":  true,
+    "sra_aip_chat_summary_section":  true,
+    "final_approval_not_issued":  true,
+    "exploit_boundary_present":  true,
+    "no_not_vulnerable_claim":  true,
+    "docx_bytes":  143638,
+    "pdf_bytes":  76329
+}

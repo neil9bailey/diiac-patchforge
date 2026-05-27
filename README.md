@@ -37,7 +37,7 @@ PatchForge does not scan environments, exploit vulnerabilities, deploy patches, 
 
 ## Current Product Scope
 
-This repository now contains the PF-AZ8 production-demo product line for PatchForge:
+This repository now contains the PF-AZ9 VendorLens production-demo product line for PatchForge:
 
 - product identity
 - product boundary
@@ -50,6 +50,9 @@ This repository now contains the PF-AZ8 production-demo product line for PatchFo
 - Microsoft Entra sign-in and token-backed frontend API use
 - Bayesian patch-risk advisory inference
 - vendor and threat landscape intelligence
+- VendorLens network vendor intelligence and config-aware patch advisor
+- customer network asset, model, firmware, feature, and exposure evidence records
+- Ask PatchForge config-aware SRA/AIP advisory chat
 - source-bound SRA and agent finding intake
 - guided Action Center, Finding Detail, Review & Approve, and Reports & Packs workflow
 - human-readable finding intelligence API

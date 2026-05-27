@@ -2,7 +2,7 @@
 
 Date: 2026-05-27
 
-Status: LOCAL VALIDATED, AZURE DEPLOYMENT PENDING.
+Status: DEPLOYED TO AZURE AND LIVE VALIDATED.
 
 PF-AZ9 VendorLens adds a dedicated Network Vendor Intelligence and Config-Aware Patch Advisor to PatchForge. It is designed to help users understand whether public vendor/CVE intelligence applies to their actual customer estate, product model, firmware version, enabled features, exposure posture, and reviewed evidence.
 
@@ -30,7 +30,7 @@ PF-AZ9 VendorLens adds a dedicated Network Vendor Intelligence and Config-Aware 
 - Local DOCX/PDF report generation: PASS
 - Local DOCX structural wording checks: PASS
 
-DOCX-to-PNG visual rendering could not be completed locally because LibreOffice/soffice is unavailable on PATH. Live exported report files will be checked again after Azure deployment.
+DOCX-to-PNG visual rendering could not be completed locally because LibreOffice/soffice is unavailable on PATH. The live exported board report passed DOCX structural QA for VendorLens sections, final-approval wording, and boundary wording after Azure deployment.
 
 ## Boundary
 
@@ -38,4 +38,29 @@ VendorLens is source-bound advisory intelligence. It does not verify customer co
 
 ## Azure State
 
-Azure deployment has not yet been performed for this VendorLens increment. The next gate is GitHub push, image build/push, Container Apps update, and live browser/MSAL validation at `https://patchforge.diiac.io`.
+PF-AZ9 VendorLens is deployed to Azure Container Apps using image tag `pfaz9-20260527-e8a0de2` from commit `e8a0de2`.
+
+Active revisions:
+
+- UI: `ca-patchforge-ui-prod--0000013`
+- Bridge/API: `ca-patchforge-bridge-prod--0000012`
+- Runtime: `ca-patchforge-runtime-prod--0000011`
+- SRA: `ca-patchforge-sra-prod--0000010`
+- Worker: `ca-patchforge-worker-prod--0000010`
+- Scheduler: `ca-patchforge-scheduler-prod--0000010`
+
+Live validation:
+
+- UI HTTP 200: PASS
+- API readiness HTTP 200 with PostgreSQL storage and auth required: PASS
+- Protected VendorLens route unauthenticated HTTP 401: PASS
+- Browser/MSAL sign-in as `n.bailey@diiac.io`: PASS
+- Displayed role `PatchForge.Admin`: PASS
+- VendorLens catalogue loaded: PASS
+- Customer network asset, source-bound advisory, config applicability, and Ask PatchForge workflow: PASS
+- Signed pack verification: PASS, `PF-20260527-2d9f160a`
+- Key Vault signing: PASS, `azure_key_vault`
+- PostgreSQL live write path: PASS
+- Board DOCX/PDF report export with VendorLens sections: PASS
+
+The validation asset, advisory, assessment, chat, decision pack, and linked audit records were removed from production PostgreSQL after evidence capture so no PF-AZ9 synthetic validation data remains in the live product. Evidence is retained under `docs/release/evidence/2026-05-27-patchforge-pfaz9-vendorlens/`.
