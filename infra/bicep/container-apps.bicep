@@ -106,6 +106,18 @@ var commonEnv = [
     name: 'PATCHFORGE_ALLOWED_ORIGINS'
     value: allowedOrigins
   }
+  {
+    name: 'PATCHFORGE_SCHEDULER_INTERVAL_MS'
+    value: '21600000'
+  }
+  {
+    name: 'PATCHFORGE_SCHEDULER_CISA_LIMIT'
+    value: '10'
+  }
+  {
+    name: 'PATCHFORGE_SCHEDULER_EPSS_LIMIT'
+    value: '10'
+  }
 ]
 
 var appDefinitions = [
@@ -199,7 +211,7 @@ var appDefinitions = [
     targetPort: 8080
     cpu: json('0.25')
     memory: '0.5Gi'
-    minReplicas: 0
+    minReplicas: 1
     maxReplicas: 1
     role: 'scheduler'
     customDomain: ''

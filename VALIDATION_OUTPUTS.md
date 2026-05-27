@@ -1,4 +1,56 @@
-# PF-AZ6 Validation Outputs
+# PF-AZ6 / PF-AZ7 Validation Outputs
+
+## PF-AZ7 Local Candidate Validation
+
+Date: 2026-05-27
+
+PF-AZ7 is locally validated and pending GitHub push, Azure image rollout, live API smoke, signed-in browser validation, and live DOCX/PDF download visual QA.
+
+Scope:
+
+- Professional DOCX and PDF board-pack generation from signed decision packs.
+- Protected report catalogue and report download APIs.
+- UI Reports page and Decision Pack DOCX/PDF export actions.
+- Scheduler mode for recurring live CISA KEV and FIRST EPSS refresh.
+- Scheduler source lineage, advisory-only controls, and no scanner/no deployment boundaries.
+
+Local validation:
+
+- `node --check backend-api/server.js`: PASS
+- `node --check backend-api/auth.js`: PASS
+- `node --check backend-api/patchforge/reports.js`: PASS
+- `node --check backend-api/patchforge/scheduler.js`: PASS
+- `node --check backend-api/sra/securityResearchAgent.js`: PASS
+- `node --test backend-api/patchforge-api.test.mjs`: PASS, 20 tests
+- `npm --prefix backend-api test`: PASS, 24 tests
+- `npm test`: PASS, 24 backend/SRA tests
+- `python -m pytest -q --basetemp .pytest_tmp`: PASS, 25 tests
+- `npm --prefix Frontend test`: PASS, 13 tests
+- `npm --prefix Frontend run build`: PASS
+- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate_iac.ps1`: PASS
+- `az bicep build --file infra/bicep/main.bicep`: PASS
+- `docker build -f Frontend/Dockerfile -t diiac/patchforge-frontend:pfaz7-local Frontend`: PASS
+- `docker build -f backend-api/Dockerfile -t diiac/patchforge-bridge:pfaz7-local backend-api`: PASS
+- `docker build -f runtime/Dockerfile -t diiac/patchforge-runtime:pfaz7-local .`: PASS
+
+Document quality gate:
+
+- Local DOCX board pack generated from real public-source CVE context: PASS
+- Local PDF board pack generated from the same signed-pack context: PASS
+- Microsoft Word-rendered DOCX pages inspected as PNGs: PASS
+- No clipping, overlap, broken tables, missing text, or unreadable wrapping observed.
+- QA evidence: `docs/release/evidence/2026-05-27-patchforge-pfaz7-operational-demo/doc-qa/docx-pdf-visual-qa.json`
+
+Azure rollout status:
+
+- GitHub push: pending
+- Image tag: pending
+- Azure update: pending
+- Live API smoke: pending
+- Live browser/MSAL validation: pending
+- Live DOCX/PDF report download and visual QA: pending
+
+Important boundary note: PF-AZ7 does not add scanning, exploit generation, procedural exploit steps, patch deployment, production mutation from the UI, autonomous CAB approval, or autonomous risk acceptance.
 
 Date: 2026-05-26
 

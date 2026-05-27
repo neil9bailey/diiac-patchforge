@@ -9,7 +9,9 @@ import {
   ClipboardCheck,
   Clock3,
   Database,
+  Download,
   FileCheck2,
+  FileText,
   Gauge,
   KeyRound,
   Layers3,
@@ -35,6 +37,7 @@ import {
   DecisionPackRecord,
   PatchForgeApi,
   PatchForgeMetrics,
+  ReportCatalogItem,
   ServiceRecord,
   SourceFeedState,
   ThreatLandscapeSummary,
@@ -57,6 +60,7 @@ type PageKey =
   | "SRA Research"
   | "Evidence Catalogue"
   | "Decision Packs"
+  | "Reports"
   | "Source Feeds"
   | "Vendor & Threat Landscape"
   | "Admin";
@@ -78,6 +82,7 @@ type LiveState = {
   assets: AssetRecord[];
   services: ServiceRecord[];
   decisionPacks: DecisionPackRecord[];
+  reports: ReportCatalogItem[];
   bayesian: BayesianAssessment | null;
   threatSummary: ThreatLandscapeSummary | null;
   vendors: VendorProfile[];
@@ -101,6 +106,7 @@ const navItems: NavItem[] = [
   { label: "SRA Research", icon: Radar },
   { label: "Evidence Catalogue", icon: Archive },
   { label: "Decision Packs", icon: FileCheck2 },
+  { label: "Reports", icon: FileText },
   { label: "Source Feeds", icon: RefreshCw },
   { label: "Vendor & Threat Landscape", icon: Layers3 },
   { label: "Admin", icon: SlidersHorizontal }
@@ -192,19 +198,20 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
     setRefreshing(true);
     setOperationError(null);
     try {
-      const [metrics, vulnerabilities, assets, services, decisionPacks, threatSummary, vendors, sourceFeedState, adminHealth, adminConfig] = await Promise.all([
+      const [metrics, vulnerabilities, assets, services, decisionPacks, reports, threatSummary, vendors, sourceFeedState, adminHealth, adminConfig] = await Promise.all([
         liveApi.metrics(tenantId),
         liveApi.listVulnerabilities(tenantId),
         liveApi.listAssets(tenantId),
         liveApi.listServices(tenantId),
         liveApi.listDecisionPacks(tenantId),
+        liveApi.reportCatalog(tenantId),
         liveApi.threatLandscapeSummary(tenantId),
         liveApi.listVendors(tenantId),
         liveApi.sourceFeeds(tenantId),
         canReadAdmin ? liveApi.adminHealth(tenantId) : Promise.resolve(null),
         canReadAdmin ? liveApi.adminConfig(tenantId) : Promise.resolve({} as AdminConfig)
       ]);
-      setState({ metrics, vulnerabilities, assets, services, decisionPacks, threatSummary, vendors, sourceFeedState, bayesian: null, adminHealth, adminConfig });
+      setState({ metrics, vulnerabilities, assets, services, decisionPacks, reports, threatSummary, vendors, sourceFeedState, bayesian: null, adminHealth, adminConfig });
       setSelectedVulnerabilityId((current) => current || vulnerabilities[0]?.vulnerability_id || "");
       const general = adminConfig.general as { environment?: string; governance_tier?: string } | undefined;
       setAdminEnvironment(general?.environment || config.environmentLabel);
@@ -351,6 +358,18 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
     }
   }
 
+  async function handleDownloadReport(packId: string, reportType: string, format: "docx" | "pdf") {
+    setOperationMessage(null);
+    setOperationError(null);
+    try {
+      const blob = await liveApi.downloadDecisionPackReport(tenantId, packId, reportType, format);
+      downloadBlob(`${packId}-${reportType}.${format}`, blob);
+      setOperationMessage(`${format.toUpperCase()} report prepared for ${packId}.`);
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : "Report export failed.");
+    }
+  }
+
   async function handleSaveAdmin() {
     setOperationMessage(null);
     setOperationError(null);
@@ -457,7 +476,8 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
             {activePage === "Compensating Controls" && <CompensatingControls />}
             {activePage === "SRA Research" && <SraResearch onRun={handleSraResearch} result={sraResult} canWrite={canWrite} />}
             {activePage === "Evidence Catalogue" && <EvidenceCatalogue vulnerabilities={state.vulnerabilities} />}
-            {activePage === "Decision Packs" && <DecisionPacks decisionPacks={state.decisionPacks} onExportPack={handleExportPack} />}
+            {activePage === "Decision Packs" && <DecisionPacks decisionPacks={state.decisionPacks} reports={state.reports} onExportPack={handleExportPack} onDownloadReport={handleDownloadReport} />}
+            {activePage === "Reports" && <Reports decisionPacks={state.decisionPacks} reports={state.reports} onDownloadReport={handleDownloadReport} />}
             {activePage === "Source Feeds" && <SourceFeeds sourceFeedState={state.sourceFeedState} onRefresh={handleRefreshSourceFeed} canWrite={canWrite} />}
             {activePage === "Vendor & Threat Landscape" && <VendorThreatLandscape vendors={state.vendors} threatSummary={state.threatSummary} />}
             {activePage === "Admin" && (
@@ -586,6 +606,9 @@ function CommandCenter({
             <button type="button" className="action-button" onClick={() => setActivePage("Decision Workbench")}>
               <ClipboardCheck size={16} aria-hidden /> Create Patch Decision
             </button>
+            <button type="button" className="action-button" onClick={() => setActivePage("Reports")}>
+              <FileText size={16} aria-hidden /> Board Pack
+            </button>
           </div>
         </div>
         {topQueue.length ? (
@@ -597,11 +620,23 @@ function CommandCenter({
             ))}
           </ol>
         ) : (
-          <EmptyState title="No vulnerability records ingested" detail="Connect real advisory, scanner, MCP, Mythos, AGI-agent, or service records to populate the queue." />
+          <EmptyState title="No vulnerability records ingested" detail="Refresh live public intelligence or connect approved advisory, MCP, Mythos, AGI-agent, asset, or service records to populate the queue." />
         )}
       </section>
 
       <div className="split-grid">
+        <section className="data-band reviewer-next">
+          <h3>Reviewer Next Move</h3>
+          {topQueue[0] ? (
+            <>
+              <StatusLine label="Record" value={topQueue[0].vulnerability_id} tone="amber" />
+              <StatusLine label="Why now" value={signalLabel(topQueue[0])} tone="danger" />
+              <StatusLine label="Human action" value="Review sources and compile" tone="trust" />
+            </>
+          ) : (
+            <p className="muted-copy">Run live source feeds to populate the next reviewer action from public intelligence.</p>
+          )}
+        </section>
         <section className="data-band">
           <h3>Decision State</h3>
           <StatusLine label="All records" value={String(metrics.vulnerability_count)} tone="steel" />
@@ -1103,7 +1138,18 @@ function VendorThreatLandscape({ vendors, threatSummary }: { vendors: VendorProf
   );
 }
 
-function DecisionPacks({ decisionPacks, onExportPack }: { decisionPacks: DecisionPackRecord[]; onExportPack: (packId: string) => void }) {
+function DecisionPacks({
+  decisionPacks,
+  reports,
+  onExportPack,
+  onDownloadReport
+}: {
+  decisionPacks: DecisionPackRecord[];
+  reports: ReportCatalogItem[];
+  onExportPack: (packId: string) => void;
+  onDownloadReport: (packId: string, reportType: string, format: "docx" | "pdf") => void;
+}) {
+  const defaultReport = reports.find((report) => report.report_type === "board_vulnerability_remediation_summary") || reports[0];
   return (
     <>
       <div className="section-title">
@@ -1120,7 +1166,7 @@ function DecisionPacks({ decisionPacks, onExportPack }: { decisionPacks: Decisio
               <th>Readiness</th>
               <th>Verified</th>
               <th>Created</th>
-              <th>Export</th>
+              <th>Exports</th>
             </tr>
           </thead>
           <tbody>
@@ -1133,9 +1179,17 @@ function DecisionPacks({ decisionPacks, onExportPack }: { decisionPacks: Decisio
                 <td>{pack.verification?.verified ? "Yes" : "Pending"}</td>
                 <td>{pack.created_at ? new Date(pack.created_at).toLocaleString() : "Not recorded"}</td>
                 <td>
-                  <button type="button" className="icon-button" aria-label={`Export ${pack.pack_id}`} onClick={() => onExportPack(pack.pack_id)}>
-                    <FileCheck2 size={16} aria-hidden />
-                  </button>
+                  <div className="export-actions">
+                    <button type="button" className="icon-button" title="Export signed JSON pack" aria-label={`Export ${pack.pack_id}`} onClick={() => onExportPack(pack.pack_id)}>
+                      <FileCheck2 size={16} aria-hidden />
+                    </button>
+                    <button type="button" className="icon-button" title="Download board DOCX" aria-label={`Download DOCX ${pack.pack_id}`} onClick={() => defaultReport && onDownloadReport(pack.pack_id, defaultReport.report_type, "docx")} disabled={!defaultReport}>
+                      <FileText size={16} aria-hidden />
+                    </button>
+                    <button type="button" className="icon-button" title="Download board PDF" aria-label={`Download PDF ${pack.pack_id}`} onClick={() => defaultReport && onDownloadReport(pack.pack_id, defaultReport.report_type, "pdf")} disabled={!defaultReport}>
+                      <Download size={16} aria-hidden />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -1143,6 +1197,64 @@ function DecisionPacks({ decisionPacks, onExportPack }: { decisionPacks: Decisio
         </table>
         {!decisionPacks.length && <EmptyState title="No decision packs" detail="Signed packs appear after the workbench compiles a real tenant record." />}
       </div>
+    </>
+  );
+}
+
+function Reports({
+  decisionPacks,
+  reports,
+  onDownloadReport
+}: {
+  decisionPacks: DecisionPackRecord[];
+  reports: ReportCatalogItem[];
+  onDownloadReport: (packId: string, reportType: string, format: "docx" | "pdf") => void;
+}) {
+  const verifiedPacks = decisionPacks.filter((pack) => pack.verification?.verified);
+  const latestPack = verifiedPacks[0] || decisionPacks[0];
+  return (
+    <>
+      <div className="section-title">
+        <h3>Board Packs & Reports</h3>
+        <span className="pill trust">DOCX / PDF only</span>
+      </div>
+      <section className="wide-band report-brief">
+        <div>
+          <p className="eyebrow">Customer demo operating pack</p>
+          <h3>Professional outputs generated from live signed packs</h3>
+          <p className="muted-copy">
+            Reports are generated from the signed decision-pack record, preserving the source-pack/current-state distinction, evidence readiness, Bayesian advisory status, and no-autonomous-action boundary.
+          </p>
+        </div>
+        <div className="report-pack-selector">
+          <span className="pill steel">{verifiedPacks.length} verified packs</span>
+          <span className="pill teal">{reports.length} report templates</span>
+        </div>
+      </section>
+
+      <div className="report-grid">
+        {reports.map((report) => (
+          <section className="data-band report-card" key={report.report_type}>
+            <div className="section-title compact-title">
+              <h3>{report.title}</h3>
+              <span className="pill steel">{report.audience}</span>
+            </div>
+            <StatusLine label="Source" value="Signed decision pack" tone="trust" />
+            <StatusLine label="Formats" value="DOCX and PDF" tone="teal" />
+            <StatusLine label="Boundary" value="No deployment or approval" tone="amber" />
+            <div className="report-actions">
+              <button type="button" className="action-button" disabled={!latestPack} onClick={() => latestPack && onDownloadReport(latestPack.pack_id, report.report_type, "docx")}>
+                <FileText size={16} aria-hidden /> DOCX
+              </button>
+              <button type="button" className="action-button secondary-action" disabled={!latestPack} onClick={() => latestPack && onDownloadReport(latestPack.pack_id, report.report_type, "pdf")}>
+                <Download size={16} aria-hidden /> PDF
+              </button>
+            </div>
+          </section>
+        ))}
+      </div>
+      {!reports.length && <EmptyState title="No report catalogue" detail="Report templates load from the protected PatchForge API." />}
+      {!decisionPacks.length && <EmptyState title="No signed pack available" detail="Generate a signed decision pack before producing board packs or customer reports." />}
     </>
   );
 }
@@ -1320,6 +1432,7 @@ function emptyLiveState(tenantId: string): LiveState {
     assets: [],
     services: [],
     decisionPacks: [],
+    reports: [],
     bayesian: null,
     threatSummary: null,
     vendors: [],
@@ -1380,6 +1493,10 @@ function signalLabel(item: VulnerabilityRecord) {
 
 function downloadJson(fileName: string, payload: unknown) {
   const blob = new Blob([`${JSON.stringify(payload, null, 2)}\n`], { type: "application/json" });
+  downloadBlob(fileName, blob);
+}
+
+function downloadBlob(fileName: string, blob: Blob) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;

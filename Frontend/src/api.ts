@@ -169,6 +169,13 @@ export type DecisionPackRecord = {
   created_at?: string;
 };
 
+export type ReportCatalogItem = {
+  report_type: string;
+  title: string;
+  audience: string;
+  formats: string[];
+};
+
 export type AdminHealth = {
   tenant_id: string;
   live_azure_mutation_enabled: boolean;
@@ -186,6 +193,8 @@ export type PatchForgeApi = {
   listDecisionPacks(tenantId: string): Promise<DecisionPackRecord[]>;
   generateDecisionPack(tenantId: string, payload: Record<string, unknown>): Promise<DecisionPackRecord>;
   exportDecisionPack(tenantId: string, packId: string): Promise<Record<string, unknown>>;
+  reportCatalog(tenantId: string): Promise<ReportCatalogItem[]>;
+  downloadDecisionPackReport(tenantId: string, packId: string, reportType: string, format: "docx" | "pdf"): Promise<Blob>;
   assessBayesianRisk(tenantId: string, payload: Record<string, unknown>): Promise<BayesianAssessment>;
   bayesianPriors(tenantId: string): Promise<Record<string, unknown>>;
   threatLandscapeSummary(tenantId: string): Promise<ThreatLandscapeSummary>;
@@ -249,6 +258,22 @@ export function createPatchForgeApi(getAccessToken: () => Promise<string>, confi
     return body as T;
   }
 
+  async function requestBlob(path: string, tenantId: string): Promise<Blob> {
+    const token = await getAccessToken();
+    const response = await fetch(`${config.apiBaseUrl}${path}`, {
+      headers: {
+        "x-tenant-id": tenantId,
+        authorization: `Bearer ${token}`
+      }
+    });
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      const message = body.message || body.error || `PatchForge API returned HTTP ${response.status}`;
+      throw new Error(message);
+    }
+    return response.blob();
+  }
+
   return {
     async metrics(tenantId) {
       return request<PatchForgeMetrics>("/api/patchforge/dashboard/metrics", tenantId);
@@ -285,6 +310,13 @@ export function createPatchForgeApi(getAccessToken: () => Promise<string>, confi
     },
     async exportDecisionPack(tenantId, packId) {
       return request<Record<string, unknown>>(`/api/patchforge/decision-packs/${encodeURIComponent(packId)}/export`, tenantId);
+    },
+    async reportCatalog(tenantId) {
+      const body = await request<{ reports: ReportCatalogItem[] }>("/api/patchforge/reports/catalog", tenantId);
+      return body.reports || [];
+    },
+    async downloadDecisionPackReport(tenantId, packId, reportType, format) {
+      return requestBlob(`/api/patchforge/decision-packs/${encodeURIComponent(packId)}/reports/${encodeURIComponent(reportType)}.${format}`, tenantId);
     },
     async assessBayesianRisk(tenantId, payload) {
       const body = await request<{ bayesian: BayesianAssessment }>("/api/patchforge/bayesian/assess", tenantId, {

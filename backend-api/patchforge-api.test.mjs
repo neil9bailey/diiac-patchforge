@@ -6,6 +6,7 @@ import test from "node:test";
 import { createServer } from "./server.js";
 import { PatchForgeJsonStorage } from "./patchforge/storage.js";
 import { createSourceFeedClient } from "./patchforge/sourceFeeds.js";
+import { runSchedulerOnce } from "./patchforge/scheduler.js";
 import { createAuthConfigFromEnv } from "./auth.js";
 
 async function withApi(run, options = {}) {
@@ -622,6 +623,124 @@ test("decision packs are generated only from ingested tenant vulnerabilities", a
   });
 });
 
+test("professional decision pack reports export as DOCX and PDF", async () => {
+  await withApi(async (baseUrl) => {
+    await request(baseUrl, "/api/patchforge/vulnerabilities/ingest", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        vulnerability_id: "CVE-2026-PF-REPORT-001",
+        title: "Real source-bound report target",
+        severity: "critical",
+        known_exploited: true,
+        patch_status: "patch_available",
+        sources: [{
+          source_record_id: "src-report-vendor-1",
+          source_class: "vendor_advisory",
+          source_name: "vendor advisory",
+          evidence_state: "referenced",
+          review_state: "pending_review"
+        }]
+      })
+    });
+
+    const generated = await request(baseUrl, "/api/patchforge/decision-packs/generate", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        vulnerability_id: "CVE-2026-PF-REPORT-001",
+        requested_posture: "defer_pending_evidence"
+      })
+    });
+    assert.equal(generated.response.status, 201);
+
+    const catalog = await request(baseUrl, "/api/patchforge/reports/catalog", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(catalog.response.status, 200);
+    assert.ok(catalog.body.reports.some((report) => report.report_type === "board_vulnerability_remediation_summary"));
+
+    const docx = await fetch(`${baseUrl}/api/patchforge/decision-packs/PF-TEST-0001/reports/board_vulnerability_remediation_summary.docx`, {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(docx.status, 200);
+    assert.match(docx.headers.get("content-type"), /wordprocessingml/);
+    const docxBytes = Buffer.from(await docx.arrayBuffer());
+    assert.equal(docxBytes.subarray(0, 2).toString("utf8"), "PK");
+
+    const pdf = await fetch(`${baseUrl}/api/patchforge/decision-packs/PF-TEST-0001/reports/board_vulnerability_remediation_summary.pdf`, {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(pdf.status, 200);
+    assert.match(pdf.headers.get("content-type"), /pdf/);
+    const pdfBytes = Buffer.from(await pdf.arrayBuffer());
+    assert.equal(pdfBytes.subarray(0, 4).toString("utf8"), "%PDF");
+
+    const unknown = await request(baseUrl, "/api/patchforge/decision-packs/PF-TEST-0001/reports/not-a-report.pdf", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(unknown.response.status, 400);
+    assert.equal(unknown.body.error, "unknown_report_type");
+  });
+});
+
+test("scheduler performs real-source refresh without scanner or deployment actions", async () => {
+  const storageRoot = await mkdtemp(path.join(os.tmpdir(), "patchforge-scheduler-"));
+  const storage = new PatchForgeJsonStorage(storageRoot);
+  const sourceFeedClient = createSourceFeedClient({
+    fetchImpl: async (url) => {
+      const text = String(url);
+      if (text.includes("known_exploited_vulnerabilities.json")) {
+        return jsonResponse({
+          catalogVersion: "2026.05.27",
+          dateReleased: "2026-05-27T06:00:00Z",
+          vulnerabilities: [{
+            cveID: "CVE-2026-PF-SCHED-001",
+            vendorProject: "Microsoft",
+            product: "Example Gateway",
+            vulnerabilityName: "Microsoft Example Gateway Source-Bound Vulnerability",
+            dateAdded: "2026-05-27",
+            shortDescription: "Example source-bound CISA KEV record.",
+            requiredAction: "Apply vendor instructions.",
+            dueDate: "2026-06-03",
+            knownRansomwareCampaignUse: "Unknown"
+          }]
+        });
+      }
+      assert.match(text, /api\.first\.org\/data\/v1\/epss/);
+      return jsonResponse({
+        status: "OK",
+        total: 1,
+        data: [{
+          cve: "CVE-2026-PF-SCHED-001",
+          epss: "0.8123",
+          percentile: "0.9922",
+          date: "2026-05-27"
+        }]
+      });
+    }
+  });
+
+  try {
+    const result = await runSchedulerOnce({ storage, sourceFeedClient, tenantId: "tenant-a", cisaLimit: 1, epssLimit: 1 });
+    assert.equal(result.status, "completed");
+    assert.equal(result.boundary.no_scanner, true);
+    assert.equal(result.boundary.no_patch_deployment, true);
+    assert.equal(result.cisa_run.records_ingested, 1);
+    assert.equal(result.epss_runs.length, 1);
+
+    const vulnerabilities = await storage.list("vulnerabilities", "tenant-a");
+    assert.equal(vulnerabilities.length, 1);
+    assert.equal(vulnerabilities[0].review_state, "pending_review");
+
+    const runs = await storage.list("source_feed_runs", "tenant-a");
+    assert.equal(runs.length, 2);
+    assert.ok(runs.every((run) => run.source_bound === true && run.can_close_hard_gates_alone === false));
+  } finally {
+    await rm(storageRoot, { recursive: true, force: true });
+  }
+});
+
 function fakeRuntimeClient() {
   return {
     async createDecisionPack(payload) {
@@ -645,13 +764,69 @@ function fakeRuntimeClient() {
         },
         verification: { verified: true },
         artefacts: {
+          "vulnerability_intelligence_snapshot.json": {
+            vulnerability_id: payload.vulnerability.vulnerability_id,
+            title: payload.vulnerability.title,
+            severity: payload.vulnerability.severity,
+            known_exploited: payload.vulnerability.known_exploited,
+            patch_status: payload.vulnerability.patch_status,
+            sources: payload.vulnerability.sources || []
+          },
+          "patch_decision_context.json": {
+            decision_id: "decision-test-1",
+            vulnerability_id: payload.vulnerability.vulnerability_id,
+            decision_posture: payload.requested_posture || "defer_pending_evidence",
+            evidence_refs: ["src-report-vendor-1"],
+            readiness: {
+              readiness_state: "blocked",
+              readiness_score: 25,
+              blockers: ["affected_asset_scope"],
+              final_approval_issued: false
+            },
+            final_approval_issued: false
+          },
           "governance_manifest.json": {
             pack_id: "PF-TEST-0001",
             source_pack_immutable: true
           },
+          "verification_manifest.json": {
+            pack_id: "PF-TEST-0001",
+            governance_manifest_sha256: "test-hash"
+          },
           "signed_export.sigmeta.json": {
             algorithm: "test",
+            signing_provider: "test-signer",
             dev_key_hint: null
+          },
+          "bayesian_patch_risk_snapshot.json": {
+            advisory_only: true,
+            can_close_hard_gates_alone: false,
+            recommended_governance_posture: payload.requested_posture || "defer_pending_evidence",
+            exploit_probability_posterior: 0.44,
+            business_impact_posterior: 0.53,
+            patch_feasibility_posterior: 0.36,
+            change_risk_posterior: 0.42,
+            deferral_risk_posterior: 0.49
+          },
+          "vendor_intelligence_snapshot.json": {
+            source_bound: true,
+            review_required: true
+          },
+          "threat_landscape_snapshot.json": {
+            source_bound: true,
+            review_required: true,
+            metrics: {
+              active_exploitation_count: 1,
+              critical_open_advisory_count: 1,
+              patch_maturity: "unknown"
+            }
+          },
+          "human_review_state.json": {
+            final_approval_issued: false
+          },
+          "sra_trace.json": {
+            advisory_only: true,
+            can_close_hard_gates_alone: false
           }
         },
         boundary: { no_patch_deployment: true, no_exploit_generation: true }

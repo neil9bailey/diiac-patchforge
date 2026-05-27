@@ -4,6 +4,8 @@ import path from "node:path";
 import { authorizeRequest, createAuthConfigFromEnv } from "./auth.js";
 import { createPatchForgeStorage } from "./patchforge/storage.js";
 import { createSourceFeedClient } from "./patchforge/sourceFeeds.js";
+import { REPORT_CATALOG, generateDecisionPackReport } from "./patchforge/reports.js";
+import { startScheduler } from "./patchforge/scheduler.js";
 import { runSraTool } from "./sra/securityResearchAgent.js";
 
 const DEFAULT_PORT = Number(process.env.PORT || 8080);
@@ -239,6 +241,14 @@ export function createServer(options = {}) {
         });
       }
 
+      if (route === "GET /api/patchforge/reports/catalog") {
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          reports: REPORT_CATALOG
+        });
+      }
+
       const decisionPackExportMatch = url.pathname.match(/^\/api\/patchforge\/decision-packs\/([^/]+)\/export$/);
       if (req.method === "GET" && decisionPackExportMatch) {
         const packId = decodeURIComponent(decisionPackExportMatch[1]);
@@ -264,6 +274,39 @@ export function createServer(options = {}) {
             no_autonomous_approval: true
           }
         });
+      }
+
+      const decisionPackReportMatch = url.pathname.match(/^\/api\/patchforge\/decision-packs\/([^/]+)\/reports\/([^/.]+)\.(docx|pdf)$/);
+      if (req.method === "GET" && decisionPackReportMatch) {
+        const packId = decodeURIComponent(decisionPackReportMatch[1]);
+        const reportType = decodeURIComponent(decisionPackReportMatch[2]);
+        const format = decisionPackReportMatch[3];
+        const packs = await storage.list("decision_packs", tenantId);
+        const pack = packs.find((record) => record.pack_id === packId || record.decision_pack_id === packId);
+        if (!pack) {
+          return sendJson(res, 404, { error: "decision_pack_not_found" });
+        }
+        try {
+          const vulnerability = await storage.getVulnerability(tenantId, pack.vulnerability_id);
+          const sourceFeedRuns = await storage.list("source_feed_runs", tenantId);
+          const report = await generateDecisionPackReport({
+            reportType,
+            format,
+            pack,
+            vulnerability,
+            sourceFeedRuns: sourceFeedRuns.slice(-10).reverse()
+          });
+          return sendBinary(res, 200, report.buffer, {
+            contentType: report.contentType,
+            fileName: report.fileName
+          });
+        } catch (error) {
+          return sendJson(res, error.code === "unknown_report_type" ? 400 : 500, {
+            error: error.code || "report_generation_failed",
+            message: error.message,
+            allowed_reports: REPORT_CATALOG.map((item) => item.report_type)
+          });
+        }
       }
 
       if (route === "POST /api/patchforge/decision-packs/generate") {
@@ -611,6 +654,17 @@ function sendJson(res, statusCode, payload) {
   res.end(`${body}\n`);
 }
 
+function sendBinary(res, statusCode, buffer, { contentType, fileName }) {
+  res.writeHead(statusCode, {
+    "content-type": contentType,
+    "content-length": buffer.length,
+    "content-disposition": `attachment; filename="${fileName}"`,
+    "cache-control": "no-store",
+    "x-content-type-options": "nosniff"
+  });
+  res.end(buffer);
+}
+
 function buildEvidenceItemsFromRecord(vulnerability, submittedItems = []) {
   const sourceEvidence = (vulnerability.sources || []).map((source) => ({
     evidence_ref: source.source_record_id,
@@ -946,4 +1000,7 @@ if (isMain) {
   server.listen(DEFAULT_PORT, () => {
     console.log(`DIIaC PatchForge API listening on ${DEFAULT_PORT}`);
   });
+  if (process.env.PATCHFORGE_COMPONENT === "scheduler") {
+    startScheduler();
+  }
 }

@@ -8,6 +8,27 @@ Date: 2026-05-26
 
 PF-AZ6 is the currently deployed Azure baseline.
 
+## PF-AZ7 Deployment Candidate
+
+Date: 2026-05-27
+
+PF-AZ7 is locally validated and pending GitHub push, Azure image rollout, live API smoke, signed-in browser validation, and live DOCX/PDF report download visual QA.
+
+PF-AZ7 adds:
+
+- professional DOCX/PDF board and governance report generation from signed decision packs
+- protected report catalogue and report download APIs
+- UI Reports page and Decision Pack DOCX/PDF export actions
+- scheduler-backed live CISA KEV and FIRST EPSS refresh
+- scheduler source lineage, advisory-only controls, and no scanner/no deployment boundaries
+- local Word-rendered DOCX visual QA evidence for customer-facing board-pack formatting
+
+PF-AZ7 does not add seeded demo data, synthetic vulnerability data, scanning, exploit generation, procedural exploit steps, patch deployment, production mutation from the UI, autonomous CAB approval, or autonomous risk acceptance.
+
+PF-AZ7 candidate evidence path:
+
+- `docs/release/evidence/2026-05-27-patchforge-pfaz7-operational-demo/`
+
 ## Scope
 
 PF-AZ6 extends the current dedicated PatchForge Azure production state in the DIIaC tenant using the PatchForge resource group.

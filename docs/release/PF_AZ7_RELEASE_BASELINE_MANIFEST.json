@@ -1,0 +1,45 @@
+{
+  "product": "DIIaC PatchForge",
+  "baseline_id": "PF-AZ7",
+  "baseline_name": "Operational customer demo hardening with DOCX PDF board packs and automated live intelligence refresh",
+  "baseline_date": "2026-05-27",
+  "target_url": "https://patchforge.diiac.io",
+  "api_url": "https://api.patchforge.diiac.io",
+  "remote_target": "neil9bailey/diiac-patchforge",
+  "release_state": "local_validated_azure_pending",
+  "azure_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+  "azure_resource_group": "rg-diiac-patchforge-prod",
+  "features": [
+    "DOCX board pack generation from signed decision packs",
+    "PDF board pack generation from signed decision packs",
+    "report catalogue API",
+    "UI Reports page",
+    "Decision Pack DOCX PDF export actions",
+    "scheduler mode for automated CISA KEV and FIRST EPSS refresh",
+    "scheduler source-bound lineage",
+    "scheduler Container App min replica IaC baseline",
+    "professional document render QA evidence"
+  ],
+  "boundaries": {
+    "no_scanning": true,
+    "no_exploit_generation": true,
+    "no_procedural_exploit_steps": true,
+    "no_patch_deployment": true,
+    "no_production_mutation_from_ui": true,
+    "no_autonomous_approval": true,
+    "no_autonomous_risk_acceptance": true
+  },
+  "validation": {
+    "backend_tests": "pass",
+    "frontend_tests": "pass",
+    "frontend_build": "pass",
+    "python_tests": "pass",
+    "iac_validation": "pass",
+    "bicep_build": "pass",
+    "docker_build_smoke": "pass",
+    "docx_pdf_visual_qa": "pass",
+    "visual_qa_record": "docs/release/evidence/2026-05-27-patchforge-pfaz7-operational-demo/doc-qa/docx-pdf-visual-qa.json",
+    "azure_deployment": "pending",
+    "live_ui_validation": "pending"
+  }
+}

@@ -1,0 +1,19 @@
+﻿{
+    "release":  "PF-AZ7",
+    "validation_time_utc":  "2026-05-27T00:12:07.9093989Z",
+    "source_record":  "CVE-2026-48172",
+    "report_type":  "board_vulnerability_remediation_summary",
+    "docx":  "PF-AZ7-board-pack-qa.docx",
+    "api_pdf":  "PF-AZ7-board-pack-qa.pdf",
+    "word_rendered_pdf":  "PF-AZ7-board-pack-qa-word-rendered.pdf",
+    "page_count":  3,
+    "rendered_pages":  [
+                           "word-rendered-pages/page-1.png",
+                           "word-rendered-pages/page-2.png",
+                           "word-rendered-pages/page-3.png"
+                       ],
+    "visual_qa":  "pass",
+    "visual_qa_notes":  "Word-rendered pages inspected. No clipping, overlap, broken tables, missing text, or unreadable wrapping observed.",
+    "libreoffice_renderer":  "not_available_on_host",
+    "fallback_renderer":  "Microsoft Word COM export to PDF plus PyMuPDF rasterization"
+}

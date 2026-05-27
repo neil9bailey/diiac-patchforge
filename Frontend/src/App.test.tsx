@@ -46,6 +46,18 @@ function createApi(overrides: Partial<PatchForgeApi> = {}): PatchForgeApi {
       pack_id: "PF-TEST-0001",
       source_pack_immutable: true
     })),
+    reportCatalog: vi.fn(async () => [{
+      report_type: "board_vulnerability_remediation_summary",
+      title: "Board Vulnerability Remediation Summary",
+      audience: "Board and senior leadership",
+      formats: ["docx", "pdf"]
+    }, {
+      report_type: "cab_patch_decision_report",
+      title: "CAB Patch Decision Report",
+      audience: "Change Advisory Board",
+      formats: ["docx", "pdf"]
+    }]),
+    downloadDecisionPackReport: vi.fn(async () => new Blob(["report"], { type: "application/pdf" })),
     assessBayesianRisk: vi.fn(async () => ({
       advisory_only: true,
       can_close_hard_gates_alone: false,
@@ -194,6 +206,25 @@ describe("PatchForge shell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Refresh CISA" }));
     await waitFor(() => expect(api.refreshSourceFeed).toHaveBeenCalledWith("diiac.io", expect.objectContaining({ feed_id: "cisa-kev", limit: 5 })));
     expect(await screen.findByText(/source-bound pending-review intelligence/)).toBeInTheDocument();
+  });
+
+  it("renders professional report exports from the API catalogue", async () => {
+    const api = createApi({
+      listDecisionPacks: vi.fn(async () => [{
+        decision_pack_id: "PF-TEST-0001",
+        pack_id: "PF-TEST-0001",
+        vulnerability_id: "CVE-2026-REAL-001",
+        decision_posture: "defer_pending_evidence",
+        readiness: { readiness_state: "blocked" },
+        verification: { verified: true }
+      }])
+    });
+    render(<App auth={auth} api={api} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Reports" }));
+    expect(screen.getByRole("heading", { name: "Board Packs & Reports" })).toBeInTheDocument();
+    expect(screen.getByText("DOCX / PDF only")).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: "DOCX" })[0]);
+    await waitFor(() => expect(api.downloadDecisionPackReport).toHaveBeenCalledWith("diiac.io", "PF-TEST-0001", "board_vulnerability_remediation_summary", "docx"));
   });
 
   it("runs Bayesian advisory from the decision workbench", async () => {

@@ -380,6 +380,16 @@ nav {
   min-height: 42px;
 }
 
+.secondary-action {
+  background: #121a1d;
+}
+
+.action-button:disabled,
+.icon-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
 .notice {
   display: flex;
   align-items: center;
@@ -460,6 +470,52 @@ td small {
   display: block;
   margin-top: 4px;
   color: var(--muted);
+}
+
+.export-actions,
+.report-actions,
+.report-pack-selector {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.report-brief {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  background:
+    linear-gradient(90deg, rgba(69, 198, 176, 0.1), transparent 55%),
+    rgba(16, 22, 25, 0.94);
+}
+
+.report-brief h3 {
+  margin: 3px 0 6px;
+  font-size: 1.18rem;
+}
+
+.report-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+  gap: 12px;
+}
+
+.report-card {
+  min-height: 230px;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.report-card .section-title {
+  align-items: flex-start;
+}
+
+.report-card .section-title h3 {
+  max-width: 22ch;
+  line-height: 1.25;
 }
 
 .muted-copy {
