@@ -1,0 +1,16 @@
+{
+    "generated_at":  "2026-05-27T11:22:24.7382059Z",
+    "result":  "pass",
+    "readiness_storage":  "postgresql",
+    "database_health":  "ready",
+    "database_mode":  "postgresql",
+    "storage_health":  "ready",
+    "storage_mode":  "postgresql",
+    "tenant_context":  {
+                           "requested_tenant_id":  null,
+                           "effective_tenant_id":  "diiac.io",
+                           "token_tenant_id":  "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+                           "tenant_id_source":  "token_mapping",
+                           "tenant_override_ignored":  false
+                       }
+}

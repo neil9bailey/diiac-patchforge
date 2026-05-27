@@ -1,0 +1,13 @@
+{
+  "localKeys": [],
+  "sessionKeys": [
+    "msal.3.account.keys",
+    "msal.3.token.keys.c4dfca53-14a5-4688-817d-6c6c7dd47407",
+    "msal.3|2d2f273d-a815-4a19-a258-c48c858252f3.67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da|login.windows.net|refreshtoken|c4dfca53-14a5-4688-817d-6c6c7dd47407|||",
+    "server-telemetry-c4dfca53-14a5-4688-817d-6c6c7dd47407",
+    "msal.3|2d2f273d-a815-4a19-a258-c48c858252f3.67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da|login.windows.net|accesstoken|c4dfca53-14a5-4688-817d-6c6c7dd47407|67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da|api://ec30b0eb-cfc4-48cc-a5f2-2a1345d96736/patchforge.access|",
+    "msal.3|2d2f273d-a815-4a19-a258-c48c858252f3.67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da|login.windows.net|67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+    "msal.version",
+    "msal.3|2d2f273d-a815-4a19-a258-c48c858252f3.67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da|login.windows.net|idtoken|c4dfca53-14a5-4688-817d-6c6c7dd47407|67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da||"
+  ]
+}

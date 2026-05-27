@@ -1,0 +1,16 @@
+{
+    "generated_at":  "2026-05-27T11:22:24.3407940Z",
+    "ui_http_200":  true,
+    "health_http_200":  true,
+    "readiness_http_200":  true,
+    "readiness_storage_postgresql":  true,
+    "readiness_auth_required":  true,
+    "protected_route_401":  true,
+    "protected_required_roles_listed":  true,
+    "raw":  {
+                "ui":  "HTTP/1.1 200 OK\nserver: nginx/1.27.5\ndate: Wed, 27 May 2026 11:22:23 GMT\ncontent-type: text/html\ncontent-length: 458\nlast-modified: Wed, 27 May 2026 10:56:16 GMT\netag: \"6a16cdd0-1ca\"\ncache-control: no-store\nx-content-type-options: nosniff\nx-frame-options: DENY\naccept-ranges: bytes\n",
+                "readiness":  "HTTP/1.1 200 OK\naccess-control-allow-methods: GET,POST,PUT,OPTIONS\naccess-control-allow-headers: authorization,content-type,x-tenant-id\naccess-control-max-age: 600\ncontent-type: application/json; charset=utf-8\ncache-control: no-store\ndate: Wed, 27 May 2026 11:22:23 GMT\ntransfer-encoding: chunked\n\n{\n  \"status\": \"ready\",\n  \"storage\": \"postgresql\",\n  \"auth_required\": true,\n  \"tenant_required\": true\n}",
+                "health":  "HTTP/1.1 200 OK\naccess-control-allow-methods: GET,POST,PUT,OPTIONS\naccess-control-allow-headers: authorization,content-type,x-tenant-id\naccess-control-max-age: 600\ncontent-type: application/json; charset=utf-8\ncache-control: no-store\ndate: Wed, 27 May 2026 11:22:23 GMT\ntransfer-encoding: chunked\n\n{\n  \"status\": \"ok\",\n  \"product\": \"DIIaC PatchForge\",\n  \"boundary\": \"governance-only\"\n}",
+                "protected_vulnerabilities_unauthenticated":  "HTTP/1.1 401 Unauthorized\naccess-control-allow-methods: GET,POST,PUT,OPTIONS\naccess-control-allow-headers: authorization,content-type,x-tenant-id\naccess-control-max-age: 600\ncontent-type: application/json; charset=utf-8\ncache-control: no-store\ndate: Wed, 27 May 2026 11:22:23 GMT\ntransfer-encoding: chunked\n\n{\n  \"error\": \"missing_bearer_token\",\n  \"message\": \"A Microsoft Entra access token is required.\",\n  \"required_roles\": [\n    \"PatchForge.Reader\",\n    \"PatchForge.Auditor\",\n    \"PatchForge.TriageAnalyst\",\n    \"PatchForge.SecurityLead\",\n    \"PatchForge.Admin\"\n  ]\n}"
+            }
+}

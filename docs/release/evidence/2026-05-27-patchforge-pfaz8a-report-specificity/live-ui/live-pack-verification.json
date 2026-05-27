@@ -1,0 +1,35 @@
+{
+  "generatedAt": "2026-05-27T11:18:59.837Z",
+  "packId": "PF-20260527-934d6e60",
+  "status": 200,
+  "verified": true,
+  "manifestOk": true,
+  "signatureOk": true,
+  "artefactCount": 18,
+  "finalApprovalIssued": false,
+  "sourcePackImmutable": true,
+  "trustBundle": {
+    "key_id": "https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod",
+    "signing_mode": "azure_key_vault",
+    "signature_scope": "artefact_integrity_not_source_truth"
+  },
+  "signatureMetadata": {
+    "key_id": "https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod/2e348fdeaaaf448ebba206130ef86b52",
+    "algorithm": "ES256",
+    "public_jwk": {
+      "x": "yzeI7iI0iH9eeQugSaJFdOkessqDo9fEo1Bmofm5JwA",
+      "y": "IaBFNHG2ZaWZSyCcagh5hUu_BPPdA_piXNwE9eS2APc",
+      "crv": "JsonWebKeyCurveName.P256",
+      "kty": "JsonWebKeyType.EC"
+    },
+    "dev_key_hint": null,
+    "signed_payload": {
+      "pack_id": "PF-20260527-934d6e60",
+      "governance_manifest_sha256": "759d8910d3b99039916ed016812f8528aa037a9ed3b6553bade1774e90ceabc8",
+      "verification_manifest_sha256": "27c9d9862f2648501fe798deadd8cdb67b570e14eb3b67ce44e76257d6369770"
+    },
+    "signing_provider": "azure_key_vault",
+    "signature_encoding": "base64url_raw_ecdsa"
+  },
+  "hasKeyVaultTrust": true
+}

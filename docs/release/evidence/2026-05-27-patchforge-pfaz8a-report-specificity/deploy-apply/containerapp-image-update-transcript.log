@@ -1,0 +1,62 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20260527120711
+Username: LAPTOP-3325TB9L\Neil
+RunAs User: LAPTOP-3325TB9L\Neil
+Configuration Name: 
+Machine: LAPTOP-3325TB9L (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -Command [Console]::OutputEncoding=[System.Text.Encoding]::UTF8;
+$ErrorActionPreference='Stop'
+$evidence='docs/release/evidence/2026-05-27-patchforge-pfaz8a-report-specificity/deploy-apply'
+New-Item -ItemType Directory -Force -Path $evidence | Out-Null
+$rg='rg-diiac-patchforge-prod'
+$registry='acrdiiacpatchforgeprod.azurecr.io'
+$tag='pfaz8a-20260527-4f3bbe8'
+$apps=@(
+  @{name='ca-patchforge-ui-prod'; image="$registry/diiac/patchforge-frontend:$tag"},
+  @{name='ca-patchforge-bridge-prod'; image="$registry/diiac/patchforge-bridge:$tag"},
+  @{name='ca-patchforge-runtime-prod'; image="$registry/diiac/patchforge-runtime:$tag"},
+  @{name='ca-patchforge-sra-prod'; image="$registry/diiac/patchforge-sra-agent:$tag"},
+  @{name='ca-patchforge-worker-prod'; image="$registry/diiac/patchforge-ingest-worker:$tag"},
+  @{name='ca-patchforge-scheduler-prod'; image="$registry/diiac/patchforge-scheduler:$tag"}
+)
+az containerapp list -g $rg --query "[].{name:name,image:properties.template.containers[0].image,revision:properties.latestRevisionName,provisioningState:properties.provisioningState}" -o json | Set-Content -Path (Join-Path $evidence 'active-revisions-before.json') -Encoding utf8
+Start-Transcript -Path (Join-Path $evidence 'containerapp-image-update-transcript.log') -Force | Out-Null
+try {
+  foreach($app in $apps){
+    Write-Host "Updating $($app.name) -> $($app.image)"
+    az containerapp update -g $rg -n $app.name --image $app.image --query "{name:name,latestRevision:properties.latestRevisionName,image:properties.template.containers[0].image,provisioningState:properties.provisioningState}" -o json
+  }
+  $code=$LASTEXITCODE
+} finally {
+  Stop-Transcript | Out-Null
+}
+if($code -ne 0){ exit $code }
+az containerapp list -g $rg --query "[].{name:name,image:properties.template.containers[0].image,revision:properties.latestRevisionName,provisioningState:properties.provisioningState}" -o json | Set-Content -Path (Join-Path $evidence 'active-revisions-after-update.json') -Encoding utf8
+Get-Content (Join-Path $evidence 'active-revisions-after-update.json')
+Process ID: 9804
+PSVersion: 5.1.26100.8457
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.8457
+BuildVersion: 10.0.26100.8457
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Updating ca-patchforge-ui-prod -> acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-frontend:pfaz8a-20260527-4f3bbe8
+[Y] Yes  [A] Yes to All  [N] No  [L] No to All  [S] Suspend  [?] Help (default is "N"):
+Updating ca-patchforge-bridge-prod -> acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-bridge:pfaz8a-20260527-4f3bbe8
+[Y] Yes  [A] Yes to All  [N] No  [L] No to All  [S] Suspend  [?] Help (default is "N"):
+Updating ca-patchforge-runtime-prod -> acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-runtime:pfaz8a-20260527-4f3bbe8
+[Y] Yes  [A] Yes to All  [N] No  [L] No to All  [S] Suspend  [?] Help (default is "N"):
+Updating ca-patchforge-sra-prod -> acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-sra-agent:pfaz8a-20260527-4f3bbe8
+[Y] Yes  [A] Yes to All  [N] No  [L] No to All  [S] Suspend  [?] Help (default is "N"):
+Updating ca-patchforge-worker-prod -> acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-ingest-worker:pfaz8a-20260527-4f3bbe8
+[Y] Yes  [A] Yes to All  [N] No  [L] No to All  [S] Suspend  [?] Help (default is "N"):
+Updating ca-patchforge-scheduler-prod -> acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-scheduler:pfaz8a-20260527-4f3bbe8
+[Y] Yes  [A] Yes to All  [N] No  [L] No to All  [S] Suspend  [?] Help (default is "N"):
+**********************
+Windows PowerShell transcript end
+End time: 20260527120847
+**********************

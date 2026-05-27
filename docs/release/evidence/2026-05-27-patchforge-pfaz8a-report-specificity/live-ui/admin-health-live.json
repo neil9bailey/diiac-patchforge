@@ -1,0 +1,73 @@
+{
+    "tenant_id":  "diiac.io",
+    "live_azure_mutation_enabled":  false,
+    "checks":  [
+                   {
+                       "name":  "Frontend health",
+                       "status":  "ready",
+                       "mode":  "read-only"
+                   },
+                   {
+                       "name":  "Bridge health",
+                       "status":  "ready",
+                       "mode":  "postgresql"
+                   },
+                   {
+                       "name":  "Runtime health",
+                       "status":  "ready",
+                       "mode":  "local"
+                   },
+                   {
+                       "name":  "SRA health",
+                       "status":  "advisory",
+                       "mode":  "advisory-only"
+                   },
+                   {
+                       "name":  "MCP agent intake",
+                       "status":  "governed",
+                       "mode":  "agent-led-human-approved"
+                   },
+                   {
+                       "name":  "Public source feeds",
+                       "status":  "ready",
+                       "mode":  "cisa-kev / first-epss"
+                   },
+                   {
+                       "name":  "Worker health",
+                       "status":  "ready",
+                       "mode":  "ingest-export-worker"
+                   },
+                   {
+                       "name":  "Scheduler health",
+                       "status":  "ready",
+                       "mode":  "last source refresh 2026-05-27T11:08:59.500Z"
+                   },
+                   {
+                       "name":  "Database health",
+                       "status":  "ready",
+                       "mode":  "postgresql"
+                   },
+                   {
+                       "name":  "Storage health",
+                       "status":  "ready",
+                       "mode":  "postgresql"
+                   },
+                   {
+                       "name":  "Key Vault health",
+                       "status":  "ready",
+                       "mode":  "managed-identity"
+                   },
+                   {
+                       "name":  "Signing trust",
+                       "status":  "key-vault",
+                       "mode":  "key-vault"
+                   }
+               ],
+    "tenant_context":  {
+                           "requested_tenant_id":  null,
+                           "effective_tenant_id":  "diiac.io",
+                           "token_tenant_id":  "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+                           "tenant_id_source":  "token_mapping",
+                           "tenant_override_ignored":  false
+                       }
+}

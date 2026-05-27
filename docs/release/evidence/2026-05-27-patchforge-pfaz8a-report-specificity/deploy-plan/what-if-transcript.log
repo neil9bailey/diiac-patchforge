@@ -1,0 +1,33 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20260527120608
+Username: LAPTOP-3325TB9L\Neil
+RunAs User: LAPTOP-3325TB9L\Neil
+Configuration Name: 
+Machine: LAPTOP-3325TB9L (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -Command [Console]::OutputEncoding=[System.Text.Encoding]::UTF8;
+$evidence='docs/release/evidence/2026-05-27-patchforge-pfaz8a-report-specificity/deploy-plan'
+New-Item -ItemType Directory -Force -Path $evidence | Out-Null
+Start-Transcript -Path (Join-Path $evidence 'what-if-transcript.log') -Force | Out-Null
+try {
+  powershell -NoProfile -ExecutionPolicy Bypass -File scripts/plan_azure_deployment.ps1 -SubscriptionId 9ae9da49-de67-443b-af55-ce9db33ed8f4 -TenantId 67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da -RunWhatIf
+  $code = $LASTEXITCODE
+} finally {
+  Stop-Transcript | Out-Null
+}
+exit $code
+Process ID: 14504
+PSVersion: 5.1.26100.8457
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.8457
+BuildVersion: 10.0.26100.8457
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+[Y] Yes  [A] Yes to All  [N] No  [L] No to All  [S] Suspend  [?] Help (default is "N"):
+**********************
+Windows PowerShell transcript end
+End time: 20260527120644
+**********************

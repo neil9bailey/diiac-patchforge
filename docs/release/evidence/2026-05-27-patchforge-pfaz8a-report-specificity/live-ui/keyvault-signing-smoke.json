@@ -1,0 +1,12 @@
+{
+    "generated_at":  "2026-05-27T11:22:24.6409676Z",
+    "result":  "pass",
+    "pack_id":  "PF-20260527-934d6e60",
+    "verified":  true,
+    "manifest_ok":  true,
+    "signature_ok":  true,
+    "key_id":  "https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod",
+    "signing_mode":  "azure_key_vault",
+    "signature_provider":  "azure_key_vault",
+    "algorithm":  "ES256"
+}

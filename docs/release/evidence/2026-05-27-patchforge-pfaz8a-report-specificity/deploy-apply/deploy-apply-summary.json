@@ -1,0 +1,17 @@
+{
+    "generated_at":  "2026-05-27T11:33:38.3491973Z",
+    "result":  "pass",
+    "update_type":  "targeted_image_only_containerapp_update",
+    "image_tag":  "pfaz8a-20260527-4f3bbe8",
+    "active_revision_count":  6,
+    "revisions":  [
+                      "ca-patchforge-bridge-prod:ca-patchforge-bridge-prod--0000011:acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-bridge:pfaz8a-20260527-4f3bbe8",
+                      "ca-patchforge-ui-prod:ca-patchforge-ui-prod--0000012:acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-frontend:pfaz8a-20260527-4f3bbe8",
+                      "ca-patchforge-sra-prod:ca-patchforge-sra-prod--0000009:acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-sra-agent:pfaz8a-20260527-4f3bbe8",
+                      "ca-patchforge-worker-prod:ca-patchforge-worker-prod--0000009:acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-ingest-worker:pfaz8a-20260527-4f3bbe8",
+                      "ca-patchforge-scheduler-prod:ca-patchforge-scheduler-prod--0000009:acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-scheduler:pfaz8a-20260527-4f3bbe8",
+                      "ca-patchforge-runtime-prod:ca-patchforge-runtime-prod--0000010:acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-runtime:pfaz8a-20260527-4f3bbe8"
+                  ],
+    "before":  "active-revisions-before.json",
+    "after":  "active-revisions-after-update.json"
+}

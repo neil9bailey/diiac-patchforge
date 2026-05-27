@@ -3,10 +3,12 @@
   "baseline_id": "PF-AZ8A",
   "baseline_name": "Customer report specificity and guided decision usefulness",
   "baseline_date": "2026-05-27",
-  "status": "local_validated_pending_azure_rollout",
+  "status": "azure_live_browser_validated",
   "target_url": "https://patchforge.diiac.io",
   "api_url": "https://api.patchforge.diiac.io",
   "remote_target": "neil9bailey/diiac-patchforge",
+  "image_tag": "pfaz8a-20260527-4f3bbe8",
+  "commit": "4f3bbe8",
   "previous_live_release": {
     "baseline_id": "PF-AZ9",
     "image_tag": "pfaz9-20260527-c494375",
@@ -22,8 +24,23 @@
     "docker_builds": "pass",
     "docx_pdf_report_quality": "pass"
   },
-  "azure_rollout": "pending",
-  "live_ui_validation": "pending",
+  "azure_rollout": {
+    "git_push": "pass",
+    "acr_image_push": "pass",
+    "container_apps_update": "pass",
+    "active_revision_count": 6
+  },
+  "live_ui_validation": {
+    "result": "pass",
+    "signed_in_user": "n.bailey@diiac.io",
+    "displayed_role": "PatchForge.Admin",
+    "validated_cve": "CVE-2026-48172",
+    "signed_pack_id": "PF-20260527-934d6e60",
+    "signed_pack_verified": true,
+    "final_approval_issued": false,
+    "report_exports": "pass",
+    "report_visual_qa": "pass"
+  },
   "boundary": {
     "scanner": "excluded",
     "exploit_generation": "excluded",

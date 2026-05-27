@@ -1,7 +1,9 @@
 {
   "release": "PF-AZ8A",
   "date": "2026-05-27",
-  "status": "local_pass_pending_azure_rollout",
+  "status": "pass",
+  "image_tag": "pfaz8a-20260527-4f3bbe8",
+  "commit": "4f3bbe8",
   "previous_live_release": {
     "release": "PF-AZ9",
     "image_tag": "pfaz9-20260527-c494375",
@@ -28,11 +30,37 @@
       "status": "pass",
       "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz8a-report-specificity/local-report-qa/"
     },
-    { "name": "github_push", "status": "pending" },
-    { "name": "azure_image_push", "status": "pending" },
-    { "name": "azure_update", "status": "pending" },
-    { "name": "live_api_smoke", "status": "pending" },
-    { "name": "live_ui_report_validation", "status": "pending" }
+    { "name": "github_push", "status": "pass", "commit": "4f3bbe8" },
+    {
+      "name": "azure_image_push",
+      "status": "pass",
+      "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz8a-report-specificity/build-push/acr-tag-verification.json"
+    },
+    {
+      "name": "azure_update",
+      "status": "pass",
+      "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz8a-report-specificity/deploy-apply/active-revisions-after-update.json"
+    },
+    {
+      "name": "live_api_smoke",
+      "status": "pass",
+      "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz8a-report-specificity/live-ui/live-api-smoke.json"
+    },
+    {
+      "name": "live_ui_report_validation",
+      "status": "pass",
+      "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz8a-report-specificity/live-ui/ui-smoke-summary.json"
+    },
+    {
+      "name": "keyvault_signing_smoke",
+      "status": "pass",
+      "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz8a-report-specificity/live-ui/keyvault-signing-smoke.json"
+    },
+    {
+      "name": "postgres_smoke",
+      "status": "pass",
+      "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz8a-report-specificity/live-ui/postgres-smoke.json"
+    }
   ],
   "wording_and_boundary_checks": {
     "old_autonomous_heading_absent": true,
@@ -44,5 +72,12 @@
     "final_approval_false_until_human_review": true,
     "exploit_instructions_absent": true,
     "patch_deployment_implication_absent": true
+  },
+  "live_pack": {
+    "pack_id": "PF-20260527-934d6e60",
+    "verified": true,
+    "manifest_ok": true,
+    "signature_ok": true,
+    "final_approval_issued": false
   }
 }

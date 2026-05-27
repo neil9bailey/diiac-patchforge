@@ -2,7 +2,7 @@
 
 Date: 2026-05-27
 
-Status: local validation complete. Azure rollout and live UI validation are pending.
+Status: PASS. Azure rollout and live UI validation are complete.
 
 ## Purpose
 
@@ -33,15 +33,34 @@ Evidence:
 
 - `docs/release/evidence/2026-05-27-patchforge-pfaz8a-report-specificity/local-report-qa/`
 
-## Pending Gates
+## Azure Gates
 
-- GitHub push.
-- ACR image build/push.
-- Azure Container Apps update.
-- Live API smoke.
-- Browser/MSAL live UI validation as PatchForge.Admin.
-- Live signed pack generation and verification.
-- Live customer, board, and CAB DOCX/PDF export validation.
+- GitHub push: PASS, commit `4f3bbe8`.
+- Image tag: `pfaz8a-20260527-4f3bbe8`.
+- ACR image build/push: PASS for frontend, bridge/API, runtime, SRA, worker, and scheduler.
+- Azure Container Apps image update: PASS.
+- Active revisions:
+  - UI: `ca-patchforge-ui-prod--0000012`.
+  - Bridge/API: `ca-patchforge-bridge-prod--0000011`.
+  - Runtime: `ca-patchforge-runtime-prod--0000010`.
+  - SRA: `ca-patchforge-sra-prod--0000009`.
+  - Worker: `ca-patchforge-worker-prod--0000009`.
+  - Scheduler: `ca-patchforge-scheduler-prod--0000009`.
+
+## Live Gates
+
+- Live API smoke: PASS.
+- Browser/MSAL live UI validation as `PatchForge.Admin`: PASS.
+- Context banner for `CVE-2026-48172`: PASS.
+- Live signed pack generation and verification: PASS, `PF-20260527-934d6e60`.
+- Key Vault signing: PASS, `pf-pack-signing-prod`, ES256, `azure_key_vault`.
+- PostgreSQL readiness: PASS.
+- Live customer, board, and CAB DOCX/PDF export validation: PASS.
+- Live DOCX wording checks and PDF render QA: PASS.
+
+Evidence:
+
+- `docs/release/evidence/2026-05-27-patchforge-pfaz8a-report-specificity/live-ui/`
 
 ## Boundary
 

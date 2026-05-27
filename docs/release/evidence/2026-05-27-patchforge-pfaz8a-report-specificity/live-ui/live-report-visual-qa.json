@@ -1,0 +1,129 @@
+{
+  "generated_at": "2026-05-27T11:16:52.716136+00:00",
+  "docx_text_qa": [
+    {
+      "file": "PF-20260527-934d6e60-board_vulnerability_remediation_summary.docx",
+      "paragraphs": 177,
+      "tables": 4,
+      "required_checks": {
+        "Automated Governance Analysis Completed": true,
+        "Human approval remains required. PatchForge does not approve CAB decisions, risk acceptance, patch deployment, or closure autonomously.": true,
+        "Urgent scope confirmation required - final remediation decision blocked pending evidence.": true,
+        "CISA KEV indicates the vulnerability appears in a known exploited vulnerability source feed.": true,
+        "Known exploited signal is present, but EPSS is low. This does not remove the need for scope confirmation.": true,
+        "Reviewed vendor advisory evidence has not yet been attached.": true,
+        "Patch maturity, affected versions, workaround guidance, and remediation applicability remain unverified.": true,
+        "final_approval_not_issued": true
+      },
+      "prohibited_checks": {
+        "old_autonomous_heading_absent": true,
+        "old_generic_gap_outcome_absent": true,
+        "PatchForge sees enterprise service exposure": true,
+        "Exploit steps:": true,
+        "Payload:": true,
+        "Run this exploit": true,
+        "Use the following exploit": true,
+        "PatchForge deployed the patch": true,
+        "PatchForge approved the CAB decision": true,
+        "PatchForge accepted the risk": true
+      },
+      "boundary_checks": {
+        "exploit_content_boundary_present": true,
+        "no_deployment_boundary_present": true
+      },
+      "pass": true
+    },
+    {
+      "file": "PF-20260527-934d6e60-cab_patch_decision_report.docx",
+      "paragraphs": 177,
+      "tables": 4,
+      "required_checks": {
+        "Automated Governance Analysis Completed": true,
+        "Human approval remains required. PatchForge does not approve CAB decisions, risk acceptance, patch deployment, or closure autonomously.": true,
+        "Urgent scope confirmation required - final remediation decision blocked pending evidence.": true,
+        "CISA KEV indicates the vulnerability appears in a known exploited vulnerability source feed.": true,
+        "Known exploited signal is present, but EPSS is low. This does not remove the need for scope confirmation.": true,
+        "Reviewed vendor advisory evidence has not yet been attached.": true,
+        "Patch maturity, affected versions, workaround guidance, and remediation applicability remain unverified.": true,
+        "final_approval_not_issued": true
+      },
+      "prohibited_checks": {
+        "old_autonomous_heading_absent": true,
+        "old_generic_gap_outcome_absent": true,
+        "PatchForge sees enterprise service exposure": true,
+        "Exploit steps:": true,
+        "Payload:": true,
+        "Run this exploit": true,
+        "Use the following exploit": true,
+        "PatchForge deployed the patch": true,
+        "PatchForge approved the CAB decision": true,
+        "PatchForge accepted the risk": true
+      },
+      "boundary_checks": {
+        "exploit_content_boundary_present": true,
+        "no_deployment_boundary_present": true
+      },
+      "pass": true
+    },
+    {
+      "file": "PF-20260527-934d6e60-customer_patch_governance_pack.docx",
+      "paragraphs": 231,
+      "tables": 4,
+      "required_checks": {
+        "Automated Governance Analysis Completed": true,
+        "Human approval remains required. PatchForge does not approve CAB decisions, risk acceptance, patch deployment, or closure autonomously.": true,
+        "Urgent scope confirmation required - final remediation decision blocked pending evidence.": true,
+        "CISA KEV indicates the vulnerability appears in a known exploited vulnerability source feed.": true,
+        "Known exploited signal is present, but EPSS is low. This does not remove the need for scope confirmation.": true,
+        "Reviewed vendor advisory evidence has not yet been attached.": true,
+        "Patch maturity, affected versions, workaround guidance, and remediation applicability remain unverified.": true,
+        "final_approval_not_issued": true,
+        "Customer Assurance Position": true,
+        "Customer Impact Status": true,
+        "Customer Evidence Required": true,
+        "Customer Communication Position": true,
+        "What Can Be Shared With Customer": true,
+        "What Cannot Yet Be Claimed": true,
+        "No customer remediation assurance can be issued yet because affected customer service scope and patch applicability evidence are not reviewed.": true
+      },
+      "prohibited_checks": {
+        "old_autonomous_heading_absent": true,
+        "old_generic_gap_outcome_absent": true,
+        "PatchForge sees enterprise service exposure": true,
+        "Exploit steps:": true,
+        "Payload:": true,
+        "Run this exploit": true,
+        "Use the following exploit": true,
+        "PatchForge deployed the patch": true,
+        "PatchForge approved the CAB decision": true,
+        "PatchForge accepted the risk": true
+      },
+      "boundary_checks": {
+        "exploit_content_boundary_present": true,
+        "no_deployment_boundary_present": true
+      },
+      "pass": true
+    }
+  ],
+  "pdf_render_qa": [
+    {
+      "file": "PF-20260527-934d6e60-board_vulnerability_remediation_summary.pdf",
+      "pages": 5,
+      "rendered_pages": 5,
+      "contact_sheet": "docs\\release\\evidence\\2026-05-27-patchforge-pfaz8a-report-specificity\\live-ui\\report-render-qa\\PF-20260527-934d6e60-board_vulnerability_remediation_summary-contact-sheet.png"
+    },
+    {
+      "file": "PF-20260527-934d6e60-cab_patch_decision_report.pdf",
+      "pages": 5,
+      "rendered_pages": 5,
+      "contact_sheet": "docs\\release\\evidence\\2026-05-27-patchforge-pfaz8a-report-specificity\\live-ui\\report-render-qa\\PF-20260527-934d6e60-cab_patch_decision_report-contact-sheet.png"
+    },
+    {
+      "file": "PF-20260527-934d6e60-customer_patch_governance_pack.pdf",
+      "pages": 6,
+      "rendered_pages": 6,
+      "contact_sheet": "docs\\release\\evidence\\2026-05-27-patchforge-pfaz8a-report-specificity\\live-ui\\report-render-qa\\PF-20260527-934d6e60-customer_patch_governance_pack-contact-sheet.png"
+    }
+  ],
+  "overall_pass": true
+}

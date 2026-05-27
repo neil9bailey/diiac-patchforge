@@ -2,13 +2,21 @@
 
 ## DIIaC PatchForge PF-AZ8A
 
-Release state: PF-AZ8A is locally validated and pending Azure rollout/live UI validation.
+Release state: PF-AZ8A is deployed to Azure and live validated through the production UI/API as a signed-in PatchForge Admin user.
 
 Date: 2026-05-27
 
 PF-AZ8A is the customer report specificity and guided decision-usefulness increment applied after the PF-AZ9 operational health baseline.
 
-PF-AZ8A local evidence path:
+PF-AZ8A image tag:
+
+- `pfaz8a-20260527-4f3bbe8`
+
+PF-AZ8A commit:
+
+- `4f3bbe8`
+
+PF-AZ8A evidence path:
 
 - `docs/release/evidence/2026-05-27-patchforge-pfaz8a-report-specificity/`
 
@@ -33,11 +41,38 @@ PF-AZ8A local validation:
 - Docker frontend, bridge/API, and runtime build smoke: PASS
 - DOCX structural/open QA and PDF render QA for customer, board, and CAB reports: PASS
 
-PF-AZ8A still requires Azure image rollout and live UI validation before it can be treated as the live production baseline.
+PF-AZ8A Azure rollout:
+
+- GitHub push: PASS, commit `4f3bbe8`
+- ACR build/push: PASS for frontend, bridge/API, runtime, SRA, worker, and scheduler images
+- Targeted image-only Container Apps update: PASS
+- Active revisions:
+  - UI: `ca-patchforge-ui-prod--0000012`
+  - Bridge/API: `ca-patchforge-bridge-prod--0000011`
+  - Runtime: `ca-patchforge-runtime-prod--0000010`
+  - SRA: `ca-patchforge-sra-prod--0000009`
+  - Worker: `ca-patchforge-worker-prod--0000009`
+  - Scheduler: `ca-patchforge-scheduler-prod--0000009`
+
+PF-AZ8A live validation:
+
+- UI HTTP 200: PASS
+- API readiness HTTP 200 with `storage=postgresql` and `auth_required=true`: PASS
+- Protected vulnerability route unauthenticated HTTP 401: PASS
+- Browser/MSAL sign-in as `n.bailey@diiac.io`: PASS
+- Displayed role `PatchForge.Admin`: PASS
+- Context banner for `CVE-2026-48172`: PASS
+- Fresh signed pack generated: `PF-20260527-934d6e60`
+- Signed pack verification: PASS, `verified=true`, `manifest_ok=true`, `signature_ok=true`
+- Key Vault signing: PASS, `pf-pack-signing-prod`, ES256, `azure_key_vault`
+- PostgreSQL readiness and Admin database health: PASS
+- Customer, board, and CAB DOCX/PDF report export: PASS
+- Live DOCX wording QA and PDF render QA: PASS
+- Final approval remained false: PASS
 
 ## DIIaC PatchForge PF-AZ9
 
-Release state: PF-AZ9 is deployed to Azure and live validated through the production Admin UI/API as a signed-in PatchForge Admin user.
+Release state: PF-AZ9 was the previous deployed operational health baseline.
 
 Date: 2026-05-27
 
@@ -104,7 +139,7 @@ Release state: PF-AZ7 was the previous live operational customer-demo baseline.
 
 Date: 2026-05-27
 
-PF-AZ9 is now the currently deployed Azure baseline.
+PF-AZ8A is now the currently deployed Azure baseline.
 
 ## PF-AZ7 Operational Demo Increment
 

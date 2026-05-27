@@ -1,0 +1,15 @@
+{
+    "generated_at":  "2026-05-27T11:33:26.6488748Z",
+    "result":  "pass",
+    "registry":  "acrdiiacpatchforgeprod.azurecr.io",
+    "image_tag":  "pfaz8a-20260527-4f3bbe8",
+    "repositories":  [
+                         "diiac/patchforge-frontend",
+                         "diiac/patchforge-bridge",
+                         "diiac/patchforge-runtime",
+                         "diiac/patchforge-sra-agent",
+                         "diiac/patchforge-ingest-worker",
+                         "diiac/patchforge-scheduler"
+                     ],
+    "verification":  "acr-tag-verification.json"
+}

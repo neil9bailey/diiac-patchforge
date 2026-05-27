@@ -1,0 +1,62 @@
+[
+    {
+        "app":  "ca-patchforge-ui-prod",
+        "name":  "ca-patchforge-ui-prod--0000012",
+        "active":  true,
+        "traffic":  100,
+        "created":  "2026-05-27T11:07:21+00:00",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-frontend:pfaz8a-20260527-4f3bbe8",
+        "health":  "Healthy",
+        "provisioning":  "Provisioned"
+    },
+    {
+        "app":  "ca-patchforge-bridge-prod",
+        "name":  "ca-patchforge-bridge-prod--0000011",
+        "active":  true,
+        "traffic":  100,
+        "created":  "2026-05-27T11:07:37+00:00",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-bridge:pfaz8a-20260527-4f3bbe8",
+        "health":  "Healthy",
+        "provisioning":  "Provisioned"
+    },
+    {
+        "app":  "ca-patchforge-runtime-prod",
+        "name":  "ca-patchforge-runtime-prod--0000010",
+        "active":  true,
+        "traffic":  100,
+        "created":  "2026-05-27T11:07:52+00:00",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-runtime:pfaz8a-20260527-4f3bbe8",
+        "health":  "Healthy",
+        "provisioning":  "Provisioned"
+    },
+    {
+        "app":  "ca-patchforge-sra-prod",
+        "name":  "ca-patchforge-sra-prod--0000009",
+        "active":  true,
+        "traffic":  100,
+        "created":  "2026-05-27T11:08:09+00:00",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-sra-agent:pfaz8a-20260527-4f3bbe8",
+        "health":  "Healthy",
+        "provisioning":  "Provisioned"
+    },
+    {
+        "app":  "ca-patchforge-worker-prod",
+        "name":  "ca-patchforge-worker-prod--0000009",
+        "active":  true,
+        "traffic":  100,
+        "created":  "2026-05-27T11:08:26+00:00",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-ingest-worker:pfaz8a-20260527-4f3bbe8",
+        "health":  "Healthy",
+        "provisioning":  "Provisioned"
+    },
+    {
+        "app":  "ca-patchforge-scheduler-prod",
+        "name":  "ca-patchforge-scheduler-prod--0000009",
+        "active":  true,
+        "traffic":  100,
+        "created":  "2026-05-27T11:08:41+00:00",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-scheduler:pfaz8a-20260527-4f3bbe8",
+        "health":  "Healthy",
+        "provisioning":  "Provisioned"
+    }
+]

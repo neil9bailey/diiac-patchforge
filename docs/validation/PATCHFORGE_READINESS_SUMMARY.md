@@ -13,7 +13,7 @@ PatchForge is live on Azure Container Apps under the DIIaC tenant with:
 - source-bound evidence and signed pack governance controls
 - guided Action Center, Finding Detail, Review & Approve, Reports & Packs, Guide, and Admin workflow
 - professional protected DOCX/PDF report generation from signed decision packs
-- PF-AZ9 image tag `pfaz9-20260527-c494375` on all PatchForge Container Apps
+- PF-AZ8A image tag `pfaz8a-20260527-4f3bbe8` on all PatchForge Container Apps
 
 PF-AZ8 added the customer-demo workflow hardening requested after report/UI review:
 
@@ -34,24 +34,36 @@ PF-AZ9 completes the operational health checks:
 - scheduler health reports `ready`
 - Admin health shows operational mode detail
 
+PF-AZ8A completes the customer report specificity and guided decision-usefulness refinement:
+
+- safer `Automated Governance Analysis Completed` wording
+- explicit human-approval notice below automated governance preparation
+- urgent scope confirmation posture for known-exploited public-source records with unconfirmed customer exposure
+- KEV/EPSS plain-English explanation where known-exploited and low EPSS signals appear together
+- customer-specific assurance, impact, evidence, communication, shareable-position, and not-yet-claimable sections
+- specific evidence gaps with rationale, required evidence, examples, owner role, and next decision gate
+- live customer, board, and CAB DOCX/PDF reports exported from signed pack `PF-20260527-934d6e60`
+
 ## Live Validation
 
-PF-AZ9 Azure update and live Admin UI/API validation are complete for the current commit and image tag.
+PF-AZ8A Azure update and live UI/API validation are complete for the current commit and image tag.
 
 - User: `n.bailey@diiac.io`
 - Role displayed: `PatchForge.Admin`
 - Validated record: `CVE-2026-48172`
-- Signed pack: `PF-20260527-9fc7f010`
+- Signed pack: `PF-20260527-934d6e60`
 - Pack verification: PASS
 - Manifest verification: PASS
 - Signature verification: PASS
 - Signing provider: `azure_key_vault`
 - Final approval: `false`
-- DOCX report generation: PASS
-- PDF report generation: PASS
+- Customer DOCX/PDF report generation: PASS
+- Board DOCX/PDF report generation: PASS
+- CAB DOCX/PDF report generation: PASS
+- Live DOCX wording QA and PDF render QA: PASS
 - PostgreSQL readiness: PASS
 - Protected unauthenticated route returns: HTTP 401
-- Evidence path: `docs/release/evidence/2026-05-27-patchforge-pfaz8-guided-intelligence-workflow/live-ui/`
+- Evidence path: `docs/release/evidence/2026-05-27-patchforge-pfaz8a-report-specificity/live-ui/`
 - PF-AZ9 operational health evidence path: `docs/release/evidence/2026-05-27-patchforge-pfaz9-operational-health-enablement/live-ui/`
 
 ## Remaining Gaps

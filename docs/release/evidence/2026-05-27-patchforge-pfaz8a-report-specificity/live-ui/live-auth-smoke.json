@@ -1,0 +1,22 @@
+{
+  "generatedAt": "2026-05-27T11:23:07.955Z",
+  "url": "https://patchforge.diiac.io/",
+  "title": "DIIaC™ PatchForge",
+  "signedInUserVisible": true,
+  "adminRoleVisible": true,
+  "authStateVisible": true,
+  "contextBannerVisible": true,
+  "saferAutomationWordingVisible": true,
+  "oldAutomationWordingAbsent": true,
+  "humanApprovalNoticeVisible": true,
+  "generatedPackVisible": true,
+  "finalApprovalNotIssuedVisible": true,
+  "noAutonomousApprovalBoundaryVisible": true,
+  "screenshotValidatedPages": [
+    "Action Center",
+    "Finding Detail",
+    "Review & Approve",
+    "Reports & Packs",
+    "Admin"
+  ]
+}

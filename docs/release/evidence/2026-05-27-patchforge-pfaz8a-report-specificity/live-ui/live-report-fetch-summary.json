@@ -1,0 +1,184 @@
+{
+    "generatedAt":  "2026-05-27T11:13:48.397Z",
+    "signedInUser":  "n.bailey@diiac.io",
+    "displayedRole":  "PatchForge.Admin",
+    "packId":  "PF-20260527-934d6e60",
+    "packStatus":  200,
+    "verification":  {
+                         "verified":  true,
+                         "artefacts":  [
+                                           {
+                                               "ok":  true,
+                                               "name":  "affected_asset_scope.json",
+                                               "actual":  "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843",
+                                               "expected":  "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843"
+                                           },
+                                           {
+                                               "ok":  true,
+                                               "name":  "bayesian_patch_risk_snapshot.json",
+                                               "actual":  "a61f8f6465e361b0e00464c65fa4f860b73b30aa713e3e747a15f2fd8742212b",
+                                               "expected":  "a61f8f6465e361b0e00464c65fa4f860b73b30aa713e3e747a15f2fd8742212b"
+                                           },
+                                           {
+                                               "ok":  true,
+                                               "name":  "compensating_controls_plan.json",
+                                               "actual":  "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+                                               "expected":  "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+                                           },
+                                           {
+                                               "ok":  true,
+                                               "name":  "exploitability_assessment.json",
+                                               "actual":  "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843",
+                                               "expected":  "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843"
+                                           },
+                                           {
+                                               "ok":  true,
+                                               "name":  "finding_intelligence_snapshot.json",
+                                               "actual":  "1ec88ce16eb311bad321fc94600f136e2756983b4697404acb1391aa7345910c",
+                                               "expected":  "1ec88ce16eb311bad321fc94600f136e2756983b4697404acb1391aa7345910c"
+                                           },
+                                           {
+                                               "ok":  true,
+                                               "name":  "human_review_state.json",
+                                               "actual":  "f5f8227f3fa4f41292047918bc64d137e32d178ec0ec747dde4e0e5479863180",
+                                               "expected":  "f5f8227f3fa4f41292047918bc64d137e32d178ec0ec747dde4e0e5479863180"
+                                           },
+                                           {
+                                               "ok":  true,
+                                               "name":  "patch_change_readiness.json",
+                                               "actual":  "0f508a5b6ba0bb870b67ec8f9e2e3691cc0848893d9798cd484de6c1b865af6e",
+                                               "expected":  "0f508a5b6ba0bb870b67ec8f9e2e3691cc0848893d9798cd484de6c1b865af6e"
+                                           },
+                                           {
+                                               "ok":  true,
+                                               "name":  "patch_decision_context.json",
+                                               "actual":  "e375b544aca9b10ca54a16ea1309b62eeb66303cfb55c5dbc1a54634dc2f77bd",
+                                               "expected":  "e375b544aca9b10ca54a16ea1309b62eeb66303cfb55c5dbc1a54634dc2f77bd"
+                                           },
+                                           {
+                                               "ok":  true,
+                                               "name":  "patch_feasibility_assessment.json",
+                                               "actual":  "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+                                               "expected":  "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+                                           },
+                                           {
+                                               "ok":  true,
+                                               "name":  "patch_prior_update_proposal.json",
+                                               "actual":  "ebd17e0c3518ab9b4f9ec1402c52a30c51159eb7b324036c18a4ac825745debc",
+                                               "expected":  "ebd17e0c3518ab9b4f9ec1402c52a30c51159eb7b324036c18a4ac825745debc"
+                                           },
+                                           {
+                                               "ok":  true,
+                                               "name":  "patch_prior_usage_manifest.json",
+                                               "actual":  "1ae749525417760a655f8d75ee40595864fde6155e43aa4a23537aa0e876a7c9",
+                                               "expected":  "1ae749525417760a655f8d75ee40595864fde6155e43aa4a23537aa0e876a7c9"
+                                           },
+                                           {
+                                               "ok":  true,
+                                               "name":  "patch_risk_acceptance_state.json",
+                                               "actual":  "240fa9c55e6c6a5659a74edfc30c159d74c3616651fa672443d312682e6c66df",
+                                               "expected":  "240fa9c55e6c6a5659a74edfc30c159d74c3616651fa672443d312682e6c66df"
+                                           },
+                                           {
+                                               "ok":  true,
+                                               "name":  "replay_certificate.json",
+                                               "actual":  "268c4ed845dd11dda1622c946308471ae30c957999afe0f23037691e5b54fee8",
+                                               "expected":  "268c4ed845dd11dda1622c946308471ae30c957999afe0f23037691e5b54fee8"
+                                           },
+                                           {
+                                               "ok":  true,
+                                               "name":  "sra_trace.json",
+                                               "actual":  "47dbb360210fd7279ed2120f0e090807e8de6b6198ebe6d2bfac7f8a514b8292",
+                                               "expected":  "47dbb360210fd7279ed2120f0e090807e8de6b6198ebe6d2bfac7f8a514b8292"
+                                           },
+                                           {
+                                               "ok":  true,
+                                               "name":  "threat_landscape_snapshot.json",
+                                               "actual":  "ed078d39a8bed08b16b74e90e6ee89fda87ce2d03153ab04bdd745620756b900",
+                                               "expected":  "ed078d39a8bed08b16b74e90e6ee89fda87ce2d03153ab04bdd745620756b900"
+                                           },
+                                           {
+                                               "ok":  true,
+                                               "name":  "trust_bundle.json",
+                                               "actual":  "af2e7686ddf7befdc5df08c00811af347a9f944457285dc6ba6ac4f39a6de4ed",
+                                               "expected":  "af2e7686ddf7befdc5df08c00811af347a9f944457285dc6ba6ac4f39a6de4ed"
+                                           },
+                                           {
+                                               "ok":  true,
+                                               "name":  "vendor_intelligence_snapshot.json",
+                                               "actual":  "2e240f711b516376553cf0e1479b5d9a4e2df182c0723d207958448a90898a3f",
+                                               "expected":  "2e240f711b516376553cf0e1479b5d9a4e2df182c0723d207958448a90898a3f"
+                                           },
+                                           {
+                                               "ok":  true,
+                                               "name":  "vulnerability_intelligence_snapshot.json",
+                                               "actual":  "1214d6529746d7e22aa8101327c4adf7fb6afd626550ff06d951d28d5a44bc65",
+                                               "expected":  "1214d6529746d7e22aa8101327c4adf7fb6afd626550ff06d951d28d5a44bc65"
+                                           }
+                                       ],
+                         "manifest_ok":  true,
+                         "signature_ok":  true
+                     },
+    "finalApprovalIssued":  false,
+    "signingProvider":  null,
+    "boundary":  {
+                     "no_scanner":  true,
+                     "no_exploit_generation":  true,
+                     "no_patch_deployment":  true,
+                     "no_production_mutation":  true,
+                     "no_autonomous_approval":  true
+                 },
+    "vulnerabilityCount":  10,
+    "cvePresent":  true,
+    "adminHealthStatus":  null,
+    "reports":  [
+                    {
+                        "reportType":  "customer_patch_governance_pack",
+                        "format":  "docx",
+                        "status":  200,
+                        "contentType":  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        "file":  "docs\\release\\evidence\\2026-05-27-patchforge-pfaz8a-report-specificity\\live-ui\\exported-reports\\PF-20260527-934d6e60-customer_patch_governance_pack.docx",
+                        "bytes":  147056
+                    },
+                    {
+                        "reportType":  "customer_patch_governance_pack",
+                        "format":  "pdf",
+                        "status":  200,
+                        "contentType":  "application/pdf",
+                        "file":  "docs\\release\\evidence\\2026-05-27-patchforge-pfaz8a-report-specificity\\live-ui\\exported-reports\\PF-20260527-934d6e60-customer_patch_governance_pack.pdf",
+                        "bytes":  73871
+                    },
+                    {
+                        "reportType":  "board_vulnerability_remediation_summary",
+                        "format":  "docx",
+                        "status":  200,
+                        "contentType":  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        "file":  "docs\\release\\evidence\\2026-05-27-patchforge-pfaz8a-report-specificity\\live-ui\\exported-reports\\PF-20260527-934d6e60-board_vulnerability_remediation_summary.docx",
+                        "bytes":  128213
+                    },
+                    {
+                        "reportType":  "board_vulnerability_remediation_summary",
+                        "format":  "pdf",
+                        "status":  200,
+                        "contentType":  "application/pdf",
+                        "file":  "docs\\release\\evidence\\2026-05-27-patchforge-pfaz8a-report-specificity\\live-ui\\exported-reports\\PF-20260527-934d6e60-board_vulnerability_remediation_summary.pdf",
+                        "bytes":  62778
+                    },
+                    {
+                        "reportType":  "cab_patch_decision_report",
+                        "format":  "docx",
+                        "status":  200,
+                        "contentType":  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        "file":  "docs\\release\\evidence\\2026-05-27-patchforge-pfaz8a-report-specificity\\live-ui\\exported-reports\\PF-20260527-934d6e60-cab_patch_decision_report.docx",
+                        "bytes":  128165
+                    },
+                    {
+                        "reportType":  "cab_patch_decision_report",
+                        "format":  "pdf",
+                        "status":  200,
+                        "contentType":  "application/pdf",
+                        "file":  "docs\\release\\evidence\\2026-05-27-patchforge-pfaz8a-report-specificity\\live-ui\\exported-reports\\PF-20260527-934d6e60-cab_patch_decision_report.pdf",
+                        "bytes":  62725
+                    }
+                ]
+}

@@ -1,0 +1,7 @@
+{
+    "generated_at":  "2026-05-27T11:33:09.6706981Z",
+    "result":  "pass",
+    "output":  "what-if-output.txt",
+    "error":  "what-if-error.txt",
+    "note":  "Full Bicep what-if captured. Targeted image-only update was used because what-if includes broader existing env/bootstrap drift."
+}

@@ -4,7 +4,7 @@
 
 Date: 2026-05-27
 
-Status: LOCAL PASS. Azure rollout and live UI validation are pending and are not yet claimed as complete.
+Status: PASS. PF-AZ8A is deployed to Azure and validated through the live UI/API as a signed-in PatchForge Admin user.
 
 Scope:
 
@@ -48,11 +48,45 @@ Important boundary note: PF-AZ8A does not add scanning, exploit generation, proc
 
 Azure rollout:
 
-- Pending.
+- GitHub push: PASS, commit `4f3bbe8`
+- Image tag: `pfaz8a-20260527-4f3bbe8`
+- ACR image push: PASS for frontend, bridge/API, runtime, SRA, worker, and scheduler
+- ACR tag verification: PASS for all six repositories
+- Bicep what-if: captured; not applied because it included broader drift/noise than the image rollout required
+- Targeted image-only Container Apps update: PASS
+- Active revisions:
+  - UI: `ca-patchforge-ui-prod--0000012`
+  - Bridge/API: `ca-patchforge-bridge-prod--0000011`
+  - Runtime: `ca-patchforge-runtime-prod--0000010`
+  - SRA: `ca-patchforge-sra-prod--0000009`
+  - Worker: `ca-patchforge-worker-prod--0000009`
+  - Scheduler: `ca-patchforge-scheduler-prod--0000009`
 
 Live validation:
 
-- Pending.
+- UI HTTP 200: PASS
+- API health HTTP 200: PASS
+- API readiness HTTP 200 with `storage=postgresql`, `auth_required=true`, and `tenant_required=true`: PASS
+- Protected vulnerability route unauthenticated HTTP 401: PASS
+- Browser/MSAL sign-in as `n.bailey@diiac.io`: PASS
+- Displayed role `PatchForge.Admin`: PASS
+- Context banner for `CVE-2026-48172`: PASS
+- Safer automation wording visible: PASS
+- Old autonomous-analysis heading absent: PASS
+- Human approval notice visible: PASS
+- Fresh signed pack generated after PF-AZ8A rollout: `PF-20260527-934d6e60`
+- Pack verification: PASS, `verified=true`, `manifest_ok=true`, `signature_ok=true`
+- Key Vault signing smoke: PASS, `pf-pack-signing-prod`, ES256, `azure_key_vault`
+- Final approval remained false: PASS
+- Customer Patch Governance Pack DOCX/PDF export: PASS
+- Board Vulnerability Remediation Summary DOCX/PDF export: PASS
+- CAB Patch Decision Report DOCX/PDF export: PASS
+- DOCX wording checks and PDF render QA: PASS
+- PostgreSQL readiness: PASS
+
+PF-AZ8A evidence path:
+
+`docs/release/evidence/2026-05-27-patchforge-pfaz8a-report-specificity/`
 
 # PF-AZ9 Validation Outputs
 

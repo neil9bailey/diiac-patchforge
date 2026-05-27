@@ -9,11 +9,11 @@ DIIaC™ PatchForge
 | Document | Owner | Status | Version | Date |
 | --- | --- | --- | --- | --- |
 | README.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
-| CURRENT_RELEASE.md | DIIaC | Active | 1.2.0 | 2026-05-27 |
-| RELEASE_BASELINE_MANIFEST.json | DIIaC | Active | 1.2.0 | 2026-05-27 |
-| QUALITY_GATES_REPORT.json | DIIaC | Active | 0.7.0 | 2026-05-27 |
-| VALIDATION_OUTPUTS.md | DIIaC | Active | 0.7.0 | 2026-05-27 |
-| PATCHFORGE_OPEN_GAPS_REGISTER.md | DIIaC | Active | 0.6.0 | 2026-05-27 |
+| CURRENT_RELEASE.md | DIIaC | Active | 1.3.0 | 2026-05-27 |
+| RELEASE_BASELINE_MANIFEST.json | DIIaC | Active | 1.3.0 | 2026-05-27 |
+| QUALITY_GATES_REPORT.json | DIIaC | Active | 0.8.0 | 2026-05-27 |
+| VALIDATION_OUTPUTS.md | DIIaC | Active | 0.8.0 | 2026-05-27 |
+| PATCHFORGE_OPEN_GAPS_REGISTER.md | DIIaC | Active | 0.7.0 | 2026-05-27 |
 | CODEX_WORKING_MEMORY.md | DIIaC | Active | 0.5.0 | 2026-05-26 |
 | docs/product/PATCHFORGE_MASTER_WORKING_BRIEF.md | DIIaC | Active | 0.1.0 | 2026-05-26 |
 | docs/product/PATCHFORGE_PRODUCT_POSITIONING.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
@@ -111,8 +111,8 @@ DIIaC™ PatchForge
 | docs/release/PF_AZ9_RELEASE_BASELINE_MANIFEST.json | DIIaC | Active | 0.1.0 | 2026-05-27 |
 | docs/release/PF_AZ9_PRODUCTION_READINESS_SUMMARY.md | DIIaC | Active | 0.1.0 | 2026-05-27 |
 | docs/release/evidence/2026-05-27-patchforge-pfaz9-operational-health-enablement/** | DIIaC | Evidence | 0.1.0 | 2026-05-27 |
-| docs/release/PF_AZ8A_RELEASE_BASELINE_MANIFEST.json | DIIaC | Active | 0.1.0 | 2026-05-27 |
-| docs/release/PF_AZ8A_PRODUCTION_READINESS_SUMMARY.md | DIIaC | Active | 0.1.0 | 2026-05-27 |
+| docs/release/PF_AZ8A_RELEASE_BASELINE_MANIFEST.json | DIIaC | Active | 0.2.0 | 2026-05-27 |
+| docs/release/PF_AZ8A_PRODUCTION_READINESS_SUMMARY.md | DIIaC | Active | 0.2.0 | 2026-05-27 |
 | docs/release/evidence/2026-05-27-patchforge-pfaz8a-report-specificity/** | DIIaC | Evidence | 0.1.0 | 2026-05-27 |
 | runtime/bayesian_patch_risk.py | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | contracts/domain-models/patchforge/bayesian_patch_risk_snapshot.schema.json | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
