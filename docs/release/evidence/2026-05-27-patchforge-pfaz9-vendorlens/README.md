@@ -1,12 +1,12 @@
-# PF-AZ9 VendorLens Evidence
+# PF-AZ9-VENDORLENS Evidence
 
 Date: 2026-05-27
 
-This folder records PF-AZ9 VendorLens Network Vendor Intelligence and Config-Aware Patch Advisor evidence.
+This folder records PF-AZ9-VENDORLENS Network Vendor Intelligence and Config-Aware Patch Advisor evidence.
 
 ## Current State
 
-PF-AZ9 VendorLens is deployed to Azure and live validated through the production UI/API as `n.bailey@diiac.io` with `PatchForge.Admin`.
+PF-AZ9-VENDORLENS is deployed to Azure and live validated through the production UI/API as `n.bailey@diiac.io` with `PatchForge.Admin`.
 
 ## Local Evidence
 

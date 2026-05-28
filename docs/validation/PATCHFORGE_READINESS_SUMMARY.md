@@ -13,7 +13,7 @@ PatchForge is live on Azure Container Apps under the DIIaC tenant with:
 - source-bound evidence and signed pack governance controls
 - guided Action Center, Finding Detail, Review & Approve, Reports & Packs, Guide, and Admin workflow
 - professional protected DOCX/PDF report generation from signed decision packs
-- PF-AZ9 VendorLens image tag `pfaz9-20260527-e8a0de2` on all PatchForge Container Apps
+- PF-AZ9-VENDORLENS image tag `pfaz9-20260527-e8a0de2` on all PatchForge Container Apps
 
 PF-AZ8 added the customer-demo workflow hardening requested after report/UI review:
 
@@ -26,7 +26,7 @@ PF-AZ8 added the customer-demo workflow hardening requested after report/UI revi
 - board/CAB DOCX and PDF reports generated from live signed evidence
 - Admin health visibility for database, storage, Key Vault, signing, bridge, runtime, and frontend status
 
-PF-AZ9 completes the operational health checks:
+PF-AZ9-OPS completes the operational health checks:
 
 - MCP agent intake reports `governed`
 - public source feeds report `ready`
@@ -44,7 +44,7 @@ PF-AZ8A completes the customer report specificity and guided decision-usefulness
 - specific evidence gaps with rationale, required evidence, examples, owner role, and next decision gate
 - live customer, board, and CAB DOCX/PDF reports exported from signed pack `PF-20260527-934d6e60`
 
-PF-AZ9 VendorLens completes the network vendor intelligence and config-aware patch advisor increment:
+PF-AZ9-VENDORLENS completes the network vendor intelligence and config-aware patch advisor increment:
 
 - major network/security vendor catalogue with source-bound advisory source metadata
 - customer network asset records for vendor, product family, model, firmware, enabled/disabled features, and exposure
@@ -56,7 +56,7 @@ PF-AZ9 VendorLens completes the network vendor intelligence and config-aware pat
 
 ## Live Validation
 
-PF-AZ9 VendorLens Azure update and live UI/API validation are complete for the current commit and image tag.
+PF-AZ9-VENDORLENS Azure update and live UI/API validation are complete for the current commit and image tag.
 
 - User: `n.bailey@diiac.io`
 - Role displayed: `PatchForge.Admin`
@@ -71,10 +71,10 @@ PF-AZ9 VendorLens Azure update and live UI/API validation are complete for the c
 - Live DOCX structural QA: PASS
 - PostgreSQL readiness: PASS
 - Protected unauthenticated route returns: HTTP 401
-- PF-AZ9 VendorLens validation records removed from production PostgreSQL after evidence capture: PASS
+- PF-AZ9-VENDORLENS validation records removed from production PostgreSQL after evidence capture: PASS
 - Evidence path: `docs/release/evidence/2026-05-27-patchforge-pfaz9-vendorlens/live-ui/`
 - PF-AZ8A report specificity evidence path: `docs/release/evidence/2026-05-27-patchforge-pfaz8a-report-specificity/live-ui/`
-- PF-AZ9 operational health evidence path: `docs/release/evidence/2026-05-27-patchforge-pfaz9-operational-health-enablement/live-ui/`
+- PF-AZ9-OPS operational health evidence path: `docs/release/evidence/2026-05-27-patchforge-pfaz9-operational-health-enablement/live-ui/`
 
 ## Remaining Gaps
 

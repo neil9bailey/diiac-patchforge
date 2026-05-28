@@ -37,7 +37,7 @@ PatchForge does not scan environments, exploit vulnerabilities, deploy patches, 
 
 ## Current Product Scope
 
-This repository now contains the PF-AZ9 VendorLens production-demo product line for PatchForge:
+This repository now contains the PF-AZ9-VENDORLENS production-demo product line for PatchForge:
 
 - product identity
 - product boundary

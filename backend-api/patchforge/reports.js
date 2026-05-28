@@ -66,6 +66,11 @@ const BOUNDARY_TEXT = "PatchForge is a governance product. It does not scan envi
 const HUMAN_APPROVAL_NOTICE = "Human approval remains required. PatchForge does not approve CAB decisions, risk acceptance, patch deployment, or closure autonomously.";
 const UNCONFIRMED_SCOPE_TEXT = "PatchForge has public-source vulnerability intelligence, but customer asset and service exposure are not yet confirmed.";
 const NO_CUSTOMER_ASSURANCE_TEXT = "No customer remediation assurance can be issued yet because affected customer service scope and patch applicability evidence are not reviewed.";
+const REPORT_TEMPLATE_VERSION = "patchforge-report-template.v2026-05-27.2";
+const REPORT_CONTEXT_VERSION = "patchforge-report-context.v2";
+const DEFAULT_PRODUCT_BASELINE = process.env.PATCHFORGE_PRODUCT_BASELINE || "PF-AZ9-VENDORLENS";
+const DEFAULT_RENDERER_COMMIT = process.env.PATCHFORGE_RENDERER_COMMIT || process.env.PATCHFORGE_COMMIT_SHA || process.env.GIT_COMMIT || "local";
+const DEFAULT_IMAGE_TAG = process.env.PATCHFORGE_IMAGE_TAG || process.env.CONTAINER_IMAGE_TAG || "local";
 const REPORT_TYPE_MAP = new Map(REPORT_CATALOG.map((item) => [item.report_type, item]));
 const COLORS = {
   ink: "17212B",
@@ -132,13 +137,20 @@ export function buildReportContext({ reportType, pack, vulnerability = null, int
   const controls = artefacts["compensating_controls_plan.json"] || {};
   const patchFeasibility = artefacts["patch_feasibility_assessment.json"] || {};
   const generatedAt = new Date().toISOString();
+  const packId = pack.pack_id || pack.decision_pack_id;
 
   return {
     reportType,
     title: catalogItem.title,
     audience: catalogItem.audience,
     generatedAt,
-    packId: pack.pack_id || pack.decision_pack_id,
+    reportTemplateVersion: pack.report_template_version || governanceManifest.report_template_version || REPORT_TEMPLATE_VERSION,
+    rendererCommit: pack.renderer_commit || governanceManifest.renderer_commit || DEFAULT_RENDERER_COMMIT,
+    imageTag: pack.image_tag || governanceManifest.image_tag || DEFAULT_IMAGE_TAG,
+    generatedFromPackId: pack.generated_from_pack_id || governanceManifest.generated_from_pack_id || packId,
+    productBaseline: pack.product_baseline || governanceManifest.product_baseline || DEFAULT_PRODUCT_BASELINE,
+    reportContextVersion: pack.report_context_version || governanceManifest.report_context_version || REPORT_CONTEXT_VERSION,
+    packId,
     vulnerabilityId: pack.vulnerability_id || vulnerabilitySnapshot.vulnerability_id || decisionContext.vulnerability_id,
     vulnerabilityTitle: vulnerabilitySnapshot.title || vulnerabilitySnapshot.vulnerabilityName || pack.vulnerability_id || "Vulnerability record",
     severity: vulnerabilitySnapshot.severity || "unknown",
@@ -250,6 +262,8 @@ async function buildDocxReport(context) {
       children: [
         titleBlock(context),
         leadCallout(context),
+        heading("Report Version Stamp", HeadingLevel.HEADING_1),
+        ...keyValueBlocks(reportVersionRows(context)),
         heading("Executive Decision Summary", HeadingLevel.HEADING_1),
         para(context.executiveReadout || `${context.vulnerabilityId} is currently governed as ${displayPosture(context)}. Final approval has not been issued unless explicitly recorded in the signed pack.`),
         para(finalApprovalSentence(context)),
@@ -408,6 +422,18 @@ function decisionSummaryTable(context) {
     ["Human approval", context.finalApprovalIssued ? "Recorded in signed pack" : "Still required"],
     ["Decision boundary", "Automated evidence preparation is complete where stated; approval, risk acceptance, patch deployment, and closure remain human-controlled"]
   ]);
+}
+
+function reportVersionRows(context) {
+  return [
+    ["report_template_version", context.reportTemplateVersion],
+    ["renderer_commit", context.rendererCommit],
+    ["image_tag", context.imageTag],
+    ["generated_from_pack_id", context.generatedFromPackId],
+    ["generated_at", context.generatedAt],
+    ["product_baseline", context.productBaseline],
+    ["report_context_version", context.reportContextVersion]
+  ];
 }
 
 function customerSpecificSections(context) {
@@ -916,6 +942,8 @@ async function buildPdfReport(context) {
     doc.on("end", () => resolve(Buffer.concat(chunks)));
 
     pdfTitle(doc, context);
+    pdfSection(doc, "Report Version Stamp");
+    pdfKeyValues(doc, reportVersionRows(context));
     pdfSection(doc, "Executive Decision Summary");
     pdfParagraph(doc, context.executiveReadout || `${context.vulnerabilityId} is currently governed as ${humanize(context.decisionPosture)}. Final approval remains human-controlled.`);
     pdfParagraph(doc, finalApprovalSentence(context));

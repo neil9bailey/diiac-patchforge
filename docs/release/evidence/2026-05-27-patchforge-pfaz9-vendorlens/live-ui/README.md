@@ -1,6 +1,6 @@
-﻿# PF-AZ9 VendorLens Live UI Evidence
+﻿# PF-AZ9-VENDORLENS Live UI Evidence
 
-Release: PF-AZ9 VendorLens Network Vendor Intelligence and Config-Aware Patch Advisor
+Release: PF-AZ9-VENDORLENS Network Vendor Intelligence and Config-Aware Patch Advisor
 Image tag: pfaz9-20260527-e8a0de2
 Commit: e8a0de2
 Validation timestamp: 2026-05-27T13:22:02.3981966Z

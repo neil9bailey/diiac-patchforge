@@ -1,10 +1,10 @@
-# PF-AZ9 VendorLens Production Readiness Summary
+# PF-AZ9-VENDORLENS Production Readiness Summary
 
 Date: 2026-05-27
 
 Status: DEPLOYED TO AZURE AND LIVE VALIDATED.
 
-PF-AZ9 VendorLens adds a dedicated Network Vendor Intelligence and Config-Aware Patch Advisor to PatchForge. It is designed to help users understand whether public vendor/CVE intelligence applies to their actual customer estate, product model, firmware version, enabled features, exposure posture, and reviewed evidence.
+PF-AZ9-VENDORLENS adds a dedicated Network Vendor Intelligence and Config-Aware Patch Advisor to PatchForge. It is designed to help users understand whether public vendor/CVE intelligence applies to their actual customer estate, product model, firmware version, enabled features, exposure posture, and reviewed evidence.
 
 ## Completed Locally
 
@@ -38,7 +38,7 @@ VendorLens is source-bound advisory intelligence. It does not verify customer co
 
 ## Azure State
 
-PF-AZ9 VendorLens is deployed to Azure Container Apps using image tag `pfaz9-20260527-e8a0de2` from commit `e8a0de2`.
+PF-AZ9-VENDORLENS is deployed to Azure Container Apps using image tag `pfaz9-20260527-e8a0de2` from commit `e8a0de2`.
 
 Active revisions:
 

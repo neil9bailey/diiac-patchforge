@@ -10,7 +10,7 @@
   "image_tag": "pfaz8a-20260527-4f3bbe8",
   "commit": "4f3bbe8",
   "previous_live_release": {
-    "baseline_id": "PF-AZ9",
+    "baseline_id": "PF-AZ9-OPS",
     "image_tag": "pfaz9-20260527-c494375",
     "commit": "c494375"
   },

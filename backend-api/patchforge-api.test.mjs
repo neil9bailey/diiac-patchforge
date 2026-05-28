@@ -3,6 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import JSZip from "jszip";
 import { createServer } from "./server.js";
 import { PatchForgeJsonStorage } from "./patchforge/storage.js";
 import { createSourceFeedClient } from "./patchforge/sourceFeeds.js";
@@ -1015,6 +1016,22 @@ test("professional decision pack reports export as specific DOCX and PDF decisio
     assert.match(docx.headers.get("content-type"), /wordprocessingml/);
     const docxBytes = Buffer.from(await docx.arrayBuffer());
     assert.equal(docxBytes.subarray(0, 2).toString("utf8"), "PK");
+    const boardDocxText = await extractDocxText(docxBytes);
+    assert.match(boardDocxText, /Report Version Stamp/);
+    assert.match(boardDocxText, /report_template_version/);
+    assert.match(boardDocxText, /renderer_commit/);
+    assert.match(boardDocxText, /image_tag/);
+    assert.match(boardDocxText, /generated_from_pack_id/);
+    assert.match(boardDocxText, /product_baseline/);
+    assert.match(boardDocxText, /report_context_version/);
+    assert.match(boardDocxText, /PF-TEST-0001/);
+    assert.doesNotMatch(boardDocxText, /PF-20260526-8312f908/);
+    assert.match(boardDocxText, /Network Vendor Applicability/);
+    assert.match(boardDocxText, /Customer Configuration Context/);
+    assert.match(boardDocxText, /SRA\/AIP Chat Summary/);
+    assert.match(boardDocxText, /Final approval[^A-Za-z0-9]+Not issued/i);
+    assert.doesNotMatch(boardDocxText, new RegExp(["Autonomous", "Analysis", "Completed"].join(" ")));
+    assert.doesNotMatch(boardDocxText, /not vulnerable/i);
 
     const pdf = await fetch(`${baseUrl}/api/patchforge/decision-packs/PF-TEST-0001/reports/board_vulnerability_remediation_summary.pdf`, {
       headers: { "x-tenant-id": "tenant-a" }
@@ -1023,6 +1040,13 @@ test("professional decision pack reports export as specific DOCX and PDF decisio
     assert.match(pdf.headers.get("content-type"), /pdf/);
     const pdfBytes = Buffer.from(await pdf.arrayBuffer());
     assert.equal(pdfBytes.subarray(0, 4).toString("utf8"), "%PDF");
+    const pdfText = extractPdfText(pdfBytes);
+    assert.match(pdfText, /Report Version Stamp/);
+    assert.match(pdfText, /report_template_version/);
+    assert.match(pdfText, /generated_from_pack_id/);
+    assert.match(pdfText, /product_baseline/);
+    assert.match(pdfText, /Network Vendor Applicability/);
+    assert.match(pdfText, /Customer Configuration Context/);
 
     const customerDocx = await fetch(`${baseUrl}/api/patchforge/decision-packs/PF-TEST-0001/reports/customer_patch_governance_pack.docx`, {
       headers: { "x-tenant-id": "tenant-a" }
@@ -1030,6 +1054,15 @@ test("professional decision pack reports export as specific DOCX and PDF decisio
     assert.equal(customerDocx.status, 200);
     const customerDocxBytes = Buffer.from(await customerDocx.arrayBuffer());
     assert.equal(customerDocxBytes.subarray(0, 2).toString("utf8"), "PK");
+    const customerDocxText = await extractDocxText(customerDocxBytes);
+    assert.match(customerDocxText, /Customer Assurance Position/);
+    assert.match(customerDocxText, /Report Version Stamp/);
+    assert.match(customerDocxText, /generated_from_pack_id/);
+    assert.match(customerDocxText, /Network Vendor Applicability/);
+    assert.match(customerDocxText, /Customer Configuration Context/);
+    assert.match(customerDocxText, /Final approval[^A-Za-z0-9]+Not issued/i);
+    assert.doesNotMatch(customerDocxText, new RegExp(["Autonomous", "Analysis", "Completed"].join(" ")));
+    assert.doesNotMatch(customerDocxText, /not vulnerable/i);
 
     const customerPdf = await fetch(`${baseUrl}/api/patchforge/decision-packs/PF-TEST-0001/reports/customer_patch_governance_pack.pdf`, {
       headers: { "x-tenant-id": "tenant-a" }
@@ -1312,6 +1345,23 @@ function jsonResponse(body, status = 200) {
       return body;
     }
   };
+}
+
+async function extractDocxText(buffer) {
+  const zip = await JSZip.loadAsync(buffer);
+  const documentXml = await zip.file("word/document.xml").async("string");
+  return documentXml
+    .replace(/<w:tab\/>/g, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function extractPdfText(buffer) {
+  const raw = buffer.toString("latin1");
+  return [...raw.matchAll(/<([0-9A-Fa-f]+)>/g)]
+    .map((match) => Buffer.from(match[1], "hex").toString("utf8"))
+    .join("");
 }
 
 test("auth gate requires a valid bearer token and PatchForge app role when enabled", async () => {

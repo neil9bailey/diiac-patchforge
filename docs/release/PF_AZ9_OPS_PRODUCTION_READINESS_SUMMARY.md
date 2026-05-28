@@ -1,10 +1,10 @@
-﻿# PF-AZ9 Production Readiness Summary
+# PF-AZ9-OPS Production Readiness Summary
 
 Date: 2026-05-27
 
-Status: PASS. PF-AZ9 is deployed to Azure and validated through the live Admin UI/API.
+Status: PASS. PF-AZ9-OPS is deployed to Azure and validated through the live Admin UI/API.
 
-PF-AZ9 completes and enables the operational health checks that were still showing as disabled or planned in Admin.
+PF-AZ9-OPS completes and enables the operational health checks that were still showing as disabled or planned in Admin.
 
 ## Completed
 
@@ -40,4 +40,4 @@ PF-AZ9 completes and enables the operational health checks that were still showi
 
 ## Boundary
 
-PF-AZ9 does not add vulnerability scanning, exploit generation, patch deployment, production mutation, autonomous CAB approval, or autonomous risk acceptance.
+PF-AZ9-OPS does not add vulnerability scanning, exploit generation, patch deployment, production mutation, autonomous CAB approval, or autonomous risk acceptance.

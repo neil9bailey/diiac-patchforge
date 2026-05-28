@@ -60,23 +60,23 @@ PF-AZ10 evidence path:
 
 PF-AZ10 does not add vulnerability scanning, exploit generation, procedural exploit steps, patch deployment, production mutation, autonomous CAB approval, or autonomous risk acceptance.
 
-## DIIaC PatchForge PF-AZ9 VendorLens
+## DIIaC PatchForge PF-AZ9-VENDORLENS
 
 Release state: deployed to Azure and live validated through the production UI/API as a signed-in PatchForge Admin user.
 
 Date: 2026-05-27
 
-PF-AZ9 VendorLens adds Network Vendor Intelligence and a Config-Aware Patch Advisor to PatchForge. It helps users review major network/security vendors, source-bound vendor advisories/CVEs, customer product/model/version exposure, configuration applicability, and SRA/AIP guided questions such as whether a vulnerable feature is enabled, whether urgent scope confirmation is required, and what evidence is needed to support not-applicable status.
+PF-AZ9-VENDORLENS adds Network Vendor Intelligence and a Config-Aware Patch Advisor to PatchForge. It helps users review major network/security vendors, source-bound vendor advisories/CVEs, customer product/model/version exposure, configuration applicability, and SRA/AIP guided questions such as whether a vulnerable feature is enabled, whether urgent scope confirmation is required, and what evidence is needed to support not-applicable status.
 
-PF-AZ9 VendorLens image tag:
+PF-AZ9-VENDORLENS image tag:
 
 - `pfaz9-20260527-e8a0de2`
 
-PF-AZ9 VendorLens commit:
+PF-AZ9-VENDORLENS commit:
 
 - `e8a0de2`
 
-PF-AZ9 VendorLens local validation:
+PF-AZ9-VENDORLENS local validation:
 
 - backend syntax and tests: PASS
 - frontend tests and production build: PASS
@@ -86,7 +86,7 @@ PF-AZ9 VendorLens local validation:
 - DOCX/PDF VendorLens report generation and structural wording checks: PASS
 - DOCX visual rendering: not available locally because LibreOffice/soffice is not installed or available on PATH
 
-PF-AZ9 VendorLens Azure rollout:
+PF-AZ9-VENDORLENS Azure rollout:
 
 - GitHub push: PASS, commit `e8a0de2`
 - ACR build/push: PASS for frontend, bridge/API, runtime, SRA, worker, and scheduler images
@@ -99,7 +99,7 @@ PF-AZ9 VendorLens Azure rollout:
   - Worker: `ca-patchforge-worker-prod--0000010`
   - Scheduler: `ca-patchforge-scheduler-prod--0000010`
 
-PF-AZ9 VendorLens live validation:
+PF-AZ9-VENDORLENS live validation:
 
 - UI HTTP 200: PASS
 - API health HTTP 200: PASS
@@ -118,11 +118,11 @@ PF-AZ9 VendorLens live validation:
 - Board DOCX/PDF report export with VendorLens sections: PASS
 - Validation records removed from production PostgreSQL after evidence capture: PASS
 
-PF-AZ9 VendorLens evidence path:
+PF-AZ9-VENDORLENS evidence path:
 
 - `docs/release/evidence/2026-05-27-patchforge-pfaz9-vendorlens/`
 
-PF-AZ9 VendorLens adds:
+PF-AZ9-VENDORLENS adds:
 
 - network/security vendor catalogue for Cisco, Fortinet, Palo Alto Networks, Juniper, F5, Citrix / NetScaler, Check Point, Sophos, SonicWall, WatchGuard, Aruba / HPE, Ubiquiti, MikroTik, Barracuda, Zscaler, Cloudflare, and Akamai
 - source-bound NVD CVE, Cisco PSIRT, and configured vendor RSS/JSON advisory adapter foundations
@@ -132,7 +132,7 @@ PF-AZ9 VendorLens adds:
 - VendorLens UI page and Admin: Vendor Sources controls
 - signed pack artefacts and DOCX/PDF report sections for Network Vendor Applicability and Customer Configuration Context
 
-PF-AZ9 VendorLens does not add vulnerability scanning, exploit generation, procedural exploit steps, patch deployment, production mutation, autonomous CAB approval, or autonomous risk acceptance.
+PF-AZ9-VENDORLENS does not add vulnerability scanning, exploit generation, procedural exploit steps, patch deployment, production mutation, autonomous CAB approval, or autonomous risk acceptance.
 
 ## DIIaC PatchForge PF-AZ8A
 
@@ -140,7 +140,7 @@ Release state: PF-AZ8A is deployed to Azure and live validated through the produ
 
 Date: 2026-05-27
 
-PF-AZ8A is the customer report specificity and guided decision-usefulness increment applied after the PF-AZ9 operational health baseline.
+PF-AZ8A is the customer report specificity and guided decision-usefulness increment applied after the PF-AZ9-OPS operational health baseline.
 
 PF-AZ8A image tag:
 
@@ -204,27 +204,27 @@ PF-AZ8A live validation:
 - Live DOCX wording QA and PDF render QA: PASS
 - Final approval remained false: PASS
 
-## DIIaC PatchForge PF-AZ9
+## DIIaC PatchForge PF-AZ9-OPS
 
-Release state: PF-AZ9 was the previous deployed operational health baseline.
+Release state: PF-AZ9-OPS was the previous deployed operational health baseline.
 
 Date: 2026-05-27
 
-PF-AZ9 completes and enables the operational Admin health checks requested after live UI review.
+PF-AZ9-OPS completes and enables the operational Admin health checks requested after live UI review.
 
-PF-AZ9 image tag:
+PF-AZ9-OPS image tag:
 
 - `pfaz9-20260527-c494375`
 
-PF-AZ9 commit:
+PF-AZ9-OPS commit:
 
 - `c494375`
 
-PF-AZ9 evidence path:
+PF-AZ9-OPS evidence path:
 
 - `docs/release/evidence/2026-05-27-patchforge-pfaz9-operational-health-enablement/`
 
-PF-AZ9 enables:
+PF-AZ9-OPS enables:
 
 - MCP agent intake health: `governed`
 - public source feeds health: `ready`
@@ -233,7 +233,7 @@ PF-AZ9 enables:
 - Admin health mode detail
 - Admin config deep-merge normalisation so agent/source-feed defaults are preserved
 
-PF-AZ9 does not add seeded demo data, synthetic vulnerability data, scanning, exploit generation, procedural exploit steps, patch deployment, production mutation from the UI, autonomous CAB approval, or autonomous risk acceptance.
+PF-AZ9-OPS does not add seeded demo data, synthetic vulnerability data, scanning, exploit generation, procedural exploit steps, patch deployment, production mutation from the UI, autonomous CAB approval, or autonomous risk acceptance.
 
 ## DIIaC PatchForge PF-AZ8
 
@@ -462,7 +462,7 @@ PF-AZ7 Azure rollout, scheduler validation, live browser validation, fresh signe
 
 PF-AZ8 Azure rollout, guided workflow validation, signed-in browser validation, signed pack verification, DOCX/PDF live protected report checks, Key Vault signing smoke, and PostgreSQL readiness evidence is recorded under `docs/release/evidence/2026-05-27-patchforge-pfaz8-guided-intelligence-workflow/`.
 
-PF-AZ9 Azure rollout and live Admin health validation evidence is recorded under `docs/release/evidence/2026-05-27-patchforge-pfaz9-operational-health-enablement/`.
+PF-AZ9-OPS Azure rollout and live Admin health validation evidence is recorded under `docs/release/evidence/2026-05-27-patchforge-pfaz9-operational-health-enablement/`.
 
 ## Runtime State
 
@@ -508,7 +508,7 @@ Deployment evidence:
 - `docs/release/evidence/2026-05-27-patchforge-pfaz8-guided-intelligence-workflow/`
 - `docs/release/evidence/2026-05-27-patchforge-pfaz9-operational-health-enablement/`
 
-Latest PF-AZ9 operational health revisions:
+Latest PF-AZ9-OPS operational health revisions:
 
 - UI: `ca-patchforge-ui-prod--0000011`
 - Bridge/API: `ca-patchforge-bridge-prod--0000010`
@@ -518,7 +518,7 @@ Latest PF-AZ9 operational health revisions:
 - Scheduler: `ca-patchforge-scheduler-prod--0000008`
 - Image tag: `pfaz9-20260527-c494375`
 
-## PF-AZ9 Live Validation
+## PF-AZ9-OPS Live Validation
 
 Live UI validation result: PASS
 

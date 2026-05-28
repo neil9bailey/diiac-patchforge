@@ -68,13 +68,13 @@ PF-AZ10 evidence path:
 
 Important boundary note: PF-AZ10 does not add scanning, exploit generation, procedural exploit steps, patch deployment, production mutation from the UI, autonomous CAB approval, or autonomous risk acceptance.
 
-# PF-AZ9 VendorLens Validation Outputs
+# PF-AZ9-VENDORLENS Validation Outputs
 
-## PF-AZ9 VendorLens Local Validation
+## PF-AZ9-VENDORLENS Local Validation
 
 Date: 2026-05-27
 
-Status: PASS. PF-AZ9 VendorLens is deployed to Azure and validated through the live UI/API as a signed-in PatchForge Admin user.
+Status: PASS. PF-AZ9-VENDORLENS is deployed to Azure and validated through the live UI/API as a signed-in PatchForge Admin user.
 
 Scope:
 
@@ -112,7 +112,7 @@ Document quality gate:
 - DOCX-to-PNG render: NOT AVAILABLE locally because LibreOffice/soffice is unavailable on PATH
 - QA evidence: `docs/release/evidence/2026-05-27-patchforge-pfaz9-vendorlens/local-reports/`
 
-Important boundary note: PF-AZ9 VendorLens does not add scanning, exploit generation, procedural exploit steps, patch deployment, production mutation from the UI, autonomous CAB approval, or autonomous risk acceptance.
+Important boundary note: PF-AZ9-VENDORLENS does not add scanning, exploit generation, procedural exploit steps, patch deployment, production mutation from the UI, autonomous CAB approval, or autonomous risk acceptance.
 
 Azure rollout:
 
@@ -149,9 +149,9 @@ Live validation:
 - PostgreSQL readiness and live write path: PASS
 - Board DOCX/PDF report export: PASS
 - DOCX structural QA for VendorLens report sections and final-approval boundary: PASS
-- PF-AZ9 live validation records removed from production PostgreSQL after evidence capture: PASS
+- PF-AZ9-VENDORLENS live validation records removed from production PostgreSQL after evidence capture: PASS
 
-PF-AZ9 VendorLens evidence path:
+PF-AZ9-VENDORLENS evidence path:
 
 `docs/release/evidence/2026-05-27-patchforge-pfaz9-vendorlens/`
 
@@ -245,13 +245,13 @@ PF-AZ8A evidence path:
 
 `docs/release/evidence/2026-05-27-patchforge-pfaz8a-report-specificity/`
 
-# PF-AZ9 Validation Outputs
+# PF-AZ9-OPS Validation Outputs
 
-## PF-AZ9 Operational Health Enablement
+## PF-AZ9-OPS Operational Health Enablement
 
 Date: 2026-05-27
 
-Status: PASS. PF-AZ9 is deployed to Azure and validated through the live Admin UI/API.
+Status: PASS. PF-AZ9-OPS is deployed to Azure and validated through the live Admin UI/API.
 
 Scope:
 
@@ -300,7 +300,7 @@ Live validation:
 - Worker health: PASS, `ready`
 - Scheduler health: PASS, `ready`
 
-PF-AZ9 evidence path:
+PF-AZ9-OPS evidence path:
 
 `docs/release/evidence/2026-05-27-patchforge-pfaz9-operational-health-enablement/`
 

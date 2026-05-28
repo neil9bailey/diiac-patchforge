@@ -1,0 +1,9 @@
+{
+    "generated_at":  "2026-05-28T14:13:52.0167820Z",
+    "docx_render_attempted":  true,
+    "render_tool":  "documents/render_docx.py",
+    "render_result":  "not_available_local_converter_missing",
+    "failure":  "FileNotFoundError WinError 2 while invoking the DOCX-to-PDF converter from render_docx.py; LibreOffice/soffice or required converter executable is not available on PATH.",
+    "structural_qa":  "pass",
+    "local_report_qa":  "docs/release/evidence/2026-05-28-patchforge-pfaz9a-vendorlens-report-proof/local-reports/current-report-proof-qa.json"
+}
