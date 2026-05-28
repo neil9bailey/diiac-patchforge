@@ -1,0 +1,404 @@
+{
+  "ok": true,
+  "startedAt": "2026-05-28T17:02:26.521Z",
+  "completedAt": "2026-05-28T17:02:33.047Z",
+  "url": "https://patchforge.diiac.io/",
+  "signedInTextPresent": true,
+  "adminRoleVisible": true,
+  "baseline": "PF-AZ9A-VENDORLENS",
+  "imageTag": "pfaz9a-20260528-923b386",
+  "commit": "923b386",
+  "ids": {
+    "tenantId": "diiac.io",
+    "assetId": "pfaz9a-val-fortigate-100f-923b386",
+    "advisoryId": "pfaz9a-val-fortinet-ssl-vpn-923b386",
+    "vulnerabilityId": "CVE-2026-923386",
+    "sourceRecordId": "src-pfaz9a-val-fortinet-923b386",
+    "assessmentId": "pfaz9a-val-assessment-923b386",
+    "comparisonId": "pfaz9a-val-compare-923b386",
+    "sessionId": "pfaz9a-val-chat-923b386",
+    "packId": "PF-20260528-9e896f66"
+  },
+  "vendorDashboardBefore": {
+    "tenant_id": "diiac.io",
+    "generated_at": "2026-05-28T17:02:25.245Z",
+    "source_bound": true,
+    "review_required": true,
+    "vendors_tracked": 17,
+    "active_advisories": 730,
+    "known_exploited_vendor_cves": 0,
+    "customer_estate_matches": 0,
+    "config_unknown_count": 0,
+    "emergency_attention_required": 0,
+    "recent_assessments": []
+  },
+  "vendorsTracked": 17,
+  "vendorDashboardAfter": {
+    "tenant_id": "diiac.io",
+    "generated_at": "2026-05-28T17:02:31.450Z",
+    "source_bound": true,
+    "review_required": true,
+    "vendors_tracked": 17,
+    "active_advisories": 731,
+    "known_exploited_vendor_cves": 1,
+    "customer_estate_matches": 0,
+    "config_unknown_count": 1,
+    "emergency_attention_required": 0,
+    "recent_assessments": [
+      {
+        "cve": "CVE-2026-923386",
+        "model": "FortiGate 100F",
+        "asset_id": "pfaz9a-val-fortigate-100f-923b386",
+        "boundary": {
+          "no_scanner": true,
+          "no_patch_deployment": true,
+          "no_autonomous_approval": true,
+          "no_production_mutation": true,
+          "no_autonomous_risk_acceptance": true,
+          "no_procedural_exploitation_steps": true
+        },
+        "actor_oid": "2d2f273d-a815-4a19-a258-c48c858252f3",
+        "actor_upn": "n.bailey@diiac.io",
+        "tenant_id": "diiac.io",
+        "vendor_id": "fortinet",
+        "actor_roles": [
+          "PatchForge.Admin"
+        ],
+        "advisory_id": "pfaz9a-val-fortinet-ssl-vpn-923b386",
+        "generated_at": "2026-05-28T17:02:25.632Z",
+        "source_bound": true,
+        "advisory_only": true,
+        "assessment_id": "pfaz9a-val-assessment-923b386",
+        "evidence_gaps": [
+          {
+            "gap_id": "feature_disabled_review",
+            "current_state": "disabled_unreviewed",
+            "why_it_matters": "PatchForge cannot support an accountable customer/CAB decision without reviewed evidence for this point.",
+            "evidence_examples": [
+              "reviewed running configuration",
+              "feature disable change record",
+              "device configuration export"
+            ],
+            "plain_english_gap": "SSL VPN is recorded as disabled, but that configuration evidence is not reviewed.",
+            "required_evidence": "Reviewed configuration export, change record, service owner attestation, or device configuration evidence.",
+            "next_decision_gate": "Configuration applicability review",
+            "suggested_owner_role": "Network engineering lead"
+          },
+          {
+            "gap_id": "advisory_source_review",
+            "current_state": "pending_review",
+            "why_it_matters": "PatchForge cannot support an accountable customer/CAB decision without reviewed evidence for this point.",
+            "evidence_examples": [
+              "vendor advisory",
+              "CVE record",
+              "CISA KEV record",
+              "review event"
+            ],
+            "plain_english_gap": "The vendor/CVE source record has not been accepted as positive evidence.",
+            "required_evidence": "Named reviewer event accepting the source record, affected versions, affected feature, and source provenance.",
+            "next_decision_gate": "Source review",
+            "suggested_owner_role": "Security lead"
+          }
+        ],
+        "evidence_used": [
+          {
+            "ref": "pfaz9a-val-fortinet-ssl-vpn-923b386",
+            "review_state": "pending_review",
+            "evidence_type": "vendor_advisory"
+          },
+          {
+            "ref": "pfaz9a-val-fortigate-100f-923b386",
+            "review_state": "pending_review",
+            "evidence_type": "customer_network_asset"
+          },
+          {
+            "ref": "pfaz9a-browser-msal-validation",
+            "review_state": "pending_review",
+            "evidence_type": "configuration_evidence"
+          }
+        ],
+        "product_family": "Fortinet Firewall",
+        "actor_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+        "exposure_status": "internet_or_management_exposed",
+        "urgency_posture": "urgent_scope_confirmation_required",
+        "affected_feature": "SSL-VPN",
+        "firmware_version": "7.2.7",
+        "tenant_id_source": "token_mapping",
+        "evidence_required": [
+          "reviewed_feature_configuration",
+          "reviewed_vendor_advisory"
+        ],
+        "effective_tenant_id": "diiac.io",
+        "requested_tenant_id": "diiac.io",
+        "applicability_posture": "requires_review",
+        "final_approval_issued": false,
+        "human_review_required": true,
+        "feature_enabled_status": "disabled_unreviewed",
+        "affected_feature_status": "disabled_unreviewed",
+        "affected_version_status": "affected",
+        "tenant_override_ignored": false,
+        "decision_not_allowed_yet": "Final remediation, risk acceptance, closure, and not-applicable decisions cannot be issued until the evidence gaps are resolved and a human reviewer approves the outcome.",
+        "can_close_hard_gates_alone": false
+      }
+    ]
+  },
+  "asset": {
+    "status": "pending_review",
+    "product_family": "Fortinet Firewall",
+    "firmware_version": "7.2.7",
+    "disabled_features": [
+      "SSL-VPN"
+    ]
+  },
+  "advisory": {
+    "status": "pending_review",
+    "cve": "CVE-2026-923386",
+    "affected_versions": [
+      "< 7.2.8"
+    ],
+    "fixed_versions": [
+      "7.2.8"
+    ],
+    "affected_features": [
+      "SSL-VPN"
+    ]
+  },
+  "vulnerability": {
+    "vulnerability_id": "CVE-2026-923386",
+    "review_state": "pending_review",
+    "patch_status": "patch_available"
+  },
+  "assessment": {
+    "applicability_posture": "requires_review",
+    "urgency_posture": "urgent_scope_confirmation_required",
+    "human_review_required": true,
+    "final_approval_issued": false,
+    "evidence_gap_count": 2,
+    "evidence_gap_ids": [
+      "feature_disabled_review",
+      "advisory_source_review"
+    ]
+  },
+  "comparison": {
+    "current_version_status": "current_version_not_listed_as_affected_pending_review",
+    "target_version_status": "target_version_recorded_as_fixed_pending_review",
+    "final_approval_issued": false,
+    "no_patch_deployment": true
+  },
+  "chat": {
+    "short_answer": "PatchForge cannot safely declare this configuration unaffected yet; complete scope and configuration evidence review first.",
+    "current_governed_posture": "urgent_scope_confirmation_required",
+    "evidence_missing": [
+      {
+        "gap": "SSL VPN is recorded as disabled, but that configuration evidence is not reviewed.",
+        "required_evidence": "Reviewed configuration export, change record, service owner attestation, or device configuration evidence.",
+        "owner": "Network engineering lead"
+      },
+      {
+        "gap": "The vendor/CVE source record has not been accepted as positive evidence.",
+        "required_evidence": "Named reviewer event accepting the source record, affected versions, affected feature, and source provenance.",
+        "owner": "Security lead"
+      }
+    ],
+    "decision_not_allowed_yet": "Final remediation, risk acceptance, closure, and not-applicable decisions cannot be issued until the evidence gaps are resolved and a human reviewer approves the outcome.",
+    "human_review_required": true,
+    "final_approval_issued": false
+  },
+  "pack": {
+    "pack_id": "PF-20260528-9e896f66",
+    "final_approval_issued": false,
+    "verification_state": "verified",
+    "signing_provider": "azure_key_vault",
+    "artefact_keys": [
+      "sra_trace.json",
+      "signed_export.sig",
+      "trust_bundle.json",
+      "human_review_state.json",
+      "replay_certificate.json",
+      "governance_manifest.json",
+      "affected_asset_scope.json",
+      "signed_export.sigmeta.json",
+      "verification_manifest.json",
+      "patch_change_readiness.json",
+      "patch_decision_context.json",
+      "sra_config_chat_session.json",
+      "exploitability_assessment.json",
+      "threat_landscape_snapshot.json",
+      "compensating_controls_plan.json",
+      "patch_prior_usage_manifest.json",
+      "patch_prior_update_proposal.json",
+      "patch_risk_acceptance_state.json",
+      "vendorlens_decision_context.json",
+      "vendorlens_patch_comparison.json",
+      "bayesian_patch_risk_snapshot.json",
+      "patch_feasibility_assessment.json",
+      "vendor_intelligence_snapshot.json",
+      "finding_intelligence_snapshot.json",
+      "config_applicability_assessment.json",
+      "customer_network_asset_snapshot.json",
+      "network_vendor_profile_snapshot.json",
+      "vendor_security_advisory_snapshot.json",
+      "vulnerability_intelligence_snapshot.json"
+    ]
+  },
+  "reports": [
+    {
+      "reportType": "customer_patch_governance_pack",
+      "format": "docx",
+      "fileName": "customer_patch_governance_pack.docx",
+      "contentType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "bytes": 162993
+    },
+    {
+      "reportType": "customer_patch_governance_pack",
+      "format": "pdf",
+      "fileName": "customer_patch_governance_pack.pdf",
+      "contentType": "application/pdf",
+      "bytes": 100893
+    },
+    {
+      "reportType": "board_vulnerability_remediation_summary",
+      "format": "docx",
+      "fileName": "board_vulnerability_remediation_summary.docx",
+      "contentType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "bytes": 155715
+    },
+    {
+      "reportType": "board_vulnerability_remediation_summary",
+      "format": "pdf",
+      "fileName": "board_vulnerability_remediation_summary.pdf",
+      "contentType": "application/pdf",
+      "bytes": 98107
+    },
+    {
+      "reportType": "cab_patch_decision_report",
+      "format": "docx",
+      "fileName": "cab_patch_decision_report.docx",
+      "contentType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "bytes": 157021
+    },
+    {
+      "reportType": "cab_patch_decision_report",
+      "format": "pdf",
+      "fileName": "cab_patch_decision_report.pdf",
+      "contentType": "application/pdf",
+      "bytes": 101970
+    }
+  ],
+  "requestSummary": [
+    {
+      "path": "/api/patchforge/vendorlens/dashboard",
+      "method": "GET",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/api/patchforge/vendorlens/vendors",
+      "method": "GET",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/api/patchforge/vendorlens/assets",
+      "method": "POST",
+      "status": 201,
+      "ok": true
+    },
+    {
+      "path": "/api/patchforge/vendorlens/advisories/ingest",
+      "method": "POST",
+      "status": 201,
+      "ok": true
+    },
+    {
+      "path": "/api/patchforge/vulnerabilities/ingest",
+      "method": "POST",
+      "status": 201,
+      "ok": true
+    },
+    {
+      "path": "/api/patchforge/vendorlens/applicability/assess",
+      "method": "POST",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/api/patchforge/vendorlens/patch-compare",
+      "method": "POST",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/api/patchforge/vendorlens/chat",
+      "method": "POST",
+      "status": 201,
+      "ok": true
+    },
+    {
+      "path": "/api/patchforge/decision-packs/generate",
+      "method": "POST",
+      "status": 201,
+      "ok": true
+    },
+    {
+      "path": "/api/patchforge/decision-packs/PF-20260528-9e896f66/export",
+      "method": "GET",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "path": "/api/patchforge/decision-packs/PF-20260528-9e896f66/reports/customer_patch_governance_pack.docx",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "bytes": 162993,
+      "content_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    },
+    {
+      "path": "/api/patchforge/decision-packs/PF-20260528-9e896f66/reports/customer_patch_governance_pack.pdf",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "bytes": 100893,
+      "content_type": "application/pdf"
+    },
+    {
+      "path": "/api/patchforge/decision-packs/PF-20260528-9e896f66/reports/board_vulnerability_remediation_summary.docx",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "bytes": 155715,
+      "content_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    },
+    {
+      "path": "/api/patchforge/decision-packs/PF-20260528-9e896f66/reports/board_vulnerability_remediation_summary.pdf",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "bytes": 98107,
+      "content_type": "application/pdf"
+    },
+    {
+      "path": "/api/patchforge/decision-packs/PF-20260528-9e896f66/reports/cab_patch_decision_report.docx",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "bytes": 157021,
+      "content_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    },
+    {
+      "path": "/api/patchforge/decision-packs/PF-20260528-9e896f66/reports/cab_patch_decision_report.pdf",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "bytes": 101970,
+      "content_type": "application/pdf"
+    },
+    {
+      "path": "/api/patchforge/vendorlens/dashboard",
+      "method": "GET",
+      "status": 200,
+      "ok": true
+    }
+  ]
+}

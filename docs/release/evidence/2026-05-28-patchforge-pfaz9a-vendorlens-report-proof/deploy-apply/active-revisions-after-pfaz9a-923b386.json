@@ -1,0 +1,58 @@
+[
+    {
+        "app":  "ca-patchforge-ui-prod",
+        "name":  "ca-patchforge-ui-prod--0000018",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-frontend:pfaz9a-20260528-923b386",
+        "traffic":  100,
+        "runningState":  "Running",
+        "createdTime":  "2026-05-28T16:50:08+00:00"
+    },
+    {
+        "app":  "ca-patchforge-bridge-prod",
+        "name":  "ca-patchforge-bridge-prod--0000017",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-bridge:pfaz9a-20260528-923b386",
+        "traffic":  100,
+        "runningState":  "Running",
+        "createdTime":  "2026-05-28T16:50:27+00:00"
+    },
+    {
+        "app":  "ca-patchforge-runtime-prod",
+        "name":  "ca-patchforge-runtime-prod--0000016",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-runtime:pfaz9a-20260528-923b386",
+        "traffic":  100,
+        "runningState":  "Running",
+        "createdTime":  "2026-05-28T16:50:45+00:00"
+    },
+    {
+        "app":  "ca-patchforge-sra-prod",
+        "name":  "ca-patchforge-sra-prod--0000015",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-sra-agent:pfaz9a-20260528-923b386",
+        "traffic":  100,
+        "runningState":  "Running",
+        "createdTime":  "2026-05-28T16:51:10+00:00"
+    },
+    {
+        "app":  "ca-patchforge-worker-prod",
+        "name":  "ca-patchforge-worker-prod--0000015",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-ingest-worker:pfaz9a-20260528-923b386",
+        "traffic":  100,
+        "runningState":  "Running",
+        "createdTime":  "2026-05-28T16:51:31+00:00"
+    },
+    {
+        "app":  "ca-patchforge-scheduler-prod",
+        "name":  "ca-patchforge-scheduler-prod--0000014",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-scheduler:pfaz9a-20260528-1a98433",
+        "traffic":  0,
+        "runningState":  "Deprovisioning",
+        "createdTime":  "2026-05-28T14:26:27+00:00"
+    },
+    {
+        "app":  "ca-patchforge-scheduler-prod",
+        "name":  "ca-patchforge-scheduler-prod--0000015",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-scheduler:pfaz9a-20260528-923b386",
+        "traffic":  100,
+        "runningState":  "RunningAtMaxScale",
+        "createdTime":  "2026-05-28T16:51:51+00:00"
+    }
+]

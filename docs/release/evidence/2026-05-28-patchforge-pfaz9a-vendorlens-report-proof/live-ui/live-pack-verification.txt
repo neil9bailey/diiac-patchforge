@@ -1,8 +1,12 @@
 PatchForge PF-AZ9A live pack verification
-Pack: PF-20260528-9a653d50
+Pack: PF-20260528-9e896f66
 Signing provider: azure_key_vault
-Verified: True
-Manifest OK: True
-Signature OK: True
-Final approval issued: False
-Report proof PASS: True
+Verified: true
+Manifest OK: true
+Signature OK: true
+Final approval issued: false
+Report proof PASS: true
+Product baseline: PF-AZ9A-VENDORLENS
+Image tag: pfaz9a-20260528-923b386
+Renderer commit: 923b386
+Temporary validation data cleanup: PASS

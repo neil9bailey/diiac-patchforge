@@ -9,11 +9,11 @@ DIIaC™ PatchForge
 | Document | Owner | Status | Version | Date |
 | --- | --- | --- | --- | --- |
 | README.md | DIIaC | Active | 0.2.0 | 2026-05-27 |
-| CURRENT_RELEASE.md | DIIaC | Active | 1.7.0 | 2026-05-28 |
-| RELEASE_BASELINE_MANIFEST.json | DIIaC | Active | 1.7.0 | 2026-05-28 |
-| QUALITY_GATES_REPORT.json | DIIaC | Active | 1.1.0 | 2026-05-28 |
-| VALIDATION_OUTPUTS.md | DIIaC | Active | 1.2.0 | 2026-05-28 |
-| PATCHFORGE_OPEN_GAPS_REGISTER.md | DIIaC | Active | 1.1.0 | 2026-05-28 |
+| CURRENT_RELEASE.md | DIIaC | Active | 1.8.0 | 2026-05-28 |
+| RELEASE_BASELINE_MANIFEST.json | DIIaC | Active | 1.8.0 | 2026-05-28 |
+| QUALITY_GATES_REPORT.json | DIIaC | Active | 1.2.0 | 2026-05-28 |
+| VALIDATION_OUTPUTS.md | DIIaC | Active | 1.3.0 | 2026-05-28 |
+| PATCHFORGE_OPEN_GAPS_REGISTER.md | DIIaC | Active | 1.2.0 | 2026-05-28 |
 | docs/features/VENDORLENS_NETWORK_VENDOR_INTELLIGENCE.md | DIIaC | Active | 0.1.0 | 2026-05-27 |
 | docs/product/VENDORLENS_PRODUCT_BOUNDARY.md | DIIaC | Active | 0.1.0 | 2026-05-27 |
 | docs/operations/VENDORLENS_OPERATOR_GUIDE.md | DIIaC | Active | 0.1.0 | 2026-05-27 |
@@ -23,6 +23,8 @@ DIIaC™ PatchForge
 | docs/release/PF_AZ10_PRODUCTION_READINESS_SUMMARY.md | DIIaC | Active | 0.1.0 | 2026-05-27 |
 | docs/release/PF_AZ9A_RELEASE_BASELINE_MANIFEST.json | DIIaC | Active | 0.1.0 | 2026-05-28 |
 | docs/release/PF_AZ9A_PRODUCTION_READINESS_SUMMARY.md | DIIaC | Active | 0.1.0 | 2026-05-28 |
+| docs/release/PF_AZ9A_VENDORLENS_RELEASE_BASELINE_MANIFEST.json | DIIaC | Active | 0.1.0 | 2026-05-28 |
+| docs/release/PF_AZ9A_VENDORLENS_PRODUCTION_READINESS_SUMMARY.md | DIIaC | Active | 0.1.0 | 2026-05-28 |
 | docs/release/evidence/2026-05-28-patchforge-pfaz9a-vendorlens-report-proof/** | DIIaC | Evidence | 0.1.0 | 2026-05-28 |
 | CODEX_WORKING_MEMORY.md | DIIaC | Active | 0.5.0 | 2026-05-26 |
 | docs/product/PATCHFORGE_MASTER_WORKING_BRIEF.md | DIIaC | Active | 0.1.0 | 2026-05-26 |
@@ -120,8 +122,8 @@ DIIaC™ PatchForge
 | docs/release/PF_AZ8_RELEASE_BASELINE_MANIFEST.json | DIIaC | Active | 0.1.0 | 2026-05-27 |
 | docs/release/PF_AZ8_PRODUCTION_READINESS_SUMMARY.md | DIIaC | Active | 0.1.0 | 2026-05-27 |
 | docs/release/evidence/2026-05-27-patchforge-pfaz8-guided-intelligence-workflow/** | DIIaC | Evidence | 0.1.0 | 2026-05-27 |
-| docs/release/PF_AZ9_OPS_RELEASE_BASELINE_MANIFEST.json | DIIaC | Active | 0.1.0 | 2026-05-27 |
-| docs/release/PF_AZ9_OPS_PRODUCTION_READINESS_SUMMARY.md | DIIaC | Active | 0.1.0 | 2026-05-27 |
+| docs/release/PF_AZ9_OPS_RELEASE_BASELINE_MANIFEST.json | DIIaC | Historical | 0.1.0 | 2026-05-27 |
+| docs/release/PF_AZ9_OPS_PRODUCTION_READINESS_SUMMARY.md | DIIaC | Historical | 0.1.0 | 2026-05-27 |
 | docs/release/evidence/2026-05-27-patchforge-pfaz9-operational-health-enablement/** | DIIaC | Evidence | 0.1.0 | 2026-05-27 |
 | docs/release/PF_AZ8A_RELEASE_BASELINE_MANIFEST.json | DIIaC | Active | 0.2.0 | 2026-05-27 |
 | docs/release/PF_AZ8A_PRODUCTION_READINESS_SUMMARY.md | DIIaC | Active | 0.2.0 | 2026-05-27 |

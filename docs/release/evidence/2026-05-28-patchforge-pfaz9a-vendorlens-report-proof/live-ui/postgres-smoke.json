@@ -1,9 +1,14 @@
 {
-    "captured_at":  "2026-05-28T14:33:59.4135365Z",
-    "readiness_status":  "HTTP/1.1 200 OK",
-    "storage":  "postgresql",
-    "auth_required":  true,
-    "live_write_path":  "decision-pack-generate",
-    "live_generated_pack_id":  "PF-20260528-9a653d50",
-    "result":  "pass"
+  "captured_at": "2026-05-28T17:17:15.855Z",
+  "result": "pass",
+  "storage": "postgresql",
+  "cleanup_succeeded": true,
+  "temporary_records_deleted": 17,
+  "remaining_temporary_matches": 0,
+  "post_cleanup_counts": {
+    "assets": 0,
+    "advisories": 730,
+    "decision_packs": 7,
+    "vulnerabilities": 13
+  }
 }

@@ -1,0 +1,28 @@
+﻿{
+    "public_ip":  "83.167.187.0",
+    "rule_name":  "pfaz9a-cleanup-temp",
+    "created_at_utc":  "2026-05-28T17:16:35.1015224Z",
+    "before":  {
+                   "value":  [
+                                 {
+                                     "endIpAddress":  "0.0.0.0",
+                                     "id":  "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.DBforPostgreSQL/flexibleServers/psql-diiac-patchforge-prod/firewallRules/AllowAzureServices",
+                                     "name":  "AllowAzureServices",
+                                     "resourceGroup":  "rg-diiac-patchforge-prod",
+                                     "startIpAddress":  "0.0.0.0",
+                                     "systemData":  null,
+                                     "type":  "Microsoft.DBforPostgreSQL/flexibleServers/firewallRules"
+                                 }
+                             ],
+                   "Count":  1
+               },
+    "create":  {
+                   "endIpAddress":  "83.167.187.0",
+                   "id":  "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.DBforPostgreSQL/flexibleServers/psql-diiac-patchforge-prod/firewallRules/pfaz9a-cleanup-temp",
+                   "name":  "pfaz9a-cleanup-temp",
+                   "resourceGroup":  "rg-diiac-patchforge-prod",
+                   "startIpAddress":  "83.167.187.0",
+                   "systemData":  null,
+                   "type":  "Microsoft.DBforPostgreSQL/flexibleServers/firewallRules"
+               }
+}

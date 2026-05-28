@@ -1,0 +1,77 @@
+{
+  "started_at_utc": "2026-05-28T17:17:15.669Z",
+  "completed_at_utc": "2026-05-28T17:17:15.855Z",
+  "tenant_id": "diiac.io",
+  "ids": [
+    "pfaz9a-val-fortigate-100f-923b386",
+    "pfaz9a-val-fortinet-ssl-vpn-923b386",
+    "CVE-2026-923386",
+    "src-pfaz9a-val-fortinet-923b386",
+    "pfaz9a-val-assessment-923b386",
+    "pfaz9a-val-compare-923b386",
+    "pfaz9a-val-chat-923b386",
+    "PF-20260528-9e896f66"
+  ],
+  "patterns": [
+    "%pfaz9a-val-%",
+    "%CVE-2026-923386%",
+    "%PF-20260528-9e896f66%",
+    "%pfaz9a-browser-msal-validation%"
+  ],
+  "deleted_by_collection": [
+    {
+      "collection": "audit_events",
+      "matched_before": 7,
+      "deleted": 7
+    },
+    {
+      "collection": "config_applicability_assessments",
+      "matched_before": 1,
+      "deleted": 1
+    },
+    {
+      "collection": "customer_network_assets",
+      "matched_before": 1,
+      "deleted": 1
+    },
+    {
+      "collection": "decision_packs",
+      "matched_before": 1,
+      "deleted": 1
+    },
+    {
+      "collection": "sources",
+      "matched_before": 1,
+      "deleted": 1
+    },
+    {
+      "collection": "vendorlens_chat_messages",
+      "matched_before": 2,
+      "deleted": 2
+    },
+    {
+      "collection": "vendorlens_chat_sessions",
+      "matched_before": 1,
+      "deleted": 1
+    },
+    {
+      "collection": "vendorlens_patch_comparisons",
+      "matched_before": 1,
+      "deleted": 1
+    },
+    {
+      "collection": "vendor_security_advisories",
+      "matched_before": 1,
+      "deleted": 1
+    },
+    {
+      "collection": "vulnerabilities",
+      "matched_before": 1,
+      "deleted": 1
+    }
+  ],
+  "remaining_by_collection": [],
+  "total_deleted": 17,
+  "total_remaining_matches": 0,
+  "cleanup_succeeded": true
+}

@@ -1,0 +1,45 @@
+{
+  "visual_qa_generated_at_utc": "2026-05-28T17:08:32.445828+00:00",
+  "method": "DOCX text extracted from Word XML; PDF text extracted from exported live PDF via pypdf; binary sizes checked. Screenshots captured through live browser. Full DOCX raster rendering was not available because local converter tooling is unavailable.",
+  "screenshots": [
+    "action-center-pfaz9a.png",
+    "admin-pfaz9a.png",
+    "pfaz9a-923b386-action-center.png",
+    "pfaz9a-923b386-vendorlens.png",
+    "reports-packs-pfaz9a.png",
+    "vendorlens-pfaz9a.png"
+  ],
+  "reports_checked": [
+    {
+      "file": "PF-20260528-9e896f66-customer_patch_governance_pack.docx",
+      "bytes": 162993,
+      "pass": true
+    },
+    {
+      "file": "PF-20260528-9e896f66-customer_patch_governance_pack.pdf",
+      "bytes": 100893,
+      "pass": true
+    },
+    {
+      "file": "PF-20260528-9e896f66-board_vulnerability_remediation_summary.docx",
+      "bytes": 155715,
+      "pass": true
+    },
+    {
+      "file": "PF-20260528-9e896f66-board_vulnerability_remediation_summary.pdf",
+      "bytes": 98107,
+      "pass": true
+    },
+    {
+      "file": "PF-20260528-9e896f66-cab_patch_decision_report.docx",
+      "bytes": 157021,
+      "pass": true
+    },
+    {
+      "file": "PF-20260528-9e896f66-cab_patch_decision_report.pdf",
+      "bytes": 101970,
+      "pass": true
+    }
+  ],
+  "all_reports_pass": true
+}

@@ -1,0 +1,19 @@
+﻿{
+    "rule_name":  "pfaz9a-cleanup-temp",
+    "deleted_at_utc":  "2026-05-28T17:18:33.9345242Z",
+    "delete_output":  "WARNING: The --name/-n argument will be repurposed to specify the firewall rule name. The --server-name/-s argument will be introduced to specify the server name in next breaking change release(2.86.0) scheduled for May 2026.\nWARNING: The --rule-name/-r argument has been deprecated and will be removed in next breaking change release(2.86.0) scheduled for May 2026.",
+    "after":  {
+                  "value":  [
+                                {
+                                    "endIpAddress":  "0.0.0.0",
+                                    "id":  "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.DBforPostgreSQL/flexibleServers/psql-diiac-patchforge-prod/firewallRules/AllowAzureServices",
+                                    "name":  "AllowAzureServices",
+                                    "resourceGroup":  "rg-diiac-patchforge-prod",
+                                    "startIpAddress":  "0.0.0.0",
+                                    "systemData":  null,
+                                    "type":  "Microsoft.DBforPostgreSQL/flexibleServers/firewallRules"
+                                }
+                            ],
+                  "Count":  1
+              }
+}

@@ -1,4 +1,4 @@
-# PF-AZ9A VendorLens Report Proof Validation Outputs
+# PF-AZ9A-VENDORLENS Validation Outputs
 
 ## PF-AZ9A Local Validation
 
@@ -8,10 +8,11 @@ Status: PASS. PF-AZ9A is deployed to Azure and validated through the live UI/API
 
 Scope:
 
-- Clarify release naming so VendorLens is `PF-AZ9-VENDORLENS` and the earlier operational-health release is `PF-AZ9-OPS`.
+- Clarify release naming so the current active baseline is `PF-AZ9A-VENDORLENS`, the previous VendorLens baseline is `PF-AZ9-VENDORLENS`, and the earlier operational-health release is `PF-AZ9-OPS-HISTORICAL`.
 - Replace ambiguous manifest wording with reused-resource fields.
 - Stamp every DOCX/PDF report with current renderer and image metadata.
 - Prove current reports are not stale and include VendorLens sections.
+- Harden VendorLens product/feature aliases, version range handling, fixed-version logic, superseded advisory handling, and reviewed/unreviewed feature evidence states.
 
 Local validation:
 
@@ -29,35 +30,39 @@ Local validation:
 - `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate_iac.ps1`: PASS
 - `az bicep build --file infra/bicep/main.bicep`: PASS
 - Docker frontend, bridge/API, and runtime build smoke: PASS
-- Local current-report proof from signed pack `PF-20260527-2d9f160a`: PASS
+- Local structural DOCX/PDF report proof: PASS
 - Local DOCX render attempt: NOT AVAILABLE because the local DOCX-to-PDF converter executable is missing
 
 Azure rollout:
 
-- GitHub push: PASS, commit `1a98433`
-- Image tag: `pfaz9a-20260528-1a98433`
+- GitHub push: PASS, commit `923b386`
+- Image tag: `pfaz9a-20260528-923b386`
 - ACR image push: PASS for frontend, bridge/API, runtime, SRA, worker, and scheduler
 - ACR tag verification: PASS for all six repositories
 - Azure what-if: captured; targeted image-only rollout used to avoid broad infrastructure drift
 - Targeted Container Apps update: PASS
 - Active revisions:
-  - UI: `ca-patchforge-ui-prod--0000017`
-  - Bridge/API: `ca-patchforge-bridge-prod--0000016`
-  - Runtime: `ca-patchforge-runtime-prod--0000015`
-  - SRA: `ca-patchforge-sra-prod--0000014`
-  - Worker: `ca-patchforge-worker-prod--0000014`
-  - Scheduler: `ca-patchforge-scheduler-prod--0000014`
+  - UI: `ca-patchforge-ui-prod--0000018`
+  - Bridge/API: `ca-patchforge-bridge-prod--0000017`
+  - Runtime: `ca-patchforge-runtime-prod--0000016`
+  - SRA: `ca-patchforge-sra-prod--0000015`
+  - Worker: `ca-patchforge-worker-prod--0000015`
+  - Scheduler: `ca-patchforge-scheduler-prod--0000015`
 
 Live validation:
 
 - UI HTTP 200: PASS
 - API health HTTP 200: PASS
 - API readiness HTTP 200 with `storage=postgresql`, `auth_required=true`, and `tenant_required=true`: PASS
-- Protected vulnerability route unauthenticated HTTP 401: PASS
+- Protected vulnerability and VendorLens routes unauthenticated HTTP 401: PASS
 - Browser/MSAL sign-in as `n.bailey@diiac.io`: PASS
 - Displayed role `PatchForge.Admin`: PASS
 - VendorLens UI opened and rendered: PASS
-- Fresh signed pack generated: `PF-20260528-9a653d50`
+- Vendor catalogue loaded: PASS, 17 vendors and 730 source-bound advisories before temporary validation
+- Temporary live VendorLens workflow executed for `CVE-2026-923386`: PASS
+- Config applicability assessment: PASS, `requires_review` with `urgent_scope_confirmation_required`
+- Ask PatchForge chat: PASS, advisory-only with evidence missing and final approval false
+- Fresh signed pack generated: `PF-20260528-9e896f66`
 - Pack verification: PASS, `verified=true`, `manifest_ok=true`, `signature_ok=true`
 - Key Vault signing smoke: PASS, `azure_key_vault`
 - PostgreSQL readiness and live write path: PASS
@@ -67,6 +72,8 @@ Live validation:
 - Live report version stamping: PASS
 - VendorLens report sections: PASS
 - Final approval remained false: PASS
+- Production validation data cleanup: PASS, 17 records removed and post-cleanup browser check confirmed absence
+- Temporary PostgreSQL firewall cleanup: PASS
 
 PF-AZ9A evidence path:
 
@@ -321,13 +328,13 @@ PF-AZ8A evidence path:
 
 `docs/release/evidence/2026-05-27-patchforge-pfaz8a-report-specificity/`
 
-# PF-AZ9-OPS Validation Outputs
+# PF-AZ9-OPS-HISTORICAL Validation Outputs
 
-## PF-AZ9-OPS Operational Health Enablement
+## PF-AZ9-OPS-HISTORICAL Operational Health Enablement
 
 Date: 2026-05-27
 
-Status: PASS. PF-AZ9-OPS is deployed to Azure and validated through the live Admin UI/API.
+Status: PASS. PF-AZ9-OPS-HISTORICAL is deployed to Azure and validated through the live Admin UI/API.
 
 Scope:
 
@@ -376,7 +383,7 @@ Live validation:
 - Worker health: PASS, `ready`
 - Scheduler health: PASS, `ready`
 
-PF-AZ9-OPS evidence path:
+PF-AZ9-OPS-HISTORICAL evidence path:
 
 `docs/release/evidence/2026-05-27-patchforge-pfaz9-operational-health-enablement/`
 

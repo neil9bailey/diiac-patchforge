@@ -1,6 +1,6 @@
 # PatchForge Open Gaps Register
 
-Date: 2026-05-27
+Date: 2026-05-28
 
 | Gap | Status | Notes |
 | --- | --- | --- |
@@ -14,11 +14,11 @@ Date: 2026-05-27
 | Synthetic validation data | Closed for PF-AZ6 | Earlier PF-AZ5 synthetic record `CVE-2026-PF-DEMO-001` and linked production PostgreSQL records were removed and verified absent. |
 | Professional DOCX/PDF board packs | Closed for PF-AZ7 | Protected report APIs, UI export actions, live downloads, and DOCX/PDF visual QA were validated against signed pack `PF-20260527-54588be9`. |
 | Guided intelligence workflow | Closed for PF-AZ8 | Action Center, Finding Detail, Review & Approve, Reports & Packs, finding intelligence API, improved DOCX/PDF reports, live signed pack generation, and protected report export passed Azure live UI validation. |
-| Operational Admin health checks | Closed for PF-AZ9-OPS | MCP agent intake is governed, public source feeds are ready, worker health is ready, and scheduler health is ready in the live Admin UI/API. |
+| Operational Admin health checks | Closed for PF-AZ9-OPS-HISTORICAL | MCP agent intake is governed, public source feeds are ready, worker health is ready, and scheduler health is ready in the live Admin UI/API. |
 | Customer report specificity and guided decision-usefulness | Closed for PF-AZ8A | Safer automation wording, urgent scope confirmation posture, KEV/EPSS explanation, customer-specific pack sections, specific evidence gaps, UI context guidance, live signed-pack generation, and live customer/board/CAB DOCX/PDF export passed Azure live UI validation. |
 | VendorLens network vendor intelligence | Closed for PF-AZ9-VENDORLENS | Vendor catalogue, config-aware applicability, source-bound advisory ingest foundations, Ask PatchForge SRA/AIP chat, VendorLens UI, signed-pack artefacts, DOCX/PDF report sections, Azure rollout, signed pack verification, and live UI validation passed. PF-AZ9-VENDORLENS validation records were removed from production PostgreSQL after evidence capture. |
 | VendorLens UI pagination and CISO patch comparison | Closed for PF-AZ10 | Action Center, Finding Detail, VendorLens reference catalogue, Patch Compare, growing catalogues, report lists, packs, source feeds, and Admin lists now use wrapping and pagination controls. CISO patch-version comparison and report artefact are implemented. Azure rollout and live UI validation passed with image tag `pfaz10-20260527-513fea2`. |
-| VendorLens release clarity and current report proof | Closed for PF-AZ9A | `PF-AZ9-VENDORLENS` and `PF-AZ9-OPS` are now distinct in current-facing docs. DOCX/PDF reports include version stamps, and live customer/board/CAB exports from `PF-20260528-9a653d50` proved current image tag, renderer commit, VendorLens sections, and final approval false. |
+| VendorLens release clarity and current report proof | Closed for PF-AZ9A | `PF-AZ9A-VENDORLENS`, `PF-AZ9-VENDORLENS`, and `PF-AZ9-OPS-HISTORICAL` are now distinct in current-facing docs. DOCX/PDF reports include mandatory version stamps, VendorLens applicability matching was hardened, and live customer/board/CAB exports from `PF-20260528-9e896f66` proved current image tag `pfaz9a-20260528-923b386`, renderer commit `923b386`, VendorLens sections, and final approval false. Temporary validation records were removed from production PostgreSQL after evidence capture. |
 | NVD public API high-volume refresh | Controlled for PF-AZ10 | NVD catalogue refresh no longer requires a single CVE and catalogued live source-bound records. Public API rate limiting is recorded as governed `completed_with_warnings` or `rate_limited` source-feed state. Configure a private NVD API key for fuller high-volume refresh without public rate-limit interruptions. |
 | Customer network asset evidence for Patch Compare | Open | No synthetic asset was created because demo data is prohibited. Patch Compare is ready to run once reviewed customer network asset/model/version evidence is attached. |
 | Scheduled live public-source refresh | Closed for PF-AZ7 | Scheduler Container App is running one replica and completed CISA KEV/FIRST EPSS refresh as `patchforge-scheduler@diiac.io`. |

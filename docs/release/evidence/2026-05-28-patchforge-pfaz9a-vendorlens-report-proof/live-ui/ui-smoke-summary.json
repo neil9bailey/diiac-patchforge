@@ -1,54 +1,79 @@
 {
-    "release":  "PF-AZ9A",
-    "image_tag":  "pfaz9a-20260528-1a98433",
-    "commit":  "1a98433",
-    "signed_in_user":  "n.bailey@diiac.io",
-    "role":  "PatchForge.Admin",
-    "pack_id":  "PF-20260528-9a653d50",
-    "final_approval_issued":  false,
-    "report_version_stamp":  "pass",
-    "vendorlens_sections":  "pass",
-    "live_api_smoke":  "pass",
-    "protected_routes_401":  "pass",
-    "keyvault_signing":  "pass",
-    "postgres":  "pass",
-    "exported_reports":  [
-                             {
-                                 "report_type":  "customer_patch_governance_pack",
-                                 "format":  "docx",
-                                 "file":  "PF-20260528-9a653d50-customer_patch_governance_pack.docx",
-                                 "pass":  true
-                             },
-                             {
-                                 "report_type":  "customer_patch_governance_pack",
-                                 "format":  "pdf",
-                                 "file":  "PF-20260528-9a653d50-customer_patch_governance_pack.pdf",
-                                 "pass":  true
-                             },
-                             {
-                                 "report_type":  "board_vulnerability_remediation_summary",
-                                 "format":  "docx",
-                                 "file":  "PF-20260528-9a653d50-board_vulnerability_remediation_summary.docx",
-                                 "pass":  true
-                             },
-                             {
-                                 "report_type":  "board_vulnerability_remediation_summary",
-                                 "format":  "pdf",
-                                 "file":  "PF-20260528-9a653d50-board_vulnerability_remediation_summary.pdf",
-                                 "pass":  true
-                             },
-                             {
-                                 "report_type":  "cab_patch_decision_report",
-                                 "format":  "docx",
-                                 "file":  "PF-20260528-9a653d50-cab_patch_decision_report.docx",
-                                 "pass":  true
-                             },
-                             {
-                                 "report_type":  "cab_patch_decision_report",
-                                 "format":  "pdf",
-                                 "file":  "PF-20260528-9a653d50-cab_patch_decision_report.pdf",
-                                 "pass":  true
-                             }
-                         ],
-    "evidence_path":  "docs\\release\\evidence\\2026-05-28-patchforge-pfaz9a-vendorlens-report-proof\\live-ui"
+  "release": "PF-AZ9A-VENDORLENS",
+  "previous_live_baseline": "PF-AZ9-VENDORLENS",
+  "image_tag": "pfaz9a-20260528-923b386",
+  "commit": "923b386",
+  "signed_in_user": "n.bailey@diiac.io",
+  "role": "PatchForge.Admin",
+  "pack_id": "PF-20260528-9e896f66",
+  "final_approval_issued": false,
+  "report_version_stamp": "pass",
+  "vendorlens_sections": "pass",
+  "live_api_smoke": "pass",
+  "protected_routes_401": "pass",
+  "keyvault_signing": "pass",
+  "postgres": "pass",
+  "exported_reports": [
+    {
+      "report_type": "customer_patch_governance_pack",
+      "format": "docx",
+      "file": "PF-20260528-9e896f66-customer_patch_governance_pack.docx",
+      "bytes": 162993,
+      "pass": true
+    },
+    {
+      "report_type": "customer_patch_governance_pack",
+      "format": "pdf",
+      "file": "PF-20260528-9e896f66-customer_patch_governance_pack.pdf",
+      "bytes": 100893,
+      "pass": true
+    },
+    {
+      "report_type": "board_vulnerability_remediation_summary",
+      "format": "docx",
+      "file": "PF-20260528-9e896f66-board_vulnerability_remediation_summary.docx",
+      "bytes": 155715,
+      "pass": true
+    },
+    {
+      "report_type": "board_vulnerability_remediation_summary",
+      "format": "pdf",
+      "file": "PF-20260528-9e896f66-board_vulnerability_remediation_summary.pdf",
+      "bytes": 98107,
+      "pass": true
+    },
+    {
+      "report_type": "cab_patch_decision_report",
+      "format": "docx",
+      "file": "PF-20260528-9e896f66-cab_patch_decision_report.docx",
+      "bytes": 157021,
+      "pass": true
+    },
+    {
+      "report_type": "cab_patch_decision_report",
+      "format": "pdf",
+      "file": "PF-20260528-9e896f66-cab_patch_decision_report.pdf",
+      "bytes": 101970,
+      "pass": true
+    }
+  ],
+  "cleanup": {
+    "succeeded": true,
+    "total_deleted": 17,
+    "remaining_matches": 0,
+    "browser_check": {
+      "checked_at_utc": "2026-05-28T17:19:43.192Z",
+      "temp_asset_absent": true,
+      "temp_advisory_absent": true,
+      "temp_vulnerability_absent": true,
+      "temp_pack_absent": true,
+      "counts": {
+        "assets": 0,
+        "advisories": 730,
+        "decision_packs": 7,
+        "vulnerabilities": 13
+      }
+    }
+  },
+  "evidence_path": "docs/release/evidence/2026-05-28-patchforge-pfaz9a-vendorlens-report-proof/live-ui"
 }

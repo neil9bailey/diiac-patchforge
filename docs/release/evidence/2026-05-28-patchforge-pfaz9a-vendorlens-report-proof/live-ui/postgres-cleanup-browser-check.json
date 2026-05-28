@@ -1,0 +1,13 @@
+{
+  "checked_at_utc": "2026-05-28T17:19:43.192Z",
+  "temp_asset_absent": true,
+  "temp_advisory_absent": true,
+  "temp_vulnerability_absent": true,
+  "temp_pack_absent": true,
+  "counts": {
+    "assets": 0,
+    "advisories": 730,
+    "decision_packs": 7,
+    "vulnerabilities": 13
+  }
+}

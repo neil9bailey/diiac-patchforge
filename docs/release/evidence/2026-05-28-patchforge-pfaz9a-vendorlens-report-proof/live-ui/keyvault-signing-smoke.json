@@ -1,10 +1,10 @@
 {
-    "captured_at":  "2026-05-28T14:33:59.2674989Z",
-    "result":  "pass",
-    "pack_id":  "PF-20260528-9a653d50",
-    "signing_provider":  "azure_key_vault",
-    "verified":  true,
-    "manifest_ok":  true,
-    "signature_ok":  true,
-    "image_tag":  "pfaz9a-20260528-1a98433"
+  "captured_at": "2026-05-28T17:02:33.047Z",
+  "result": "pass",
+  "pack_id": "PF-20260528-9e896f66",
+  "signing_provider": "azure_key_vault",
+  "verified": true,
+  "manifest_ok": true,
+  "signature_ok": true,
+  "image_tag": "pfaz9a-20260528-923b386"
 }

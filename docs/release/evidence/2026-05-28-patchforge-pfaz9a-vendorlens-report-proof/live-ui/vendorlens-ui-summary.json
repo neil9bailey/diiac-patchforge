@@ -1,9 +1,181 @@
 {
-  "captured_at": "2026-05-28T14:30:27.614Z",
-  "page_heading": true,
-  "vendors_tracked_match": "17",
-  "active_advisories_match": "730",
-  "known_exploited_match": null,
-  "customer_estate_matches_match": null,
-  "text_sample": "DIIAC™\n\nPatchForge\nAction Center\nFinding Detail\nReview & Approve\nReports & Packs\nVendorLens\nGuide\nAdmin\n\nGovernance layer only. No scanning, no exploit content, no patch deployment, no autonomous approvals.\n\nPRODUCTION | DIIAC.IO | ENTERPRISE STRICT\n\nVendorLens\nEntra protected\nAgent-led intake\nSigning trusted\nRefresh\nSign out\nVendorLens\nSource-bound advisory intelligence\nCVE-2015-5359\nJuniper\ncpe:2.3:o:juniper:junos:12.1x44:*:*:*:*:*:*:*\nModel pending\nFirmware pending\nFeature pending\nExposure unconfirmed\nPending Review\nFinal approval not issued\nVendors tracked\n17\nActive advisories\n730\nKnown exploited CVEs\n0\nEstate matches\n0\nConfig unknown\n0\nEmergency attention\n0\n\nCONFIG-AWARE NETWORK VENDOR GOVERNANCE\n\nAsk what the advisory means for a real firewall, gateway, or edge platform.\n\nVendorLens links public vendor/CVE intelligence to customer product, model, firmware, feature, and exposure evidence. It can recommend scope confirmation, patch governance, mitigation, or monitoring, but final decisions always require reviewed evidence and human approval.\n\nRefresh All NVD Vendors\nAssess\nAsk PatchForge\nCompare Patch\nNetwork Vendors\nProduct Families\nAdvisories & CVEs\nCustomer Estate Match\nConfig Applicability\nPatch Compare\nUrgency & Recommended Posture\nAsk PatchForge\nVendor Evidence Packs\nAdmin: Vendor Sources\nReference Catalogue\n17 vendors\nAkamai\nIdentity Endpoint Cloud\nApp & API Protector, Guardicore, Edge DNS\nAruba / HPE\nInfrastructure Networking\nArubaOS, AOS-CX, ClearPass\nBarracuda\nInfrastructure Networking\nCloudGen Firewall, WAF, Email Security Gateway\nCheck Point\nInfrastructure Networking\nQuantum Security Gateway, Gaia, Harmony\nCisco\nInfrastructure Networking\nASA, Firepower, IOS XE\nCitrix / NetScaler\nInfrastructure Networking\nNetScaler ADC, NetScaler Gateway, Citrix ADC\nCloudflare\nIdentity Endpoint Cloud\nWAF, Zero Trust, Magic Transit\nF5\nInfrastructure Networking\nBIG-IP, BIG-IQ, NGINX\n1-8 of 17 vendors\nBack\n1\n2\n3\nNext\nAkamai\nSource type\nPublic Vendor Advisory\nReview state\nReference Catalogue\nLast refresh\n27/05/2026, 15:54:29\n\nhttps://www.akamai.com/legal/compliance/security-advisories\n\nOpen Source\nRefresh NVD Catalogue\nSession\n\nn.bailey@diiac.io\n\nApp roles enforced by API\n\nPatchForge.Admin\n\nQueue\nRecords\n13\nPending review\n13\nSource Feeds\nFeeds\n2\nRuns\n20\nSigning Trust\nVerifier\nVerified\nTrust\nKey-Vault\nRecent Packs\n\nPF-20260526-8312f908\n\nPF-20260527-54588be9\n\nPF-20260527-daeb98d0"
+  "captured_at": "2026-05-28T17:02:33.047Z",
+  "page": "VendorLens",
+  "signed_in_user": "n.bailey@diiac.io",
+  "role": "PatchForge.Admin",
+  "vendors_tracked": 17,
+  "dashboard_before": {
+    "tenant_id": "diiac.io",
+    "generated_at": "2026-05-28T17:02:25.245Z",
+    "source_bound": true,
+    "review_required": true,
+    "vendors_tracked": 17,
+    "active_advisories": 730,
+    "known_exploited_vendor_cves": 0,
+    "customer_estate_matches": 0,
+    "config_unknown_count": 0,
+    "emergency_attention_required": 0,
+    "recent_assessments": []
+  },
+  "dashboard_after_validation_before_cleanup": {
+    "tenant_id": "diiac.io",
+    "generated_at": "2026-05-28T17:02:31.450Z",
+    "source_bound": true,
+    "review_required": true,
+    "vendors_tracked": 17,
+    "active_advisories": 731,
+    "known_exploited_vendor_cves": 1,
+    "customer_estate_matches": 0,
+    "config_unknown_count": 1,
+    "emergency_attention_required": 0,
+    "recent_assessments": [
+      {
+        "cve": "CVE-2026-923386",
+        "model": "FortiGate 100F",
+        "asset_id": "pfaz9a-val-fortigate-100f-923b386",
+        "boundary": {
+          "no_scanner": true,
+          "no_patch_deployment": true,
+          "no_autonomous_approval": true,
+          "no_production_mutation": true,
+          "no_autonomous_risk_acceptance": true,
+          "no_procedural_exploitation_steps": true
+        },
+        "actor_oid": "2d2f273d-a815-4a19-a258-c48c858252f3",
+        "actor_upn": "n.bailey@diiac.io",
+        "tenant_id": "diiac.io",
+        "vendor_id": "fortinet",
+        "actor_roles": [
+          "PatchForge.Admin"
+        ],
+        "advisory_id": "pfaz9a-val-fortinet-ssl-vpn-923b386",
+        "generated_at": "2026-05-28T17:02:25.632Z",
+        "source_bound": true,
+        "advisory_only": true,
+        "assessment_id": "pfaz9a-val-assessment-923b386",
+        "evidence_gaps": [
+          {
+            "gap_id": "feature_disabled_review",
+            "current_state": "disabled_unreviewed",
+            "why_it_matters": "PatchForge cannot support an accountable customer/CAB decision without reviewed evidence for this point.",
+            "evidence_examples": [
+              "reviewed running configuration",
+              "feature disable change record",
+              "device configuration export"
+            ],
+            "plain_english_gap": "SSL VPN is recorded as disabled, but that configuration evidence is not reviewed.",
+            "required_evidence": "Reviewed configuration export, change record, service owner attestation, or device configuration evidence.",
+            "next_decision_gate": "Configuration applicability review",
+            "suggested_owner_role": "Network engineering lead"
+          },
+          {
+            "gap_id": "advisory_source_review",
+            "current_state": "pending_review",
+            "why_it_matters": "PatchForge cannot support an accountable customer/CAB decision without reviewed evidence for this point.",
+            "evidence_examples": [
+              "vendor advisory",
+              "CVE record",
+              "CISA KEV record",
+              "review event"
+            ],
+            "plain_english_gap": "The vendor/CVE source record has not been accepted as positive evidence.",
+            "required_evidence": "Named reviewer event accepting the source record, affected versions, affected feature, and source provenance.",
+            "next_decision_gate": "Source review",
+            "suggested_owner_role": "Security lead"
+          }
+        ],
+        "evidence_used": [
+          {
+            "ref": "pfaz9a-val-fortinet-ssl-vpn-923b386",
+            "review_state": "pending_review",
+            "evidence_type": "vendor_advisory"
+          },
+          {
+            "ref": "pfaz9a-val-fortigate-100f-923b386",
+            "review_state": "pending_review",
+            "evidence_type": "customer_network_asset"
+          },
+          {
+            "ref": "pfaz9a-browser-msal-validation",
+            "review_state": "pending_review",
+            "evidence_type": "configuration_evidence"
+          }
+        ],
+        "product_family": "Fortinet Firewall",
+        "actor_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+        "exposure_status": "internet_or_management_exposed",
+        "urgency_posture": "urgent_scope_confirmation_required",
+        "affected_feature": "SSL-VPN",
+        "firmware_version": "7.2.7",
+        "tenant_id_source": "token_mapping",
+        "evidence_required": [
+          "reviewed_feature_configuration",
+          "reviewed_vendor_advisory"
+        ],
+        "effective_tenant_id": "diiac.io",
+        "requested_tenant_id": "diiac.io",
+        "applicability_posture": "requires_review",
+        "final_approval_issued": false,
+        "human_review_required": true,
+        "feature_enabled_status": "disabled_unreviewed",
+        "affected_feature_status": "disabled_unreviewed",
+        "affected_version_status": "affected",
+        "tenant_override_ignored": false,
+        "decision_not_allowed_yet": "Final remediation, risk acceptance, closure, and not-applicable decisions cannot be issued until the evidence gaps are resolved and a human reviewer approves the outcome.",
+        "can_close_hard_gates_alone": false
+      }
+    ]
+  },
+  "context_banner_confirmed": true,
+  "next_action_cards_confirmed": true,
+  "config_applicability": {
+    "applicability_posture": "requires_review",
+    "urgency_posture": "urgent_scope_confirmation_required",
+    "human_review_required": true,
+    "final_approval_issued": false,
+    "evidence_gap_count": 2,
+    "evidence_gap_ids": [
+      "feature_disabled_review",
+      "advisory_source_review"
+    ]
+  },
+  "ask_patchforge": {
+    "short_answer": "PatchForge cannot safely declare this configuration unaffected yet; complete scope and configuration evidence review first.",
+    "current_governed_posture": "urgent_scope_confirmation_required",
+    "evidence_missing": [
+      {
+        "gap": "SSL VPN is recorded as disabled, but that configuration evidence is not reviewed.",
+        "required_evidence": "Reviewed configuration export, change record, service owner attestation, or device configuration evidence.",
+        "owner": "Network engineering lead"
+      },
+      {
+        "gap": "The vendor/CVE source record has not been accepted as positive evidence.",
+        "required_evidence": "Named reviewer event accepting the source record, affected versions, affected feature, and source provenance.",
+        "owner": "Security lead"
+      }
+    ],
+    "decision_not_allowed_yet": "Final remediation, risk acceptance, closure, and not-applicable decisions cannot be issued until the evidence gaps are resolved and a human reviewer approves the outcome.",
+    "human_review_required": true,
+    "final_approval_issued": false
+  },
+  "patch_comparison": {
+    "current_version_status": "current_version_not_listed_as_affected_pending_review",
+    "target_version_status": "target_version_recorded_as_fixed_pending_review",
+    "final_approval_issued": false,
+    "no_patch_deployment": true
+  },
+  "final_approval_issued": false,
+  "cleanup_confirmed": {
+    "checked_at_utc": "2026-05-28T17:19:43.192Z",
+    "temp_asset_absent": true,
+    "temp_advisory_absent": true,
+    "temp_vulnerability_absent": true,
+    "temp_pack_absent": true,
+    "counts": {
+      "assets": 0,
+      "advisories": 730,
+      "decision_packs": 7,
+      "vulnerabilities": 13
+    }
+  }
 }

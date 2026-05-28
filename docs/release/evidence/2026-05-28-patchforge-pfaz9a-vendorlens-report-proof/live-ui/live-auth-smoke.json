@@ -1,9 +1,9 @@
 {
-  "captured_at": "2026-05-28T17:19:14.451Z",
+  "url": "https://patchforge.diiac.io/",
+  "checked_at_utc": "2026-05-28T17:19:14.451Z",
   "signed_in_user_visible": true,
   "admin_role_visible": true,
   "auth_state_visible": true,
   "signing_trust_visible": true,
-  "has_vendorlens_nav": true,
-  "has_report_nav": true
+  "token_record_count": 1
 }

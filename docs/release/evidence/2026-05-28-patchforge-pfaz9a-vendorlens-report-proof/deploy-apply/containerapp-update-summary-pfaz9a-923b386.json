@@ -1,0 +1,38 @@
+[
+    {
+        "app":  "ca-patchforge-ui-prod",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-frontend:pfaz9a-20260528-923b386",
+        "output":  "docs\\release\\evidence\\2026-05-28-patchforge-pfaz9a-vendorlens-report-proof\\deploy-apply\\ca-patchforge-ui-prod-update-pfaz9a-923b386.json",
+        "status":  "updated"
+    },
+    {
+        "app":  "ca-patchforge-bridge-prod",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-bridge:pfaz9a-20260528-923b386",
+        "output":  "docs\\release\\evidence\\2026-05-28-patchforge-pfaz9a-vendorlens-report-proof\\deploy-apply\\ca-patchforge-bridge-prod-update-pfaz9a-923b386.json",
+        "status":  "updated"
+    },
+    {
+        "app":  "ca-patchforge-runtime-prod",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-runtime:pfaz9a-20260528-923b386",
+        "output":  "docs\\release\\evidence\\2026-05-28-patchforge-pfaz9a-vendorlens-report-proof\\deploy-apply\\ca-patchforge-runtime-prod-update-pfaz9a-923b386.json",
+        "status":  "updated"
+    },
+    {
+        "app":  "ca-patchforge-sra-prod",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-sra-agent:pfaz9a-20260528-923b386",
+        "output":  "docs\\release\\evidence\\2026-05-28-patchforge-pfaz9a-vendorlens-report-proof\\deploy-apply\\ca-patchforge-sra-prod-update-pfaz9a-923b386.json",
+        "status":  "updated"
+    },
+    {
+        "app":  "ca-patchforge-worker-prod",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-ingest-worker:pfaz9a-20260528-923b386",
+        "output":  "docs\\release\\evidence\\2026-05-28-patchforge-pfaz9a-vendorlens-report-proof\\deploy-apply\\ca-patchforge-worker-prod-update-pfaz9a-923b386.json",
+        "status":  "updated"
+    },
+    {
+        "app":  "ca-patchforge-scheduler-prod",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-scheduler:pfaz9a-20260528-923b386",
+        "output":  "docs\\release\\evidence\\2026-05-28-patchforge-pfaz9a-vendorlens-report-proof\\deploy-apply\\ca-patchforge-scheduler-prod-update-pfaz9a-923b386.json",
+        "status":  "updated"
+    }
+]
