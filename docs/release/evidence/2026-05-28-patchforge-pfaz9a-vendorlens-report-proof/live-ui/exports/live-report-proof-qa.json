@@ -1,0 +1,302 @@
+{
+  "captured_at": "2026-05-28T14:32:06.608Z",
+  "pack_id": "PF-20260528-9a653d50",
+  "vulnerability_id": "CVE-2026-48172",
+  "signed_in_user_visible": true,
+  "admin_role_visible": true,
+  "final_approval_issued": false,
+  "signing_provider": "azure_key_vault",
+  "verification": {
+    "verified": true,
+    "manifest_ok": true,
+    "signature_ok": true,
+    "artefacts": [
+      {
+        "name": "affected_asset_scope.json",
+        "expected": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843",
+        "actual": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843",
+        "ok": true
+      },
+      {
+        "name": "bayesian_patch_risk_snapshot.json",
+        "expected": "c8359a7e14a67ccb9dd6bd10c27792e0eddc32ee3f9ac80d36eb5a46344f0949",
+        "actual": "c8359a7e14a67ccb9dd6bd10c27792e0eddc32ee3f9ac80d36eb5a46344f0949",
+        "ok": true
+      },
+      {
+        "name": "compensating_controls_plan.json",
+        "expected": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+        "actual": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+        "ok": true
+      },
+      {
+        "name": "config_applicability_assessment.json",
+        "expected": "b338aae5e9dfadb50d14f76149d1fc8aed393131b3f3cd320e8d86ec44d2f409",
+        "actual": "b338aae5e9dfadb50d14f76149d1fc8aed393131b3f3cd320e8d86ec44d2f409",
+        "ok": true
+      },
+      {
+        "name": "customer_network_asset_snapshot.json",
+        "expected": "60f75d2d69c723db5fb440da02f0db4bebb4c4087fb6d22072532a966b5d9bb9",
+        "actual": "60f75d2d69c723db5fb440da02f0db4bebb4c4087fb6d22072532a966b5d9bb9",
+        "ok": true
+      },
+      {
+        "name": "exploitability_assessment.json",
+        "expected": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843",
+        "actual": "6134426a05cb23a8b520bdebc1acdb9b26b0eeb7e5a3696229b0f132886d1843",
+        "ok": true
+      },
+      {
+        "name": "finding_intelligence_snapshot.json",
+        "expected": "45946c39869f2e86ae2035c8ab793682a59f88932a88a0201a83a558ceb5eeb6",
+        "actual": "45946c39869f2e86ae2035c8ab793682a59f88932a88a0201a83a558ceb5eeb6",
+        "ok": true
+      },
+      {
+        "name": "human_review_state.json",
+        "expected": "f5f8227f3fa4f41292047918bc64d137e32d178ec0ec747dde4e0e5479863180",
+        "actual": "f5f8227f3fa4f41292047918bc64d137e32d178ec0ec747dde4e0e5479863180",
+        "ok": true
+      },
+      {
+        "name": "network_vendor_profile_snapshot.json",
+        "expected": "2e240f711b516376553cf0e1479b5d9a4e2df182c0723d207958448a90898a3f",
+        "actual": "2e240f711b516376553cf0e1479b5d9a4e2df182c0723d207958448a90898a3f",
+        "ok": true
+      },
+      {
+        "name": "patch_change_readiness.json",
+        "expected": "0f508a5b6ba0bb870b67ec8f9e2e3691cc0848893d9798cd484de6c1b865af6e",
+        "actual": "0f508a5b6ba0bb870b67ec8f9e2e3691cc0848893d9798cd484de6c1b865af6e",
+        "ok": true
+      },
+      {
+        "name": "patch_decision_context.json",
+        "expected": "f6d4aa1523de5c68d2eaaf1482f40cc6c854806745281ab8498e0b0e04e985e3",
+        "actual": "f6d4aa1523de5c68d2eaaf1482f40cc6c854806745281ab8498e0b0e04e985e3",
+        "ok": true
+      },
+      {
+        "name": "patch_feasibility_assessment.json",
+        "expected": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+        "actual": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+        "ok": true
+      },
+      {
+        "name": "patch_prior_update_proposal.json",
+        "expected": "ebd17e0c3518ab9b4f9ec1402c52a30c51159eb7b324036c18a4ac825745debc",
+        "actual": "ebd17e0c3518ab9b4f9ec1402c52a30c51159eb7b324036c18a4ac825745debc",
+        "ok": true
+      },
+      {
+        "name": "patch_prior_usage_manifest.json",
+        "expected": "c77617a9a83ac3e51488cbae24a64786eac03dbe0b1bbc57e22a6923ba6fd42e",
+        "actual": "c77617a9a83ac3e51488cbae24a64786eac03dbe0b1bbc57e22a6923ba6fd42e",
+        "ok": true
+      },
+      {
+        "name": "patch_risk_acceptance_state.json",
+        "expected": "240fa9c55e6c6a5659a74edfc30c159d74c3616651fa672443d312682e6c66df",
+        "actual": "240fa9c55e6c6a5659a74edfc30c159d74c3616651fa672443d312682e6c66df",
+        "ok": true
+      },
+      {
+        "name": "replay_certificate.json",
+        "expected": "2967ffcb6e92f9994bcb273be8fc6a50387a1c8d338c5aaf4ce842fdb38a463e",
+        "actual": "2967ffcb6e92f9994bcb273be8fc6a50387a1c8d338c5aaf4ce842fdb38a463e",
+        "ok": true
+      },
+      {
+        "name": "sra_config_chat_session.json",
+        "expected": "03e6914022eed6417227140282c90f283d003bb6b77960a0e45e7f58814a0b02",
+        "actual": "03e6914022eed6417227140282c90f283d003bb6b77960a0e45e7f58814a0b02",
+        "ok": true
+      },
+      {
+        "name": "sra_trace.json",
+        "expected": "47dbb360210fd7279ed2120f0e090807e8de6b6198ebe6d2bfac7f8a514b8292",
+        "actual": "47dbb360210fd7279ed2120f0e090807e8de6b6198ebe6d2bfac7f8a514b8292",
+        "ok": true
+      },
+      {
+        "name": "threat_landscape_snapshot.json",
+        "expected": "825685554d91f7b357326e8a1ee6e6eff3056e87767010f0144d334129d1f547",
+        "actual": "825685554d91f7b357326e8a1ee6e6eff3056e87767010f0144d334129d1f547",
+        "ok": true
+      },
+      {
+        "name": "trust_bundle.json",
+        "expected": "af2e7686ddf7befdc5df08c00811af347a9f944457285dc6ba6ac4f39a6de4ed",
+        "actual": "af2e7686ddf7befdc5df08c00811af347a9f944457285dc6ba6ac4f39a6de4ed",
+        "ok": true
+      },
+      {
+        "name": "vendor_intelligence_snapshot.json",
+        "expected": "2e240f711b516376553cf0e1479b5d9a4e2df182c0723d207958448a90898a3f",
+        "actual": "2e240f711b516376553cf0e1479b5d9a4e2df182c0723d207958448a90898a3f",
+        "ok": true
+      },
+      {
+        "name": "vendor_security_advisory_snapshot.json",
+        "expected": "2e240f711b516376553cf0e1479b5d9a4e2df182c0723d207958448a90898a3f",
+        "actual": "2e240f711b516376553cf0e1479b5d9a4e2df182c0723d207958448a90898a3f",
+        "ok": true
+      },
+      {
+        "name": "vendorlens_decision_context.json",
+        "expected": "959addc7349211ee6e554e11bc36d20a1781e43372f97550f75037d27d6c35f0",
+        "actual": "959addc7349211ee6e554e11bc36d20a1781e43372f97550f75037d27d6c35f0",
+        "ok": true
+      },
+      {
+        "name": "vendorlens_patch_comparison.json",
+        "expected": "71840274b1920ffef9ff9d92c30dab512fd28dd7baf54cd5879d88b217376c0c",
+        "actual": "71840274b1920ffef9ff9d92c30dab512fd28dd7baf54cd5879d88b217376c0c",
+        "ok": true
+      },
+      {
+        "name": "vulnerability_intelligence_snapshot.json",
+        "expected": "de05c06404b8ffad7b9dc352057959bddf86ba36c48b9555bc7ec522db9b0616",
+        "actual": "de05c06404b8ffad7b9dc352057959bddf86ba36c48b9555bc7ec522db9b0616",
+        "ok": true
+      }
+    ]
+  },
+  "export_status": 200,
+  "checks": [
+    {
+      "report_type": "customer_patch_governance_pack",
+      "format": "docx",
+      "file": "PF-20260528-9a653d50-customer_patch_governance_pack.docx",
+      "bytes": 169935,
+      "status": 200,
+      "pack_id_current": true,
+      "stale_pack_absent": true,
+      "report_version_stamp_present": true,
+      "renderer_commit_present": true,
+      "image_tag_present": true,
+      "product_baseline_present": true,
+      "network_vendor_applicability_present": true,
+      "customer_configuration_context_present": true,
+      "sra_aip_summary_present": true,
+      "final_approval_not_issued": true,
+      "no_exploit_instructions": true,
+      "no_patch_deployment_implication": true,
+      "no_autonomous_analysis_wording": true,
+      "no_not_vulnerable_claim": true,
+      "pass": true
+    },
+    {
+      "report_type": "customer_patch_governance_pack",
+      "format": "pdf",
+      "file": "PF-20260528-9a653d50-customer_patch_governance_pack.pdf",
+      "bytes": 93531,
+      "status": 200,
+      "pack_id_current": true,
+      "stale_pack_absent": true,
+      "report_version_stamp_present": true,
+      "renderer_commit_present": true,
+      "image_tag_present": true,
+      "product_baseline_present": true,
+      "network_vendor_applicability_present": true,
+      "customer_configuration_context_present": true,
+      "sra_aip_summary_present": true,
+      "final_approval_not_issued": true,
+      "no_exploit_instructions": true,
+      "no_patch_deployment_implication": true,
+      "no_autonomous_analysis_wording": true,
+      "no_not_vulnerable_claim": true,
+      "pass": true
+    },
+    {
+      "report_type": "board_vulnerability_remediation_summary",
+      "format": "docx",
+      "file": "PF-20260528-9a653d50-board_vulnerability_remediation_summary.docx",
+      "bytes": 151092,
+      "status": 200,
+      "pack_id_current": true,
+      "stale_pack_absent": true,
+      "report_version_stamp_present": true,
+      "renderer_commit_present": true,
+      "image_tag_present": true,
+      "product_baseline_present": true,
+      "network_vendor_applicability_present": true,
+      "customer_configuration_context_present": true,
+      "sra_aip_summary_present": true,
+      "final_approval_not_issued": true,
+      "no_exploit_instructions": true,
+      "no_patch_deployment_implication": true,
+      "no_autonomous_analysis_wording": true,
+      "no_not_vulnerable_claim": true,
+      "pass": true
+    },
+    {
+      "report_type": "board_vulnerability_remediation_summary",
+      "format": "pdf",
+      "file": "PF-20260528-9a653d50-board_vulnerability_remediation_summary.pdf",
+      "bytes": 82417,
+      "status": 200,
+      "pack_id_current": true,
+      "stale_pack_absent": true,
+      "report_version_stamp_present": true,
+      "renderer_commit_present": true,
+      "image_tag_present": true,
+      "product_baseline_present": true,
+      "network_vendor_applicability_present": true,
+      "customer_configuration_context_present": true,
+      "sra_aip_summary_present": true,
+      "final_approval_not_issued": true,
+      "no_exploit_instructions": true,
+      "no_patch_deployment_implication": true,
+      "no_autonomous_analysis_wording": true,
+      "no_not_vulnerable_claim": true,
+      "pass": true
+    },
+    {
+      "report_type": "cab_patch_decision_report",
+      "format": "docx",
+      "file": "PF-20260528-9a653d50-cab_patch_decision_report.docx",
+      "bytes": 151044,
+      "status": 200,
+      "pack_id_current": true,
+      "stale_pack_absent": true,
+      "report_version_stamp_present": true,
+      "renderer_commit_present": true,
+      "image_tag_present": true,
+      "product_baseline_present": true,
+      "network_vendor_applicability_present": true,
+      "customer_configuration_context_present": true,
+      "sra_aip_summary_present": true,
+      "final_approval_not_issued": true,
+      "no_exploit_instructions": true,
+      "no_patch_deployment_implication": true,
+      "no_autonomous_analysis_wording": true,
+      "no_not_vulnerable_claim": true,
+      "pass": true
+    },
+    {
+      "report_type": "cab_patch_decision_report",
+      "format": "pdf",
+      "file": "PF-20260528-9a653d50-cab_patch_decision_report.pdf",
+      "bytes": 82364,
+      "status": 200,
+      "pack_id_current": true,
+      "stale_pack_absent": true,
+      "report_version_stamp_present": true,
+      "renderer_commit_present": true,
+      "image_tag_present": true,
+      "product_baseline_present": true,
+      "network_vendor_applicability_present": true,
+      "customer_configuration_context_present": true,
+      "sra_aip_summary_present": true,
+      "final_approval_not_issued": true,
+      "no_exploit_instructions": true,
+      "no_patch_deployment_implication": true,
+      "no_autonomous_analysis_wording": true,
+      "no_not_vulnerable_claim": true,
+      "pass": true
+    }
+  ],
+  "pass": true
+}

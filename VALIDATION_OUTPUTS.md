@@ -1,3 +1,79 @@
+# PF-AZ9A VendorLens Report Proof Validation Outputs
+
+## PF-AZ9A Local Validation
+
+Date: 2026-05-28
+
+Status: PASS. PF-AZ9A is deployed to Azure and validated through the live UI/API as a signed-in PatchForge Admin user.
+
+Scope:
+
+- Clarify release naming so VendorLens is `PF-AZ9-VENDORLENS` and the earlier operational-health release is `PF-AZ9-OPS`.
+- Replace ambiguous manifest wording with reused-resource fields.
+- Stamp every DOCX/PDF report with current renderer and image metadata.
+- Prove current reports are not stale and include VendorLens sections.
+
+Local validation:
+
+- `node --check backend-api/server.js`: PASS
+- `node --check backend-api/auth.js`: PASS
+- `node --check backend-api/patchforge/reports.js`: PASS
+- `node --check backend-api/patchforge/configApplicability.js`: PASS
+- `node --check backend-api/patchforge/vendorLens.js`: PASS
+- `node --check backend-api/patchforge/scheduler.js`: PASS
+- `node --check backend-api/sra/securityResearchAgent.js`: PASS
+- `npm --prefix backend-api test`: PASS, 29 tests
+- `npm --prefix Frontend test`: PASS, 11 tests
+- `npm --prefix Frontend run build`: PASS
+- `python -m pytest -q --basetemp .pytest_tmp`: PASS, 26 tests
+- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate_iac.ps1`: PASS
+- `az bicep build --file infra/bicep/main.bicep`: PASS
+- Docker frontend, bridge/API, and runtime build smoke: PASS
+- Local current-report proof from signed pack `PF-20260527-2d9f160a`: PASS
+- Local DOCX render attempt: NOT AVAILABLE because the local DOCX-to-PDF converter executable is missing
+
+Azure rollout:
+
+- GitHub push: PASS, commit `1a98433`
+- Image tag: `pfaz9a-20260528-1a98433`
+- ACR image push: PASS for frontend, bridge/API, runtime, SRA, worker, and scheduler
+- ACR tag verification: PASS for all six repositories
+- Azure what-if: captured; targeted image-only rollout used to avoid broad infrastructure drift
+- Targeted Container Apps update: PASS
+- Active revisions:
+  - UI: `ca-patchforge-ui-prod--0000017`
+  - Bridge/API: `ca-patchforge-bridge-prod--0000016`
+  - Runtime: `ca-patchforge-runtime-prod--0000015`
+  - SRA: `ca-patchforge-sra-prod--0000014`
+  - Worker: `ca-patchforge-worker-prod--0000014`
+  - Scheduler: `ca-patchforge-scheduler-prod--0000014`
+
+Live validation:
+
+- UI HTTP 200: PASS
+- API health HTTP 200: PASS
+- API readiness HTTP 200 with `storage=postgresql`, `auth_required=true`, and `tenant_required=true`: PASS
+- Protected vulnerability route unauthenticated HTTP 401: PASS
+- Browser/MSAL sign-in as `n.bailey@diiac.io`: PASS
+- Displayed role `PatchForge.Admin`: PASS
+- VendorLens UI opened and rendered: PASS
+- Fresh signed pack generated: `PF-20260528-9a653d50`
+- Pack verification: PASS, `verified=true`, `manifest_ok=true`, `signature_ok=true`
+- Key Vault signing smoke: PASS, `azure_key_vault`
+- PostgreSQL readiness and live write path: PASS
+- Customer Patch Governance Pack DOCX/PDF export: PASS
+- Board Vulnerability Remediation Summary DOCX/PDF export: PASS
+- CAB Patch Decision Report DOCX/PDF export: PASS
+- Live report version stamping: PASS
+- VendorLens report sections: PASS
+- Final approval remained false: PASS
+
+PF-AZ9A evidence path:
+
+`docs/release/evidence/2026-05-28-patchforge-pfaz9a-vendorlens-report-proof/`
+
+Important boundary note: PF-AZ9A does not add scanning, exploit generation, procedural exploit steps, patch deployment, production mutation from the UI, autonomous evidence-gate closure, autonomous CAB approval, or autonomous risk acceptance.
+
 # PF-AZ10 UI, VendorLens Catalogue, and CISO Patch Comparison Validation Outputs
 
 ## PF-AZ10 Local Validation

@@ -1,0 +1,8 @@
+PatchForge PF-AZ9A live pack verification
+Pack: PF-20260528-9a653d50
+Signing provider: azure_key_vault
+Verified: True
+Manifest OK: True
+Signature OK: True
+Final approval issued: False
+Report proof PASS: True

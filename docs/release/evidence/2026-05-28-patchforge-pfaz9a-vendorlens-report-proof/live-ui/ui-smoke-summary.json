@@ -1,0 +1,54 @@
+{
+    "release":  "PF-AZ9A",
+    "image_tag":  "pfaz9a-20260528-1a98433",
+    "commit":  "1a98433",
+    "signed_in_user":  "n.bailey@diiac.io",
+    "role":  "PatchForge.Admin",
+    "pack_id":  "PF-20260528-9a653d50",
+    "final_approval_issued":  false,
+    "report_version_stamp":  "pass",
+    "vendorlens_sections":  "pass",
+    "live_api_smoke":  "pass",
+    "protected_routes_401":  "pass",
+    "keyvault_signing":  "pass",
+    "postgres":  "pass",
+    "exported_reports":  [
+                             {
+                                 "report_type":  "customer_patch_governance_pack",
+                                 "format":  "docx",
+                                 "file":  "PF-20260528-9a653d50-customer_patch_governance_pack.docx",
+                                 "pass":  true
+                             },
+                             {
+                                 "report_type":  "customer_patch_governance_pack",
+                                 "format":  "pdf",
+                                 "file":  "PF-20260528-9a653d50-customer_patch_governance_pack.pdf",
+                                 "pass":  true
+                             },
+                             {
+                                 "report_type":  "board_vulnerability_remediation_summary",
+                                 "format":  "docx",
+                                 "file":  "PF-20260528-9a653d50-board_vulnerability_remediation_summary.docx",
+                                 "pass":  true
+                             },
+                             {
+                                 "report_type":  "board_vulnerability_remediation_summary",
+                                 "format":  "pdf",
+                                 "file":  "PF-20260528-9a653d50-board_vulnerability_remediation_summary.pdf",
+                                 "pass":  true
+                             },
+                             {
+                                 "report_type":  "cab_patch_decision_report",
+                                 "format":  "docx",
+                                 "file":  "PF-20260528-9a653d50-cab_patch_decision_report.docx",
+                                 "pass":  true
+                             },
+                             {
+                                 "report_type":  "cab_patch_decision_report",
+                                 "format":  "pdf",
+                                 "file":  "PF-20260528-9a653d50-cab_patch_decision_report.pdf",
+                                 "pass":  true
+                             }
+                         ],
+    "evidence_path":  "docs\\release\\evidence\\2026-05-28-patchforge-pfaz9a-vendorlens-report-proof\\live-ui"
+}

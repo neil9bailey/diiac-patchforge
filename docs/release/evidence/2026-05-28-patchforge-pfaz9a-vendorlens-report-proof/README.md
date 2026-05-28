@@ -23,4 +23,16 @@ Local visual render note:
 
 - `documents/render_docx.py` was invoked for all three local DOCX reports.
 - The local render gate could not complete because the DOCX-to-PDF converter executable was not available in this Windows environment.
-- Structural DOCX/PDF proof passed locally; live UI/API report export and inspection must be completed after Azure deployment before PF-AZ9A is marked complete.
+- Structural DOCX/PDF proof passed locally.
+
+Live validation:
+
+- Azure image tag: `pfaz9a-20260528-1a98433`.
+- Live browser/MSAL sign-in: PASS as `n.bailey@diiac.io` with `PatchForge.Admin`.
+- Live signed pack generated from existing source-bound `CVE-2026-48172`: `PF-20260528-9a653d50`.
+- Live report exports: customer, board, and CAB DOCX/PDF all PASS.
+- Report version stamping: PASS for `report_template_version`, `renderer_commit`, `image_tag`, `generated_from_pack_id`, `generated_at`, `product_baseline`, and `report_context_version`.
+- VendorLens proof: Network Vendor Applicability, Customer Configuration Context, and SRA/AIP Chat Summary sections are present.
+- Final approval remains not issued.
+- Key Vault signing and pack verification: PASS.
+- PostgreSQL readiness and live write path: PASS.

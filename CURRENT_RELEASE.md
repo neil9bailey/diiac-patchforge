@@ -1,5 +1,76 @@
 # Current Release
 
+## DIIaC PatchForge PF-AZ9A VendorLens Report Proof
+
+Release state: deployed to Azure and live validated through the production UI/API as a signed-in PatchForge Admin user.
+
+Date: 2026-05-28
+
+PF-AZ9A clarifies the VendorLens release line and proves that current live DOCX/PDF reports are freshly generated from the current renderer, not stale report artefacts.
+
+PF-AZ9A image tag:
+
+- `pfaz9a-20260528-1a98433`
+
+PF-AZ9A commit:
+
+- `1a98433`
+
+PF-AZ9A local validation:
+
+- backend syntax and tests: PASS, 29 tests
+- frontend tests and production build: PASS, 11 tests
+- Python runtime tests: PASS, 26 tests
+- IaC validation and Bicep build: PASS
+- Docker build smoke: PASS for frontend, bridge/API, and runtime
+- ACR image push: PASS for frontend, bridge/API, runtime, SRA, worker, and scheduler
+- Local current-report proof from signed pack `PF-20260527-2d9f160a`: PASS
+- Local DOCX render attempt: blocked by missing local DOCX-to-PDF converter; structural DOCX/PDF proof passed
+
+PF-AZ9A Azure rollout:
+
+- GitHub push: PASS, commit `1a98433`
+- ACR build/push: PASS for image tag `pfaz9a-20260528-1a98433`
+- Azure what-if: captured; targeted image-only rollout used to avoid broad infrastructure drift
+- Targeted Container Apps update: PASS
+- Active revisions:
+  - UI: `ca-patchforge-ui-prod--0000017`
+  - Bridge/API: `ca-patchforge-bridge-prod--0000016`
+  - Runtime: `ca-patchforge-runtime-prod--0000015`
+  - SRA: `ca-patchforge-sra-prod--0000014`
+  - Worker: `ca-patchforge-worker-prod--0000014`
+  - Scheduler: `ca-patchforge-scheduler-prod--0000014`
+
+PF-AZ9A live validation:
+
+- UI HTTP 200: PASS
+- API health HTTP 200: PASS
+- API readiness HTTP 200 with `storage=postgresql`, `auth_required=true`, and `tenant_required=true`: PASS
+- Protected vulnerability route unauthenticated HTTP 401: PASS
+- Browser/MSAL sign-in as `n.bailey@diiac.io`: PASS
+- Displayed role `PatchForge.Admin`: PASS
+- VendorLens page renders through the live UI: PASS
+- Fresh signed pack generated from existing source-bound `CVE-2026-48172`: `PF-20260528-9a653d50`
+- Signed pack verification: PASS, `verified=true`, `manifest_ok=true`, `signature_ok=true`
+- Key Vault signing: PASS, `azure_key_vault`
+- PostgreSQL readiness and live write path: PASS
+- Customer, board, and CAB DOCX/PDF report export: PASS
+- Report version stamping in live DOCX/PDF: PASS for `report_template_version`, `renderer_commit`, `image_tag`, `generated_from_pack_id`, `generated_at`, `product_baseline`, and `report_context_version`
+- VendorLens report sections: PASS for Network Vendor Applicability, Customer Configuration Context, and SRA/AIP Chat Summary
+- Final approval remained false: PASS
+
+PF-AZ9A release naming cleanup:
+
+- Active VendorLens baseline is now consistently named `PF-AZ9-VENDORLENS`.
+- Earlier operational-health release is now named `PF-AZ9-OPS`.
+- Manifest wording now distinguishes reused Azure resources from new resources created in this increment.
+
+PF-AZ9A evidence path:
+
+- `docs/release/evidence/2026-05-28-patchforge-pfaz9a-vendorlens-report-proof/`
+
+PF-AZ9A does not add vulnerability scanning, exploit generation, procedural exploit steps, patch deployment, production mutation, autonomous evidence-gate closure, autonomous CAB approval, or autonomous risk acceptance.
+
 ## DIIaC PatchForge PF-AZ10 UI, VendorLens Catalogue, and CISO Patch Comparison
 
 Release state: deployed to Azure and live validated through the production UI/API as a signed-in PatchForge Admin user.

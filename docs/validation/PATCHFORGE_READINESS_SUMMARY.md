@@ -13,7 +13,7 @@ PatchForge is live on Azure Container Apps under the DIIaC tenant with:
 - source-bound evidence and signed pack governance controls
 - guided Action Center, Finding Detail, Review & Approve, Reports & Packs, Guide, and Admin workflow
 - professional protected DOCX/PDF report generation from signed decision packs
-- PF-AZ9-VENDORLENS image tag `pfaz9-20260527-e8a0de2` on all PatchForge Container Apps
+- PF-AZ9A image tag `pfaz9a-20260528-1a98433` on all PatchForge Container Apps
 
 PF-AZ8 added the customer-demo workflow hardening requested after report/UI review:
 
@@ -54,25 +54,38 @@ PF-AZ9-VENDORLENS completes the network vendor intelligence and config-aware pat
 - signed-pack artefacts for VendorLens snapshots
 - DOCX/PDF report sections for Network Vendor Applicability and Customer Configuration Context
 
+PF-AZ9A completes the VendorLens release clarity and current-report proof increment:
+
+- current-facing release naming is consistently `PF-AZ9-VENDORLENS`
+- earlier operational health release naming is separated as `PF-AZ9-OPS`
+- release manifests distinguish new Azure resource creation from reuse of existing Azure resources
+- all DOCX/PDF report exports include report template, renderer commit, image tag, source pack, generation time, product baseline, and report context version stamps
+- fresh live customer, board, and CAB reports were exported from signed pack `PF-20260528-9a653d50`
+- current reports prove VendorLens sections, customer configuration context, SRA/AIP chat summary, final approval false, and no exploit or patch deployment implication
+
 ## Live Validation
 
-PF-AZ9-VENDORLENS Azure update and live UI/API validation are complete for the current commit and image tag.
+PF-AZ9A Azure update and live UI/API validation are complete for the current commit and image tag.
 
 - User: `n.bailey@diiac.io`
 - Role displayed: `PatchForge.Admin`
-- Validated workflow: VendorLens customer network asset, source-bound vendor advisory, config applicability assessment, Ask PatchForge chat, signed pack, and board report export
-- Signed pack: `PF-20260527-2d9f160a`
+- Validated workflow: VendorLens report proof, source-bound finding review, signed pack generation, report export, and version-stamp verification
+- Signed pack: `PF-20260528-9a653d50`
 - Pack verification: PASS
 - Manifest verification: PASS
 - Signature verification: PASS
 - Signing provider: `azure_key_vault`
 - Final approval: `false`
+- Customer DOCX/PDF report generation: PASS
 - Board DOCX/PDF report generation: PASS
-- Live DOCX structural QA: PASS
+- CAB DOCX/PDF report generation: PASS
+- Report version stamping: PASS
+- VendorLens report sections: PASS
+- Live DOCX/PDF structural QA: PASS
 - PostgreSQL readiness: PASS
 - Protected unauthenticated route returns: HTTP 401
-- PF-AZ9-VENDORLENS validation records removed from production PostgreSQL after evidence capture: PASS
-- Evidence path: `docs/release/evidence/2026-05-27-patchforge-pfaz9-vendorlens/live-ui/`
+- Evidence path: `docs/release/evidence/2026-05-28-patchforge-pfaz9a-vendorlens-report-proof/live-ui/`
+- PF-AZ9-VENDORLENS evidence path: `docs/release/evidence/2026-05-27-patchforge-pfaz9-vendorlens/live-ui/`
 - PF-AZ8A report specificity evidence path: `docs/release/evidence/2026-05-27-patchforge-pfaz8a-report-specificity/live-ui/`
 - PF-AZ9-OPS operational health evidence path: `docs/release/evidence/2026-05-27-patchforge-pfaz9-operational-health-enablement/live-ui/`
 

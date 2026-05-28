@@ -1,22 +1,22 @@
 {
-  "release": "PF-AZ10-UI-VENDORLENS-CISO-COMPARE",
-  "date": "2026-05-27",
+  "release": "PF-AZ9A-VENDORLENS-REPORT-PROOF",
+  "date": "2026-05-28",
   "status": "azure_live_browser_validated",
-  "image_tag": "pfaz10-20260527-513fea2",
-  "commit": "513fea2",
+  "image_tag": "pfaz9a-20260528-1a98433",
+  "commit": "1a98433",
   "previous_live_release": {
-    "release": "PF-AZ9-VENDORLENS",
-    "image_tag": "pfaz9-20260527-e8a0de2",
-    "commit": "e8a0de2",
+    "release": "PF-AZ10-UI-VENDORLENS-CISO-COMPARE",
+    "image_tag": "pfaz10-20260527-513fea2",
+    "commit": "513fea2",
     "status": "azure_live_browser_validated"
   },
   "gates": [
     { "name": "backend_server_syntax", "status": "pass" },
     { "name": "backend_auth_syntax", "status": "pass" },
     { "name": "backend_reports_syntax", "status": "pass" },
-    { "name": "backend_scheduler_syntax", "status": "pass" },
     { "name": "backend_config_applicability_syntax", "status": "pass" },
     { "name": "backend_vendorlens_syntax", "status": "pass" },
+    { "name": "backend_scheduler_syntax", "status": "pass" },
     { "name": "sra_syntax", "status": "pass" },
     { "name": "backend_tests", "status": "pass", "tests": 29 },
     { "name": "frontend_tests", "status": "pass", "tests": 11 },
@@ -24,17 +24,31 @@
     { "name": "python_runtime_tests", "status": "pass", "tests": 26 },
     { "name": "iac_validation", "status": "pass" },
     { "name": "bicep_build", "status": "pass" },
-    { "name": "acr_image_push", "status": "pass", "image_tag": "pfaz10-20260527-513fea2" },
-    { "name": "azure_update", "status": "pass", "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz10-ui-vendorlens-ciso-compare/deploy-apply/" },
-    { "name": "live_api_smoke", "status": "pass", "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz10-ui-vendorlens-ciso-compare/live-ui/live-api-smoke-release.json" },
-    { "name": "live_ui_visual_overflow", "status": "pass", "evidence": "docs/release/evidence/2026-05-27-patchforge-pfaz10-ui-vendorlens-ciso-compare/live-ui/browser-screenshots/" },
-    { "name": "vendorlens_nvd_catalogue_refresh", "status": "pass_with_governed_rate_limit_warning", "records_reported": 635 },
-    { "name": "vendorlens_catalogue_records_visible", "status": "pass", "records": 730 },
-    { "name": "vendorlens_patch_compare_pagination", "status": "pass", "page_label": "1-10 of 730 comparison advisories" },
+    { "name": "docker_build_smoke", "status": "pass", "images": ["frontend", "bridge", "runtime"] },
+    { "name": "local_current_report_proof", "status": "pass", "pack_id": "PF-20260527-2d9f160a" },
+    { "name": "local_docx_render", "status": "not_available_local_converter_missing" },
+    { "name": "github_push", "status": "pass", "commit": "1a98433" },
+    { "name": "acr_image_push", "status": "pass", "image_tag": "pfaz9a-20260528-1a98433" },
+    { "name": "azure_update", "status": "pass", "evidence": "docs/release/evidence/2026-05-28-patchforge-pfaz9a-vendorlens-report-proof/deploy-apply/" },
+    { "name": "live_api_smoke", "status": "pass", "evidence": "docs/release/evidence/2026-05-28-patchforge-pfaz9a-vendorlens-report-proof/live-ui/live-api-smoke.json" },
     { "name": "protected_routes_unauthenticated", "status": "pass", "expected_status": 401 },
-    { "name": "postgres_readiness", "status": "pass", "storage": "postgresql" },
-    { "name": "keyvault_signing_path", "status": "previous_live_pass_not_rerun" }
+    { "name": "browser_msal_admin_validation", "status": "pass", "user": "n.bailey@diiac.io", "role": "PatchForge.Admin" },
+    { "name": "live_signed_pack_generation", "status": "pass", "pack_id": "PF-20260528-9a653d50" },
+    { "name": "live_report_exports", "status": "pass", "formats": ["docx", "pdf"], "reports": ["customer_patch_governance_pack", "board_vulnerability_remediation_summary", "cab_patch_decision_report"] },
+    { "name": "live_report_version_stamp", "status": "pass" },
+    { "name": "vendorlens_report_sections", "status": "pass" },
+    { "name": "keyvault_signing", "status": "pass" },
+    { "name": "postgres_readiness", "status": "pass", "storage": "postgresql" }
   ],
+  "report_stamp_fields": {
+    "report_template_version": true,
+    "renderer_commit": true,
+    "image_tag": true,
+    "generated_from_pack_id": true,
+    "generated_at": true,
+    "product_baseline": true,
+    "report_context_version": true
+  },
   "boundary_checks": {
     "source_bound_advisory_intelligence": true,
     "human_review_required": true,
@@ -42,21 +56,13 @@
     "exploit_instructions_absent": true,
     "patch_deployment_endpoint_absent": true,
     "scanner_endpoint_absent": true,
+    "autonomous_evidence_gate_closure_absent": true,
     "autonomous_cab_approval_absent": true,
     "autonomous_risk_acceptance_absent": true
   },
-  "ui_checks": {
-    "finding_cards_wrap": true,
-    "finding_detail_hero_wraps": true,
-    "status_pills_wrap": true,
-    "pagination_controls_present": true,
-    "vendorlens_reference_catalogue_clickable": true,
-    "patch_compare_large_advisory_catalogue_paginated": true,
-    "console_breaking_errors_absent": true
-  },
   "remaining_notes": [
-    "No new synthetic customer asset was created in production because demo data is prohibited.",
-    "Patch Compare can run once reviewed customer network asset evidence is attached.",
-    "NVD public API rate limiting is handled as a governed feed-run state; configure a private NVD API key for fuller high-volume refreshes."
+    "Local DOCX visual rendering could not run because the local converter executable was unavailable; live DOCX/PDF export and structural checks passed.",
+    "No new Azure resources were created in this increment; existing production resources were reused.",
+    "No synthetic customer asset or demo vulnerability data was added."
   ]
 }

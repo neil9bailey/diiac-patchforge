@@ -1,8 +1,8 @@
 {
   "product": "DIIaC PatchForge",
-  "baseline_id": "PF-AZ10-UI-VENDORLENS-CISO-COMPARE",
-  "baseline_name": "UI Pagination, VendorLens Catalogue Hardening, and CISO Patch Comparison",
-  "baseline_date": "2026-05-27",
+  "baseline_id": "PF-AZ9A-VENDORLENS-REPORT-PROOF",
+  "baseline_name": "VendorLens Release Clarity and Current Report Proof",
+  "baseline_date": "2026-05-28",
   "target_url": "https://patchforge.diiac.io",
   "api_url": "https://api.patchforge.diiac.io",
   "remote_target": "neil9bailey/diiac-patchforge",
@@ -12,66 +12,77 @@
   "uses_existing_azure_resources": true,
   "azure_resource_group": "rg-diiac-patchforge-prod",
   "azure_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
-  "storage_state": "postgresql_live_previous_baseline",
+  "storage_state": "postgresql_live",
   "auth_state": "entra_rbac_required",
   "signing_state": "azure_key_vault_required_for_production_runtime",
-  "image_tag": "pfaz10-20260527-513fea2",
-  "commit": "513fea2",
+  "image_tag": "pfaz9a-20260528-1a98433",
+  "commit": "1a98433",
   "previous_live_baseline": {
-    "baseline_id": "PF-AZ9-VENDORLENS",
-    "image_tag": "pfaz9-20260527-e8a0de2",
-    "commit": "e8a0de2",
+    "baseline_id": "PF-AZ10-UI-VENDORLENS-CISO-COMPARE",
+    "image_tag": "pfaz10-20260527-513fea2",
+    "commit": "513fea2",
     "release_state": "azure_live_browser_validated"
   },
+  "renamed_release_lines": {
+    "active_vendorlens_baseline": "PF-AZ9-VENDORLENS",
+    "earlier_operational_health_baseline": "PF-AZ9-OPS"
+  },
   "scope": [
-    "UI content wrapping and overflow prevention",
-    "pagination for growing queues, catalogues, reports, packs, admin sections, source feeds, and VendorLens views",
-    "clickable VendorLens reference catalogue",
-    "NVD catalogue refresh without requiring a single CVE",
-    "NVD rate-limit handling as governed feed-run state",
-    "CISO patch-version comparison workflow",
-    "CISO patch-version comparison report artefact"
+    "release naming cleanup for VendorLens and operational-health baselines",
+    "manifest clarity for reused Azure resources",
+    "mandatory report version stamping in DOCX/PDF reports",
+    "current report proof from signed pack PF-20260527-2d9f160a",
+    "live report proof from signed pack PF-20260528-9a653d50",
+    "live Azure deployment with report renderer image tag and commit metadata"
+  ],
+  "report_stamp_fields": [
+    "report_template_version",
+    "renderer_commit",
+    "image_tag",
+    "generated_from_pack_id",
+    "generated_at",
+    "product_baseline",
+    "report_context_version"
   ],
   "local_validation": {
     "backend_syntax": "pass",
     "backend_tests": "pass_29",
-    "frontend_tests": "pass",
+    "frontend_tests": "pass_11",
     "frontend_build": "pass",
-    "python_runtime_tests": "pass",
+    "python_runtime_tests": "pass_26",
     "iac_validation": "pass",
     "bicep_build": "pass",
     "docker_builds": "pass",
-    "docx_pdf_report_generation": "pass",
-    "docx_visual_render": "not_available_local_soffice_missing",
-    "evidence_path": "docs/release/evidence/2026-05-27-patchforge-pfaz10-ui-vendorlens-ciso-compare/"
+    "local_report_proof": "pass",
+    "docx_visual_render": "not_available_local_converter_missing",
+    "evidence_path": "docs/release/evidence/2026-05-28-patchforge-pfaz9a-vendorlens-report-proof/"
   },
   "azure_rollout": {
     "github_push": "pass",
     "acr_image_push": "pass",
     "targeted_containerapp_update": "pass",
     "active_revisions": {
-      "ui": "ca-patchforge-ui-prod--0000016",
-      "bridge_api": "ca-patchforge-bridge-prod--0000015",
-      "runtime": "ca-patchforge-runtime-prod--0000014",
-      "sra": "ca-patchforge-sra-prod--0000013",
-      "worker": "ca-patchforge-worker-prod--0000013",
-      "scheduler": "ca-patchforge-scheduler-prod--0000013"
+      "ui": "ca-patchforge-ui-prod--0000017",
+      "bridge_api": "ca-patchforge-bridge-prod--0000016",
+      "runtime": "ca-patchforge-runtime-prod--0000015",
+      "sra": "ca-patchforge-sra-prod--0000014",
+      "worker": "ca-patchforge-worker-prod--0000014",
+      "scheduler": "ca-patchforge-scheduler-prod--0000014"
     }
   },
   "live_validation": {
     "status": "pass",
     "browser_msal_user": "n.bailey@diiac.io",
     "displayed_role": "PatchForge.Admin",
-    "vendor_catalogue_count": 17,
-    "vendorlens_active_advisories": 730,
-    "nvd_refresh_state": "completed_with_warnings_when_public_rate_limit_reached",
-    "patch_compare_pagination": "pass_1_to_10_of_730",
-    "visual_overflow_checks": "pass",
-    "signed_pack_verified": "not_rerun_no_new_customer_asset_created",
-    "keyvault_signing": "previous_live_pass_not_rerun",
+    "signed_pack_id": "PF-20260528-9a653d50",
+    "validated_cve": "CVE-2026-48172",
+    "signed_pack_verified": true,
+    "keyvault_signing": "pass",
     "postgresql": "pass",
-    "validation_records_removed_after_evidence_capture": "not_applicable_no_synthetic_records_created",
-    "evidence_path": "docs/release/evidence/2026-05-27-patchforge-pfaz10-ui-vendorlens-ciso-compare/live-ui/"
+    "report_version_stamping": "pass",
+    "vendorlens_report_sections": "pass",
+    "final_approval_issued": false,
+    "evidence_path": "docs/release/evidence/2026-05-28-patchforge-pfaz9a-vendorlens-report-proof/live-ui/"
   },
   "excluded_capabilities": [
     "vulnerability_scanner",
@@ -79,6 +90,7 @@
     "procedural_exploit_steps",
     "patch_deployment",
     "production_mutation_from_ui",
+    "autonomous_evidence_gate_closure",
     "autonomous_cab",
     "autonomous_risk_acceptance"
   ]

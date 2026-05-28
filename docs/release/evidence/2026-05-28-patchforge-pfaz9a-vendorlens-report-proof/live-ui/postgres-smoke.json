@@ -1,0 +1,9 @@
+{
+    "captured_at":  "2026-05-28T14:33:59.4135365Z",
+    "readiness_status":  "HTTP/1.1 200 OK",
+    "storage":  "postgresql",
+    "auth_required":  true,
+    "live_write_path":  "decision-pack-generate",
+    "live_generated_pack_id":  "PF-20260528-9a653d50",
+    "result":  "pass"
+}
