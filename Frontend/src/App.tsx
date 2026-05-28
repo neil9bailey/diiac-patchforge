@@ -107,6 +107,9 @@ type LiveState = {
 };
 
 const PRODUCT_MARK = "DIIaC\u2122";
+const ACTIVE_BASELINE = "PF-AZ9A-VENDORLENS";
+const REPORT_TEMPLATE_VERSION = "patchforge-report-template.v2026-05-28.1";
+const REPORT_CONTEXT_VERSION = "patchforge-report-context.v2";
 const config = getPatchForgeConfig();
 
 const navItems: NavItem[] = [
@@ -1920,6 +1923,15 @@ function VendorLens({
   const gapPage = usePagination(assessment?.evidence_gaps || [], 6, "vendorlens-gaps");
   const compareAssetPage = usePagination(vendorLens.assets, 6, "vendorlens-compare-assets");
   const compareAdvisoryPage = usePagination(vendorLens.advisories, 10, "vendorlens-compare-advisories");
+  const nextActions: Array<{ number: string; title: string; detail: string; onClick?: () => void }> = [
+    { number: "1", title: "Confirm customer exposure", detail: "Attach reviewed asset, service, internet exposure, and management-plane evidence.", onClick: () => setActiveTab("Customer Estate Match") },
+    { number: "2", title: "Attach vendor advisory evidence", detail: "Use source-bound vendor/CVE evidence with review state visible.", onClick: () => setActiveTab("Advisories & CVEs") },
+    { number: "3", title: "Attach configuration evidence", detail: "Record firmware, enabled/disabled feature state, and evidence references.", onClick: () => setActiveTab("Customer Estate Match") },
+    { number: "4", title: "Run config applicability", detail: "Compare product, version, feature, and exposure to the advisory.", onClick: () => setActiveTab("Config Applicability") },
+    { number: "5", title: "Ask PatchForge", detail: "Get advisory-only explanation of what the evidence means.", onClick: () => setActiveTab("Ask PatchForge") },
+    { number: "6", title: "Generate signed pack", detail: "Move to Review & Approve and compile the source-bound signed pack." },
+    { number: "7", title: "Export customer/board/CAB report", detail: "Use Reports & Packs after the signed pack is generated." }
+  ];
 
   useEffect(() => {
     if (!selectedVendorId && vendorLens.vendors[0]?.vendor_id) {
@@ -1948,14 +1960,14 @@ function VendorLens({
 
       <div className="context-banner vendorlens-context" aria-label="VendorLens context">
         <strong>{advisory?.cve || advisory?.advisory_id || "CVE pending"}</strong>
-        <span>{advisory?.vendor_name || asset?.vendor_id || "Vendor pending"}</span>
-        <span>{asset?.product_family || advisory?.product_family || "Product pending"}</span>
-        <span>{asset?.model || "Model pending"}</span>
-        <span>{asset?.firmware_version || "Firmware pending"}</span>
-        <span>{assessment?.affected_feature || advisory?.affected_features?.[0] || "Feature pending"}</span>
-        <span>{assessment?.exposure_status ? humanize(assessment.exposure_status) : "Exposure unconfirmed"}</span>
-        <span>{humanize(asset?.review_state || advisory?.review_state || "pending_review")}</span>
-        <span>Final approval {assessment?.final_approval_issued ? "issued" : "not issued"}</span>
+        <span><b>Vendor</b>{advisory?.vendor_name || asset?.vendor_id || "pending"}</span>
+        <span><b>Product</b>{asset?.product_family || advisory?.product_family || "pending"}</span>
+        <span><b>Model</b>{asset?.model || "pending"}</span>
+        <span><b>Firmware</b>{asset?.firmware_version || "pending"}</span>
+        <span><b>Feature</b>{assessment?.affected_feature || advisory?.affected_features?.[0] || "pending"}</span>
+        <span><b>Exposure</b>{assessment?.exposure_status ? humanize(assessment.exposure_status) : "unconfirmed"}</span>
+        <span><b>Review</b>{humanize(asset?.review_state || advisory?.review_state || "pending_review")}</span>
+        <span><b>Final approval</b>{assessment?.final_approval_issued ? "issued" : "not issued"}</span>
       </div>
 
       <div className="metric-grid">
@@ -1989,6 +2001,24 @@ function VendorLens({
           <button type="button" className="action-button secondary-action" onClick={() => onComparePatch(asset?.asset_id, advisory?.advisory_id)} disabled={!canWrite || !asset || !advisory}>
             <Layers3 size={16} aria-hidden /> Compare Patch
           </button>
+        </div>
+      </section>
+
+      <section className="wide-band next-actions">
+        <div className="section-title compact-title">
+          <h3>Next Actions</h3>
+          <span className="pill steel">human approval remains required</span>
+        </div>
+        <div className="next-action-grid vendorlens-next-grid">
+          {nextActions.map(({ number, title, detail, onClick }) => (
+            <button key={title} type="button" className="next-action-card clickable-card" onClick={onClick} disabled={!onClick}>
+              <strong>{number}</strong>
+              <span>
+                <h4>{title}</h4>
+                <p>{detail}</p>
+              </span>
+            </button>
+          ))}
         </div>
       </section>
 
@@ -2339,6 +2369,16 @@ function Reports({
 }) {
   const verifiedPacks = decisionPacks.filter((pack) => pack.verification?.verified);
   const latestPack = verifiedPacks[0] || decisionPacks[0];
+  const latestPackHasVendorLens = Boolean(latestPack?.artefacts && (
+    latestPack.artefacts["config_applicability_assessment.json"]
+    || latestPack.artefacts["customer_network_asset_snapshot.json"]
+    || latestPack.artefacts["vendor_security_advisory_snapshot.json"]
+    || latestPack.artefacts["sra_config_chat_session.json"]
+  ));
+  const latestBaseline = latestPack?.product_baseline || ACTIVE_BASELINE;
+  const olderPackWarning = latestPack && latestBaseline !== ACTIVE_BASELINE
+    ? `Older baseline detected: ${latestBaseline}. Current report renderer will stamp ${ACTIVE_BASELINE}.`
+    : null;
   const reportPage = usePagination(reports, 6, "reports-catalog");
   return (
     <>
@@ -2358,6 +2398,23 @@ function Reports({
           <span className="pill steel">{verifiedPacks.length} verified packs</span>
           <span className="pill teal">{reports.length} report templates</span>
         </div>
+      </section>
+
+      <section className="data-band report-version-panel">
+        <div className="section-title compact-title">
+          <h3>Current Report Context</h3>
+          <span className="pill teal">{ACTIVE_BASELINE}</span>
+        </div>
+        <div className="decision-option-grid compact-status-grid">
+          <StatusLine label="Pack ID" value={latestPack?.pack_id || "No signed pack selected"} tone="trust" />
+          <StatusLine label="Report version" value={REPORT_TEMPLATE_VERSION} tone="steel" />
+          <StatusLine label="Context version" value={REPORT_CONTEXT_VERSION} tone="steel" />
+          <StatusLine label="Final approval" value={latestPack?.final_approval_issued ? "Issued" : "False"} tone="amber" />
+          <StatusLine label="VendorLens context" value={latestPackHasVendorLens ? "Included in pack" : "Not attached to selected pack"} tone={latestPackHasVendorLens ? "teal" : "amber"} />
+          <StatusLine label="Verification" value={latestPack?.verification?.verified ? "Verified" : "Pending or not recorded"} tone="trust" />
+        </div>
+        {olderPackWarning && <p className="boundary-copy">{olderPackWarning}</p>}
+        {!latestPackHasVendorLens && latestPack && <p className="boundary-copy">Selected pack can still export reports, but VendorLens sections will clearly state that network vendor applicability evidence was not attached.</p>}
       </section>
 
       <div className="report-grid">

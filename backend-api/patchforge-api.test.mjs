@@ -461,6 +461,7 @@ test("VendorLens catalogue, assets, advisories, config applicability, chat, and 
     assert.equal(disabledUnreviewed.body.assessment.applicability_posture, "requires_review");
     assert.equal(disabledUnreviewed.body.assessment.urgency_posture, "urgent_scope_confirmation_required");
     assert.equal(disabledUnreviewed.body.assessment.final_approval_issued, false);
+    assert.ok(disabledUnreviewed.body.assessment.evidence_gaps.every((gap) => gap.why_it_matters && gap.required_evidence && gap.suggested_owner_role && gap.next_decision_gate));
 
     const comparison = await request(baseUrl, "/api/patchforge/vendorlens/patch-compare", {
       method: "POST",
@@ -501,6 +502,217 @@ test("VendorLens catalogue, assets, advisories, config applicability, chat, and 
     });
     assert.equal(enabledKev.body.assessment.applicability_posture, "applicable");
     assert.equal(enabledKev.body.assessment.urgency_posture, "emergency_patch_required");
+
+    const reviewedAdvisory = await request(baseUrl, "/api/patchforge/vendorlens/advisories/ingest", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        advisory_id: "FG-ADV-CVE-2026-REAL-001-REVIEWED",
+        vendor_id: "fortinet",
+        vendor_name: "Fortinet",
+        cve: "CVE-2026-REAL-001",
+        title: "FortiOS SSL VPN reviewed source-bound advisory",
+        severity: "critical",
+        product_family: "FortiOS",
+        affected_versions: ["< 7.2.8"],
+        fixed_versions: ["7.2.8"],
+        affected_features: ["SSL-VPN"],
+        known_exploited: true,
+        patch_available: true,
+        review_state: "reviewed",
+        evidence_state: "accepted_positive_evidence",
+        source_url: "https://www.fortiguard.com/psirt/example-reviewed"
+      })
+    });
+    assert.equal(reviewedAdvisory.response.status, 201);
+
+    await request(baseUrl, "/api/patchforge/vendorlens/assets", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        asset_id: "net-fw-disabled-reviewed",
+        vendor_id: "fortinet",
+        product_family: "Fortinet Firewall",
+        model: "100F",
+        firmware_version: "7.2.7",
+        disabled_features: ["SSL VPN"],
+        config_evidence_refs: ["cfg-reviewed-disabled-ssl-vpn"],
+        review_state: "reviewed",
+        evidence_state: "accepted_positive_evidence"
+      })
+    });
+    const disabledReviewed = await request(baseUrl, "/api/patchforge/vendorlens/applicability/assess", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ asset_id: "net-fw-disabled-reviewed", advisory_id: "FG-ADV-CVE-2026-REAL-001-REVIEWED" })
+    });
+    assert.equal(disabledReviewed.body.assessment.applicability_posture, "not_applicable");
+    assert.equal(disabledReviewed.body.assessment.final_approval_issued, false);
+
+    await request(baseUrl, "/api/patchforge/vendorlens/assets", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        asset_id: "net-fw-fixed-reviewed",
+        vendor_id: "fortinet",
+        product_family: "FortiGate",
+        model: "100F",
+        firmware_version: "7.2.8",
+        enabled_features: ["webvpn"],
+        config_evidence_refs: ["cfg-reviewed-fixed-version"],
+        review_state: "reviewed",
+        evidence_state: "accepted_positive_evidence"
+      })
+    });
+    const fixedReviewed = await request(baseUrl, "/api/patchforge/vendorlens/applicability/assess", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ asset_id: "net-fw-fixed-reviewed", advisory_id: "FG-ADV-CVE-2026-REAL-001-REVIEWED" })
+    });
+    assert.equal(fixedReviewed.body.assessment.affected_version_status, "fixed_version_reviewed");
+    assert.equal(fixedReviewed.body.assessment.applicability_posture, "not_applicable");
+    assert.equal(fixedReviewed.body.assessment.urgency_posture, "monitor");
+
+    await request(baseUrl, "/api/patchforge/vendorlens/assets", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        asset_id: "net-fw-fixed-unreviewed",
+        vendor_id: "fortinet",
+        product_family: "FortiGate",
+        model: "100F",
+        firmware_version: "7.2.8",
+        enabled_features: ["ssl_vpn"],
+        review_state: "pending_review",
+        evidence_state: "referenced"
+      })
+    });
+    const fixedUnreviewed = await request(baseUrl, "/api/patchforge/vendorlens/applicability/assess", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ asset_id: "net-fw-fixed-unreviewed", advisory_id: "FG-ADV-CVE-2026-REAL-001-REVIEWED" })
+    });
+    assert.equal(fixedUnreviewed.body.assessment.affected_version_status, "fixed_version_pending_review");
+    assert.equal(fixedUnreviewed.body.assessment.applicability_posture, "requires_review");
+
+    await request(baseUrl, "/api/patchforge/vendorlens/advisories/ingest", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        advisory_id: "PAN-GP-2026",
+        vendor_id: "palo_alto",
+        vendor_name: "Palo Alto Networks",
+        cve: "CVE-2026-PAN-GP-001",
+        product_family: "PAN-OS",
+        affected_versions: ["<= 10.2.6"],
+        fixed_versions: ["10.2.7"],
+        affected_features: ["GlobalProtect"],
+        known_exploited: true,
+        patch_available: true,
+        review_state: "reviewed",
+        evidence_state: "accepted_positive_evidence"
+      })
+    });
+    await request(baseUrl, "/api/patchforge/vendorlens/assets", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        asset_id: "pan-fw-1",
+        vendor_id: "palo_alto",
+        product_family: "Palo Alto Firewall",
+        firmware_version: "10.2.5",
+        internet_facing: true,
+        management_exposure: "internet",
+        enabled_features: ["globalprotect"],
+        config_evidence_refs: ["cfg-pan-globalprotect"],
+        review_state: "reviewed",
+        evidence_state: "accepted_positive_evidence"
+      })
+    });
+    const panEnabledKev = await request(baseUrl, "/api/patchforge/vendorlens/applicability/assess", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ asset_id: "pan-fw-1", advisory_id: "PAN-GP-2026" })
+    });
+    assert.equal(panEnabledKev.body.assessment.affected_feature_status, "affected_feature_present");
+    assert.equal(panEnabledKev.body.assessment.applicability_posture, "applicable");
+    assert.equal(panEnabledKev.body.assessment.urgency_posture, "emergency_patch_required");
+
+    await request(baseUrl, "/api/patchforge/vendorlens/advisories/ingest", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        advisory_id: "CISCO-ASA-ANYCONNECT-2026",
+        vendor_id: "cisco",
+        vendor_name: "Cisco",
+        cve: "CVE-2026-CISCO-ASA-001",
+        product_family: "Cisco ASA",
+        affected_versions: ["9.18.x"],
+        affected_features: ["AnyConnect"],
+        known_exploited: true,
+        patch_available: true,
+        review_state: "reviewed",
+        evidence_state: "accepted_positive_evidence"
+      })
+    });
+    await request(baseUrl, "/api/patchforge/vendorlens/assets", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        asset_id: "cisco-asa-1",
+        vendor_id: "cisco",
+        product_family: "ASA",
+        firmware_version: "9.18.2",
+        disabled_features: ["anyconnect"],
+        review_state: "pending_review",
+        evidence_state: "referenced"
+      })
+    });
+    const ciscoDisabledUnreviewed = await request(baseUrl, "/api/patchforge/vendorlens/applicability/assess", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ asset_id: "cisco-asa-1", advisory_id: "CISCO-ASA-ANYCONNECT-2026" })
+    });
+    assert.equal(ciscoDisabledUnreviewed.body.assessment.feature_enabled_status, "disabled_unreviewed");
+    assert.equal(ciscoDisabledUnreviewed.body.assessment.applicability_posture, "requires_review");
+
+    await request(baseUrl, "/api/patchforge/vendorlens/advisories/ingest", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        advisory_id: "F5-BIGIP-SUPERSEDED",
+        vendor_id: "f5",
+        vendor_name: "F5",
+        cve: "CVE-2026-F5-001",
+        product_family: "F5 BIG-IP",
+        affected_versions: ["10.2.0-10.2.6"],
+        affected_features: ["iControl REST"],
+        superseded: true,
+        review_state: "reviewed",
+        evidence_state: "accepted_positive_evidence"
+      })
+    });
+    await request(baseUrl, "/api/patchforge/vendorlens/assets", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        asset_id: "f5-bigip-1",
+        vendor_id: "f5",
+        product_family: "BIG-IP",
+        firmware_version: "10.2.3",
+        enabled_features: ["icontrol_rest"],
+        config_evidence_refs: ["cfg-f5-icontrol"],
+        review_state: "reviewed",
+        evidence_state: "accepted_positive_evidence"
+      })
+    });
+    const supersededPending = await request(baseUrl, "/api/patchforge/vendorlens/applicability/assess", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ asset_id: "f5-bigip-1", advisory_id: "F5-BIGIP-SUPERSEDED" })
+    });
+    assert.equal(supersededPending.body.assessment.applicability_posture, "requires_review");
+    assert.ok(supersededPending.body.assessment.evidence_required.includes("reviewed_supersedence"));
 
     await request(baseUrl, "/api/patchforge/vendorlens/assets", {
       method: "POST",
@@ -1017,18 +1229,27 @@ test("professional decision pack reports export as specific DOCX and PDF decisio
     const docxBytes = Buffer.from(await docx.arrayBuffer());
     assert.equal(docxBytes.subarray(0, 2).toString("utf8"), "PK");
     const boardDocxText = await extractDocxText(docxBytes);
-    assert.match(boardDocxText, /Report Version Stamp/);
+    assert.match(boardDocxText, /Report Version Metadata/);
     assert.match(boardDocxText, /report_template_version/);
-    assert.match(boardDocxText, /renderer_commit/);
-    assert.match(boardDocxText, /image_tag/);
+    assert.match(boardDocxText, /report_renderer_commit/);
+    assert.match(boardDocxText, /report_renderer_image_tag/);
     assert.match(boardDocxText, /generated_from_pack_id/);
+    assert.match(boardDocxText, /generated_at_utc/);
     assert.match(boardDocxText, /product_baseline/);
     assert.match(boardDocxText, /report_context_version/);
+    assert.match(boardDocxText, /source_pack_id/);
+    assert.match(boardDocxText, /report_type/);
+    assert.match(boardDocxText, /report_audience/);
+    assert.match(boardDocxText, /final_approval_issued/);
+    assert.match(boardDocxText, /signing_provider/);
+    assert.match(boardDocxText, /verification_state/);
+    assert.match(boardDocxText, /PF-AZ9A-VENDORLENS/);
     assert.match(boardDocxText, /PF-TEST-0001/);
     assert.doesNotMatch(boardDocxText, /PF-20260526-8312f908/);
     assert.match(boardDocxText, /Network Vendor Applicability/);
     assert.match(boardDocxText, /Customer Configuration Context/);
     assert.match(boardDocxText, /SRA\/AIP Chat Summary/);
+    assert.match(boardDocxText, /Required Human Actions/);
     assert.match(boardDocxText, /Final approval[^A-Za-z0-9]+Not issued/i);
     assert.doesNotMatch(boardDocxText, new RegExp(["Autonomous", "Analysis", "Completed"].join(" ")));
     assert.doesNotMatch(boardDocxText, /not vulnerable/i);
@@ -1041,8 +1262,9 @@ test("professional decision pack reports export as specific DOCX and PDF decisio
     const pdfBytes = Buffer.from(await pdf.arrayBuffer());
     assert.equal(pdfBytes.subarray(0, 4).toString("utf8"), "%PDF");
     const pdfText = extractPdfText(pdfBytes);
-    assert.match(pdfText, /Report Version Stamp/);
+    assert.match(pdfText, /Report Version Metadata/);
     assert.match(pdfText, /report_template_version/);
+    assert.match(pdfText, /report_renderer_commit/);
     assert.match(pdfText, /generated_from_pack_id/);
     assert.match(pdfText, /product_baseline/);
     assert.match(pdfText, /Network Vendor Applicability/);
@@ -1056,8 +1278,9 @@ test("professional decision pack reports export as specific DOCX and PDF decisio
     assert.equal(customerDocxBytes.subarray(0, 2).toString("utf8"), "PK");
     const customerDocxText = await extractDocxText(customerDocxBytes);
     assert.match(customerDocxText, /Customer Assurance Position/);
-    assert.match(customerDocxText, /Report Version Stamp/);
+    assert.match(customerDocxText, /Report Version Metadata/);
     assert.match(customerDocxText, /generated_from_pack_id/);
+    assert.match(customerDocxText, /final_approval_issued/);
     assert.match(customerDocxText, /Network Vendor Applicability/);
     assert.match(customerDocxText, /Customer Configuration Context/);
     assert.match(customerDocxText, /Final approval[^A-Za-z0-9]+Not issued/i);
@@ -1070,6 +1293,18 @@ test("professional decision pack reports export as specific DOCX and PDF decisio
     assert.equal(customerPdf.status, 200);
     const customerPdfBytes = Buffer.from(await customerPdf.arrayBuffer());
     assert.equal(customerPdfBytes.subarray(0, 4).toString("utf8"), "%PDF");
+
+    const cabDocx = await fetch(`${baseUrl}/api/patchforge/decision-packs/PF-TEST-0001/reports/cab_patch_decision_report.docx`, {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(cabDocx.status, 200);
+    const cabDocxText = await extractDocxText(Buffer.from(await cabDocx.arrayBuffer()));
+    assert.match(cabDocxText, /CAB Decision Request/);
+    assert.match(cabDocxText, /Patch Applicability/);
+    assert.match(cabDocxText, /Network Vendor Applicability/);
+    assert.match(cabDocxText, /Customer Configuration Context/);
+    assert.match(cabDocxText, /Required Evidence Before CAB Approval/);
+    assert.match(cabDocxText, /Report Version Metadata/);
 
     const unknown = await request(baseUrl, "/api/patchforge/decision-packs/PF-TEST-0001/reports/not-a-report.pdf", {
       headers: { "x-tenant-id": "tenant-a" }

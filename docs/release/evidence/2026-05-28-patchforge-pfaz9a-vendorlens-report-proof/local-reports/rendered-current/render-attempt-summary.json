@@ -1,0 +1,7 @@
+{
+    "generated_at":  "2026-05-28T16:40:38.8349587Z",
+    "status":  "not_available_local_converter_missing",
+    "renderer":  "documents/render_docx.py",
+    "input":  "docs/release/evidence/2026-05-28-patchforge-pfaz9a-vendorlens-report-proof/local-reports/PF-20260528-9a653d50-customer_patch_governance_pack.docx",
+    "message":  "DOCX render QA could not run because the local DOCX-to-PDF converter executable was not found. Structural DOCX/PDF generation and text extraction checks passed."
+}

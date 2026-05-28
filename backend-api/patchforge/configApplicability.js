@@ -1,6 +1,23 @@
 const REVIEWED_STATES = new Set(["reviewed", "accepted", "approved"]);
 const POSITIVE_EVIDENCE_STATES = new Set(["accepted_positive_evidence", "reviewed", "attached"]);
 
+const PRODUCT_ALIAS_GROUPS = [
+  ["fortigate", "fortios", "fortinet_firewall", "fortinet_firewall_platform"],
+  ["pan_os", "panos", "palo_alto_firewall", "palo_alto_networks_firewall", "globalprotect_gateway"],
+  ["cisco_asa", "asa", "firepower", "ftd", "firepower_threat_defense", "anyconnect_gateway"],
+  ["citrix_adc", "netscaler_adc", "netscaler_gateway", "citrix_netscaler"],
+  ["f5_big_ip", "big_ip", "bigip", "icontrol_rest"],
+  ["junos", "junos_os", "srx", "juniper_srx"]
+];
+
+const FEATURE_ALIAS_GROUPS = [
+  ["ssl_vpn", "ssl-vpn", "ssl vpn", "webvpn", "remote_access_vpn"],
+  ["globalprotect", "global protect", "globalprotect_portal", "globalprotect_gateway"],
+  ["anyconnect", "cisco_anyconnect", "anyconnect_vpn"],
+  ["icontrol_rest", "icontrol rest", "i control rest"],
+  ["web_management", "management_interface", "management interface", "api_management", "api management", "admin_web_ui"]
+];
+
 export function assessConfigApplicability(input = {}) {
   const advisory = input.advisory || {};
   const asset = input.asset || {};
@@ -18,32 +35,36 @@ export function assessConfigApplicability(input = {}) {
   const evidenceRequired = new Set();
 
   if (!asset.asset_id && !asset.model && !asset.product_family) {
-    evidenceGaps.push(gap("customer_network_asset", "Reviewed customer network asset inventory is not attached.", "CMDB, device inventory, asset owner confirmation, or network management export."));
+    evidenceGaps.push(gap("customer_network_asset", "Reviewed customer network asset inventory is not attached.", "CMDB, device inventory, asset owner confirmation, or network management export.", "Network asset owner", "Scope confirmation", ["CMDB export", "firewall manager inventory", "asset owner confirmation"], "missing"));
     evidenceRequired.add("customer_network_asset_inventory");
   }
   if (productStatus === "unknown" || productStatus === "unmatched_pending_review") {
-    evidenceGaps.push(gap("product_model_mapping", "Vendor product, model, or family cannot be matched with reviewed confidence.", "Vendor product family record, model inventory, and source advisory affected-product mapping."));
+    evidenceGaps.push(gap("product_model_mapping", "Vendor product, model, or family cannot be matched with reviewed confidence.", "Vendor product family record, model inventory, and source advisory affected-product mapping.", "Network asset owner", "Scope confirmation", ["vendor product family", "model inventory", "affected product list"], productStatus));
     evidenceRequired.add("reviewed_product_model_mapping");
   }
-  if (versionStatus === "unknown") {
-    evidenceGaps.push(gap("firmware_version", "Firmware or software version is missing or not comparable.", "Reviewed firmware version evidence from device inventory, show command output, controller inventory, or vendor console export."));
+  if (["unknown", "fixed_version_pending_review", "not_listed_pending_review"].includes(versionStatus)) {
+    evidenceGaps.push(gap("firmware_version", "Firmware or software version is missing, unreviewed, or not yet comparable against affected/fixed vendor ranges.", "Reviewed firmware version evidence from device inventory, show command output, controller inventory, or vendor console export.", "Network engineering lead", "Configuration applicability review", ["device inventory", "show version output", "controller export", "vendor console export"], versionStatus));
     evidenceRequired.add("reviewed_firmware_version");
   }
   if (affectedFeature && featureState === "disabled_unreviewed") {
-    evidenceGaps.push(gap("feature_disabled_review", `${humanize(affectedFeature)} is recorded as disabled, but that configuration evidence is not reviewed.`, "Reviewed configuration export, change record, service owner attestation, or device configuration evidence."));
+    evidenceGaps.push(gap("feature_disabled_review", `${humanize(affectedFeature)} is recorded as disabled, but that configuration evidence is not reviewed.`, "Reviewed configuration export, change record, service owner attestation, or device configuration evidence.", "Network engineering lead", "Configuration applicability review", ["reviewed running configuration", "feature disable change record", "device configuration export"], featureState));
     evidenceRequired.add("reviewed_feature_configuration");
   }
   if (affectedFeature && featureState === "unknown") {
-    evidenceGaps.push(gap("feature_state", `${humanize(affectedFeature)} feature state is not known for this asset.`, "Reviewed enabled/disabled feature list or configuration evidence."));
+    evidenceGaps.push(gap("feature_state", `${humanize(affectedFeature)} feature state is not known for this asset.`, "Reviewed enabled/disabled feature list or configuration evidence.", "Network engineering lead", "Configuration applicability review", ["feature inventory", "running configuration", "firewall manager feature export"], featureState));
     evidenceRequired.add("reviewed_feature_state");
   }
   if (exposureStatus === "unknown") {
-    evidenceGaps.push(gap("exposure_state", "Internet or management-plane exposure is not reviewed.", "Firewall rule evidence, public DNS/NAT record, management exposure record, or network owner confirmation."));
+    evidenceGaps.push(gap("exposure_state", "Internet or management-plane exposure is not reviewed.", "Firewall rule evidence, public DNS/NAT record, management exposure record, or network owner confirmation.", "Network engineering lead", "Exposure review", ["firewall rule evidence", "public DNS/NAT record", "management exposure attestation"], exposureStatus));
     evidenceRequired.add("reviewed_exposure_state");
   }
   if (!isReviewed(advisory.review_state) || !isPositiveEvidence(advisory.evidence_state)) {
-    evidenceGaps.push(gap("advisory_source_review", "The vendor/CVE source record has not been accepted as positive evidence.", "Named reviewer event accepting the source record, affected versions, affected feature, and source provenance."));
+    evidenceGaps.push(gap("advisory_source_review", "The vendor/CVE source record has not been accepted as positive evidence.", "Named reviewer event accepting the source record, affected versions, affected feature, and source provenance.", "Security lead", "Source review", ["vendor advisory", "CVE record", "CISA KEV record", "review event"], advisory.review_state || "pending_review"));
     evidenceRequired.add("reviewed_vendor_advisory");
+  }
+  if (advisory.superseded === true && !isReviewed(advisory.supersedence_review_state || advisory.superseded_review_state)) {
+    evidenceGaps.push(gap("superseded_advisory_review", "This advisory is marked superseded, but supersedence has not been reviewed.", "Reviewed superseding advisory reference, withdrawal/supersedence notice, and reviewer decision explaining which source remains authoritative.", "Security lead", "Source review", ["superseding advisory", "vendor supersedence notice", "review decision"], "superseded_pending_review"));
+    evidenceRequired.add("reviewed_supersedence");
   }
 
   const applicabilityPosture = deriveApplicabilityPosture({
@@ -106,6 +127,9 @@ export function assessConfigApplicability(input = {}) {
 }
 
 function deriveApplicabilityPosture({ advisory, asset, versionStatus, productStatus, featureState, reviewedAssetEvidence, reviewedConfigEvidence, evidenceGaps }) {
+  if (advisory.superseded === true && !isReviewed(advisory.supersedence_review_state || advisory.superseded_review_state)) {
+    return "requires_review";
+  }
   if (asset.not_in_estate === true && reviewedAssetEvidence) {
     return "not_applicable";
   }
@@ -115,7 +139,7 @@ function deriveApplicabilityPosture({ advisory, asset, versionStatus, productSta
   if (productStatus === "unmatched_reviewed" && reviewedAssetEvidence) {
     return "not_applicable";
   }
-  if (versionStatus === "not_affected" && reviewedAssetEvidence) {
+  if (["not_affected", "fixed_version_reviewed"].includes(versionStatus) && reviewedAssetEvidence) {
     return "not_applicable";
   }
   if (featureState === "disabled_reviewed" && reviewedConfigEvidence) {
@@ -159,27 +183,31 @@ function deriveUrgencyPosture({ applicabilityPosture, versionStatus, featureStat
 }
 
 function affectedVersionStatus(advisory, asset) {
-  const version = normalize(asset.firmware_version || asset.software_version);
+  const version = String(asset.firmware_version || asset.software_version || "").trim();
   if (!version) {
     return "unknown";
   }
-  const affected = list(advisory.affected_versions).map(normalize);
-  const fixed = list(advisory.fixed_versions).map(normalize);
-  if (fixed.includes(version)) {
-    return "fixed_version_recorded_pending_review";
+  const affected = list(advisory.affected_versions);
+  const fixed = list(advisory.fixed_versions);
+  const reviewedVersionEvidence = isReviewed(asset.review_state) && isPositiveEvidence(asset.evidence_state);
+  if (fixed.some((fixedVersion) => versionCompare(version, fixedVersion) >= 0)) {
+    return reviewedVersionEvidence ? "fixed_version_reviewed" : "fixed_version_pending_review";
+  }
+  if (fixed.length && fixed.every((fixedVersion) => versionCompare(version, fixedVersion) < 0)) {
+    return "affected";
   }
   if (!affected.length) {
     return "unknown";
   }
-  if (affected.includes(version) || affected.includes("*")) {
+  if (versionSatisfiesAny(version, affected)) {
     return "affected";
   }
-  return isReviewed(asset.review_state) ? "not_affected" : "not_listed_pending_review";
+  return reviewedVersionEvidence ? "not_affected" : "not_listed_pending_review";
 }
 
 function productMatchStatus(advisory, asset) {
-  const assetTerms = list(asset.product_family, asset.model, asset.product_id).map(normalize).filter(Boolean);
-  const advisoryTerms = list(advisory.product_id, advisory.product_family, advisory.affected_products, advisory.affected_models).map(normalize).filter(Boolean);
+  const assetTerms = expandProductTerms(list(asset.vendor_id, asset.product_family, asset.model, asset.product_id));
+  const advisoryTerms = expandProductTerms(list(advisory.vendor_id, advisory.product_id, advisory.product_family, advisory.affected_products, advisory.affected_models));
   if (!assetTerms.length || !advisoryTerms.length) {
     return "unknown";
   }
@@ -194,13 +222,13 @@ function featureEnabledStatus(asset, feature) {
   if (!feature) {
     return "not_specified";
   }
-  const enabled = list(asset.enabled_features).map(normalize);
-  const disabled = list(asset.disabled_features).map(normalize);
-  const normalizedFeature = normalize(feature);
-  if (enabled.includes(normalizedFeature)) {
+  const enabled = expandFeatureTerms(list(asset.enabled_features));
+  const disabled = expandFeatureTerms(list(asset.disabled_features));
+  const featureTerms = expandFeatureTerms(list(feature));
+  if (featureTerms.some((term) => enabled.includes(term))) {
     return "enabled";
   }
-  if (disabled.includes(normalizedFeature)) {
+  if (featureTerms.some((term) => disabled.includes(term))) {
     return hasReviewedConfigEvidence(asset) ? "disabled_reviewed" : "disabled_unreviewed";
   }
   return "unknown";
@@ -246,14 +274,16 @@ function isPositiveEvidence(value) {
   return POSITIVE_EVIDENCE_STATES.has(normalize(value));
 }
 
-function gap(gapId, plainEnglishGap, requiredEvidence) {
+function gap(gapId, plainEnglishGap, requiredEvidence, ownerRole = null, decisionGate = null, evidenceExamples = [], currentState = "missing") {
   return {
     gap_id: gapId,
     plain_english_gap: plainEnglishGap,
     why_it_matters: "PatchForge cannot support an accountable customer/CAB decision without reviewed evidence for this point.",
     required_evidence: requiredEvidence,
-    suggested_owner_role: ownerForGap(gapId),
-    next_decision_gate: gateForGap(gapId)
+    evidence_examples: Array.isArray(evidenceExamples) ? evidenceExamples : list(evidenceExamples),
+    suggested_owner_role: ownerRole || ownerForGap(gapId),
+    next_decision_gate: decisionGate || gateForGap(gapId),
+    current_state: currentState
   };
 }
 
@@ -308,4 +338,96 @@ function normalize(value) {
 
 function humanize(value) {
   return String(value || "").replace(/[_-]+/g, " ");
+}
+
+function canonicalTerm(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function expandProductTerms(values) {
+  return expandAliasTerms(values, PRODUCT_ALIAS_GROUPS);
+}
+
+function expandFeatureTerms(values) {
+  return expandAliasTerms(values, FEATURE_ALIAS_GROUPS);
+}
+
+function expandAliasTerms(values, groups) {
+  const terms = new Set(list(values).map(canonicalTerm).filter(Boolean));
+  for (const term of Array.from(terms)) {
+    for (const group of groups) {
+      const normalizedGroup = group.map(canonicalTerm);
+      if (normalizedGroup.includes(term)) {
+        for (const alias of normalizedGroup) {
+          terms.add(alias);
+        }
+      }
+    }
+  }
+  return Array.from(terms);
+}
+
+function versionSatisfiesAny(version, constraints) {
+  return constraints.some((constraint) => versionSatisfies(version, constraint));
+}
+
+function versionSatisfies(version, constraint) {
+  const raw = String(constraint || "").trim();
+  if (!raw || raw === "*") {
+    return true;
+  }
+  const compact = raw.replace(/\s+/g, "");
+  const comparator = compact.match(/^(<=|>=|<|>)(.+)$/);
+  if (comparator) {
+    const direction = comparator[1];
+    const compare = versionCompare(version, comparator[2]);
+    if (direction === "<") return compare < 0;
+    if (direction === "<=") return compare <= 0;
+    if (direction === ">") return compare > 0;
+    if (direction === ">=") return compare >= 0;
+  }
+  const range = compact.match(/^(.+)-(.+)$/);
+  if (range && hasVersionNumbers(range[1]) && hasVersionNumbers(range[2])) {
+    return versionCompare(version, range[1]) >= 0 && versionCompare(version, range[2]) <= 0;
+  }
+  if (/x$/i.test(compact)) {
+    const prefix = compact.replace(/\.?x$/i, "");
+    return normalizedVersion(version).startsWith(`${prefix}.`) || normalizedVersion(version) === prefix;
+  }
+  return versionCompare(version, compact) === 0;
+}
+
+function versionCompare(left, right) {
+  const leftParts = versionParts(left);
+  const rightParts = versionParts(right);
+  const length = Math.max(leftParts.length, rightParts.length);
+  for (let index = 0; index < length; index += 1) {
+    const lval = leftParts[index] || 0;
+    const rval = rightParts[index] || 0;
+    if (lval > rval) return 1;
+    if (lval < rval) return -1;
+  }
+  return 0;
+}
+
+function versionParts(value) {
+  return normalizedVersion(value)
+    .split(".")
+    .filter((part) => part !== "")
+    .map((part) => Number.parseInt(part, 10))
+    .filter((part) => Number.isFinite(part));
+}
+
+function normalizedVersion(value) {
+  const match = String(value || "").toLowerCase().match(/\d+(?:\.\d+)*/);
+  return match ? match[0] : "";
+}
+
+function hasVersionNumbers(value) {
+  return /\d/.test(String(value || ""));
 }

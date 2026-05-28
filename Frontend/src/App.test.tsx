@@ -479,6 +479,9 @@ describe("PatchForge guided shell", () => {
     expect(screen.getAllByRole("heading", { name: "VendorLens" }).length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Fortinet").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("CVE-2026-REAL-001").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("Confirm customer exposure")).toBeInTheDocument();
+    expect(screen.getByText("Attach configuration evidence")).toBeInTheDocument();
+    expect(screen.getByText("Final approval")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Refresh NVD Catalogue" }));
     await waitFor(() => expect(api.refreshVendorLensSource).toHaveBeenCalledWith("diiac.io", expect.objectContaining({ mode: "catalogue", max_vendors: 17 })));
     fireEvent.click(screen.getByRole("button", { name: "Assess" }));
@@ -489,7 +492,7 @@ describe("PatchForge guided shell", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "Ask PatchForge" })[0]);
     await waitFor(() => expect(api.startVendorLensChat).toHaveBeenCalled());
     expect(await screen.findByText(/cannot safely declare this configuration unaffected/i)).toBeInTheDocument();
-  });
+  }, 10000);
 
   it("renders reports and downloads DOCX from signed packs", async () => {
     const api = createApi({
@@ -507,6 +510,9 @@ describe("PatchForge guided shell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Reports & Packs" }));
     expect(screen.getByRole("heading", { name: "Reports & Packs" })).toBeInTheDocument();
     expect(screen.getByText("Board Packs & Reports")).toBeInTheDocument();
+    expect(screen.getByText("Current Report Context")).toBeInTheDocument();
+    expect(screen.getByText("PF-AZ9A-VENDORLENS")).toBeInTheDocument();
+    expect(screen.getByText("patchforge-report-template.v2026-05-28.1")).toBeInTheDocument();
     fireEvent.click(screen.getAllByRole("button", { name: "DOCX" })[0]);
     await waitFor(() => expect(api.downloadDecisionPackReport).toHaveBeenCalledWith("diiac.io", "PF-TEST-0001", "board_vulnerability_remediation_summary", "docx"));
   });

@@ -34,7 +34,7 @@ REPORT_SECTIONS = [
     "Decision Boundary",
 ]
 
-REPORT_TEMPLATE_VERSION = "patchforge-report-template.v2026-05-27.2"
+REPORT_TEMPLATE_VERSION = "patchforge-report-template.v2026-05-28.1"
 REPORT_CONTEXT_VERSION = "patchforge-report-context.v2"
 
 
@@ -56,15 +56,21 @@ def render_report(report_type: str, context: dict[str, Any]) -> str:
         "",
         f"Generated: {generated_at}",
         "",
-        "## Report Version Stamp",
+        "## Report Version Metadata",
         "",
         f"report_template_version: {context.get('report_template_version', REPORT_TEMPLATE_VERSION)}",
-        f"renderer_commit: {context.get('renderer_commit', 'local')}",
-        f"image_tag: {context.get('image_tag', 'local')}",
+        f"report_renderer_commit: {context.get('report_renderer_commit', context.get('renderer_commit', 'local'))}",
+        f"report_renderer_image_tag: {context.get('report_renderer_image_tag', context.get('image_tag', 'local'))}",
         f"generated_from_pack_id: {generated_from_pack_id}",
-        f"generated_at: {generated_at}",
-        f"product_baseline: {context.get('product_baseline', 'PF-AZ9-VENDORLENS')}",
+        f"generated_at_utc: {generated_at}",
+        f"product_baseline: {context.get('product_baseline', 'PF-AZ9A-VENDORLENS')}",
         f"report_context_version: {context.get('report_context_version', REPORT_CONTEXT_VERSION)}",
+        f"source_pack_id: {context.get('source_pack_id', pack.get('pack_id', 'not recorded'))}",
+        f"report_type: {report_type}",
+        f"report_audience: {context.get('report_audience', 'not recorded')}",
+        f"final_approval_issued: {str(context.get('final_approval_issued', False)).lower()}",
+        f"signing_provider: {context.get('signing_provider', pack.get('signing_provider', 'not recorded'))}",
+        f"verification_state: {context.get('verification_state', pack.get('verification_state', 'pending_or_not_recorded'))}",
         "",
         f"Vulnerability: {vulnerability_id}",
         f"Service: {service}",

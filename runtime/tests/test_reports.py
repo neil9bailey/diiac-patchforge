@@ -25,13 +25,19 @@ def test_reports_render_required_sections():
         },
     )
     assert "# CAB Patch Decision Report" in report
-    assert "## Report Version Stamp" in report
+    assert "## Report Version Metadata" in report
     assert "report_template_version:" in report
-    assert "renderer_commit:" in report
-    assert "image_tag:" in report
+    assert "report_renderer_commit:" in report
+    assert "report_renderer_image_tag:" in report
     assert "generated_from_pack_id: PF-TEST" in report
-    assert "product_baseline:" in report
+    assert "generated_at_utc:" in report
+    assert "product_baseline: PF-AZ9A-VENDORLENS" in report
     assert "report_context_version:" in report
+    assert "source_pack_id:" in report
+    assert "report_type: cab_patch_decision_report" in report
+    assert "final_approval_issued: false" in report
+    assert "signing_provider:" in report
+    assert "verification_state:" in report
     for section in REPORT_SECTIONS:
         assert f"## {section}" in report
 

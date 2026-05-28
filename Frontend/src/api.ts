@@ -129,8 +129,10 @@ export type ConfigApplicabilityAssessment = {
     plain_english_gap?: string;
     why_it_matters?: string;
     required_evidence?: string;
+    evidence_examples?: string[];
     suggested_owner_role?: string;
     next_decision_gate?: string;
+    current_state?: string;
   }>;
   decision_not_allowed_yet?: string;
   human_review_required: boolean;
@@ -405,6 +407,10 @@ export type DecisionPackRecord = {
   source_pack_immutable?: boolean;
   verification?: { verified?: boolean };
   signing_provider?: string | null;
+  product_baseline?: string;
+  report_template_version?: string;
+  report_context_version?: string;
+  artefacts?: Record<string, unknown>;
   created_at?: string;
 };
 
