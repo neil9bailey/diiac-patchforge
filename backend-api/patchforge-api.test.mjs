@@ -1418,6 +1418,7 @@ test("professional decision pack reports export as specific DOCX and PDF decisio
     assert.match(customerDocxText, /Customer Device \/ Service Context/);
     assert.match(customerDocxText, /Applicability Assessment/);
     assert.match(customerDocxText, /Matching CVEs \/ Advisories/);
+    assert.match(customerDocxText, /Evidence Needed/);
     assert.match(customerDocxText, /Final approval[^A-Za-z0-9]+Not issued/i);
     assert.doesNotMatch(customerDocxText, new RegExp(["Autonomous", "Analysis", "Completed"].join(" ")));
     assert.doesNotMatch(customerDocxText, /not vulnerable/i);
@@ -1428,6 +1429,8 @@ test("professional decision pack reports export as specific DOCX and PDF decisio
     assert.equal(customerPdf.status, 200);
     const customerPdfBytes = Buffer.from(await customerPdf.arrayBuffer());
     assert.equal(customerPdfBytes.subarray(0, 4).toString("utf8"), "%PDF");
+    const customerPdfText = extractPdfText(customerPdfBytes);
+    assert.match(customerPdfText, /Evidence Needed/);
 
     const cabDocx = await fetch(`${baseUrl}/api/patchforge/decision-packs/PF-TEST-0001/reports/cab_patch_decision_report.docx`, {
       headers: { "x-tenant-id": "tenant-a" }

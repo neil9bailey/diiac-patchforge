@@ -549,7 +549,7 @@ function customerSpecificSections(context) {
     para(context.vendorLensPatchComparison ? context.vendorLensPatchComparison.ciso_summary || "Patch Compare result is attached for human review." : "Patch Compare was not used for this pack."),
     heading("Customer Impact Status", HeadingLevel.HEADING_2),
     para(impactStatus),
-    heading("Customer Evidence Required", HeadingLevel.HEADING_2),
+    heading("Evidence Needed", HeadingLevel.HEADING_2),
     ...evidenceGapBlocks(context),
     heading("Customer Communication Position", HeadingLevel.HEADING_2),
     para(customerScopeConfirmed ? "Customer communication can describe reviewed source-bound risk, affected services, current blockers, and the accountable decision timeline." : "Customer communication should be limited to source-bound public-intelligence awareness and the active scope-confirmation work. Do not state that the customer estate is affected or remediated until reviewed exposure and patch applicability evidence exists."),
@@ -1231,7 +1231,7 @@ function pdfCustomerSections(doc, context) {
   pdfParagraph(doc, context.vendorLensPatchComparison ? context.vendorLensPatchComparison.ciso_summary || "Patch Compare result is attached for human review." : "Patch Compare was not used for this pack.");
   pdfSection(doc, "Customer Impact Status");
   pdfParagraph(doc, customerScopeConfirmed ? "Reviewed customer-facing service scope is present. Confirm the listed service owner, SLA/OLA impact, and communication owner before issuing customer-facing assurance." : `${UNCONFIRMED_SCOPE_TEXT} Customer impact must be treated as unconfirmed.`);
-  pdfSection(doc, "Customer Evidence Required");
+  pdfSection(doc, "Evidence Needed");
   for (const detail of (context.evidenceGapDetails?.length ? context.evidenceGapDetails : context.blockers.map(gapDetailForReport)).slice(0, 6)) {
     pdfBullet(doc, `${humanize(detail.gap)} - Required evidence: ${detail.required_evidence}. Owner: ${detail.suggested_owner_role}.`);
   }
