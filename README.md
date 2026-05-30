@@ -37,7 +37,7 @@ PatchForge does not scan environments, exploit vulnerabilities, deploy patches, 
 
 ## Current Product Scope
 
-This repository now contains the PF-AZ9A-VENDORLENS production-demo product line for PatchForge:
+This repository now contains the PF-AZ10-SIMPLIFIED-EXPERIENCE production product line for PatchForge:
 
 - product identity
 - product boundary
@@ -48,13 +48,16 @@ This repository now contains the PF-AZ9A-VENDORLENS production-demo product line
 - deterministic runtime governance and signed decision packs
 - Azure Key Vault production signing path
 - Microsoft Entra sign-in and token-backed frontend API use
-- Bayesian patch-risk advisory inference
-- vendor and threat landscape intelligence
-- VendorLens network vendor intelligence and config-aware patch advisor
+- Global Security Action Center for source-bound CVEs, vendor advisories, KEV/EPSS signals, customer match counts, and governance posture
+- Customer Estate for customer devices/assets, services, config evidence, exposure matches, and Patch Compare
+- Ask PatchForge advisory workflow for vendor, device, feature, patch, and evidence questions
+- Reports & Packs consolidation for customer, board, CAB, technical appendix, signed pack, and verification outputs
+- deterministic search index across vulnerabilities, vendor advisories, vendor profiles, customer assets, applicability assessments, and source-feed records
+- vendor intelligence and config-aware patch advisor capabilities surfaced inside the simplified workflows
 - customer network asset, model, firmware, feature, and exposure evidence records
-- Ask PatchForge config-aware SRA/AIP advisory chat
+- Ask PatchForge advisory chat with human accountability
 - source-bound SRA and agent finding intake
-- guided Action Center, Finding Detail, Review & Approve, and Reports & Packs workflow
+- simplified Global Security Action Center, Customer Estate, Ask PatchForge, Reports & Packs, and Admin navigation
 - human-readable finding intelligence API
 - decision-grade DOCX/PDF board and CAB reports
 - signed-pack finding intelligence snapshots

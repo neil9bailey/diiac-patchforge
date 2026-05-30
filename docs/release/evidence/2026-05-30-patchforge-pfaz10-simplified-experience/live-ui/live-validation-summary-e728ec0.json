@@ -1,0 +1,116 @@
+{
+  "release": "PF-AZ10-SIMPLIFIED-EXPERIENCE",
+  "date": "2026-05-30",
+  "image_tag": "pfaz10-20260530-e728ec0",
+  "commit": "e728ec0",
+  "signed_in_user": "n.bailey@diiac.io",
+  "role": "PatchForge.Admin",
+  "http_smoke": {
+    "ui": 200,
+    "api_health": 200,
+    "api_readiness": 200,
+    "protected_security_action_center_unauthenticated": 401
+  },
+  "navigation": [
+    "Global Security Action Center",
+    "Customer Estate",
+    "Ask PatchForge",
+    "Reports & Packs",
+    "Admin"
+  ],
+  "global_security_action_center": {
+    "catalogue_loaded": true,
+    "grouped_by_vendor_product": true,
+    "search_validated": [
+      {
+        "query": "Fortinet",
+        "records": 102
+      },
+      {
+        "query": "FortiGate",
+        "records": 13
+      },
+      {
+        "query": "fortios",
+        "records": 24
+      },
+      {
+        "query": "remote",
+        "records": 510
+      },
+      {
+        "query": "authentication",
+        "records": 62
+      },
+      {
+        "query": "CVE-2016-6909",
+        "records": 1
+      }
+    ],
+    "cve_detail_opened": "CVE-2016-6909",
+    "evidence_approval_panel_visible": true,
+    "final_approval_issued": false
+  },
+  "customer_estate": {
+    "device_input": "FortiGate 100F running FortiOS 7.2.7. SSL-VPN disabled. IPsec enabled. Management internal only.",
+    "extracted": {
+      "vendor": "fortinet",
+      "product_family": "FortiGate",
+      "model": "100F",
+      "firmware_version": "7.2.7",
+      "management_exposure": "internal",
+      "enabled_features": [
+        "ipsec_vpn"
+      ],
+      "disabled_features": [
+        "ssl_vpn"
+      ],
+      "evidence_state": "user_stated_unreviewed"
+    },
+    "asset_id": "net-asset-8087dce1-f354-4d86-a1e3-56d6c98de6ff",
+    "matching_cves": 1,
+    "match_example": "CVE-2016-6909",
+    "patch_compare": {
+      "current_version_posture": "affected",
+      "proposed_version_posture": "unknown",
+      "final_approval_issued": false,
+      "human_review_required": true
+    }
+  },
+  "ask_patchforge": {
+    "question": "We use FortiGate 100F FortiOS 7.2.7 with SSL-VPN disabled. Does CVE-2016-6909 require urgent patching?",
+    "required_sections_present": [
+      "Short Answer",
+      "Current Governed Posture",
+      "Why",
+      "What We Know",
+      "What We Do Not Know",
+      "Evidence Needed",
+      "Recommended Next Action",
+      "Decision Not Allowed Yet",
+      "Human Approval Required"
+    ],
+    "final_approval_issued": false,
+    "human_approval_required": true
+  },
+  "reports_packs": {
+    "signed_pack_id": "PF-20260530-02cd95b4",
+    "verification_state": "verified",
+    "signing_provider": "azure_key_vault",
+    "final_approval_issued": false,
+    "exports": [
+      "customer-patch-governance-pack.docx",
+      "customer-patch-governance-pack.pdf",
+      "board-vulnerability-remediation-summary.docx",
+      "board-vulnerability-remediation-summary.pdf",
+      "cab-patch-decision-report.docx",
+      "cab-patch-decision-report.pdf"
+    ],
+    "report_review_passed": true
+  },
+  "cleanup": {
+    "production_records_removed": true,
+    "deleted_records": 9,
+    "temporary_firewall_rule_removed": true
+  }
+}

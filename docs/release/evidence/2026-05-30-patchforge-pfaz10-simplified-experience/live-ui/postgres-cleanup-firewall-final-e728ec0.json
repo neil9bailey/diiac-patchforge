@@ -1,0 +1,13 @@
+﻿{
+    "checked_at_utc":  "2026-05-30T20:31:25.0076377Z",
+    "resource_group":  "rg-diiac-patchforge-prod",
+    "server":  "psql-diiac-patchforge-prod",
+    "rule_name":  "codex-pfaz10-cleanup-20260530",
+    "removed":  true,
+    "matching_rules":  [
+
+                       ],
+    "remaining_rule_names":  [
+                                 "AllowAzureServices"
+                             ]
+}

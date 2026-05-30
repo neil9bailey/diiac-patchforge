@@ -1,0 +1,63 @@
+{
+    "target":  "production-postgresql-validation-record-cleanup",
+    "server":  "psql-diiac-patchforge-prod",
+    "database":  "patchforge_prod",
+    "cleanup_scope":  [
+                          "net-asset-8087dce1-f354-4d86-a1e3-56d6c98de6ff",
+                          "PF-20260530-802b017a",
+                          "PF-20260530-02cd95b4"
+                      ],
+    "firewall_rule":  {
+                          "client_ip":  "83.167.187.0",
+                          "name":  "codex-pfaz10-cleanup-20260530"
+                      },
+    "result":  {
+                   "tenant_id":  "diiac.io",
+                   "asset_id":  "net-asset-8087dce1-f354-4d86-a1e3-56d6c98de6ff",
+                   "pack_ids":  [
+                                    "PF-20260530-802b017a",
+                                    "PF-20260530-02cd95b4"
+                                ],
+                   "before_count":  9,
+                   "deleted_count":  9,
+                   "after_count":  0,
+                   "deleted":  [
+                                   {
+                                       "collection":  "decision_packs",
+                                       "record_id":  "PF-20260530-02cd95b4"
+                                   },
+                                   {
+                                       "collection":  "audit_events",
+                                       "record_id":  "audit-9cfb4de7-bd0d-40e0-82d4-db0cdab43c29"
+                                   },
+                                   {
+                                       "collection":  "customer_network_assets",
+                                       "record_id":  "net-asset-8087dce1-f354-4d86-a1e3-56d6c98de6ff"
+                                   },
+                                   {
+                                       "collection":  "audit_events",
+                                       "record_id":  "audit-24e4f5ec-327e-4fd6-836e-2e673823d2aa"
+                                   },
+                                   {
+                                       "collection":  "config_applicability_assessments",
+                                       "record_id":  "cfg-app-1780155944039"
+                                   },
+                                   {
+                                       "collection":  "vendorlens_patch_comparisons",
+                                       "record_id":  "vl-compare-1780155959738-1499a103"
+                                   },
+                                   {
+                                       "collection":  "audit_events",
+                                       "record_id":  "audit-7cc48c31-321f-4255-8687-e355559cdf22"
+                                   },
+                                   {
+                                       "collection":  "decision_packs",
+                                       "record_id":  "PF-20260530-802b017a"
+                                   },
+                                   {
+                                       "collection":  "audit_events",
+                                       "record_id":  "audit-f6b62e5b-d8c1-48e1-ac5d-be0bfcf80f5e"
+                                   }
+                               ]
+               }
+}

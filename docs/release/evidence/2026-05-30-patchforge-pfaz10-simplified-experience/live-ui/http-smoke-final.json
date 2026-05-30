@@ -1,0 +1,22 @@
+[
+    {
+        "url":  "https://patchforge.diiac.io/",
+        "status":  200,
+        "body_excerpt":  "\u003c!doctype html\u003e\n\u003chtml lang=\"en\"\u003e\n  \u003chead\u003e\n    \u003cmeta charset=\"UTF-8\" /\u003e\n    \u003cmeta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" /\u003e\n    \u003ctitle\u003eDIIaC\u0026trade; PatchForge\u003c/title\u003e\n    \u003cscript type=\"module\" cro"
+    },
+    {
+        "url":  "https://api.patchforge.diiac.io/health",
+        "status":  200,
+        "body_excerpt":  "{\n  \"status\": \"ok\",\n  \"product\": \"DIIaC PatchForge\",\n  \"boundary\": \"governance-only\"\n}\n"
+    },
+    {
+        "url":  "https://api.patchforge.diiac.io/readiness",
+        "status":  200,
+        "body_excerpt":  "{\n  \"status\": \"ready\",\n  \"storage\": \"postgresql\",\n  \"auth_required\": true,\n  \"tenant_required\": true\n}\n"
+    },
+    {
+        "url":  "https://api.patchforge.diiac.io/api/patchforge/security-action-center",
+        "status":  401,
+        "body_excerpt":  "{\n  \"error\": \"missing_bearer_token\",\n  \"message\": \"A Microsoft Entra access token is required.\",\n  \"required_roles\": [\n    \"PatchForge.Reader\",\n    \"PatchForge.Auditor\",\n    \"PatchForge.TriageAnalyst\",\n    \"PatchForge.Se"
+    }
+]

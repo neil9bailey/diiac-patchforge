@@ -1,0 +1,68 @@
+[
+    {
+        "app":  "ca-patchforge-ui-prod",
+        "latestRevisionName":  "ca-patchforge-ui-prod--0000020",
+        "latestReadyRevisionName":  "ca-patchforge-ui-prod--0000020",
+        "runningStatus":  "Running",
+        "revision":  "ca-patchforge-ui-prod--0000020",
+        "trafficWeight":  100,
+        "active":  true,
+        "healthState":  "Healthy",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-frontend:pfaz10-20260530-f77e2e9"
+    },
+    {
+        "app":  "ca-patchforge-bridge-prod",
+        "latestRevisionName":  "ca-patchforge-bridge-prod--0000019",
+        "latestReadyRevisionName":  "ca-patchforge-bridge-prod--0000019",
+        "runningStatus":  "Running",
+        "revision":  "ca-patchforge-bridge-prod--0000019",
+        "trafficWeight":  100,
+        "active":  true,
+        "healthState":  "Healthy",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-bridge:pfaz10-20260530-f77e2e9"
+    },
+    {
+        "app":  "ca-patchforge-runtime-prod",
+        "latestRevisionName":  "ca-patchforge-runtime-prod--0000018",
+        "latestReadyRevisionName":  "ca-patchforge-runtime-prod--0000018",
+        "runningStatus":  "Running",
+        "revision":  "ca-patchforge-runtime-prod--0000018",
+        "trafficWeight":  100,
+        "active":  true,
+        "healthState":  "Healthy",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-runtime:pfaz10-20260530-f77e2e9"
+    },
+    {
+        "app":  "ca-patchforge-sra-prod",
+        "latestRevisionName":  "ca-patchforge-sra-prod--0000017",
+        "latestReadyRevisionName":  "ca-patchforge-sra-prod--0000017",
+        "runningStatus":  "Running",
+        "revision":  "ca-patchforge-sra-prod--0000017",
+        "trafficWeight":  100,
+        "active":  true,
+        "healthState":  "Healthy",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-sra-agent:pfaz10-20260530-f77e2e9"
+    },
+    {
+        "app":  "ca-patchforge-worker-prod",
+        "latestRevisionName":  "ca-patchforge-worker-prod--0000017",
+        "latestReadyRevisionName":  "ca-patchforge-worker-prod--0000017",
+        "runningStatus":  "Running",
+        "revision":  "ca-patchforge-worker-prod--0000017",
+        "trafficWeight":  100,
+        "active":  true,
+        "healthState":  "Healthy",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-ingest-worker:pfaz10-20260530-f77e2e9"
+    },
+    {
+        "app":  "ca-patchforge-scheduler-prod",
+        "latestRevisionName":  "ca-patchforge-scheduler-prod--0000017",
+        "latestReadyRevisionName":  "ca-patchforge-scheduler-prod--0000017",
+        "runningStatus":  "Running",
+        "revision":  "ca-patchforge-scheduler-prod--0000017",
+        "trafficWeight":  100,
+        "active":  true,
+        "healthState":  "Healthy",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-scheduler:pfaz10-20260530-f77e2e9"
+    }
+]

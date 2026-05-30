@@ -1,0 +1,145 @@
+{
+  "pack_review": {
+    "pack_id": "PF-20260530-02cd95b4",
+    "vulnerability_id": "CVE-2026-48172",
+    "final_approval_issued": false,
+    "verification_verified": true,
+    "signing_provider": "azure_key_vault",
+    "report_renderer_commit": "e728ec0",
+    "report_renderer_image_tag": "pfaz10-20260530-e728ec0",
+    "product_baseline": "PF-AZ10-SIMPLIFIED-EXPERIENCE"
+  },
+  "all_pack_checks_pass": true,
+  "reports": [
+    {
+      "slug": "customer-patch-governance-pack",
+      "docx_bytes": 183785,
+      "pdf_bytes": 108649,
+      "docx_contains_pack_id": true,
+      "pdf_contains_pack_id": true,
+      "docx_metadata_present": {
+        "report_template_version": true,
+        "report_renderer_commit": true,
+        "report_renderer_image_tag": true,
+        "generated_from_pack_id": true,
+        "generated_at_utc": true,
+        "product_baseline": true,
+        "report_context_version": true,
+        "final_approval_issued": true,
+        "signing_provider": true,
+        "verification_state": true
+      },
+      "pdf_metadata_present": {
+        "report_template_version": true,
+        "report_renderer_commit": true,
+        "report_renderer_image_tag": true,
+        "generated_from_pack_id": true,
+        "generated_at_utc": true,
+        "product_baseline": true,
+        "report_context_version": true,
+        "final_approval_issued": true,
+        "signing_provider": true,
+        "verification_state": true
+      },
+      "sections_present": {
+        "Customer Assurance Position": true,
+        "Customer Device / Service Context": true,
+        "Matching CVEs / Advisories": true,
+        "Applicability Assessment": true,
+        "Patch Compare Result": true,
+        "Evidence Needed": true,
+        "What Can Be Shared With Customer": true,
+        "What Cannot Yet Be Claimed": true,
+        "Final Approval State": true,
+        "Signed Pack Metadata": true
+      },
+      "final_approval_false": true,
+      "short_excerpt": "DIIaC PatchForge | Signed Patch Governance Customer Patch Governance Pack Customer assurance | CVE-2026-48172 | Pack PF-20260530-02cd95b4 Generated 30/05/2026, 20:06:28. Governed posture: Urgent scope confirmation required - final remediation decision blocked pending evidence.. Readiness: Blocked. Final approval not issued. Report Version Metadata report_template_version: patchforge-report-template.v2026-05-30.1 report_renderer_commit: e728ec0 report_renderer_image_tag: pfaz10-20260530-e728ec0 generated_from_pack_id: PF-20260530-02cd95b4 generated_at_utc: 2026-05-30T20:06:28.737Z product_baseline: PF-AZ10-SIMPLIFIED-EXPERIENCE report_context_version: patchforge-report-context.v3 source_pack_id: PF-20260530-02cd95b4 report_type: customer_patch_governance_pack report_audience: Customer assurance final_approval_issued: false signing_provider: Azure Key Vault verification_state:"
+    },
+    {
+      "slug": "board-vulnerability-remediation-summary",
+      "docx_bytes": 171359,
+      "pdf_bytes": 101260,
+      "docx_contains_pack_id": true,
+      "pdf_contains_pack_id": true,
+      "docx_metadata_present": {
+        "report_template_version": true,
+        "report_renderer_commit": true,
+        "report_renderer_image_tag": true,
+        "generated_from_pack_id": true,
+        "generated_at_utc": true,
+        "product_baseline": true,
+        "report_context_version": true,
+        "final_approval_issued": true,
+        "signing_provider": true,
+        "verification_state": true
+      },
+      "pdf_metadata_present": {
+        "report_template_version": true,
+        "report_renderer_commit": true,
+        "report_renderer_image_tag": true,
+        "generated_from_pack_id": true,
+        "generated_at_utc": true,
+        "product_baseline": true,
+        "report_context_version": true,
+        "final_approval_issued": true,
+        "signing_provider": true,
+        "verification_state": true
+      },
+      "sections_present": {
+        "Executive Decision Summary": true,
+        "Top Risks": true,
+        "Affected Vendors / Products": true,
+        "Customer Exposure": true,
+        "Recommended Next Actions": true,
+        "Evidence Gaps": true,
+        "Final Approval State": true
+      },
+      "final_approval_false": true,
+      "short_excerpt": "DIIaC PatchForge | Signed Patch Governance Board Vulnerability Summary Board and senior leadership | CVE-2026-48172 | Pack PF-20260530-02cd95b4 Generated 30/05/2026, 20:06:40. Governed posture: Urgent scope confirmation required - final remediation decision blocked pending evidence.. Readiness: Blocked. Final approval not issued. Report Version Metadata report_template_version: patchforge-report-template.v2026-05-30.1 report_renderer_commit: e728ec0 report_renderer_image_tag: pfaz10-20260530-e728ec0 generated_from_pack_id: PF-20260530-02cd95b4 generated_at_utc: 2026-05-30T20:06:40.105Z product_baseline: PF-AZ10-SIMPLIFIED-EXPERIENCE report_context_version: patchforge-report-context.v3 source_pack_id: PF-20260530-02cd95b4 report_type: board_vulnerability_remediation_summary report_audience: Board and senior leadership final_approval_issued: false signing_provider: Azure Key V"
+    },
+    {
+      "slug": "cab-patch-decision-report",
+      "docx_bytes": 172897,
+      "pdf_bytes": 103291,
+      "docx_contains_pack_id": true,
+      "pdf_contains_pack_id": true,
+      "docx_metadata_present": {
+        "report_template_version": true,
+        "report_renderer_commit": true,
+        "report_renderer_image_tag": true,
+        "generated_from_pack_id": true,
+        "generated_at_utc": true,
+        "product_baseline": true,
+        "report_context_version": true,
+        "final_approval_issued": true,
+        "signing_provider": true,
+        "verification_state": true
+      },
+      "pdf_metadata_present": {
+        "report_template_version": true,
+        "report_renderer_commit": true,
+        "report_renderer_image_tag": true,
+        "generated_from_pack_id": true,
+        "generated_at_utc": true,
+        "product_baseline": true,
+        "report_context_version": true,
+        "final_approval_issued": true,
+        "signing_provider": true,
+        "verification_state": true
+      },
+      "sections_present": {
+        "Change Decision Request": true,
+        "Affected Devices": true,
+        "Patch Applicability": true,
+        "Patch Compare": true,
+        "Test / Rollback Evidence Needed": true,
+        "Approval Conditions": true,
+        "Final Approval State": true
+      },
+      "final_approval_false": true,
+      "short_excerpt": "DIIaC PatchForge | Signed Patch Governance CAB Patch Decision Report Change Advisory Board | CVE-2026-48172 | Pack PF-20260530-02cd95b4 Generated 30/05/2026, 20:06:53. Governed posture: Urgent scope confirmation required - final remediation decision blocked pending evidence.. Readiness: Blocked. Final approval not issued. Report Version Metadata report_template_version: patchforge-report-template.v2026-05-30.1 report_renderer_commit: e728ec0 report_renderer_image_tag: pfaz10-20260530-e728ec0 generated_from_pack_id: PF-20260530-02cd95b4 generated_at_utc: 2026-05-30T20:06:53.573Z product_baseline: PF-AZ10-SIMPLIFIED-EXPERIENCE report_context_version: patchforge-report-context.v3 source_pack_id: PF-20260530-02cd95b4 report_type: cab_patch_decision_report report_audience: Change Advisory Board final_approval_issued: false signing_provider: Azure Key Vault verification_state: ve"
+    }
+  ],
+  "all_report_checks_pass": true
+}

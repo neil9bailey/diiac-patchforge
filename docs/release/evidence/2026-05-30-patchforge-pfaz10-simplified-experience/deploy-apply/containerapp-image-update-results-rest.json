@@ -1,0 +1,42 @@
+[
+    {
+        "app":  "ca-patchforge-bridge-prod",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-bridge:pfaz10-20260530-f77e2e9",
+        "latestRevisionName":  "ca-patchforge-bridge-prod--0000019",
+        "latestReadyRevisionName":  "ca-patchforge-bridge-prod--0000018",
+        "provisioningState":  "Succeeded",
+        "runningStatus":  "Running"
+    },
+    {
+        "app":  "ca-patchforge-runtime-prod",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-runtime:pfaz10-20260530-f77e2e9",
+        "latestRevisionName":  "ca-patchforge-runtime-prod--0000018",
+        "latestReadyRevisionName":  "ca-patchforge-runtime-prod--0000017",
+        "provisioningState":  "Succeeded",
+        "runningStatus":  "Running"
+    },
+    {
+        "app":  "ca-patchforge-sra-prod",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-sra-agent:pfaz10-20260530-f77e2e9",
+        "latestRevisionName":  "ca-patchforge-sra-prod--0000017",
+        "latestReadyRevisionName":  "ca-patchforge-sra-prod--0000016",
+        "provisioningState":  "Succeeded",
+        "runningStatus":  "Running"
+    },
+    {
+        "app":  "ca-patchforge-worker-prod",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-ingest-worker:pfaz10-20260530-f77e2e9",
+        "latestRevisionName":  "ca-patchforge-worker-prod--0000017",
+        "latestReadyRevisionName":  "ca-patchforge-worker-prod--0000016",
+        "provisioningState":  "Succeeded",
+        "runningStatus":  "Running"
+    },
+    {
+        "app":  "ca-patchforge-scheduler-prod",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-scheduler:pfaz10-20260530-f77e2e9",
+        "latestRevisionName":  "ca-patchforge-scheduler-prod--0000017",
+        "latestReadyRevisionName":  "ca-patchforge-scheduler-prod--0000016",
+        "provisioningState":  "Succeeded",
+        "runningStatus":  "Running"
+    }
+]

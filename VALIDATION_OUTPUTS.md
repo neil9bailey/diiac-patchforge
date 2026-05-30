@@ -1,3 +1,93 @@
+# PF-AZ10-SIMPLIFIED-EXPERIENCE Validation Outputs
+
+## PF-AZ10-SIMPLIFIED-EXPERIENCE Local Validation
+
+Date: 2026-05-30
+
+Status: PASS. PF-AZ10-SIMPLIFIED-EXPERIENCE is deployed to Azure and validated through the live UI/API as a signed-in PatchForge Admin user.
+
+Scope:
+
+- Replace top-level navigation with Global Security Action Center, Customer Estate, Ask PatchForge, Reports & Packs, and Admin.
+- Consolidate Finding Detail, Review & Approve, VendorLens, Vulnerability Queue, Vendor & Threat Landscape, SRA Research, Decision Packs, Source Feeds, and Evidence Catalogue into the simplified workflows.
+- Add deterministic global CVE/advisory search across vulnerability, advisory, vendor, customer asset, applicability, and source-feed records.
+- Add grouped Vendor -> Product Family -> CVE/Advisory catalogue, severity/urgency cards, filters, source state, review state, customer matches, and approval posture.
+- Add Customer Estate asset extraction, upsert, matching, exposure matches, and Patch Compare.
+- Add Ask PatchForge advisory-only responses with human approval required and `final_approval_issued=false`.
+- Simplify report packs and require renderer, baseline, signing, verification, and final approval metadata in DOCX/PDF outputs.
+
+Local validation:
+
+- `node --check backend-api/server.js`: PASS
+- `node --check backend-api/auth.js`: PASS
+- `node --check backend-api/patchforge/searchIndex.js`: PASS
+- `node --check backend-api/patchforge/reports.js`: PASS
+- `node --check backend-api/patchforge/configApplicability.js`: PASS
+- `node --check backend-api/patchforge/vendorLens.js`: PASS
+- `node --check backend-api/patchforge/scheduler.js`: PASS
+- `node --check backend-api/sra/securityResearchAgent.js`: PASS
+- `npm --prefix backend-api test`: PASS, 32 tests
+- `npm --prefix Frontend test`: PASS, 10 tests
+- `npm --prefix Frontend run build`: PASS, Vite chunk-size advisory only
+- `python -m pytest -q --basetemp .pytest_tmp`: PASS, 26 tests
+- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate_iac.ps1`: PASS
+- `az bicep build --file infra/bicep/main.bicep`: PASS
+- `docker build -f Frontend/Dockerfile -t diiac/patchforge-frontend:pfaz10-local Frontend`: PASS
+- `docker build -f backend-api/Dockerfile -t diiac/patchforge-bridge:pfaz10-local backend-api`: PASS
+- `docker build -f runtime/Dockerfile -t diiac/patchforge-runtime:pfaz10-local .`: PASS
+
+Azure rollout:
+
+- GitHub push: PASS, deployed application commit `e728ec0`
+- Image tag: `pfaz10-20260530-e728ec0`
+- ACR image push: PASS for frontend, bridge/API, runtime, SRA, worker, and scheduler
+- ACR tag verification: PASS for all six repositories
+- Targeted Container Apps update: PASS
+- Active revisions:
+  - UI: `ca-patchforge-ui-prod--0000021`
+  - Bridge/API: `ca-patchforge-bridge-prod--0000020`
+  - Runtime: `ca-patchforge-runtime-prod--0000019`
+  - SRA: `ca-patchforge-sra-prod--0000018`
+  - Worker: `ca-patchforge-worker-prod--0000018`
+  - Scheduler: `ca-patchforge-scheduler-prod--0000018`
+
+Live validation:
+
+- UI HTTP 200: PASS
+- API health HTTP 200: PASS
+- API readiness HTTP 200 with `storage=postgresql`, `auth_required=true`, and `tenant_required=true`: PASS
+- Protected Security Action Center route unauthenticated HTTP 401: PASS
+- Browser/MSAL sign-in as `n.bailey@diiac.io`: PASS
+- Displayed role `PatchForge.Admin`: PASS
+- New five-item navigation visible: PASS
+- Global Security Action Center opened and grouped CVE/advisory catalogue loaded: PASS
+- Search by vendor, product, feature, and CVE: PASS
+- CVE Detail and Evidence & Approval panel opened: PASS
+- Customer Estate opened: PASS
+- Free-text device extraction for `FortiGate 100F running FortiOS 7.2.7. SSL-VPN disabled. IPsec enabled. Management internal only.`: PASS
+- Extracted fields included vendor, product family, model, firmware, enabled/disabled features, management exposure, and unreviewed evidence state: PASS
+- Temporary validation asset upserted, matched, and then removed after evidence capture: PASS
+- Current CVE/advisory matching: PASS
+- Patch Compare: PASS, final approval false and human review required
+- Ask PatchForge advisory response: PASS, required response sections present, no final approval, human approval required
+- Fresh signed pack generated: `PF-20260530-02cd95b4`
+- Pack verification: PASS, `verified=true`
+- Key Vault signing: PASS, `azure_key_vault`
+- Customer Patch Governance Pack DOCX/PDF export: PASS
+- Board Vulnerability Summary DOCX/PDF export: PASS
+- CAB Patch Decision Report DOCX/PDF export: PASS
+- Live report metadata stamping: PASS
+- Simplified report sections: PASS
+- Final approval remained false: PASS
+- Production validation data cleanup: PASS, 9 records removed
+- Temporary PostgreSQL firewall cleanup: PASS
+
+PF-AZ10-SIMPLIFIED-EXPERIENCE evidence path:
+
+`docs/release/evidence/2026-05-30-patchforge-pfaz10-simplified-experience/`
+
+Important boundary note: PF-AZ10-SIMPLIFIED-EXPERIENCE does not add scanning, exploit generation, procedural exploit steps, patch deployment, production mutation from the UI, autonomous evidence-gate closure, autonomous CAB approval, or autonomous risk acceptance.
+
 # PF-AZ9A-VENDORLENS Validation Outputs
 
 ## PF-AZ9A Local Validation

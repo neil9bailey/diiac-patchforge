@@ -1,5 +1,82 @@
 # Current Release
 
+## DIIaC PatchForge PF-AZ10-SIMPLIFIED-EXPERIENCE
+
+Release state: deployed to Azure and live validated through the production UI/API as a signed-in PatchForge Admin user.
+
+Date: 2026-05-30
+
+PF-AZ10-SIMPLIFIED-EXPERIENCE simplifies PatchForge around five customer-facing functions: Global Security Action Center, Customer Estate, Ask PatchForge, Reports & Packs, and Admin. It consolidates older pages into those workflows, adds deterministic global CVE/advisory search and grouping, adds customer asset extraction and matching, adds advisory-only natural language guidance, adds Patch Compare in the simplified flow, and refreshes report packs around customer, board, and CAB decision use.
+
+PF-AZ10-SIMPLIFIED-EXPERIENCE image tag:
+
+- `pfaz10-20260530-e728ec0`
+
+PF-AZ10-SIMPLIFIED-EXPERIENCE commits:
+
+- `0cb9726` - simplify PatchForge customer experience and global security action center
+- `f77e2e9` - use newest signed pack for report exports
+- `e728ec0` - align customer report evidence heading
+
+PF-AZ10-SIMPLIFIED-EXPERIENCE local validation:
+
+- backend syntax checks: PASS, including `backend-api/patchforge/searchIndex.js`
+- backend tests: PASS, 32 tests
+- frontend tests: PASS, 10 tests
+- frontend production build: PASS, Vite chunk-size advisory only
+- Python runtime tests: PASS, 26 tests
+- IaC validation and Bicep build: PASS
+- Docker build smoke: PASS for frontend, bridge/API, and runtime
+
+PF-AZ10-SIMPLIFIED-EXPERIENCE Azure rollout:
+
+- GitHub push: PASS, deployed application commit `e728ec0`
+- ACR build/push: PASS for image tag `pfaz10-20260530-e728ec0`
+- Targeted Container Apps update: PASS
+- Active revisions:
+  - UI: `ca-patchforge-ui-prod--0000021`
+  - Bridge/API: `ca-patchforge-bridge-prod--0000020`
+  - Runtime: `ca-patchforge-runtime-prod--0000019`
+  - SRA: `ca-patchforge-sra-prod--0000018`
+  - Worker: `ca-patchforge-worker-prod--0000018`
+  - Scheduler: `ca-patchforge-scheduler-prod--0000018`
+
+PF-AZ10-SIMPLIFIED-EXPERIENCE live validation:
+
+- UI HTTP 200: PASS
+- API health/readiness HTTP 200: PASS
+- Protected security action center route unauthenticated HTTP 401: PASS
+- Browser/MSAL sign-in as `n.bailey@diiac.io`: PASS
+- Displayed role `PatchForge.Admin`: PASS
+- Simplified five-item navigation: PASS
+- Global Security Action Center grouped CVE/advisory catalogue loaded: PASS
+- Search by vendor, product, feature, and CVE: PASS
+- CVE Detail with Evidence & Approval panel: PASS
+- Customer Estate free-text device extraction for FortiGate 100F FortiOS 7.2.7: PASS
+- Current CVE/advisory matching: PASS
+- Patch Compare: PASS, final approval false and human review required
+- Ask PatchForge advisory response format: PASS, final approval false and human approval required
+- Reports & Packs signed pack generation and verification: PASS
+- Fresh Customer Patch Governance Pack, Board Vulnerability Summary, and CAB Patch Decision Report DOCX/PDF exports: PASS
+- Report metadata and simplified sections reviewed in DOCX and PDF: PASS
+- Production validation records removed from PostgreSQL after evidence capture: PASS
+- Temporary PostgreSQL firewall cleanup verified: PASS
+
+PF-AZ10-SIMPLIFIED-EXPERIENCE reports:
+
+- signed pack: `PF-20260530-02cd95b4`
+- Customer Patch Governance Pack DOCX/PDF: PASS
+- Board Vulnerability Summary DOCX/PDF: PASS
+- CAB Patch Decision Report DOCX/PDF: PASS
+- required metadata present: PASS
+- final approval remained false: PASS
+
+PF-AZ10-SIMPLIFIED-EXPERIENCE evidence path:
+
+- `docs/release/evidence/2026-05-30-patchforge-pfaz10-simplified-experience/`
+
+PF-AZ10-SIMPLIFIED-EXPERIENCE does not add vulnerability scanning, exploit generation, procedural exploit steps, patch deployment, production mutation, autonomous evidence-gate closure, autonomous CAB approval, or autonomous risk acceptance.
+
 ## DIIaC PatchForge PF-AZ9A-VENDORLENS
 
 Release state: deployed to Azure and live validated through the production UI/API as a signed-in PatchForge Admin user.

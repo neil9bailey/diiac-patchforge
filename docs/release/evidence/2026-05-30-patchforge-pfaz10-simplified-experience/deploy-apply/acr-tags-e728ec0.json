@@ -1,0 +1,32 @@
+[
+    {
+        "repository":  "diiac/patchforge-frontend",
+        "tag":  "pfaz10-20260530-e728ec0",
+        "present":  true
+    },
+    {
+        "repository":  "diiac/patchforge-bridge",
+        "tag":  "pfaz10-20260530-e728ec0",
+        "present":  true
+    },
+    {
+        "repository":  "diiac/patchforge-runtime",
+        "tag":  "pfaz10-20260530-e728ec0",
+        "present":  true
+    },
+    {
+        "repository":  "diiac/patchforge-sra-agent",
+        "tag":  "pfaz10-20260530-e728ec0",
+        "present":  true
+    },
+    {
+        "repository":  "diiac/patchforge-ingest-worker",
+        "tag":  "pfaz10-20260530-e728ec0",
+        "present":  true
+    },
+    {
+        "repository":  "diiac/patchforge-scheduler",
+        "tag":  "pfaz10-20260530-e728ec0",
+        "present":  true
+    }
+]

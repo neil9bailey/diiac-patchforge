@@ -1,6 +1,6 @@
 # PatchForge Open Gaps Register
 
-Date: 2026-05-28
+Date: 2026-05-30
 
 | Gap | Status | Notes |
 | --- | --- | --- |
@@ -19,8 +19,9 @@ Date: 2026-05-28
 | VendorLens network vendor intelligence | Closed for PF-AZ9-VENDORLENS | Vendor catalogue, config-aware applicability, source-bound advisory ingest foundations, Ask PatchForge SRA/AIP chat, VendorLens UI, signed-pack artefacts, DOCX/PDF report sections, Azure rollout, signed pack verification, and live UI validation passed. PF-AZ9-VENDORLENS validation records were removed from production PostgreSQL after evidence capture. |
 | VendorLens UI pagination and CISO patch comparison | Closed for PF-AZ10 | Action Center, Finding Detail, VendorLens reference catalogue, Patch Compare, growing catalogues, report lists, packs, source feeds, and Admin lists now use wrapping and pagination controls. CISO patch-version comparison and report artefact are implemented. Azure rollout and live UI validation passed with image tag `pfaz10-20260527-513fea2`. |
 | VendorLens release clarity and current report proof | Closed for PF-AZ9A | `PF-AZ9A-VENDORLENS`, `PF-AZ9-VENDORLENS`, and `PF-AZ9-OPS-HISTORICAL` are now distinct in current-facing docs. DOCX/PDF reports include mandatory version stamps, VendorLens applicability matching was hardened, and live customer/board/CAB exports from `PF-20260528-9e896f66` proved current image tag `pfaz9a-20260528-923b386`, renderer commit `923b386`, VendorLens sections, and final approval false. Temporary validation records were removed from production PostgreSQL after evidence capture. |
+| Simplified customer experience and Global Security Action Center | Closed for PF-AZ10-SIMPLIFIED-EXPERIENCE | Top-level navigation is now Global Security Action Center, Customer Estate, Ask PatchForge, Reports & Packs, and Admin. Global CVE/advisory catalogue, deterministic search, Customer Estate extraction/matching, Patch Compare, Ask PatchForge advisory responses, and simplified report packs passed local validation, Azure rollout, live browser validation, fresh DOCX/PDF report export/review, and production validation-record cleanup with image tag `pfaz10-20260530-e728ec0`. |
 | NVD public API high-volume refresh | Controlled for PF-AZ10 | NVD catalogue refresh no longer requires a single CVE and catalogued live source-bound records. Public API rate limiting is recorded as governed `completed_with_warnings` or `rate_limited` source-feed state. Configure a private NVD API key for fuller high-volume refresh without public rate-limit interruptions. |
-| Customer network asset evidence for Patch Compare | Open | No synthetic asset was created because demo data is prohibited. Patch Compare is ready to run once reviewed customer network asset/model/version evidence is attached. |
+| Customer network asset evidence for Patch Compare | Closed for PF-AZ10-SIMPLIFIED-EXPERIENCE validation | The live validation flow added a temporary user-stated FortiGate asset, ran current matching and Patch Compare, captured evidence, and removed the validation asset and linked records from production PostgreSQL. Customer production evidence remains customer-specific and is not claimed by this validation run. |
 | Scheduled live public-source refresh | Closed for PF-AZ7 | Scheduler Container App is running one replica and completed CISA KEV/FIRST EPSS refresh as `patchforge-scheduler@diiac.io`. |
 | Customer production validation | Not claimed | Evidence covers DIIaC live platform validation, not third-party customer signoff. |
 | Azure CLI custom API token consent | Open | Azure CLI token acquisition for the PatchForge API returned AADSTS65001; browser/MSAL validation succeeded and was used for the live user workflow. |

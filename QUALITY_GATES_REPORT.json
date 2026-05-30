@@ -1,13 +1,13 @@
 {
-  "release": "PF-AZ9A-VENDORLENS",
-  "date": "2026-05-28",
+  "release": "PF-AZ10-SIMPLIFIED-EXPERIENCE",
+  "date": "2026-05-30",
   "status": "azure_live_browser_validated",
-  "image_tag": "pfaz9a-20260528-923b386",
-  "commit": "923b386",
+  "image_tag": "pfaz10-20260530-e728ec0",
+  "commit": "e728ec0",
   "previous_live_release": {
-    "release": "PF-AZ9-VENDORLENS",
-    "image_tag": "pfaz9-20260527-e8a0de2",
-    "commit": "e8a0de2",
+    "release": "PF-AZ9A-VENDORLENS",
+    "image_tag": "pfaz9a-20260528-923b386",
+    "commit": "923b386",
     "status": "azure_live_browser_validated"
   },
   "gates": [
@@ -17,6 +17,10 @@
     },
     {
       "name": "backend_auth_syntax",
+      "status": "pass"
+    },
+    {
+      "name": "backend_search_index_syntax",
       "status": "pass"
     },
     {
@@ -42,16 +46,17 @@
     {
       "name": "backend_tests",
       "status": "pass",
-      "tests": 29
+      "tests": 32
     },
     {
       "name": "frontend_tests",
       "status": "pass",
-      "tests": 11
+      "tests": 10
     },
     {
       "name": "frontend_build",
-      "status": "pass"
+      "status": "pass",
+      "note": "Vite chunk-size advisory only"
     },
     {
       "name": "python_runtime_tests",
@@ -76,33 +81,24 @@
       ]
     },
     {
-      "name": "local_current_report_proof",
-      "status": "pass",
-      "evidence": "local structural DOCX/PDF report proof"
-    },
-    {
-      "name": "local_docx_render",
-      "status": "not_available_local_converter_missing"
-    },
-    {
       "name": "github_push",
       "status": "pass",
-      "commit": "923b386"
+      "commit": "e728ec0"
     },
     {
       "name": "acr_image_push",
       "status": "pass",
-      "image_tag": "pfaz9a-20260528-923b386"
+      "image_tag": "pfaz10-20260530-e728ec0"
     },
     {
       "name": "azure_update",
       "status": "pass",
-      "evidence": "docs/release/evidence/2026-05-28-patchforge-pfaz9a-vendorlens-report-proof/deploy-apply/"
+      "evidence": "docs/release/evidence/2026-05-30-patchforge-pfaz10-simplified-experience/deploy-apply/"
     },
     {
       "name": "live_api_smoke",
       "status": "pass",
-      "evidence": "docs/release/evidence/2026-05-28-patchforge-pfaz9a-vendorlens-report-proof/live-ui/live-api-smoke.json"
+      "evidence": "docs/release/evidence/2026-05-30-patchforge-pfaz10-simplified-experience/live-ui/http-smoke-e728ec0.json"
     },
     {
       "name": "protected_routes_unauthenticated",
@@ -116,9 +112,21 @@
       "role": "PatchForge.Admin"
     },
     {
+      "name": "global_security_action_center",
+      "status": "pass"
+    },
+    {
+      "name": "customer_estate_extract_match_compare",
+      "status": "pass"
+    },
+    {
+      "name": "ask_patchforge_advisory_response",
+      "status": "pass"
+    },
+    {
       "name": "live_signed_pack_generation",
       "status": "pass",
-      "pack_id": "PF-20260528-9e896f66"
+      "pack_id": "PF-20260530-02cd95b4"
     },
     {
       "name": "live_report_exports",
@@ -129,17 +137,14 @@
       ],
       "reports": [
         "customer_patch_governance_pack",
-        "board_vulnerability_remediation_summary",
+        "board_vulnerability_summary",
         "cab_patch_decision_report"
       ]
     },
     {
-      "name": "live_report_version_stamp",
-      "status": "pass"
-    },
-    {
-      "name": "vendorlens_report_sections",
-      "status": "pass"
+      "name": "live_report_review",
+      "status": "pass",
+      "evidence": "docs/release/evidence/2026-05-30-patchforge-pfaz10-simplified-experience/reports/PF-20260530-02cd95b4-report-review.json"
     },
     {
       "name": "keyvault_signing",
@@ -153,7 +158,11 @@
     {
       "name": "production_validation_data_cleanup",
       "status": "pass",
-      "deleted_records": 17
+      "deleted_records": 9
+    },
+    {
+      "name": "temporary_firewall_cleanup",
+      "status": "pass"
     }
   ],
   "report_stamp_fields": {
@@ -164,9 +173,6 @@
     "generated_at_utc": true,
     "product_baseline": true,
     "report_context_version": true,
-    "source_pack_id": true,
-    "report_type": true,
-    "report_audience": true,
     "final_approval_issued": true,
     "signing_provider": true,
     "verification_state": true
@@ -183,8 +189,7 @@
     "autonomous_risk_acceptance_absent": true
   },
   "remaining_notes": [
-    "Local DOCX raster rendering could not run because the local converter executable was unavailable; live DOCX/PDF export and structural checks passed.",
-    "No new Azure resources were created in this increment; existing production resources were reused.",
+    "Frontend build passed with a Vite chunk-size advisory only.",
     "Temporary validation records were removed from production PostgreSQL after evidence capture.",
     "No scanner, exploit, patch deployment, autonomous CAB, or autonomous risk-acceptance capability was added."
   ]
