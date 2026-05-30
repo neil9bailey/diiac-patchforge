@@ -1929,7 +1929,8 @@ function ReportsPacks({
   canWrite: boolean;
 }) {
   const preExport = reportsPacks.pre_export_state || {};
-  const latestPack = decisionPacks.slice(-1)[0];
+  const sortedPacks = newestDecisionPacks(decisionPacks);
+  const latestPack = sortedPacks[0];
   return (
     <>
       <section className="wide-band report-brief">
@@ -1942,7 +1943,7 @@ function ReportsPacks({
           <button type="button" className="action-button" onClick={onGenerate} disabled={!canWrite || !findings.length}>
             <FileCheck2 size={16} aria-hidden /> Generate Signed Pack
           </button>
-          <span className="pill trust">{decisionPacks.filter((pack) => pack.verification?.verified).length} verified packs</span>
+          <span className="pill trust">{sortedPacks.filter((pack) => pack.verification?.verified).length} verified packs</span>
           <span className="pill teal">{findings.length} analysed findings</span>
         </div>
       </section>
@@ -1963,8 +1964,8 @@ function ReportsPacks({
         </div>
         <p className="boundary-copy">{String(preExport.report_current_stale_warning || "Reports are generated from the selected signed pack state and current evidence still requires review.")}</p>
       </section>
-      <DecisionPacks decisionPacks={decisionPacks} reports={reports} onExportPack={onExportPack} onDownloadReport={onDownloadReport} />
-      <Reports decisionPacks={decisionPacks} reports={reports} onDownloadReport={onDownloadReport} />
+      <DecisionPacks decisionPacks={sortedPacks} reports={reports} onExportPack={onExportPack} onDownloadReport={onDownloadReport} />
+      <Reports decisionPacks={sortedPacks} reports={reports} onDownloadReport={onDownloadReport} />
     </>
   );
 }
@@ -3014,12 +3015,13 @@ function DecisionPacks({
   onDownloadReport: (packId: string, reportType: string, format: "docx" | "pdf") => void;
 }) {
   const defaultReport = reports.find((report) => report.report_type === "board_vulnerability_remediation_summary") || reports[0];
-  const packPage = usePagination(decisionPacks, 8, "decision-packs");
+  const sortedPacks = newestDecisionPacks(decisionPacks);
+  const packPage = usePagination(sortedPacks, 8, "decision-packs");
   return (
     <>
       <div className="section-title">
         <h3>Decision Packs</h3>
-        <span className="pill trust">{decisionPacks.filter((pack) => pack.verification?.verified).length} verified</span>
+        <span className="pill trust">{sortedPacks.filter((pack) => pack.verification?.verified).length} verified</span>
       </div>
       <div className="table-wrap">
         <table>
@@ -3076,8 +3078,9 @@ function Reports({
   reports: ReportCatalogItem[];
   onDownloadReport: (packId: string, reportType: string, format: "docx" | "pdf") => void;
 }) {
-  const verifiedPacks = decisionPacks.filter((pack) => pack.verification?.verified);
-  const latestPack = verifiedPacks[0] || decisionPacks[0];
+  const sortedPacks = newestDecisionPacks(decisionPacks);
+  const verifiedPacks = sortedPacks.filter((pack) => pack.verification?.verified);
+  const latestPack = verifiedPacks[0] || sortedPacks[0];
   const latestPackHasVendorLens = Boolean(latestPack?.artefacts && (
     latestPack.artefacts["config_applicability_assessment.json"]
     || latestPack.artefacts["customer_network_asset_snapshot.json"]
@@ -3448,6 +3451,18 @@ function parseList(value: string): string[] {
 
 function humanize(value: string): string {
   return value.replace(/_/g, " ").replace(/\b\w/g, (match) => match.toUpperCase());
+}
+
+function newestDecisionPacks(decisionPacks: DecisionPackRecord[]): DecisionPackRecord[] {
+  return [...decisionPacks].sort((a, b) => {
+    const byCreatedAt = decisionPackTime(b) - decisionPackTime(a);
+    return byCreatedAt || String(b.pack_id || b.decision_pack_id || "").localeCompare(String(a.pack_id || a.decision_pack_id || ""));
+  });
+}
+
+function decisionPackTime(pack: DecisionPackRecord): number {
+  const parsed = Date.parse(pack.created_at || "");
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function severityTone(severity = "") {
