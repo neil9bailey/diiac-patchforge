@@ -916,6 +916,139 @@ test("VendorLens NVD catalogue refresh records rate limits without failing the U
   });
 });
 
+test("PF-AZ10 simplified security action center, customer estate, ask, and reports APIs work", async () => {
+  await withApi(async (baseUrl) => {
+    await request(baseUrl, "/api/patchforge/vendorlens/advisories/ingest", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        advisory_id: "FG-PFAZ10-SSLVPN",
+        vendor_id: "fortinet",
+        vendor_name: "Fortinet",
+        cve: "CVE-2026-PFAZ10-001",
+        title: "FortiOS SSL-VPN source-bound advisory",
+        severity: "critical",
+        product_family: "FortiGate",
+        affected_versions: ["< 7.2.8"],
+        fixed_versions: ["7.2.8"],
+        affected_features: ["SSL-VPN"],
+        known_exploited: true,
+        patch_available: true,
+        epss_score: 0.91,
+        source_url: "https://example.invalid/fortinet-pfaz10"
+      })
+    });
+    await request(baseUrl, "/api/patchforge/vulnerabilities/ingest", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        vulnerability_id: "CVE-2026-PFAZ10-001",
+        title: "FortiOS SSL-VPN source-bound advisory",
+        severity: "critical",
+        vendor_id: "fortinet",
+        vendor_name: "Fortinet",
+        product_family: "FortiGate",
+        affected_versions: ["< 7.2.8"],
+        fixed_versions: ["7.2.8"],
+        affected_feature: "SSL-VPN",
+        known_exploited: true,
+        patch_status: "patch_available",
+        sources: [{ source_record_id: "src-pfaz10-1", source_class: "vendor_advisory", source_name: "Fortinet PSIRT" }]
+      })
+    });
+
+    const extracted = await request(baseUrl, "/api/patchforge/customer-estate/assets/extract", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ description: "FortiGate 100F running FortiOS 7.2.7. SSL-VPN disabled. IPsec enabled. Management internal only." })
+    });
+    assert.equal(extracted.response.status, 200);
+    assert.equal(extracted.body.extracted_asset.vendor_id, "fortinet");
+    assert.equal(extracted.body.extracted_asset.model, "100F");
+    assert.equal(extracted.body.extracted_asset.evidence_state, "user_stated_unreviewed");
+
+    const upsert = await request(baseUrl, "/api/patchforge/customer-estate/assets/upsert", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ ...extracted.body.extracted_asset, asset_id: "pfaz10-fw-100f" })
+    });
+    assert.equal(upsert.response.status, 201);
+
+    const match = await request(baseUrl, "/api/patchforge/customer-estate/match", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ asset_id: "pfaz10-fw-100f" })
+    });
+    assert.equal(match.response.status, 200);
+    assert.ok(match.body.matches.some((item) => item.cve === "CVE-2026-PFAZ10-001"));
+    assert.equal(match.body.final_approval_issued, false);
+
+    const actionCenter = await request(baseUrl, "/api/patchforge/security-action-center", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(actionCenter.response.status, 200);
+    assert.ok(actionCenter.body.groups.some((group) => group.vendor_name === "Fortinet"));
+
+    const search = await request(baseUrl, "/api/patchforge/security-action-center/search?q=SSL-VPN&vendor=fortinet&customer_match=true", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(search.response.status, 200);
+    assert.ok(search.body.catalogue_rows.some((row) => row.customer_match_count > 0));
+
+    const detail = await request(baseUrl, "/api/patchforge/security-action-center/cves/CVE-2026-PFAZ10-001", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(detail.response.status, 200);
+    assert.equal(detail.body.cve.cve_id, "CVE-2026-PFAZ10-001");
+
+    const patchCompare = await request(baseUrl, "/api/patchforge/customer-estate/patch-compare", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        asset_id: "pfaz10-fw-100f",
+        advisory_id: "FG-PFAZ10-SSLVPN",
+        current_version: "7.2.7",
+        proposed_version: "7.2.8"
+      })
+    });
+    assert.equal(patchCompare.response.status, 200);
+    assert.equal(patchCompare.body.comparison.current_version_affected, "affected");
+    assert.equal(patchCompare.body.comparison.final_approval_issued, false);
+    assert.equal(patchCompare.body.comparison.no_patch_deployment, true);
+
+    const ask = await request(baseUrl, "/api/patchforge/ask", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        question: "We use FortiGate 100F FortiOS 7.2.7 with SSL-VPN disabled. Does CVE-2026-PFAZ10-001 require urgent patching?"
+      })
+    });
+    assert.equal(ask.response.status, 200);
+    assert.equal(ask.body.response.final_approval_issued, false);
+    assert.equal(ask.body.response.human_approval_required, true);
+
+    const reports = await request(baseUrl, "/api/patchforge/reports-packs", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(reports.response.status, 200);
+    assert.ok(reports.body.export_options.includes("Technical Evidence Appendix"));
+
+    const generated = await request(baseUrl, "/api/patchforge/reports-packs/generate", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        vulnerability_id: "CVE-2026-PFAZ10-001",
+        advisory_id: "FG-PFAZ10-SSLVPN",
+        asset_id: "pfaz10-fw-100f",
+        comparison_id: patchCompare.body.comparison.comparison_id
+      })
+    });
+    assert.equal(generated.response.status, 201);
+    assert.equal(generated.body.decision_pack.final_approval_issued, false);
+    assert.equal(generated.body.pre_export_state.final_approval_issued, false);
+  });
+});
+
 test("public source feeds ingest CISA KEV as source-bound pending-review intelligence", async () => {
   const sourceFeedClient = createSourceFeedClient({
     fetchImpl: async (url) => {
@@ -1243,13 +1376,14 @@ test("professional decision pack reports export as specific DOCX and PDF decisio
     assert.match(boardDocxText, /final_approval_issued/);
     assert.match(boardDocxText, /signing_provider/);
     assert.match(boardDocxText, /verification_state/);
-    assert.match(boardDocxText, /PF-AZ9A-VENDORLENS/);
+    assert.match(boardDocxText, /PF-AZ10-SIMPLIFIED-EXPERIENCE/);
     assert.match(boardDocxText, /PF-TEST-0001/);
     assert.doesNotMatch(boardDocxText, /PF-20260526-8312f908/);
-    assert.match(boardDocxText, /Network Vendor Applicability/);
-    assert.match(boardDocxText, /Customer Configuration Context/);
-    assert.match(boardDocxText, /SRA\/AIP Chat Summary/);
-    assert.match(boardDocxText, /Required Human Actions/);
+    assert.match(boardDocxText, /Executive Decision Summary/);
+    assert.match(boardDocxText, /Top Risks/);
+    assert.match(boardDocxText, /Affected Vendors \/ Products/);
+    assert.match(boardDocxText, /Customer Exposure/);
+    assert.match(boardDocxText, /Recommended Next Actions/);
     assert.match(boardDocxText, /Final approval[^A-Za-z0-9]+Not issued/i);
     assert.doesNotMatch(boardDocxText, new RegExp(["Autonomous", "Analysis", "Completed"].join(" ")));
     assert.doesNotMatch(boardDocxText, /not vulnerable/i);
@@ -1281,8 +1415,9 @@ test("professional decision pack reports export as specific DOCX and PDF decisio
     assert.match(customerDocxText, /Report Version Metadata/);
     assert.match(customerDocxText, /generated_from_pack_id/);
     assert.match(customerDocxText, /final_approval_issued/);
-    assert.match(customerDocxText, /Network Vendor Applicability/);
-    assert.match(customerDocxText, /Customer Configuration Context/);
+    assert.match(customerDocxText, /Customer Device \/ Service Context/);
+    assert.match(customerDocxText, /Applicability Assessment/);
+    assert.match(customerDocxText, /Matching CVEs \/ Advisories/);
     assert.match(customerDocxText, /Final approval[^A-Za-z0-9]+Not issued/i);
     assert.doesNotMatch(customerDocxText, new RegExp(["Autonomous", "Analysis", "Completed"].join(" ")));
     assert.doesNotMatch(customerDocxText, /not vulnerable/i);
@@ -1299,11 +1434,12 @@ test("professional decision pack reports export as specific DOCX and PDF decisio
     });
     assert.equal(cabDocx.status, 200);
     const cabDocxText = await extractDocxText(Buffer.from(await cabDocx.arrayBuffer()));
-    assert.match(cabDocxText, /CAB Decision Request/);
+    assert.match(cabDocxText, /Change Decision Request/);
+    assert.match(cabDocxText, /Affected Devices/);
     assert.match(cabDocxText, /Patch Applicability/);
-    assert.match(cabDocxText, /Network Vendor Applicability/);
-    assert.match(cabDocxText, /Customer Configuration Context/);
-    assert.match(cabDocxText, /Required Evidence Before CAB Approval/);
+    assert.match(cabDocxText, /Patch Compare/);
+    assert.match(cabDocxText, /Test \/ Rollback Evidence Needed/);
+    assert.match(cabDocxText, /Approval Conditions/);
     assert.match(cabDocxText, /Report Version Metadata/);
 
     const unknown = await request(baseUrl, "/api/patchforge/decision-packs/PF-TEST-0001/reports/not-a-report.pdf", {

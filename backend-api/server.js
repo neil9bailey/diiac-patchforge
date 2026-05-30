@@ -8,6 +8,15 @@ import { buildFindingIntelligence, buildIntelligenceForTenant } from "./patchfor
 import { REPORT_CATALOG, generateDecisionPackReport } from "./patchforge/reports.js";
 import { startScheduler } from "./patchforge/scheduler.js";
 import {
+  buildAskPatchForgeResponse,
+  buildSecurityActionCenterIndex,
+  extractCustomerAssetDescription,
+  matchCustomerEstate,
+  searchSecurityActionCenterIndex,
+  securityActionCenterDetail,
+  summarizePatchComparison
+} from "./patchforge/searchIndex.js";
+import {
   appendVendorLensChatMessage,
   assessAndStoreConfigApplicability,
   buildVendorLensDashboard,
@@ -233,6 +242,129 @@ export function createServer(options = {}) {
         });
       }
 
+      if (route === "GET /api/patchforge/security-action-center") {
+        return sendJson(res, 200, await buildSecurityActionCenterIndex({ storage, tenantId }));
+      }
+
+      if (route === "GET /api/patchforge/security-action-center/search") {
+        const index = await buildSecurityActionCenterIndex({ storage, tenantId });
+        return sendJson(res, 200, searchSecurityActionCenterIndex(index, Object.fromEntries(url.searchParams.entries())));
+      }
+
+      if (route === "GET /api/patchforge/security-action-center/vendors") {
+        const index = await buildSecurityActionCenterIndex({ storage, tenantId });
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          vendors: index.vendors,
+          groups: index.groups,
+          boundary: index.boundary
+        });
+      }
+
+      const securityActionCenterCveMatch = url.pathname.match(/^\/api\/patchforge\/security-action-center\/cves\/([^/]+)$/);
+      if (req.method === "GET" && securityActionCenterCveMatch) {
+        const detail = await securityActionCenterDetail({
+          storage,
+          tenantId,
+          id: decodeURIComponent(securityActionCenterCveMatch[1])
+        });
+        return detail ? sendJson(res, 200, { tenant_context: baseTenantContext, ...detail }) : sendJson(res, 404, { error: "cve_or_advisory_not_found" });
+      }
+
+      if (route === "GET /api/patchforge/customer-estate/assets") {
+        const [assets, services, assessments, comparisons] = await Promise.all([
+          listCustomerNetworkAssets(storage, tenantId),
+          storage.list("services", tenantId),
+          storage.list("config_applicability_assessments", tenantId),
+          listVendorLensPatchComparisons(storage, tenantId)
+        ]);
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          assets,
+          services,
+          exposure_matches: assessments,
+          patch_comparisons: comparisons,
+          boundary: {
+            advisory_only: true,
+            human_review_required: true,
+            final_approval_issued: false,
+            no_patch_deployment: true,
+            no_production_mutation: true
+          }
+        });
+      }
+
+      if (route === "POST /api/patchforge/customer-estate/assets/extract") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        return sendJson(res, 200, {
+          tenant_id: tenantContext.effective_tenant_id,
+          tenant_context: tenantContext,
+          extracted_asset: extractCustomerAssetDescription(body.description || body.device_description || body.text || "", body),
+          review_required: true,
+          final_approval_issued: false
+        });
+      }
+
+      if (route === "POST /api/patchforge/customer-estate/assets/upsert") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const asset = await upsertCustomerNetworkAsset(storage, tenantContext.effective_tenant_id, withLineage(body.asset || body, tenantContext, authorization));
+        return sendJson(res, 201, {
+          tenant_id: tenantContext.effective_tenant_id,
+          tenant_context: tenantContext,
+          asset,
+          final_approval_issued: false
+        });
+      }
+
+      if (route === "POST /api/patchforge/customer-estate/match") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const match = await matchCustomerEstate({
+          storage,
+          tenantId: tenantContext.effective_tenant_id,
+          body: withLineage(body, tenantContext, authorization),
+          persist: body.persist !== false
+        });
+        return sendJson(res, 200, {
+          tenant_id: tenantContext.effective_tenant_id,
+          tenant_context: tenantContext,
+          ...match
+        });
+      }
+
+      if (route === "POST /api/patchforge/customer-estate/patch-compare") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const comparison = await compareAndStorePatchVersion(storage, tenantContext.effective_tenant_id, withLineage({
+          ...body,
+          target_version: body.target_version || body.proposed_version || body.proposedVersion
+        }, tenantContext, authorization));
+        return sendJson(res, 200, {
+          tenant_id: tenantContext.effective_tenant_id,
+          tenant_context: tenantContext,
+          comparison: summarizePatchComparison(comparison, body)
+        });
+      }
+
+      if (route === "POST /api/patchforge/ask") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const answer = await buildAskPatchForgeResponse({
+          storage,
+          tenantId: tenantContext.effective_tenant_id,
+          body: withLineage(body, tenantContext, authorization)
+        });
+        return sendJson(res, 200, {
+          tenant_id: tenantContext.effective_tenant_id,
+          tenant_context: tenantContext,
+          ...answer
+        });
+      }
+
       if (route === "GET /api/patchforge/source-feeds") {
         const runs = await storage.list("source_feed_runs", tenantId);
         return sendJson(res, 200, {
@@ -396,6 +528,40 @@ export function createServer(options = {}) {
         return chat ? sendJson(res, 200, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, ...chat }) : sendJson(res, 404, { error: "vendorlens_chat_not_found" });
       }
 
+      if (route === "GET /api/patchforge/reports-packs") {
+        const decisionPacks = await storage.list("decision_packs", tenantId);
+        const latestPack = decisionPacks.slice(-1)[0] || null;
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          reports: REPORT_CATALOG,
+          decision_packs: decisionPacks,
+          export_options: [
+            "Customer Patch Governance Pack",
+            "Board Vulnerability Summary",
+            "CAB Patch Decision Report",
+            "Technical Evidence Appendix",
+            "Signed Decision Pack ZIP",
+            "Verification"
+          ],
+          pre_export_state: latestPack ? reportPreExportState(latestPack) : null,
+          boundary: {
+            advisory_only: true,
+            final_approval_issued: Boolean(latestPack?.final_approval_issued),
+            no_patch_deployment: true,
+            no_autonomous_cab_approval: true,
+            human_review_required: true
+          }
+        });
+      }
+
+      if (route === "POST /api/patchforge/reports-packs/generate") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const result = await generateDecisionPackForRequest({ storage, runtimeClient, tenantContext, authorization, body });
+        return sendJson(res, result.statusCode, result.payload);
+      }
+
       if (route === "GET /api/patchforge/decision-packs") {
         return sendJson(res, 200, {
           tenant_id: tenantId,
@@ -482,98 +648,8 @@ export function createServer(options = {}) {
       if (route === "POST /api/patchforge/decision-packs/generate") {
         const body = await readJson(req);
         const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
-        const resolvedTenant = tenantContext.effective_tenant_id;
-        const vulnerabilityId = body.vulnerability_id;
-        if (!vulnerabilityId) {
-          return sendJson(res, 400, {
-            error: "vulnerability_id_required",
-            message: "A real ingested vulnerability_id is required before a decision pack can be generated."
-          });
-        }
-
-        const vulnerability = await storage.getVulnerability(resolvedTenant, vulnerabilityId);
-        if (!vulnerability) {
-          return sendJson(res, 404, {
-            error: "vulnerability_not_found",
-            message: "Decision packs can only be generated from tenant records already ingested into PatchForge."
-          });
-        }
-
-        const findingIntelligence = buildFindingIntelligence({
-          vulnerability,
-          vendorAdvisories: await storage.list("vendor_advisories", resolvedTenant),
-          threatSignals: await storage.list("threat_signals", resolvedTenant),
-          assets: await storage.list("assets", resolvedTenant),
-          services: await storage.list("services", resolvedTenant),
-          decisionPacks: await storage.list("decision_packs", resolvedTenant),
-          sourceFeedRuns: await storage.list("source_feed_runs", resolvedTenant),
-          reviews: await storage.list("reviews", resolvedTenant),
-          bayesianSnapshot: body.bayesian_snapshot || buildBayesianAssessment({ vulnerability })
-        });
-        const vendorLensContext = await buildVendorLensPackContext(storage, resolvedTenant, body);
-
-        const runtimeResult = await runtimeClient.createDecisionPack({
-          tenant_id: resolvedTenant,
-          vulnerability,
-          evidence_items: buildEvidenceItemsFromRecord(vulnerability, body.evidence_items),
-          model_name: body.model_name || "vuln_patch_governance",
-          requested_posture: body.requested_posture || body.decision_posture || null,
-          patch_availability: body.patch_availability || null,
-          patch_feasibility: body.patch_feasibility || null,
-          bayesian_snapshot: body.bayesian_snapshot || buildBayesianAssessment({ vulnerability }),
-          patch_prior_usage_manifest: buildPriorUsageManifest(),
-          patch_prior_update_proposal: body.patch_prior_update_proposal || null,
-          vendor_intelligence_snapshot: body.vendor_intelligence_snapshot || null,
-          threat_landscape_snapshot: body.threat_landscape_snapshot || await buildThreatLandscapeSummary(storage, resolvedTenant),
-          finding_intelligence_snapshot: findingIntelligence,
-          sra_trace: body.sra_trace || null,
-          network_vendor_profile_snapshot: vendorLensContext.network_vendor_profile_snapshot,
-          customer_network_asset_snapshot: vendorLensContext.customer_network_asset_snapshot,
-          vendor_security_advisory_snapshot: vendorLensContext.vendor_security_advisory_snapshot,
-          config_applicability_assessment: vendorLensContext.config_applicability_assessment,
-          vendorlens_patch_comparison: vendorLensContext.vendorlens_patch_comparison,
-          sra_config_chat_session: vendorLensContext.sra_config_chat_session,
-          vendorlens_decision_context: vendorLensContext.vendorlens_decision_context,
-          controls: body.controls || null,
-          risk_acceptance: body.risk_acceptance || null,
-          approval_events: body.approval_events || []
-        });
-
-        const decisionContext = runtimeResult.decision_context || {};
-        const packRecord = {
-          tenant_id: resolvedTenant,
-          decision_pack_id: runtimeResult.pack_id,
-          pack_id: runtimeResult.pack_id,
-          vulnerability_id: vulnerability.vulnerability_id,
-          decision_id: decisionContext.decision_id || null,
-          decision_posture: decisionContext.decision_posture || body.requested_posture || "defer_pending_evidence",
-          readiness: decisionContext.readiness || null,
-          blockers: decisionContext.blockers || decisionContext.readiness?.blockers || [],
-          final_approval_issued: Boolean(decisionContext.final_approval_issued),
-          source_pack_immutable: true,
-          verification: runtimeResult.verification || null,
-          signing_provider: runtimeResult.signing_provider || null,
-          artefacts: runtimeResult.artefacts || null,
-          runtime_component: runtimeResult.runtime_component || "patchforge-runtime",
-          ...lineageFields(tenantContext, authorization),
-          created_at: runtimeResult.created_at || new Date().toISOString()
-        };
-        await storage.append("decision_packs", packRecord);
-        await storage.audit(resolvedTenant, "decision_pack_generated", {
-          pack_id: packRecord.pack_id,
-          vulnerability_id: packRecord.vulnerability_id,
-          decision_posture: packRecord.decision_posture
-        });
-
-        return sendJson(res, 201, {
-          tenant_id: resolvedTenant,
-          tenant_context: tenantContext,
-          decision_pack: packRecord,
-          runtime: {
-            verification: runtimeResult.verification || null,
-            boundary: runtimeResult.boundary || null
-          }
-        });
+        const result = await generateDecisionPackForRequest({ storage, runtimeClient, tenantContext, authorization, body });
+        return sendJson(res, result.statusCode, result.payload);
       }
 
       if (route === "GET /api/patchforge/admin/config") {
@@ -910,6 +986,151 @@ function buildEvidenceItemsFromRecord(vulnerability, submittedItems = []) {
 
   const submittedEvidence = Array.isArray(submittedItems) ? submittedItems : [];
   return [...sourceEvidence, ...submittedEvidence];
+}
+
+async function generateDecisionPackForRequest({ storage, runtimeClient, tenantContext, authorization, body }) {
+  const resolvedTenant = tenantContext.effective_tenant_id;
+  const vulnerabilityId = body.vulnerability_id || body.cve_id || body.cve;
+  if (!vulnerabilityId) {
+    return {
+      statusCode: 400,
+      payload: {
+        error: "vulnerability_id_required",
+        message: "A real ingested vulnerability_id or CVE is required before a signed report pack can be generated."
+      }
+    };
+  }
+
+  const vulnerability = await storage.getVulnerability(resolvedTenant, vulnerabilityId);
+  if (!vulnerability) {
+    return {
+      statusCode: 404,
+      payload: {
+        error: "vulnerability_not_found",
+        message: "Reports and packs can only be generated from tenant records already ingested into PatchForge."
+      }
+    };
+  }
+
+  const findingIntelligence = buildFindingIntelligence({
+    vulnerability,
+    vendorAdvisories: await storage.list("vendor_advisories", resolvedTenant),
+    threatSignals: await storage.list("threat_signals", resolvedTenant),
+    assets: await storage.list("assets", resolvedTenant),
+    services: await storage.list("services", resolvedTenant),
+    decisionPacks: await storage.list("decision_packs", resolvedTenant),
+    sourceFeedRuns: await storage.list("source_feed_runs", resolvedTenant),
+    reviews: await storage.list("reviews", resolvedTenant),
+    bayesianSnapshot: body.bayesian_snapshot || buildBayesianAssessment({ vulnerability })
+  });
+  const vendorLensContext = await buildVendorLensPackContext(storage, resolvedTenant, body);
+
+  const runtimeResult = await runtimeClient.createDecisionPack({
+    tenant_id: resolvedTenant,
+    vulnerability,
+    evidence_items: buildEvidenceItemsFromRecord(vulnerability, body.evidence_items),
+    model_name: body.model_name || "vuln_patch_governance",
+    requested_posture: body.requested_posture || body.decision_posture || null,
+    patch_availability: body.patch_availability || null,
+    patch_feasibility: body.patch_feasibility || null,
+    bayesian_snapshot: body.bayesian_snapshot || buildBayesianAssessment({ vulnerability }),
+    patch_prior_usage_manifest: buildPriorUsageManifest(),
+    patch_prior_update_proposal: body.patch_prior_update_proposal || null,
+    vendor_intelligence_snapshot: body.vendor_intelligence_snapshot || null,
+    threat_landscape_snapshot: body.threat_landscape_snapshot || await buildThreatLandscapeSummary(storage, resolvedTenant),
+    finding_intelligence_snapshot: findingIntelligence,
+    sra_trace: body.sra_trace || null,
+    network_vendor_profile_snapshot: vendorLensContext.network_vendor_profile_snapshot,
+    customer_network_asset_snapshot: vendorLensContext.customer_network_asset_snapshot,
+    vendor_security_advisory_snapshot: vendorLensContext.vendor_security_advisory_snapshot,
+    config_applicability_assessment: vendorLensContext.config_applicability_assessment,
+    vendorlens_patch_comparison: vendorLensContext.vendorlens_patch_comparison,
+    sra_config_chat_session: vendorLensContext.sra_config_chat_session,
+    vendorlens_decision_context: vendorLensContext.vendorlens_decision_context,
+    controls: body.controls || null,
+    risk_acceptance: body.risk_acceptance || null,
+    approval_events: body.approval_events || []
+  });
+
+  const decisionContext = runtimeResult.decision_context || {};
+  const packRecord = {
+    tenant_id: resolvedTenant,
+    decision_pack_id: runtimeResult.pack_id,
+    pack_id: runtimeResult.pack_id,
+    vulnerability_id: vulnerability.vulnerability_id,
+    decision_id: decisionContext.decision_id || null,
+    decision_posture: decisionContext.decision_posture || body.requested_posture || "defer_pending_evidence",
+    readiness: decisionContext.readiness || null,
+    blockers: decisionContext.blockers || decisionContext.readiness?.blockers || [],
+    final_approval_issued: Boolean(decisionContext.final_approval_issued),
+    source_pack_immutable: true,
+    verification: runtimeResult.verification || null,
+    signing_provider: runtimeResult.signing_provider || null,
+    artefacts: runtimeResult.artefacts || null,
+    runtime_component: runtimeResult.runtime_component || "patchforge-runtime",
+    report_template_version: body.report_template_version || null,
+    report_renderer_commit: body.report_renderer_commit || process.env.PATCHFORGE_RENDERER_COMMIT || process.env.PATCHFORGE_COMMIT_SHA || process.env.GIT_COMMIT || null,
+    report_renderer_image_tag: body.report_renderer_image_tag || process.env.PATCHFORGE_IMAGE_TAG || process.env.CONTAINER_IMAGE_TAG || null,
+    generated_from_pack_id: runtimeResult.pack_id,
+    product_baseline: body.product_baseline || process.env.PATCHFORGE_PRODUCT_BASELINE || "PF-AZ10-SIMPLIFIED-EXPERIENCE",
+    report_context_version: body.report_context_version || null,
+    ...lineageFields(tenantContext, authorization),
+    created_at: runtimeResult.created_at || new Date().toISOString()
+  };
+  await storage.append("decision_packs", packRecord);
+  await storage.audit(resolvedTenant, "decision_pack_generated", {
+    pack_id: packRecord.pack_id,
+    vulnerability_id: packRecord.vulnerability_id,
+    decision_posture: packRecord.decision_posture
+  });
+
+  return {
+    statusCode: 201,
+    payload: {
+      tenant_id: resolvedTenant,
+      tenant_context: tenantContext,
+      decision_pack: packRecord,
+      pre_export_state: reportPreExportState(packRecord),
+      runtime: {
+        verification: runtimeResult.verification || null,
+        boundary: runtimeResult.boundary || null
+      }
+    }
+  };
+}
+
+function reportPreExportState(pack = {}) {
+  const artefacts = pack.artefacts || {};
+  const governance = artefacts["governance_manifest.json"] || {};
+  const hasVendorLens = Boolean(
+    artefacts["network_vendor_profile_snapshot.json"]
+    || artefacts["vendor_security_advisory_snapshot.json"]
+    || artefacts["config_applicability_assessment.json"]
+    || artefacts["vendorlens_patch_comparison.json"]
+  );
+  const hasCustomerContext = Boolean(
+    artefacts["customer_network_asset_snapshot.json"]
+    || artefacts["affected_asset_scope.json"]
+    || artefacts["affected_service_scope.json"]
+  );
+  const evidenceState = pack.blockers?.length ? "evidence_gaps_open" : "evidence_review_required";
+  const staleWarning = pack.created_at && Date.now() - Date.parse(pack.created_at) > 24 * 60 * 60 * 1000
+    ? "Report source pack is older than 24 hours; refresh current-state evidence before relying on it."
+    : "Report is generated from the selected signed pack state.";
+  return {
+    pack_id: pack.pack_id || pack.decision_pack_id,
+    baseline: pack.product_baseline || governance.product_baseline || "PF-AZ10-SIMPLIFIED-EXPERIENCE",
+    renderer_commit: pack.report_renderer_commit || governance.report_renderer_commit || "not recorded",
+    image_tag: pack.report_renderer_image_tag || governance.report_renderer_image_tag || "not recorded",
+    final_approval_state: pack.final_approval_issued ? "issued" : "not_issued",
+    final_approval_issued: Boolean(pack.final_approval_issued),
+    evidence_state: evidenceState,
+    vendorlens_context_included: hasVendorLens,
+    customer_context_included: hasCustomerContext,
+    report_current_stale_warning: staleWarning,
+    signing_provider: pack.signing_provider || "not recorded",
+    verification_state: pack.verification?.verified ? "verified" : "pending_or_not_recorded"
+  };
 }
 
 function compareFindingPriority(a, b) {

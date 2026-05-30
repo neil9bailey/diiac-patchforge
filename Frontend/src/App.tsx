@@ -24,6 +24,8 @@ import {
   Radar,
   RefreshCw,
   MessageSquareText,
+  Search,
+  ServerCog,
   ShieldAlert,
   SlidersHorizontal,
   TriangleAlert,
@@ -36,17 +38,25 @@ import {
   AssetRecord,
   BayesianAssessment,
   ConfigApplicabilityAssessment,
+  CustomerAssetExtraction,
+  CustomerEstateMatch,
+  CustomerEstateState,
   CustomerNetworkAsset,
   DecisionPackRecord,
   FindingIntelligence,
   NetworkVendorProfile,
   PatchForgeApi,
   PatchForgeMetrics,
+  AskPatchForgeAnswer,
   ReportCatalogItem,
+  ReportsPacksState,
+  SecurityActionCenterRow,
+  SecurityActionCenterState,
   ServiceRecord,
   SourceFeedState,
   ThreatLandscapeSummary,
   VendorLensChatSession,
+  VendorLensPatchComparison,
   VendorLensState,
   VendorProfile,
   VendorSecurityAdvisory,
@@ -57,6 +67,9 @@ import {
 import { PatchForgeAuthSession, usePatchForgeAuth } from "./auth";
 
 type PageKey =
+  | "Global Security Action Center"
+  | "Customer Estate"
+  | "Ask PatchForge"
   | "Action Center"
   | "Finding Detail"
   | "Review & Approve"
@@ -91,6 +104,9 @@ type AppProps = {
 
 type LiveState = {
   metrics: PatchForgeMetrics;
+  securityActionCenter: SecurityActionCenterState;
+  customerEstate: CustomerEstateState;
+  reportsPacks: ReportsPacksState;
   findings: FindingIntelligence[];
   vulnerabilities: VulnerabilityRecord[];
   assets: AssetRecord[];
@@ -101,24 +117,24 @@ type LiveState = {
   threatSummary: ThreatLandscapeSummary | null;
   vendors: VendorProfile[];
   vendorLens: VendorLensState;
+  latestCustomerMatch: CustomerEstateMatch | null;
+  latestAskPatchForge: AskPatchForgeAnswer | null;
   sourceFeedState: SourceFeedState;
   adminHealth: AdminHealth | null;
   adminConfig: AdminConfig;
 };
 
 const PRODUCT_MARK = "DIIaC\u2122";
-const ACTIVE_BASELINE = "PF-AZ9A-VENDORLENS";
-const REPORT_TEMPLATE_VERSION = "patchforge-report-template.v2026-05-28.1";
-const REPORT_CONTEXT_VERSION = "patchforge-report-context.v2";
+const ACTIVE_BASELINE = "PF-AZ10-SIMPLIFIED-EXPERIENCE";
+const REPORT_TEMPLATE_VERSION = "patchforge-report-template.v2026-05-30.1";
+const REPORT_CONTEXT_VERSION = "patchforge-report-context.v3";
 const config = getPatchForgeConfig();
 
 const navItems: NavItem[] = [
-  { label: "Action Center", icon: Gauge },
-  { label: "Finding Detail", icon: ShieldAlert },
-  { label: "Review & Approve", icon: ClipboardCheck },
+  { label: "Global Security Action Center", icon: Gauge },
+  { label: "Customer Estate", icon: ServerCog },
+  { label: "Ask PatchForge", icon: MessageSquareText },
   { label: "Reports & Packs", icon: FileText },
-  { label: "VendorLens", icon: Network },
-  { label: "Guide", icon: BookOpenCheck },
   { label: "Admin", icon: SlidersHorizontal }
 ];
 
@@ -213,7 +229,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
   const contextAuth = usePatchForgeAuth();
   const session = auth || contextAuth;
   const liveApi = useMemo(() => api || createPatchForgeApi(session.getAccessToken), [api, session.getAccessToken]);
-  const [activePage, setActivePage] = useState<PageKey>("Action Center");
+  const [activePage, setActivePage] = useState<PageKey>("Global Security Action Center");
   const [tenantId, setTenantId] = useState(initialTenantId || config.tenantHeader);
   const [state, setState] = useState<LiveState>(() => emptyLiveState(tenantId));
   const [refreshing, setRefreshing] = useState(false);
@@ -228,12 +244,27 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
   const [networkAssetForm, setNetworkAssetForm] = useState(emptyNetworkAssetForm);
   const [vendorAdvisoryForm, setVendorAdvisoryForm] = useState(emptyVendorAdvisoryForm);
   const [vendorLensQuestion, setVendorLensQuestion] = useState("We use this firewall model and this feature is disabled. Do we urgently need to patch?");
+  const [globalSearch, setGlobalSearch] = useState("");
+  const [globalFilters, setGlobalFilters] = useState({ vendor: "", severity: "", customer_match: "", patch_available: "" });
+  const [customerDeviceText, setCustomerDeviceText] = useState("FortiGate 100F running FortiOS 7.2.7. SSL-VPN disabled. IPsec enabled. Management internal only.");
+  const [extractedCustomerAsset, setExtractedCustomerAsset] = useState<CustomerAssetExtraction | null>(null);
+  const [selectedCustomerAssetId, setSelectedCustomerAssetId] = useState("");
+  const [selectedAdvisoryId, setSelectedAdvisoryId] = useState("");
+  const [patchCompareForm, setPatchCompareForm] = useState({ current_version: "7.2.7", proposed_version: "7.2.8" });
+  const [askQuestion, setAskQuestion] = useState("We use FortiGate 100F FortiOS 7.2.7 with SSL-VPN disabled. Does this CVE require urgent patching?");
   const canWrite = hasAnyRole(session.roles, ["PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.Admin"]);
   const isAdmin = hasAnyRole(session.roles, ["PatchForge.Admin"]);
   const canReadAdmin = hasAnyRole(session.roles, ["PatchForge.Admin", "PatchForge.Auditor"]);
   const selectedFinding = useMemo(
     () => state.findings.find((item) => item.vulnerability_id === selectedVulnerabilityId) || state.findings[0] || null,
     [selectedVulnerabilityId, state.findings]
+  );
+  const selectedGlobalRecord = useMemo(
+    () => state.securityActionCenter.catalogue_rows.find((row) =>
+      [row.vulnerability_id, row.cve_id, row.advisory_id, row.id].filter(Boolean).includes(selectedVulnerabilityId)
+      || [row.advisory_id, row.cve_id, row.id].filter(Boolean).includes(selectedAdvisoryId)
+    ) || state.securityActionCenter.catalogue_rows[0] || null,
+    [selectedAdvisoryId, selectedVulnerabilityId, state.securityActionCenter.catalogue_rows]
   );
   const visibleNav = useMemo(
     () => navItems.filter((item) => item.label !== "Admin" || isAdmin),
@@ -247,8 +278,11 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
     setRefreshing(true);
     setOperationError(null);
     try {
-      const [metrics, vulnerabilities, findings, assets, services, decisionPacks, reports, threatSummary, vendors, sourceFeedState, vendorLensDashboard, networkVendors, customerNetworkAssets, vendorSecurityAdvisories, adminHealth, adminConfig] = await Promise.all([
+      const [metrics, securityActionCenter, customerEstate, reportsPacks, vulnerabilities, findings, assets, services, decisionPacks, reports, threatSummary, vendors, sourceFeedState, vendorLensDashboard, networkVendors, customerNetworkAssets, vendorSecurityAdvisories, adminHealth, adminConfig] = await Promise.all([
         liveApi.metrics(tenantId),
+        liveApi.securityActionCenter(tenantId),
+        liveApi.customerEstate(tenantId),
+        liveApi.reportsPacks(tenantId),
         liveApi.listVulnerabilities(tenantId),
         liveApi.actionCenter(tenantId),
         liveApi.listAssets(tenantId),
@@ -267,6 +301,9 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
       ]);
       setState((current) => ({
         metrics,
+        securityActionCenter,
+        customerEstate,
+        reportsPacks,
         findings,
         vulnerabilities,
         assets,
@@ -285,11 +322,15 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
           latestChat: current.vendorLens.latestChat,
           latestComparison: current.vendorLens.latestComparison
         },
+        latestCustomerMatch: current.latestCustomerMatch,
+        latestAskPatchForge: current.latestAskPatchForge,
         bayesian: null,
         adminHealth,
         adminConfig
       }));
       setSelectedVulnerabilityId((current) => current || vulnerabilities[0]?.vulnerability_id || "");
+      setSelectedCustomerAssetId((current) => current || customerEstate.assets[0]?.asset_id || customerNetworkAssets[0]?.asset_id || "");
+      setSelectedAdvisoryId((current) => current || vendorSecurityAdvisories[0]?.advisory_id || "");
       const general = adminConfig.general as { environment?: string; governance_tier?: string } | undefined;
       setAdminEnvironment(general?.environment || config.environmentLabel);
       setAdminTier(general?.governance_tier || "Enterprise Strict");
@@ -354,15 +395,18 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
       return;
     }
     try {
-      const pack = await liveApi.generateDecisionPack(tenantId, {
+      const pack = await liveApi.generateReportsPack(tenantId, {
         vulnerability_id: selectedVulnerabilityId,
         requested_posture: selectedPosture,
         bayesian_snapshot: state.bayesian,
         config_applicability_assessment: state.vendorLens.latestAssessment,
         vendorlens_patch_comparison: state.vendorLens.latestComparison,
         sra_config_chat_session: state.vendorLens.latestChat,
-        asset_id: state.vendorLens.latestAssessment?.asset_id || state.vendorLens.assets[0]?.asset_id,
-        advisory_id: state.vendorLens.latestAssessment?.advisory_id || state.vendorLens.advisories[0]?.advisory_id
+        asset_id: state.vendorLens.latestAssessment?.asset_id || selectedCustomerAssetId || state.vendorLens.assets[0]?.asset_id,
+        advisory_id: state.vendorLens.latestAssessment?.advisory_id || selectedAdvisoryId || state.vendorLens.advisories[0]?.advisory_id,
+        product_baseline: ACTIVE_BASELINE,
+        report_template_version: REPORT_TEMPLATE_VERSION,
+        report_context_version: REPORT_CONTEXT_VERSION
       });
       setOperationMessage(`Signed decision pack ${pack.pack_id} generated.`);
       await loadLiveState();
@@ -452,6 +496,125 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
       setActivePage("Source Feeds");
     } catch (error) {
       setOperationError(error instanceof Error ? error.message : "Source feed refresh failed.");
+    }
+  }
+
+  async function handleSearchSecurityActionCenter() {
+    setOperationMessage(null);
+    setOperationError(null);
+    try {
+      const securityActionCenter = await liveApi.searchSecurityActionCenter(tenantId, {
+        q: globalSearch,
+        ...globalFilters
+      });
+      setState((current) => ({ ...current, securityActionCenter }));
+      setOperationMessage(`Global catalogue filtered to ${securityActionCenter.catalogue_rows.length} record(s).`);
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : "Security Action Center search failed.");
+    }
+  }
+
+  async function handleExtractCustomerAsset() {
+    setOperationMessage(null);
+    setOperationError(null);
+    try {
+      const extracted = await liveApi.extractCustomerAsset(tenantId, customerDeviceText);
+      setExtractedCustomerAsset(extracted);
+      setNetworkAssetForm((current) => ({
+        ...current,
+        vendor_id: extracted.vendor_id || current.vendor_id,
+        product_family: extracted.product_family || current.product_family,
+        model: extracted.model || "",
+        firmware_version: extracted.firmware_version || "",
+        management_exposure: extracted.management_exposure || "unknown",
+        enabled_features: (extracted.enabled_features || []).join(", "),
+        disabled_features: (extracted.disabled_features || []).join(", "),
+        internet_facing: Boolean(extracted.internet_facing),
+        review_state: extracted.review_state || "pending_review",
+        evidence_state: extracted.evidence_state || "user_stated_unreviewed"
+      }));
+      setOperationMessage("Device fields extracted for user confirmation.");
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : "Device extraction failed.");
+    }
+  }
+
+  async function handleConfirmCustomerAsset() {
+    setOperationMessage(null);
+    setOperationError(null);
+    try {
+      const payload = {
+        ...(extractedCustomerAsset || {}),
+        ...networkAssetForm,
+        enabled_features: parseList(networkAssetForm.enabled_features),
+        disabled_features: parseList(networkAssetForm.disabled_features),
+        config_evidence_refs: parseList(networkAssetForm.config_evidence_refs),
+        evidence_state: networkAssetForm.evidence_state || "user_stated_unreviewed"
+      };
+      const asset = await liveApi.upsertCustomerEstateAsset(tenantId, payload);
+      setSelectedCustomerAssetId(asset.asset_id);
+      setOperationMessage(`Customer asset ${asset.asset_id} saved for governed matching.`);
+      await loadLiveState();
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : "Customer asset save failed.");
+    }
+  }
+
+  async function handleMatchCustomerEstate() {
+    setOperationMessage(null);
+    setOperationError(null);
+    try {
+      const assetId = selectedCustomerAssetId || state.customerEstate.assets[0]?.asset_id || state.vendorLens.assets[0]?.asset_id;
+      const match = await liveApi.matchCustomerEstate(tenantId, {
+        asset_id: assetId,
+        advisory_id: selectedAdvisoryId || undefined
+      });
+      setState((current) => ({ ...current, latestCustomerMatch: match }));
+      setOperationMessage(`Customer estate matching found ${match.match_count} candidate advisory/CVE match(es).`);
+      await loadLiveState();
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : "Customer estate match failed.");
+    }
+  }
+
+  async function handleCustomerPatchCompare() {
+    setOperationMessage(null);
+    setOperationError(null);
+    try {
+      const comparison = await liveApi.compareCustomerEstatePatch(tenantId, {
+        asset_id: selectedCustomerAssetId || state.customerEstate.assets[0]?.asset_id || state.vendorLens.assets[0]?.asset_id,
+        advisory_id: selectedAdvisoryId || state.vendorLens.advisories[0]?.advisory_id,
+        current_version: patchCompareForm.current_version,
+        proposed_version: patchCompareForm.proposed_version
+      });
+      setState((current) => ({
+        ...current,
+        vendorLens: { ...current.vendorLens, latestComparison: comparison },
+        customerEstate: {
+          ...current.customerEstate,
+          patch_comparisons: [comparison, ...current.customerEstate.patch_comparisons.filter((item) => item.comparison_id !== comparison.comparison_id)]
+        }
+      }));
+      setOperationMessage(`Patch Compare prepared: current ${comparison.current_version_affected || comparison.current_version_status}, proposed ${comparison.proposed_version_remediates || comparison.target_version_status}.`);
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : "Patch Compare failed.");
+    }
+  }
+
+  async function handleAskPatchForge() {
+    setOperationMessage(null);
+    setOperationError(null);
+    try {
+      const answer = await liveApi.askPatchForge(tenantId, {
+        question: askQuestion,
+        asset_id: selectedCustomerAssetId || undefined,
+        advisory_id: selectedAdvisoryId || undefined,
+        patch_compare: state.vendorLens.latestComparison || undefined
+      });
+      setState((current) => ({ ...current, latestAskPatchForge: answer }));
+      setOperationMessage(`Ask PatchForge answered: ${answer.response.short_answer}`);
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : "Ask PatchForge failed.");
     }
   }
 
@@ -679,8 +842,62 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         <div className="content-grid">
           <section className="primary-panel" aria-label={activePage}>
             <OperationMessages message={operationMessage} error={operationError} />
-            {selectedFinding && ["Action Center", "Finding Detail", "Review & Approve", "Reports & Packs"].includes(activePage) && (
+            {selectedFinding && ["Global Security Action Center", "Action Center", "Finding Detail", "Review & Approve", "Reports & Packs"].includes(activePage) && (
               <FindingContextBanner finding={selectedFinding} />
+            )}
+            {activePage === "Global Security Action Center" && (
+              <GlobalSecurityActionCenter
+                state={state.securityActionCenter}
+                query={globalSearch}
+                setQuery={setGlobalSearch}
+                filters={globalFilters}
+                setFilters={setGlobalFilters}
+                selectedRow={selectedGlobalRecord}
+                onSearch={handleSearchSecurityActionCenter}
+                onSelectCve={(row) => {
+                  setSelectedVulnerabilityId(row.vulnerability_id || row.cve_id || row.advisory_id || "");
+                  setSelectedAdvisoryId(row.advisory_id || selectedAdvisoryId);
+                }}
+                canWrite={canWrite}
+                onRefreshSourceFeed={handleRefreshSourceFeed}
+              />
+            )}
+            {activePage === "Customer Estate" && (
+              <CustomerEstate
+                state={state.customerEstate}
+                vendorLens={state.vendorLens}
+                deviceText={customerDeviceText}
+                setDeviceText={setCustomerDeviceText}
+                extractedAsset={extractedCustomerAsset}
+                assetForm={networkAssetForm}
+                setAssetForm={setNetworkAssetForm}
+                selectedAssetId={selectedCustomerAssetId}
+                setSelectedAssetId={setSelectedCustomerAssetId}
+                selectedAdvisoryId={selectedAdvisoryId}
+                setSelectedAdvisoryId={setSelectedAdvisoryId}
+                patchCompareForm={patchCompareForm}
+                setPatchCompareForm={setPatchCompareForm}
+                latestMatch={state.latestCustomerMatch}
+                latestComparison={state.vendorLens.latestComparison}
+                onExtract={handleExtractCustomerAsset}
+                onConfirmAsset={handleConfirmCustomerAsset}
+                onMatch={handleMatchCustomerEstate}
+                onPatchCompare={handleCustomerPatchCompare}
+                canWrite={canWrite}
+              />
+            )}
+            {activePage === "Ask PatchForge" && (
+              <AskPatchForge
+                question={askQuestion}
+                setQuestion={setAskQuestion}
+                answer={state.latestAskPatchForge}
+                selectedAssetId={selectedCustomerAssetId}
+                selectedAdvisoryId={selectedAdvisoryId}
+                latestComparison={state.vendorLens.latestComparison}
+                onAsk={handleAskPatchForge}
+                onPatchCompare={handleCustomerPatchCompare}
+                canWrite={canWrite}
+              />
             )}
             {activePage === "Action Center" && (
               <ActionCenter
@@ -726,8 +943,11 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 findings={state.findings}
                 decisionPacks={state.decisionPacks}
                 reports={state.reports}
+                reportsPacks={state.reportsPacks}
+                onGenerate={handleGeneratePack}
                 onExportPack={handleExportPack}
                 onDownloadReport={handleDownloadReport}
+                canWrite={canWrite}
               />
             )}
             {activePage === "Command Center" && (
@@ -911,6 +1131,467 @@ function NextActionCards() {
         ))}
       </div>
     </section>
+  );
+}
+
+function GlobalSecurityActionCenter({
+  state,
+  query,
+  setQuery,
+  filters,
+  setFilters,
+  selectedRow,
+  onSearch,
+  onSelectCve,
+  canWrite,
+  onRefreshSourceFeed
+}: {
+  state: SecurityActionCenterState;
+  query: string;
+  setQuery: (value: string) => void;
+  filters: { vendor: string; severity: string; customer_match: string; patch_available: string };
+  setFilters: (value: { vendor: string; severity: string; customer_match: string; patch_available: string }) => void;
+  selectedRow: SecurityActionCenterRow | null;
+  onSearch: () => void;
+  onSelectCve: (row: SecurityActionCenterRow) => void;
+  canWrite: boolean;
+  onRefreshSourceFeed: (feedId: string) => void;
+}) {
+  const rowsPage = usePagination(state.catalogue_rows || [], 8, "global-security-action-center");
+  const vendorOptions = state.filters?.vendors || [];
+  const severityOptions = state.filters?.severities || [];
+  const summary = state.summary || {};
+
+  return (
+    <>
+      <div className="metric-grid">
+        <MetricCard icon={ListFilter} label="Catalogue records" value={summary.total_records ?? state.catalogue_rows.length} tone="steel" />
+        <MetricCard icon={ShieldAlert} label="Known exploited" value={summary.known_exploited_records ?? 0} tone="amber" />
+        <MetricCard icon={TriangleAlert} label="Critical" value={summary.critical_records ?? 0} tone="danger" />
+        <MetricCard icon={Network} label="Customer matches" value={summary.customer_match_records ?? 0} tone="trust" />
+      </div>
+
+      <section className="wide-band search-console">
+        <div className="section-title">
+          <div>
+            <p className="eyebrow">Global CVE/advisory catalogue</p>
+            <h3>Global Security Action Center</h3>
+          </div>
+          <div className="hero-actions">
+            <button type="button" className="action-button" onClick={() => onRefreshSourceFeed("cisa-kev")} disabled={!canWrite}>
+              <RefreshCw size={16} aria-hidden /> Refresh KEV
+            </button>
+            <button type="button" className="action-button secondary-action" onClick={() => onRefreshSourceFeed("first-epss")} disabled={!canWrite}>
+              <Radar size={16} aria-hidden /> Refresh EPSS
+            </button>
+          </div>
+        </div>
+        <div className="search-row">
+          <label className="wide-input">
+            <span>Search</span>
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="CVE, advisory, vendor, product, feature, model, version, source" />
+          </label>
+          <button type="button" className="action-button" onClick={onSearch}>
+            <Search size={16} aria-hidden /> Search
+          </button>
+        </div>
+        <div className="filter-grid">
+          <label>Vendor<select value={filters.vendor} onChange={(event) => setFilters({ ...filters, vendor: event.target.value })}><option value="">All vendors</option>{vendorOptions.map((item) => <option key={item.value} value={item.value}>{item.value}</option>)}</select></label>
+          <label>Severity<select value={filters.severity} onChange={(event) => setFilters({ ...filters, severity: event.target.value })}><option value="">All severities</option>{severityOptions.map((item) => <option key={item.value} value={item.value}>{humanize(item.value)}</option>)}</select></label>
+          <label>Customer match<select value={filters.customer_match} onChange={(event) => setFilters({ ...filters, customer_match: event.target.value })}><option value="">All</option><option value="true">Matched</option><option value="false">No match</option></select></label>
+          <label>Patch available<select value={filters.patch_available} onChange={(event) => setFilters({ ...filters, patch_available: event.target.value })}><option value="">All</option><option value="true">Available</option><option value="false">Unknown / no</option></select></label>
+        </div>
+      </section>
+
+      <section className="data-band">
+        <div className="section-title">
+          <h3>Vendor Groups</h3>
+          <span className="pill teal">{state.groups.length} grouped vendor view(s)</span>
+        </div>
+        <div className="group-strip">
+          {state.groups.slice(0, 8).map((group) => (
+            <article className="mini-group" key={group.vendor_id}>
+              <strong>{group.vendor_name}</strong>
+              <span>{group.count} records</span>
+              <small>{group.customer_match_count} customer matches</small>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="data-band table-band">
+        <div className="section-title">
+          <h3>Grouped CVE / Advisory Catalogue</h3>
+          <span className="pill amber">Final approval false by default</span>
+        </div>
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>CVE / Advisory ID</th>
+                <th>Title</th>
+                <th>Vendor</th>
+                <th>Product family</th>
+                <th>Affected feature</th>
+                <th>Severity</th>
+                <th>CVSS</th>
+                <th>EPSS</th>
+                <th>KEV</th>
+                <th>Patch</th>
+                <th>Known exploited</th>
+                <th>Source state</th>
+                <th>Review state</th>
+                <th>Customer matches</th>
+                <th>Urgency posture</th>
+                <th>Final approval</th>
+                <th>Last refreshed</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rowsPage.items.map((row) => (
+                <tr key={`${row.record_type}-${row.id}`}>
+                  <td><button type="button" className="link-button" onClick={() => onSelectCve(row)}>{row.cve_id || row.advisory_id || row.id}</button></td>
+                  <td>{row.title}</td>
+                  <td>{row.vendor_name}</td>
+                  <td>{row.product_family}</td>
+                  <td>{row.affected_feature || "Pending"}</td>
+                  <td><span className={`pill ${severityTone(row.severity)}`}>{humanize(row.severity)}</span></td>
+                  <td>{row.cvss_score ?? "n/a"}</td>
+                  <td>{row.epss_score ?? "n/a"}</td>
+                  <td>{row.kev ? "Yes" : "No"}</td>
+                  <td>{row.patch_available ? "Yes" : "Unknown"}</td>
+                  <td>{row.known_exploited ? "Yes" : "No"}</td>
+                  <td>{humanize(row.source_state || "source_bound")}</td>
+                  <td>{humanize(row.review_state || "pending_review")}</td>
+                  <td>{row.customer_match_count}</td>
+                  <td>{humanize(row.urgency_posture || "unknown")}</td>
+                  <td>{row.final_approval_issued ? "Issued" : "False"}</td>
+                  <td>{row.last_refreshed ? new Date(row.last_refreshed).toLocaleDateString() : "Pending"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <PaginationControls {...rowsPage} label="security action center rows" />
+        {!rowsPage.items.length && <EmptyState title="No catalogue records" detail="Refresh source feeds or ingest vendor advisories to populate the global catalogue." />}
+      </section>
+
+      <div className="split-grid">
+        <section className="data-band">
+          <h3>CVE Detail</h3>
+          {selectedRow ? (
+            <div className="insight-list">
+              <StatusLine label="CVE / Advisory" value={selectedRow.cve_id || selectedRow.advisory_id || selectedRow.id} tone="steel" />
+              <StatusLine label="Vendor / Product" value={`${selectedRow.vendor_name} / ${selectedRow.product_family}`} tone="teal" />
+              <StatusLine label="Affected feature" value={selectedRow.affected_feature || "Pending review"} tone="amber" />
+              <StatusLine label="Severity" value={humanize(selectedRow.severity)} tone={severityTone(selectedRow.severity)} />
+              <StatusLine label="Patch available" value={selectedRow.patch_available ? "Yes" : "Unknown"} tone={selectedRow.patch_available ? "trust" : "amber"} />
+              <StatusLine label="Final approval" value={selectedRow.final_approval_issued ? "Issued" : "False"} tone="amber" />
+            </div>
+          ) : (
+            <EmptyState title="No CVE selected" detail="Select a row from the grouped catalogue to review the governed detail." />
+          )}
+        </section>
+        <section className="data-band">
+          <h3>Evidence & Approval</h3>
+          {selectedRow ? (
+            <div className="insight-list">
+              <StatusLine label="Source state" value={humanize(selectedRow.source_state || "source_bound")} tone="steel" />
+              <StatusLine label="Review state" value={humanize(selectedRow.review_state || "pending_review")} tone="amber" />
+              <StatusLine label="Customer matches" value={String(selectedRow.customer_match_count || 0)} tone={selectedRow.customer_match_count ? "trust" : "steel"} />
+              <StatusLine label="Urgency posture" value={humanize(selectedRow.urgency_posture || "unknown")} tone="amber" />
+              <StatusLine label="Human accountability" value="Required" tone="amber" />
+              <StatusLine label="Evidence gate closure" value="Not autonomous" tone="steel" />
+            </div>
+          ) : (
+            <EmptyState title="Evidence pending" detail="Evidence catalogue and approval state appear after a CVE/advisory is selected." />
+          )}
+        </section>
+      </div>
+    </>
+  );
+}
+
+function CustomerEstate({
+  state,
+  vendorLens,
+  deviceText,
+  setDeviceText,
+  extractedAsset,
+  assetForm,
+  setAssetForm,
+  selectedAssetId,
+  setSelectedAssetId,
+  selectedAdvisoryId,
+  setSelectedAdvisoryId,
+  patchCompareForm,
+  setPatchCompareForm,
+  latestMatch,
+  latestComparison,
+  onExtract,
+  onConfirmAsset,
+  onMatch,
+  onPatchCompare,
+  canWrite
+}: {
+  state: CustomerEstateState;
+  vendorLens: VendorLensState;
+  deviceText: string;
+  setDeviceText: (value: string) => void;
+  extractedAsset: CustomerAssetExtraction | null;
+  assetForm: typeof emptyNetworkAssetForm;
+  setAssetForm: (value: typeof emptyNetworkAssetForm) => void;
+  selectedAssetId: string;
+  setSelectedAssetId: (value: string) => void;
+  selectedAdvisoryId: string;
+  setSelectedAdvisoryId: (value: string) => void;
+  patchCompareForm: { current_version: string; proposed_version: string };
+  setPatchCompareForm: (value: { current_version: string; proposed_version: string }) => void;
+  latestMatch: CustomerEstateMatch | null;
+  latestComparison: VendorLensPatchComparison | null;
+  onExtract: () => void;
+  onConfirmAsset: () => void;
+  onMatch: () => void;
+  onPatchCompare: () => void;
+  canWrite: boolean;
+}) {
+  const assetsPage = usePagination(state.assets.length ? state.assets : vendorLens.assets, 6, "customer-estate-assets");
+  const matches = latestMatch?.matches || state.exposure_matches || [];
+  const matchPage = usePagination(matches, 6, "customer-estate-matches");
+  const assets = state.assets.length ? state.assets : vendorLens.assets;
+  const advisories = vendorLens.advisories;
+
+  return (
+    <>
+      <section className="wide-band">
+        <div className="section-title">
+          <div>
+            <p className="eyebrow">Minimal input assistant</p>
+            <h3>Describe a Device</h3>
+          </div>
+          <span className="pill amber">Evidence state: user stated, unreviewed</span>
+        </div>
+        <label className="stacked-input">
+          <span>Describe a device, product, version, features, and exposure.</span>
+          <textarea rows={3} value={deviceText} onChange={(event) => setDeviceText(event.target.value)} />
+        </label>
+        <div className="report-actions">
+          <button type="button" className="action-button" onClick={onExtract} disabled={!canWrite}>
+            <Search size={16} aria-hidden /> Extract Fields
+          </button>
+          <button type="button" className="action-button secondary-action" onClick={onConfirmAsset} disabled={!canWrite}>
+            <CheckCircle2 size={16} aria-hidden /> Confirm Asset
+          </button>
+          <button type="button" className="action-button" onClick={onMatch} disabled={!canWrite || !assets.length}>
+            <Network size={16} aria-hidden /> Run CVE Match
+          </button>
+        </div>
+      </section>
+
+      <div className="split-grid">
+        <section className="data-band">
+          <h3>Confirm Extracted Fields</h3>
+          <div className="form-grid compact-form">
+            <label>Vendor<input value={assetForm.vendor_id} onChange={(event) => setAssetForm({ ...assetForm, vendor_id: event.target.value })} /></label>
+            <label>Product family<input value={assetForm.product_family} onChange={(event) => setAssetForm({ ...assetForm, product_family: event.target.value })} /></label>
+            <label>Model<input value={assetForm.model} onChange={(event) => setAssetForm({ ...assetForm, model: event.target.value })} /></label>
+            <label>Firmware<input value={assetForm.firmware_version} onChange={(event) => setAssetForm({ ...assetForm, firmware_version: event.target.value })} /></label>
+            <label>Management exposure<input value={assetForm.management_exposure} onChange={(event) => setAssetForm({ ...assetForm, management_exposure: event.target.value })} /></label>
+            <label>Enabled features<input value={assetForm.enabled_features} onChange={(event) => setAssetForm({ ...assetForm, enabled_features: event.target.value })} /></label>
+            <label>Disabled features<input value={assetForm.disabled_features} onChange={(event) => setAssetForm({ ...assetForm, disabled_features: event.target.value })} /></label>
+            <label>Evidence state<select value={assetForm.evidence_state} onChange={(event) => setAssetForm({ ...assetForm, evidence_state: event.target.value })}><option>user_stated_unreviewed</option><option>referenced</option><option>accepted_positive_evidence</option></select></label>
+          </div>
+          {extractedAsset && (
+            <div className="insight-list">
+              <StatusLine label="Extraction confidence" value={String(extractedAsset.extraction_confidence ?? "n/a")} tone="teal" />
+              <StatusLine label="Human review" value={extractedAsset.human_review_required ? "Required" : "Required"} tone="amber" />
+              <StatusLine label="Final approval" value={extractedAsset.final_approval_issued ? "Issued" : "False" } tone="amber" />
+            </div>
+          )}
+        </section>
+
+        <section className="data-band">
+          <h3>Patch Compare</h3>
+          <div className="form-grid compact-form">
+            <label>Asset<select value={selectedAssetId} onChange={(event) => setSelectedAssetId(event.target.value)}><option value="">Select asset</option>{assets.map((asset) => <option key={asset.asset_id} value={asset.asset_id}>{asset.asset_id} | {asset.product_family} {asset.firmware_version}</option>)}</select></label>
+            <label>Advisory / CVE<select value={selectedAdvisoryId} onChange={(event) => setSelectedAdvisoryId(event.target.value)}><option value="">Select advisory</option>{advisories.map((advisory) => <option key={advisory.advisory_id} value={advisory.advisory_id}>{advisory.cve || advisory.advisory_id}</option>)}</select></label>
+            <label>Current version<input value={patchCompareForm.current_version} onChange={(event) => setPatchCompareForm({ ...patchCompareForm, current_version: event.target.value })} /></label>
+            <label>Proposed version<input value={patchCompareForm.proposed_version} onChange={(event) => setPatchCompareForm({ ...patchCompareForm, proposed_version: event.target.value })} /></label>
+          </div>
+          <button type="button" className="action-button" onClick={onPatchCompare} disabled={!canWrite || !selectedAssetId || !selectedAdvisoryId}>
+            <Layers3 size={16} aria-hidden /> Run Patch Compare
+          </button>
+          {latestComparison && (
+            <div className="insight-list">
+              <StatusLine label="Current version" value={humanize(latestComparison.current_version_affected || latestComparison.current_version_status)} tone="amber" />
+              <StatusLine label="Proposed version" value={humanize(latestComparison.proposed_version_remediates || latestComparison.target_version_status)} tone="teal" />
+              <StatusLine label="Final approval" value={latestComparison.final_approval_issued ? "Issued" : "False"} tone="amber" />
+            </div>
+          )}
+        </section>
+      </div>
+
+      <section className="data-band table-band">
+        <div className="section-title">
+          <h3>Devices & Assets</h3>
+          <span className="pill teal">{assets.length} asset(s)</span>
+        </div>
+        <div className="table-scroll">
+          <table>
+            <thead><tr><th>Customer</th><th>Site</th><th>Vendor</th><th>Product family</th><th>Model</th><th>Firmware</th><th>Internet-facing</th><th>Management exposure</th><th>Enabled features</th><th>Disabled features</th><th>Evidence state</th><th>Matching CVEs</th><th>Highest urgency</th><th>Owner</th><th>Last checked</th></tr></thead>
+            <tbody>
+              {assetsPage.items.map((asset) => {
+                const assetMatches = matches.filter((match) => String(match.asset_id) === String(asset.asset_id));
+                return (
+                  <tr key={asset.asset_id}>
+                    <td>{asset.customer || asset.tenant_id || "Customer pending"}</td>
+                    <td>{asset.site || "Not recorded"}</td>
+                    <td>{asset.vendor_id}</td>
+                    <td>{asset.product_family || "Pending"}</td>
+                    <td>{asset.model || "Pending"}</td>
+                    <td>{asset.firmware_version || "Pending"}</td>
+                    <td>{asset.internet_facing ? "Yes" : "No"}</td>
+                    <td>{humanize(asset.management_exposure || "unknown")}</td>
+                    <td>{(asset.enabled_features || []).join(", ") || "None recorded"}</td>
+                    <td>{(asset.disabled_features || []).join(", ") || "None recorded"}</td>
+                    <td>{humanize(asset.evidence_state || "referenced")}</td>
+                    <td>{assetMatches.length}</td>
+                    <td>{humanize(assetMatches[0]?.urgency_posture || "unknown")}</td>
+                    <td>{asset.service_owner || "Owner pending"}</td>
+                    <td>{asset.updated_at ? new Date(asset.updated_at).toLocaleDateString() : "Pending"}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <PaginationControls {...assetsPage} label="customer estate assets" />
+      </section>
+
+      <section className="data-band table-band">
+        <div className="section-title">
+          <h3>Exposure Matches</h3>
+          <span className="pill amber">{matches.length} governed match(es)</span>
+        </div>
+        <div className="table-scroll">
+          <table>
+            <thead><tr><th>CVE / advisory</th><th>Asset</th><th>Product</th><th>Feature</th><th>Applicability</th><th>Urgency</th><th>Evidence required</th><th>Final approval</th></tr></thead>
+            <tbody>
+              {matchPage.items.map((match, index) => (
+                <tr key={`${match.assessment_id || "match"}-${index}`}>
+                  <td>{String(match.cve || match.advisory_id || "Pending")}</td>
+                  <td>{String(match.asset_id || "Pending")}</td>
+                  <td>{String(match.product_family || "Pending")}</td>
+                  <td>{String(match.affected_feature || "Pending")}</td>
+                  <td>{humanize(String(match.applicability_posture || "unknown"))}</td>
+                  <td>{humanize(String(match.urgency_posture || "unknown"))}</td>
+                  <td>{(match.evidence_required || []).join(", ") || "Reviewed evidence required"}</td>
+                  <td>{match.final_approval_issued ? "Issued" : "False"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <PaginationControls {...matchPage} label="customer estate matches" />
+        {!matches.length && <EmptyState title="No exposure matches yet" detail="Add or select a device, then run current CVE/advisory matching." />}
+      </section>
+    </>
+  );
+}
+
+function AskPatchForge({
+  question,
+  setQuestion,
+  answer,
+  selectedAssetId,
+  selectedAdvisoryId,
+  latestComparison,
+  onAsk,
+  onPatchCompare,
+  canWrite
+}: {
+  question: string;
+  setQuestion: (value: string) => void;
+  answer: AskPatchForgeAnswer | null;
+  selectedAssetId: string;
+  selectedAdvisoryId: string;
+  latestComparison: VendorLensPatchComparison | null;
+  onAsk: () => void;
+  onPatchCompare: () => void;
+  canWrite: boolean;
+}) {
+  const response = answer?.response;
+  return (
+    <>
+      <section className="wide-band ask-panel">
+        <div className="section-title">
+          <div>
+            <p className="eyebrow">Natural-language advisor</p>
+            <h3>Ask PatchForge</h3>
+          </div>
+          <span className="pill amber">Advisory-only | human approval required</span>
+        </div>
+        <label className="stacked-input">
+          <span>Ask about vendor, model, feature, CVE, patch, or evidence.</span>
+          <textarea rows={4} value={question} onChange={(event) => setQuestion(event.target.value)} />
+        </label>
+        <div className="report-actions">
+          <button type="button" className="action-button" onClick={onAsk} disabled={!canWrite}>
+            <MessageSquareText size={16} aria-hidden /> Ask PatchForge
+          </button>
+          <button type="button" className="action-button secondary-action" onClick={onPatchCompare} disabled={!canWrite || !selectedAssetId || !selectedAdvisoryId}>
+            <Layers3 size={16} aria-hidden /> Run Patch Compare
+          </button>
+        </div>
+        {latestComparison && <p className="boundary-copy">Patch Compare attached: current {humanize(latestComparison.current_version_affected || latestComparison.current_version_status)}, proposed {humanize(latestComparison.proposed_version_remediates || latestComparison.target_version_status)}. Final approval false.</p>}
+      </section>
+
+      {response ? (
+        <section className="data-band advisor-response">
+          <div className="section-title">
+            <h3>Response</h3>
+            <span className="pill amber">Final approval false</span>
+          </div>
+          <AdvisorBlock title="Short Answer" content={response.short_answer} />
+          <AdvisorBlock title="Current Governed Posture" content={humanize(response.current_governed_posture)} />
+          <AdvisorBlock title="Why" content={response.why} />
+          <AdvisorList title="What We Know" items={response.what_we_know} />
+          <AdvisorList title="What We Do Not Know" items={response.what_we_do_not_know} />
+          <AdvisorList title="Evidence Needed" items={response.evidence_needed} />
+          <AdvisorBlock title="Recommended Next Action" content={response.recommended_next_action} />
+          <AdvisorBlock title="Decision Not Allowed Yet" content={response.decision_not_allowed_yet} />
+          <div className="insight-list">
+            <StatusLine label="Human Approval Required" value={response.human_approval_required ? "Yes" : "Yes"} tone="amber" />
+            <StatusLine label="Final Approval Issued" value={response.final_approval_issued ? "True" : "False"} tone="amber" />
+          </div>
+        </section>
+      ) : (
+        <EmptyState title="No advisor response yet" detail="Ask a governed PatchForge question. The response will stay advisory-only and will not approve, deploy, or accept risk." />
+      )}
+    </>
+  );
+}
+
+function AdvisorBlock({ title, content }: { title: string; content: string }) {
+  return <div className="advisor-block"><h4>{title}</h4><p>{content}</p></div>;
+}
+
+function AdvisorList({ title, items }: { title: string; items: string[] }) {
+  return (
+    <div className="advisor-block">
+      <h4>{title}</h4>
+      {(items || []).length ? items.map((item) => <p key={item}>{item}</p>) : <p>Not recorded.</p>}
+    </div>
+  );
+}
+
+function MetricCard({ icon: Icon, label, value, tone }: { icon: typeof Gauge; label: string; value: number | string; tone: string }) {
+  return (
+    <article className={`metric-card ${tone}`}>
+      <Icon size={20} aria-hidden />
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </article>
   );
 }
 
@@ -1232,27 +1913,55 @@ function ReportsPacks({
   findings,
   decisionPacks,
   reports,
+  reportsPacks,
+  onGenerate,
   onExportPack,
-  onDownloadReport
+  onDownloadReport,
+  canWrite
 }: {
   findings: FindingIntelligence[];
   decisionPacks: DecisionPackRecord[];
   reports: ReportCatalogItem[];
+  reportsPacks: ReportsPacksState;
+  onGenerate: () => void;
   onExportPack: (packId: string) => void;
   onDownloadReport: (packId: string, reportType: string, format: "docx" | "pdf") => void;
+  canWrite: boolean;
 }) {
+  const preExport = reportsPacks.pre_export_state || {};
+  const latestPack = decisionPacks.slice(-1)[0];
   return (
     <>
       <section className="wide-band report-brief">
         <div>
-          <p className="eyebrow">Professional decision outputs</p>
-          <h3>Board, CAB, customer, risk, and OT packs generated from signed evidence.</h3>
-          <p className="muted-copy">Reports use the intelligence narrative, evidence gaps, decision options, signed-pack metadata, and the no-exploit/no-deployment boundary.</p>
+          <p className="eyebrow">Reports & Packs</p>
+          <h3>Customer, board, CAB, evidence appendix, signed ZIP, and verification in one place.</h3>
+          <p className="muted-copy">Exports show pack ID, baseline, renderer commit, image tag, evidence state, customer context, VendorLens context, report currency, and final approval state before download.</p>
         </div>
         <div className="report-pack-selector">
+          <button type="button" className="action-button" onClick={onGenerate} disabled={!canWrite || !findings.length}>
+            <FileCheck2 size={16} aria-hidden /> Generate Signed Pack
+          </button>
           <span className="pill trust">{decisionPacks.filter((pack) => pack.verification?.verified).length} verified packs</span>
           <span className="pill teal">{findings.length} analysed findings</span>
         </div>
+      </section>
+      <section className="data-band">
+        <div className="section-title">
+          <h3>Pre-Export Check</h3>
+          <span className="pill amber">{latestPack?.final_approval_issued ? "Final approval issued" : "Final approval false"}</span>
+        </div>
+        <div className="split-grid">
+          <StatusLine label="Pack ID" value={String(preExport.pack_id || latestPack?.pack_id || "Generate a pack")} tone={latestPack ? "trust" : "amber"} />
+          <StatusLine label="Baseline" value={String(preExport.baseline || latestPack?.product_baseline || ACTIVE_BASELINE)} tone="steel" />
+          <StatusLine label="Renderer commit" value={String(preExport.renderer_commit || latestPack?.report_renderer_commit || "not recorded")} tone="steel" />
+          <StatusLine label="Image tag" value={String(preExport.image_tag || latestPack?.report_renderer_image_tag || "not recorded")} tone="steel" />
+          <StatusLine label="Evidence state" value={humanize(String(preExport.evidence_state || "evidence_review_required"))} tone="amber" />
+          <StatusLine label="VendorLens context" value={preExport.vendorlens_context_included ? "Included" : "Not attached"} tone={preExport.vendorlens_context_included ? "teal" : "amber"} />
+          <StatusLine label="Customer context" value={preExport.customer_context_included ? "Included" : "Not attached"} tone={preExport.customer_context_included ? "teal" : "amber"} />
+          <StatusLine label="Verification" value={humanize(String(preExport.verification_state || (latestPack?.verification?.verified ? "verified" : "pending_or_not_recorded")))} tone={latestPack?.verification?.verified ? "trust" : "amber"} />
+        </div>
+        <p className="boundary-copy">{String(preExport.report_current_stale_warning || "Reports are generated from the selected signed pack state and current evidence still requires review.")}</p>
       </section>
       <DecisionPacks decisionPacks={decisionPacks} reports={reports} onExportPack={onExportPack} onDownloadReport={onDownloadReport} />
       <Reports decisionPacks={decisionPacks} reports={reports} onDownloadReport={onDownloadReport} />
@@ -2685,6 +3394,28 @@ function emptyLiveState(tenantId: string): LiveState {
       rejected_sources: 0,
       signed_packs: 0
     },
+    securityActionCenter: {
+      tenant_id: tenantId,
+      generated_at: "",
+      catalogue_rows: [],
+      groups: [],
+      vendors: [],
+      filters: {},
+      source_feed_status: [],
+      summary: {}
+    },
+    customerEstate: {
+      assets: [],
+      services: [],
+      exposure_matches: [],
+      patch_comparisons: []
+    },
+    reportsPacks: {
+      reports: [],
+      decision_packs: [],
+      export_options: [],
+      pre_export_state: null
+    },
     findings: [],
     vulnerabilities: [],
     assets: [],
@@ -2703,6 +3434,8 @@ function emptyLiveState(tenantId: string): LiveState {
       latestChat: null,
       latestComparison: null
     },
+    latestCustomerMatch: null,
+    latestAskPatchForge: null,
     sourceFeedState: { feeds: [], recent_runs: [] },
     adminHealth: null,
     adminConfig: {}

@@ -13,7 +13,7 @@ const metrics: PatchForgeMetrics = {
   pending_review: 1,
   accepted_positive_evidence_sources: 0,
   rejected_sources: 0,
-  signed_packs: 0
+  signed_packs: 1
 };
 
 const auth: PatchForgeAuthSession = {
@@ -25,87 +25,65 @@ const auth: PatchForgeAuthSession = {
   getAccessToken: vi.fn(async () => "test-token")
 };
 
-const finding: FindingIntelligence = {
+const finding = {
   intelligence_id: "intel-CVE-2026-REAL-001",
-  generated_at: "2026-05-27T08:00:00Z",
+  generated_at: "2026-05-30T08:00:00Z",
   vulnerability_id: "CVE-2026-REAL-001",
-  title: "Customer gateway authentication bypass",
+  title: "FortiOS SSL-VPN source-bound advisory",
   severity: "critical",
-  vendor: "Microsoft",
-  product: "Example Gateway",
+  vendor: "Fortinet",
+  product: "FortiGate",
   summary: {
-    plain_english: "A customer gateway component can be bypassed under affected conditions. PatchForge treats this as a governance decision.",
-    why_now: "It is flagged as known exploited in source-bound intelligence.",
-    what_it_affects: "Mapped service impact: Orion Gateway.",
-    operational_risk: "Delay could leave an exposed known-exploited condition unresolved.",
-    decision_required: "Emergency change required is recommended, but human approval remains required.",
-    executive_readout: "CVE-2026-REAL-001 should be handled as Emergency Change Required because PatchForge sees customer-facing service exposure."
+    plain_english: "PatchForge treats this as governed advisory work.",
+    why_now: "Known exploited signal is present.",
+    what_it_affects: "Customer estate scope is pending review.",
+    operational_risk: "Customer-facing impact is not confirmed.",
+    decision_required: "Human approval remains required.",
+    executive_readout: "Urgent scope confirmation is required."
   },
   exploitability: {
     known_exploited: true,
-    epss_score: 0.82,
-    epss_percentile: 0.97,
+    epss_score: 0.91,
+    epss_percentile: 0.98,
     ransomware_use: "Unknown",
-    safe_description: "Source-bound intelligence indicates this vulnerability is known to be exploited in the wild.",
-    kev_epss_interpretation: "CISA KEV indicates the vulnerability appears in a known exploited vulnerability source feed.",
-    prohibited_detail: "Exploit code, exploit payloads, and procedural exploitation steps are intentionally not provided."
+    safe_description: "Source-bound intelligence only.",
+    prohibited_detail: "Procedural exploitation steps are intentionally not provided."
   },
   exposure: {
-    affected_service_count: 1,
-    affected_asset_count: 0,
-    internet_exposed: true,
-    customer_facing: true,
+    affected_service_count: 0,
+    affected_asset_count: 1,
+    internet_exposed: false,
+    customer_facing: false,
     ot_relevant: false,
     unmapped_scope: false,
-    interpretation: ["Customer-facing service impact."],
-    affected_services: [{ service_id: "svc-orion", service_name: "Orion Gateway", owner: "Service Owner", customer_facing: true, service_tier: "tier_1" }],
+    interpretation: ["Customer estate match requires review."],
+    affected_services: [],
     affected_assets: []
   },
   recommendation: {
-    posture: "emergency_change_required",
-    next_best_action: "Open CAB/security-lead emergency review and confirm rollback evidence before approval.",
-    confidence: "high",
-    rationale: ["Known exploitation, patch availability, and exposed service context indicate emergency change governance."],
-    do_now: ["Open CAB/security-lead emergency review."],
-    do_next: ["Attach rollback evidence."],
-    due_date: "2026-06-03",
+    posture: "urgent_scope_confirmation_required",
+    next_best_action: "Attach reviewed customer, feature, version, and patch evidence.",
+    confidence: "medium",
+    rationale: ["Evidence gaps remain."],
+    do_now: ["Review customer scope."],
+    do_next: ["Request human approval."],
     advisory_only: true,
     final_approval_issued: false,
-    customer_posture: "Emergency Change Required",
-    display_posture: "emergency_change_required",
-    approval_notice: "Human approval remains required. PatchForge does not approve CAB decisions, risk acceptance, patch deployment, or closure autonomously."
+    customer_posture: "Urgent scope confirmation required",
+    display_posture: "urgent_scope_confirmation_required"
   },
-  decision_options: [{
-    posture: "emergency_change_required",
-    current_status: "available",
-    reason: "Reviewed scope and patch applicability can support emergency change review.",
-    required_evidence: ["Rollback plan", "Human approval"],
-    required_approval: "CAB/security lead emergency approval.",
-    when_to_choose: "Use when known exploitation and customer-facing impact make normal change cadence too slow.",
-    benefits: "Fast accountable response.",
-    risks: "Higher change risk if evidence is incomplete.",
-    evidence_needed: ["Rollback plan", "Human approval"],
-    approval_needed: true,
-    recommended: true
-  }],
+  decision_options: [],
   evidence: {
     accepted_positive_evidence_count: 0,
     pending_review_count: 1,
     rejected_source_count: 0,
-    gaps: ["Affected asset scope", "Rollback plan"],
-    gap_details: [{
-      gap: "Affected asset scope",
-      why_it_matters: "The organisation cannot confirm estate exposure without reviewed asset scope.",
-      required_evidence: "CMDB, hosting control panel inventory, scanner output, asset owner confirmation.",
-      suggested_owner_role: "Asset owner",
-      next_decision_gate: "Asset exposure confirmation"
-    }],
-    warning: "Source and agent outputs remain source-bound until reviewed."
+    gaps: ["Reviewed feature state"],
+    warning: "Source and customer evidence remain pending review."
   },
   automation: {
-    completed: ["Normalised finding identity", "Bound source provenance", "Applied governance boundary"],
-    remaining_human_decisions: ["Issue or withhold CAB/security/service-owner approval."],
-    available_actions: ["Open Finding Detail", "Generate signed decision pack"]
+    completed: [],
+    remaining_human_decisions: ["Issue or withhold final approval."],
+    available_actions: ["Generate signed pack"]
   },
   latest_signed_pack: null,
   boundary: {
@@ -113,36 +91,294 @@ const finding: FindingIntelligence = {
     no_exploit_code: true,
     no_patch_deployment: true
   }
+} as FindingIntelligence;
+
+const securityActionCenterState = {
+  tenant_id: "diiac.io",
+  generated_at: "2026-05-30T08:00:00Z",
+  catalogue_rows: [{
+    id: "FG-PFAZ10-SSLVPN",
+    record_type: "vendor_advisory",
+    vulnerability_id: "CVE-2026-REAL-001",
+    cve_id: "CVE-2026-REAL-001",
+    advisory_id: "FG-PFAZ10-SSLVPN",
+    title: "FortiOS SSL-VPN source-bound advisory",
+    vendor_id: "fortinet",
+    vendor_name: "Fortinet",
+    product_family: "FortiGate",
+    affected_feature: "SSL-VPN",
+    severity: "critical",
+    cvss_score: 9.8,
+    epss_score: 0.91,
+    epss_percentile: 0.98,
+    kev: true,
+    patch_available: true,
+    known_exploited: true,
+    source_state: "source_bound",
+    review_state: "pending_review",
+    customer_match_count: 1,
+    urgency_posture: "urgent_scope_confirmation_required",
+    applicability_posture: "requires_review",
+    final_approval_issued: false,
+    last_refreshed: "2026-05-30T08:00:00Z"
+  }],
+  groups: [{
+    vendor_id: "fortinet",
+    vendor_name: "Fortinet",
+    count: 1,
+    customer_match_count: 1,
+    known_exploited_count: 1,
+    highest_urgency: "urgent_scope_confirmation_required",
+    product_families: [{
+      product_family: "FortiGate",
+      count: 1,
+      customer_match_count: 1,
+      items: []
+    }]
+  }],
+  vendors: [{ vendor_id: "fortinet", vendor_name: "Fortinet" }],
+  filters: {
+    vendors: [{ value: "Fortinet", count: 1 }],
+    severities: [{ value: "critical", count: 1 }]
+  },
+  source_feed_status: [],
+  summary: {
+    total_records: 1,
+    critical_records: 1,
+    known_exploited_records: 1,
+    kev_records: 1,
+    patch_available_records: 1,
+    customer_match_records: 1,
+    final_approval_issued: 0
+  },
+  boundary: { advisory_only: true, final_approval_issued: false }
+};
+
+const asset = {
+  asset_id: "net-asset-1",
+  tenant_id: "diiac.io",
+  customer: "DIIaC",
+  site: "London",
+  vendor_id: "fortinet",
+  vendor_name: "Fortinet",
+  product_family: "FortiGate",
+  model: "100F",
+  firmware_version: "7.2.7",
+  internet_facing: false,
+  management_exposure: "internal",
+  enabled_features: ["ipsec_vpn"],
+  disabled_features: ["ssl_vpn"],
+  config_evidence_refs: [],
+  review_state: "pending_review",
+  evidence_state: "user_stated_unreviewed"
+};
+
+const advisory = {
+  advisory_id: "FG-PFAZ10-SSLVPN",
+  vendor_id: "fortinet",
+  vendor_name: "Fortinet",
+  cve: "CVE-2026-REAL-001",
+  title: "FortiOS SSL-VPN source-bound advisory",
+  severity: "critical",
+  product_family: "FortiGate",
+  affected_versions: ["< 7.2.8"],
+  fixed_versions: ["7.2.8"],
+  affected_features: ["ssl_vpn"],
+  known_exploited: true,
+  patch_available: true,
+  review_state: "pending_review",
+  evidence_state: "referenced"
+};
+
+const match = {
+  assessment_id: "cfg-app-1",
+  advisory_id: "FG-PFAZ10-SSLVPN",
+  asset_id: "net-asset-1",
+  cve: "CVE-2026-REAL-001",
+  vendor_id: "fortinet",
+  product_family: "FortiGate",
+  model: "100F",
+  firmware_version: "7.2.7",
+  affected_feature: "ssl_vpn",
+  affected_version_status: "affected",
+  feature_enabled_status: "disabled_unreviewed",
+  exposure_status: "internal_management",
+  applicability_posture: "requires_review",
+  urgency_posture: "urgent_scope_confirmation_required",
+  evidence_required: ["Reviewed vendor advisory", "Reviewed feature configuration"],
+  evidence_gaps: [],
+  human_review_required: true,
+  final_approval_issued: false
+};
+
+const comparison = {
+  comparison_id: "vl-compare-1",
+  vendor_id: "fortinet",
+  vendor_name: "Fortinet",
+  asset_id: "net-asset-1",
+  advisory_id: "FG-PFAZ10-SSLVPN",
+  cve: "CVE-2026-REAL-001",
+  product_family: "FortiGate",
+  model: "100F",
+  current_version: "7.2.7",
+  target_version: "7.2.8",
+  proposed_version: "7.2.8",
+  fixed_versions: ["7.2.8"],
+  affected_versions: ["< 7.2.8"],
+  affected_features: ["ssl_vpn"],
+  current_version_status: "current_version_potentially_affected",
+  target_version_status: "target_version_recorded_as_fixed_pending_review",
+  current_version_affected: "affected",
+  proposed_version_remediates: "unknown",
+  evidence_needed: ["Reviewed vendor advisory and release notes"],
+  recommended_posture: "review_fixed_version_evidence",
+  required_human_review: true,
+  security_delta: "The proposed version is recorded as fixed pending review.",
+  operational_delta: ["Confirm rollback support."],
+  evidence_required: ["Reviewed vendor advisory and release notes"],
+  ciso_summary: "Final approval has not been issued.",
+  human_review_required: true,
+  advisory_only: true,
+  final_approval_issued: false
 };
 
 function createApi(overrides: Partial<PatchForgeApi> = {}): PatchForgeApi {
-  return {
+  const base: PatchForgeApi = {
     metrics: vi.fn(async () => metrics),
+    securityActionCenter: vi.fn(async () => securityActionCenterState),
+    searchSecurityActionCenter: vi.fn(async () => securityActionCenterState),
+    securityActionCenterVendors: vi.fn(async () => [{ vendor_id: "fortinet", vendor_name: "Fortinet" }]),
+    cveDetail: vi.fn(async () => ({ cve: securityActionCenterState.catalogue_rows[0] })),
+    customerEstate: vi.fn(async () => ({
+      assets: [asset],
+      services: [],
+      exposure_matches: [match],
+      patch_comparisons: []
+    })),
+    extractCustomerAsset: vi.fn(async () => ({
+      ...asset,
+      extraction_confidence: 1,
+      extracted_from: "FortiGate 100F running FortiOS 7.2.7. SSL-VPN disabled. IPsec enabled. Management internal only.",
+      final_approval_issued: false,
+      human_review_required: true
+    })),
+    upsertCustomerEstateAsset: vi.fn(async (_tenantId, payload) => ({ ...asset, ...payload, asset_id: String(payload.asset_id || asset.asset_id) })),
+    matchCustomerEstate: vi.fn(async () => ({
+      asset,
+      matches: [match],
+      match_count: 1,
+      highest_urgency: "urgent_scope_confirmation_required",
+      final_approval_issued: false,
+      human_review_required: true
+    })),
+    compareCustomerEstatePatch: vi.fn(async () => comparison),
+    askPatchForge: vi.fn(async () => ({
+      response: {
+        short_answer: "PatchForge cannot confirm not-applicable status until reviewed evidence is attached.",
+        current_governed_posture: "urgent_scope_confirmation_required",
+        why: "Customer feature, source, version, and patch evidence are not fully reviewed.",
+        what_we_know: ["Vendor/product: Fortinet FortiGate 100F", "Version: 7.2.7"],
+        what_we_do_not_know: ["Reviewed feature configuration is missing."],
+        evidence_needed: ["Reviewed vendor advisory", "Reviewed feature configuration", "Human approval event"],
+        recommended_next_action: "Confirm customer exposure, affected feature state, firmware/version, and vendor advisory source review.",
+        decision_not_allowed_yet: "PatchForge cannot issue final approval, risk acceptance, closure, or not-applicable status without reviewed evidence and named human approval.",
+        human_approval_required: true,
+        final_approval_issued: false,
+        advisory_only: true
+      },
+      asset,
+      matched_assessment: match,
+      candidate_matches: [match],
+      final_approval_issued: false
+    })),
+    reportsPacks: vi.fn(async () => ({
+      reports: [{
+        report_type: "customer_patch_governance_pack",
+        title: "Customer Patch Governance Pack",
+        audience: "Customer and account team",
+        formats: ["docx", "pdf"]
+      }, {
+        report_type: "board_vulnerability_remediation_summary",
+        title: "Board Vulnerability Summary",
+        audience: "Board and senior leadership",
+        formats: ["docx", "pdf"]
+      }, {
+        report_type: "cab_patch_decision_report",
+        title: "CAB Patch Decision Report",
+        audience: "Change Advisory Board",
+        formats: ["docx", "pdf"]
+      }],
+      decision_packs: [{
+        decision_pack_id: "PF-TEST-0001",
+        pack_id: "PF-TEST-0001",
+        vulnerability_id: "CVE-2026-REAL-001",
+        decision_posture: "urgent_scope_confirmation_required",
+        readiness: { readiness_state: "blocked", final_approval_issued: false },
+        verification: { verified: true },
+        final_approval_issued: false,
+        product_baseline: "PF-AZ10-SIMPLIFIED-EXPERIENCE",
+        report_renderer_commit: "test-commit",
+        report_renderer_image_tag: "pfaz10-test"
+      }],
+      export_options: ["Customer Patch Governance Pack", "Board Vulnerability Summary", "CAB Patch Decision Report", "Technical Evidence Appendix", "Signed Decision Pack ZIP", "Verification"],
+      pre_export_state: {
+        pack_id: "PF-TEST-0001",
+        baseline: "PF-AZ10-SIMPLIFIED-EXPERIENCE",
+        renderer_commit: "test-commit",
+        image_tag: "pfaz10-test",
+        evidence_state: "evidence_review_required",
+        vendorlens_context_included: true,
+        customer_context_included: true,
+        verification_state: "verified",
+        final_approval_issued: false
+      }
+    })),
+    generateReportsPack: vi.fn(async () => ({
+      decision_pack_id: "PF-TEST-0002",
+      pack_id: "PF-TEST-0002",
+      vulnerability_id: "CVE-2026-REAL-001",
+      final_approval_issued: false,
+      verification: { verified: true }
+    })),
     listVulnerabilities: vi.fn(async () => [{
       tenant_id: "diiac.io",
       vulnerability_id: "CVE-2026-REAL-001",
       severity: "critical",
       patch_status: "patch_available",
       known_exploited: true,
-      internet_exposed: true
+      vendor_id: "fortinet",
+      vendor_name: "Fortinet",
+      product_family: "FortiGate"
     }]),
-    ingestVulnerability: vi.fn(async (_tenantId, payload) => ({
-      tenant_id: "diiac.io",
-      vulnerability_id: String(payload.vulnerability_id)
-    })),
+    ingestVulnerability: vi.fn(async (_tenantId, payload) => ({ tenant_id: "diiac.io", vulnerability_id: String(payload.vulnerability_id) })),
     listAssets: vi.fn(async () => []),
     listServices: vi.fn(async () => []),
-    listDecisionPacks: vi.fn(async () => []),
+    listDecisionPacks: vi.fn(async () => [{
+      decision_pack_id: "PF-TEST-0001",
+      pack_id: "PF-TEST-0001",
+      vulnerability_id: "CVE-2026-REAL-001",
+      final_approval_issued: false,
+      verification: { verified: true },
+      product_baseline: "PF-AZ10-SIMPLIFIED-EXPERIENCE",
+      report_renderer_commit: "test-commit",
+      report_renderer_image_tag: "pfaz10-test"
+    }]),
     generateDecisionPack: vi.fn(async () => ({
       decision_pack_id: "PF-TEST-0001",
       pack_id: "PF-TEST-0001",
       vulnerability_id: "CVE-2026-REAL-001",
-      verification: { verified: true }
+      verification: { verified: true },
+      final_approval_issued: false
     })),
     exportDecisionPack: vi.fn(async () => ({ pack_id: "PF-TEST-0001", source_pack_immutable: true })),
     reportCatalog: vi.fn(async () => [{
+      report_type: "customer_patch_governance_pack",
+      title: "Customer Patch Governance Pack",
+      audience: "Customer and account team",
+      formats: ["docx", "pdf"]
+    }, {
       report_type: "board_vulnerability_remediation_summary",
-      title: "Board Vulnerability Remediation Summary",
+      title: "Board Vulnerability Summary",
       audience: "Board and senior leadership",
       formats: ["docx", "pdf"]
     }, {
@@ -150,90 +386,62 @@ function createApi(overrides: Partial<PatchForgeApi> = {}): PatchForgeApi {
       title: "CAB Patch Decision Report",
       audience: "Change Advisory Board",
       formats: ["docx", "pdf"]
-    }, {
-      report_type: "ciso_patch_version_comparison_report",
-      title: "CISO Patch Version Comparison Report",
-      audience: "CISO and security leadership",
-      formats: ["docx", "pdf"]
     }]),
     downloadDecisionPackReport: vi.fn(async () => new Blob(["report"], { type: "application/pdf" })),
     assessBayesianRisk: vi.fn(async () => ({
       advisory_only: true,
       can_close_hard_gates_alone: false,
-      exploit_probability_posterior: 0.82,
-      business_impact_posterior: 0.71,
-      patch_feasibility_posterior: 0.64,
-      change_risk_posterior: 0.42,
-      deferral_risk_posterior: 0.76,
-      recommended_governance_posture: "emergency_change_required"
+      exploit_probability_posterior: 0.8,
+      business_impact_posterior: 0.4,
+      patch_feasibility_posterior: 0.5,
+      change_risk_posterior: 0.3,
+      deferral_risk_posterior: 0.7,
+      recommended_governance_posture: "urgent_scope_confirmation_required"
     })),
     bayesianPriors: vi.fn(async () => ({ live_prior_update_enabled: false })),
     threatLandscapeSummary: vi.fn(async () => ({
       tenant_id: "diiac.io",
       source_bound: true,
       review_required: true,
-      vendor_count: 28,
+      vendor_count: 1,
       metrics: {
         active_exploitation_count: 1,
         critical_open_advisory_count: 1,
-        patch_available_rate: 0,
-        known_exploited_rate: 0,
-        customer_estate_exposure: 0,
+        patch_available_rate: 1,
+        known_exploited_rate: 1,
+        customer_estate_exposure: 1,
         internet_exposed_asset_count: 0,
         ot_relevance: 0,
-        patch_maturity: "unknown",
+        patch_maturity: "pending_review",
         vendor_response_timeliness: "source_bound_pending_review",
         superseded_advisory_count: 0,
         false_positive_history: 0,
-        open_customer_decision_count: 0
+        open_customer_decision_count: 1
       },
       top_exposed_vendors: []
     })),
-    listVendors: vi.fn(async () => [{ vendor_id: "microsoft", vendor_name: "Microsoft", category: "identity_endpoint_cloud", review_state: "reference_catalogue" }]),
-    sourceFeeds: vi.fn(async () => ({
-      feeds: [{
-        feed_id: "cisa-kev",
-        feed_name: "CISA Known Exploited Vulnerabilities Catalog",
-        source_class: "kev_record",
-        source_url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
-        provider: "CISA",
-        authentication: "public",
-        source_bound: true,
-        review_required: true,
-        can_close_hard_gates_alone: false
-      }, {
-        feed_id: "first-epss",
-        feed_name: "FIRST Exploit Prediction Scoring System",
-        source_class: "epss_signal",
-        source_url: "https://api.first.org/data/v1/epss",
-        provider: "FIRST",
-        authentication: "public",
-        source_bound: true,
-        review_required: true,
-        can_close_hard_gates_alone: false
-      }],
-      recent_runs: []
-    })),
+    listVendors: vi.fn(async () => [{ vendor_id: "fortinet", vendor_name: "Fortinet", category: "networking", review_state: "reference_catalogue" }]),
+    sourceFeeds: vi.fn(async () => ({ feeds: [], recent_runs: [] })),
     refreshSourceFeed: vi.fn(async () => ({
       run_id: "run-cisa-kev-test",
       feed_id: "cisa-kev",
-      feed_name: "CISA Known Exploited Vulnerabilities Catalog",
+      feed_name: "CISA KEV",
       status: "completed",
       records_seen: 1,
       records_ingested: 1,
       records_enriched: 0,
-      message: "1 CISA KEV records ingested as source-bound pending-review intelligence.",
-      completed_at: "2026-05-27T08:00:00Z",
+      message: "Refreshed.",
+      completed_at: "2026-05-30T08:00:00Z",
       can_close_hard_gates_alone: false
     })),
     vendorLensDashboard: vi.fn(async () => ({
-      vendors_tracked: 17,
+      vendors_tracked: 1,
       active_advisories: 1,
       known_exploited_vendor_cves: 1,
-      customer_estate_matches: 0,
+      customer_estate_matches: 1,
       config_unknown_count: 1,
       emergency_attention_required: 0,
-      recent_assessments: []
+      recent_assessments: [match]
     })),
     listNetworkVendors: vi.fn(async () => [{
       vendor_id: "fortinet",
@@ -241,150 +449,56 @@ function createApi(overrides: Partial<PatchForgeApi> = {}): PatchForgeApi {
       vendor_category: "infrastructure_networking",
       advisory_source_type: "public_vendor_advisory",
       advisory_source_url: "https://www.fortiguard.com/psirt",
-      product_families: ["FortiGate", "FortiOS"],
+      product_families: ["FortiGate"],
       source_review_state: "reference_catalogue",
       enabled: true
     }]),
-    listCustomerNetworkAssets: vi.fn(async () => [{
-      asset_id: "net-asset-1",
-      vendor_id: "fortinet",
-      product_family: "FortiGate",
-      model: "100F",
-      firmware_version: "7.2.7",
-      internet_facing: true,
-      management_exposure: "internet",
-      enabled_features: ["ipsec_vpn"],
-      disabled_features: ["ssl_vpn"],
-      config_evidence_refs: [],
-      review_state: "pending_review",
-      evidence_state: "referenced"
-    }]),
-    upsertCustomerNetworkAsset: vi.fn(async (_tenantId, payload) => ({
-      asset_id: "net-asset-2",
-      vendor_id: String(payload.vendor_id || "fortinet"),
-      product_family: String(payload.product_family || "FortiGate"),
-      model: String(payload.model || "100F"),
-      firmware_version: String(payload.firmware_version || "7.2.7"),
-      enabled_features: [],
-      disabled_features: [],
-      config_evidence_refs: [],
-      review_state: "pending_review",
-      evidence_state: "referenced"
-    })),
-    listVendorSecurityAdvisories: vi.fn(async () => [{
-      advisory_id: "fortinet-CVE-2026-REAL-001",
-      vendor_id: "fortinet",
-      vendor_name: "Fortinet",
-      cve: "CVE-2026-REAL-001",
-      title: "FortiGate SSL-VPN advisory",
-      severity: "critical",
-      product_family: "FortiGate",
-      affected_versions: ["7.2.7"],
-      affected_features: ["ssl_vpn"],
-      known_exploited: true,
-      patch_available: true,
-      review_state: "pending_review",
-      evidence_state: "referenced"
-    }]),
-    ingestVendorSecurityAdvisory: vi.fn(async (_tenantId, payload) => ({
-      advisory_id: "fortinet-CVE-2026-REAL-002",
-      vendor_id: String(payload.vendor_id || "fortinet"),
-      cve: String(payload.cve || "CVE-2026-REAL-002"),
-      title: String(payload.title || "Vendor advisory"),
-      severity: String(payload.severity || "high"),
-      affected_versions: [],
-      affected_features: [],
-      review_state: "pending_review",
-      evidence_state: "referenced"
-    })),
+    listCustomerNetworkAssets: vi.fn(async () => [asset]),
+    upsertCustomerNetworkAsset: vi.fn(async (_tenantId, payload) => ({ ...asset, ...payload, asset_id: String(payload.asset_id || asset.asset_id) })),
+    listVendorSecurityAdvisories: vi.fn(async () => [advisory]),
+    ingestVendorSecurityAdvisory: vi.fn(async (_tenantId, payload) => ({ ...advisory, advisory_id: String(payload.advisory_id || advisory.advisory_id) })),
     refreshVendorLensSource: vi.fn(async () => ({
-      run_id: "run-vendorlens-nvd",
+      run_id: "run-vendorlens-test",
       feed_id: "nvd-cve-2-catalogue",
       feed_name: "NVD CVE 2.0 VendorLens Catalogue",
       status: "completed",
-      records_seen: 128,
-      records_ingested: 100,
+      records_seen: 1,
+      records_ingested: 1,
       records_enriched: 0,
-      message: "100 NVD vendor CVE records catalogued as source-bound pending-review intelligence.",
-      completed_at: "2026-05-27T08:00:00Z",
+      message: "Refreshed.",
+      completed_at: "2026-05-30T08:00:00Z",
       can_close_hard_gates_alone: false
     })),
-    assessConfigApplicability: vi.fn(async () => ({
-      assessment_id: "cfg-app-1",
-      advisory_id: "fortinet-CVE-2026-REAL-001",
-      asset_id: "net-asset-1",
-      cve: "CVE-2026-REAL-001",
-      vendor_id: "fortinet",
-      affected_feature: "ssl_vpn",
-      affected_version_status: "affected",
-      feature_enabled_status: "disabled_unreviewed",
-      exposure_status: "internet_or_management_exposed",
-      applicability_posture: "requires_review",
-      urgency_posture: "urgent_scope_confirmation_required",
-      evidence_required: ["reviewed_feature_configuration"],
-      evidence_gaps: [{
-        gap_id: "feature_disabled_review",
-        plain_english_gap: "SSL VPN is recorded as disabled, but that configuration evidence is not reviewed.",
-        why_it_matters: "PatchForge cannot support an accountable decision without reviewed evidence.",
-        required_evidence: "Reviewed configuration export.",
-        suggested_owner_role: "Network engineering lead",
-        next_decision_gate: "Configuration applicability review"
-      }],
-      human_review_required: true,
-      final_approval_issued: false
-    })),
-    compareVendorLensPatch: vi.fn(async () => ({
-      comparison_id: "vl-compare-1",
-      vendor_id: "fortinet",
-      vendor_name: "Fortinet",
-      asset_id: "net-asset-1",
-      advisory_id: "fortinet-CVE-2026-REAL-001",
-      cve: "CVE-2026-REAL-001",
-      product_family: "FortiGate",
-      model: "100F",
-      current_version: "7.2.7",
-      target_version: "7.2.8",
-      fixed_versions: ["7.2.8"],
-      affected_versions: ["7.2.7"],
-      affected_features: ["ssl_vpn"],
-      current_version_status: "current_version_potentially_affected",
-      target_version_status: "target_version_recorded_as_fixed_pending_review",
-      security_delta: "The target version is recorded as remediating the source-bound advisory.",
-      operational_delta: ["Confirm release notes and rollback support."],
-      evidence_required: ["Reviewed vendor advisory and release notes"],
-      ciso_summary: "Current version 7.2.7 is compared with target version 7.2.8. Final approval has not been issued.",
-      human_review_required: true,
-      advisory_only: true,
-      final_approval_issued: false
-    })),
+    assessConfigApplicability: vi.fn(async () => match),
+    compareVendorLensPatch: vi.fn(async () => comparison),
     startVendorLensChat: vi.fn(async () => ({
       session: {
         session_id: "vl-chat-1",
-        advisory_id: "fortinet-CVE-2026-REAL-001",
-        asset_id: "net-asset-1",
-        assessment_id: "cfg-app-1",
+        advisory_id: advisory.advisory_id,
+        asset_id: asset.asset_id,
+        assessment_id: match.assessment_id,
         latest_response: {
-          short_answer: "PatchForge cannot safely declare this configuration unaffected yet; complete scope and configuration evidence review first.",
+          short_answer: "Human review remains required.",
           current_governed_posture: "urgent_scope_confirmation_required",
-          why: "Configuration evidence is incomplete.",
+          why: "Evidence is incomplete.",
           evidence_used: [],
           evidence_missing: [],
           configuration_assumptions: [],
-          recommended_next_action: "Confirm feature state.",
-          decision_not_allowed_yet: "Final decision requires reviewed evidence and named human approval.",
+          recommended_next_action: "Attach evidence.",
+          decision_not_allowed_yet: "Final decision requires reviewed evidence.",
           human_review_required: true,
           final_approval_issued: false
         }
       },
       response: {
-        short_answer: "PatchForge cannot safely declare this configuration unaffected yet; complete scope and configuration evidence review first.",
+        short_answer: "Human review remains required.",
         current_governed_posture: "urgent_scope_confirmation_required",
-        why: "Configuration evidence is incomplete.",
+        why: "Evidence is incomplete.",
         evidence_used: [],
         evidence_missing: [],
         configuration_assumptions: [],
-        recommended_next_action: "Confirm feature state.",
-        decision_not_allowed_yet: "Final decision requires reviewed evidence and named human approval.",
+        recommended_next_action: "Attach evidence.",
+        decision_not_allowed_yet: "Final decision requires reviewed evidence.",
         human_review_required: true,
         final_approval_issued: false
       }
@@ -414,133 +528,138 @@ function createApi(overrides: Partial<PatchForgeApi> = {}): PatchForgeApi {
       checks: [
         { name: "MCP agent intake", status: "governed", mode: "agent-led-human-approved" },
         { name: "Public source feeds", status: "ready", mode: "cisa-kev / first-epss" },
-        { name: "Worker health", status: "ready", mode: "ingest-export-worker" },
-        { name: "Scheduler health", status: "ready", mode: "last source refresh 2026-05-27T08:00:00Z" },
         { name: "Signing trust", status: "ready", mode: "key-vault" }
       ]
     })),
     adminConfig: vi.fn(async () => ({
       general: { environment: "Production", governance_tier: "Enterprise Strict" }
     })),
-    saveAdminConfig: vi.fn(async (_tenantId, payload) => payload),
-    ...overrides
+    saveAdminConfig: vi.fn(async (_tenantId, payload) => payload)
   };
+  return { ...base, ...overrides };
 }
 
-describe("PatchForge guided shell", () => {
-  it("renders the action center from live API intelligence", async () => {
+describe("PatchForge simplified customer experience", () => {
+  it("renders the five simplified top-level functions and the global catalogue", async () => {
     const api = createApi();
     render(<App auth={auth} api={api} />);
-    await waitFor(() => expect(api.actionCenter).toHaveBeenCalled());
-    expect(screen.getByText("PatchForge has already translated the queue into decision-ready work.")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Action Center" })).toBeInTheDocument();
-    expect(screen.getAllByText("CVE-2026-REAL-001").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText("Customer exposure mapped")).toBeInTheDocument();
-    expect(screen.getByText("Confirm customer exposure")).toBeInTheDocument();
-    expect(screen.getByText(/customer-facing service exposure/i)).toBeInTheDocument();
-  });
 
-  it("opens a finding detail page with human-readable exploitability intelligence", async () => {
-    const api = createApi();
-    render(<App auth={auth} api={api} />);
-    await waitFor(() => expect(api.actionCenter).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole("button", { name: "Understand" }));
-    expect(screen.getByRole("heading", { name: "Finding Detail" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Exploitability Intelligence" })).toBeInTheDocument();
-    expect(screen.getByText(/procedural exploitation steps are intentionally not provided/i)).toBeInTheDocument();
-    expect(screen.getByText("Affected Scope")).toBeInTheDocument();
-  });
+    await waitFor(() => expect(api.securityActionCenter).toHaveBeenCalled());
 
-  it("shows review actions after analysis and generates a signed pack", async () => {
-    const api = createApi();
-    render(<App auth={auth} api={api} />);
-    await waitFor(() => expect(api.actionCenter).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole("button", { name: "Review" }));
-    expect(screen.getByRole("heading", { name: "Review & Approve" })).toBeInTheDocument();
-    expect(screen.getByText("Automated Governance Analysis Completed")).toBeInTheDocument();
-    expect(screen.queryByText(["Autonomous", "Analysis", "Completed"].join(" "))).not.toBeInTheDocument();
-    expect(screen.getByText(/Human approval remains required/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Generate Signed Pack" }));
-    await waitFor(() => expect(api.generateDecisionPack).toHaveBeenCalled());
-  });
-
-  it("refreshes live public intelligence from the action center", async () => {
-    const api = createApi();
-    render(<App auth={auth} api={api} />);
-    await waitFor(() => expect(api.actionCenter).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole("button", { name: "Refresh KEV" }));
-    await waitFor(() => expect(api.refreshSourceFeed).toHaveBeenCalledWith("diiac.io", expect.objectContaining({ feed_id: "cisa-kev", limit: 5 })));
-  });
-
-  it("renders VendorLens and runs config-aware advisory chat", async () => {
-    const api = createApi();
-    render(<App auth={auth} api={api} />);
-    fireEvent.click(await screen.findByRole("button", { name: "VendorLens" }));
-    expect(screen.getAllByRole("heading", { name: "VendorLens" }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByRole("heading", { name: "Global Security Action Center" }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByRole("button", { name: "Customer Estate" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Ask PatchForge" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reports & Packs" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Admin" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "VendorLens" })).not.toBeInTheDocument();
+    expect(screen.getByText("Vendor Groups")).toBeInTheDocument();
     expect(screen.getAllByText("Fortinet").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("CVE-2026-REAL-001").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText("Confirm customer exposure")).toBeInTheDocument();
-    expect(screen.getByText("Attach configuration evidence")).toBeInTheDocument();
-    expect(screen.getByText("Final approval")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Refresh NVD Catalogue" }));
-    await waitFor(() => expect(api.refreshVendorLensSource).toHaveBeenCalledWith("diiac.io", expect.objectContaining({ mode: "catalogue", max_vendors: 17 })));
-    fireEvent.click(screen.getByRole("button", { name: "Assess" }));
-    await waitFor(() => expect(api.assessConfigApplicability).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole("button", { name: "Compare Patch" }));
-    await waitFor(() => expect(api.compareVendorLensPatch).toHaveBeenCalled());
-    expect(await screen.findByText(/Patch comparison prepared for CISO review/i)).toBeInTheDocument();
-    fireEvent.click(screen.getAllByRole("button", { name: "Ask PatchForge" })[0]);
-    await waitFor(() => expect(api.startVendorLensChat).toHaveBeenCalled());
-    expect(await screen.findByText(/cannot safely declare this configuration unaffected/i)).toBeInTheDocument();
-  }, 10000);
+    expect(screen.getByText("Grouped CVE / Advisory Catalogue")).toBeInTheDocument();
+    expect(screen.getByText("CVE Detail")).toBeInTheDocument();
+    expect(screen.getByText("Evidence & Approval")).toBeInTheDocument();
+  });
 
-  it("renders reports and downloads DOCX from signed packs", async () => {
-    const api = createApi({
-      listDecisionPacks: vi.fn(async () => [{
-        decision_pack_id: "PF-TEST-0001",
-        pack_id: "PF-TEST-0001",
-        vulnerability_id: "CVE-2026-REAL-001",
-        decision_posture: "emergency_change_required",
-        readiness: { readiness_state: "blocked" },
-        verification: { verified: true }
-      }])
-    });
+  it("searches the global security action center with customer and patch filters", async () => {
+    const api = createApi();
     render(<App auth={auth} api={api} />);
-    await waitFor(() => expect(api.actionCenter).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole("button", { name: "Reports & Packs" }));
+
+    await screen.findAllByRole("heading", { name: "Global Security Action Center" });
+    fireEvent.change(screen.getByLabelText("Search"), { target: { value: "SSL-VPN FortiGate 7.2.7" } });
+    fireEvent.change(screen.getByLabelText("Customer match"), { target: { value: "true" } });
+    fireEvent.change(screen.getByLabelText("Patch available"), { target: { value: "true" } });
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+
+    await waitFor(() => expect(api.searchSecurityActionCenter).toHaveBeenCalledWith("diiac.io", expect.objectContaining({
+      q: "SSL-VPN FortiGate 7.2.7",
+      customer_match: "true",
+      patch_available: "true"
+    })));
+  });
+
+  it("extracts a device, confirms the customer asset, matches CVEs, and runs Patch Compare", async () => {
+    const api = createApi();
+    render(<App auth={auth} api={api} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Customer Estate" }));
+    expect(screen.getByRole("heading", { name: "Describe a Device" })).toBeInTheDocument();
+    expect(screen.getByText("Devices & Assets")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Extract Fields" }));
+    await waitFor(() => expect(api.extractCustomerAsset).toHaveBeenCalled());
+    expect(await screen.findByDisplayValue("100F")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Confirm Asset" }));
+    await waitFor(() => expect(api.upsertCustomerEstateAsset).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByRole("button", { name: "Run CVE Match" }));
+    await waitFor(() => expect(api.matchCustomerEstate).toHaveBeenCalledWith("diiac.io", expect.objectContaining({
+      asset_id: "net-asset-1"
+    })));
+    expect(await screen.findByText("Exposure Matches")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Run Patch Compare" }));
+    await waitFor(() => expect(api.compareCustomerEstatePatch).toHaveBeenCalled());
+    expect(screen.getAllByText("False").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("answers advisory-only questions with governed posture and human approval required", async () => {
+    const api = createApi();
+    render(<App auth={auth} api={api} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Ask PatchForge" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "Ask PatchForge" }).at(-1)!);
+
+    await waitFor(() => expect(api.askPatchForge).toHaveBeenCalled());
+    expect(await screen.findByText("Short Answer")).toBeInTheDocument();
+    expect(screen.getByText("Current Governed Posture")).toBeInTheDocument();
+    expect(screen.getByText("Decision Not Allowed Yet")).toBeInTheDocument();
+    expect(screen.getByText(/cannot issue final approval/i)).toBeInTheDocument();
+    expect(screen.getByText("Human Approval Required")).toBeInTheDocument();
+  });
+
+  it("consolidates report generation, metadata, downloads, and signed pack export", async () => {
+    const api = createApi();
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+    render(<App auth={auth} api={api} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Reports & Packs" }));
     expect(screen.getByRole("heading", { name: "Reports & Packs" })).toBeInTheDocument();
-    expect(screen.getByText("Board Packs & Reports")).toBeInTheDocument();
-    expect(screen.getByText("Current Report Context")).toBeInTheDocument();
-    expect(screen.getByText("PF-AZ9A-VENDORLENS")).toBeInTheDocument();
-    expect(screen.getByText("patchforge-report-template.v2026-05-28.1")).toBeInTheDocument();
-    fireEvent.click(screen.getAllByRole("button", { name: "DOCX" })[0]);
+    expect(screen.getByText("Pre-Export Check")).toBeInTheDocument();
+    expect(screen.getAllByText("PF-AZ10-SIMPLIFIED-EXPERIENCE").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("pfaz10-test")).toBeInTheDocument();
+    expect(screen.getByText("Final approval false")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Generate Signed Pack" }));
+    await waitFor(() => expect(api.generateReportsPack).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByRole("button", { name: "Download DOCX PF-TEST-0001" }));
     await waitFor(() => expect(api.downloadDecisionPackReport).toHaveBeenCalledWith("diiac.io", "PF-TEST-0001", "board_vulnerability_remediation_summary", "docx"));
   });
 
-  it("renders the guide for agent-led human-approved operation", async () => {
-    render(<App auth={auth} api={createApi()} />);
-    fireEvent.click(await screen.findByRole("button", { name: "Guide" }));
-    expect(screen.getByRole("heading", { name: "Operational Walkthrough" })).toBeInTheDocument();
-    expect(screen.getByText("Minimal Human Input Model")).toBeInTheDocument();
+  it("refreshes source feeds from the simplified action center", async () => {
+    const api = createApi();
+    render(<App auth={auth} api={api} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Refresh KEV" }));
+    await waitFor(() => expect(api.refreshSourceFeed).toHaveBeenCalledWith("diiac.io", expect.objectContaining({ feed_id: "cisa-kev", limit: 5 })));
   });
 
   it("hides admin navigation and disables write actions without privileged roles", async () => {
     render(<App auth={{ ...auth, roles: ["PatchForge.Reader"] }} api={createApi()} />);
+
     expect(screen.queryByRole("button", { name: "Admin" })).not.toBeInTheDocument();
     expect(await screen.findByRole("button", { name: "Refresh KEV" })).toBeDisabled();
   });
 
-  it("renders the admin route and avoids prohibited wording", async () => {
+  it("renders admin controls and avoids prohibited wording", async () => {
     const { container } = render(<App auth={auth} api={createApi()} />);
+
     fireEvent.click(await screen.findByRole("button", { name: "Admin" }));
     expect(screen.getByRole("heading", { name: "Admin" })).toBeInTheDocument();
     expect(screen.getByText("Entra ID / RBAC")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "admin sections page 2" }));
     expect(screen.getByText("Signing & Trust")).toBeInTheDocument();
-    expect(screen.getByText("MCP agent intake")).toBeInTheDocument();
-    expect(screen.getByText("Governed")).toBeInTheDocument();
-    expect(screen.getByText("Public source feeds")).toBeInTheDocument();
-    expect(screen.getAllByText("Ready").length).toBeGreaterThanOrEqual(3);
     expect(container.textContent?.toLowerCase()).not.toContain("autonomous patching");
     expect(container.textContent?.toLowerCase()).not.toContain("exploit generation");
   });

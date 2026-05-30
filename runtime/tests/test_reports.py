@@ -31,7 +31,7 @@ def test_reports_render_required_sections():
     assert "report_renderer_image_tag:" in report
     assert "generated_from_pack_id: PF-TEST" in report
     assert "generated_at_utc:" in report
-    assert "product_baseline: PF-AZ9A-VENDORLENS" in report
+    assert "product_baseline: PF-AZ10-SIMPLIFIED-EXPERIENCE" in report
     assert "report_context_version:" in report
     assert "source_pack_id:" in report
     assert "report_type: cab_patch_decision_report" in report
@@ -54,7 +54,7 @@ def test_all_report_types_render_without_boundary_violations():
     assert "autonomous patch approval" not in combined
     assert "does not" in combined
     assert "does not scan" in combined
-    assert "source-pack state" in combined
+    assert "signed pack metadata" in combined
 
 
 def test_signed_pack_verifies_for_report_context(tmp_path):

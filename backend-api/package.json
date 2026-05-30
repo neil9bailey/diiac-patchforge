@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test *.test.mjs sra/*.test.mjs"
+    "test": "node --test *.test.mjs patchforge/*.test.mjs sra/*.test.mjs"
   },
   "dependencies": {
     "@azure/identity": "^4.13.1",

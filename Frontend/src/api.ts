@@ -74,8 +74,12 @@ export type NetworkVendorProfile = {
 };
 
 export type CustomerNetworkAsset = {
+  tenant_id?: string;
   asset_id: string;
+  customer?: string | null;
+  customer_name?: string | null;
   vendor_id: string;
+  vendor_name?: string | null;
   product_family?: string | null;
   model?: string | null;
   firmware_version?: string | null;
@@ -89,6 +93,7 @@ export type CustomerNetworkAsset = {
   config_evidence_refs?: string[];
   review_state?: string;
   evidence_state?: string;
+  updated_at?: string;
 };
 
 export type VendorSecurityAdvisory = {
@@ -117,6 +122,9 @@ export type ConfigApplicabilityAssessment = {
   asset_id?: string | null;
   cve?: string | null;
   vendor_id?: string | null;
+  product_family?: string | null;
+  model?: string | null;
+  firmware_version?: string | null;
   affected_feature?: string | null;
   affected_version_status: string;
   feature_enabled_status: string;
@@ -156,6 +164,12 @@ export type VendorLensPatchComparison = {
   affected_features?: string[];
   current_version_status: string;
   target_version_status: string;
+  current_version_affected?: string;
+  proposed_version?: string | null;
+  proposed_version_remediates?: string;
+  evidence_needed?: string[];
+  recommended_posture?: string;
+  required_human_review?: boolean;
   security_delta: string;
   operational_delta: string[];
   evidence_required: string[];
@@ -336,6 +350,116 @@ export type SourceFeedState = {
   recent_runs: SourceFeedRun[];
 };
 
+export type SecurityActionCenterRow = {
+  id: string;
+  record_type: string;
+  vulnerability_id?: string | null;
+  cve_id?: string | null;
+  advisory_id?: string | null;
+  title: string;
+  vendor_id: string;
+  vendor_name: string;
+  product_family: string;
+  model?: string | null;
+  affected_feature?: string | null;
+  affected_versions?: string[];
+  fixed_versions?: string[];
+  severity: string;
+  cvss_score?: number | null;
+  epss_score?: number | null;
+  epss_percentile?: number | null;
+  kev?: boolean;
+  patch_available?: boolean;
+  known_exploited?: boolean;
+  source_state?: string;
+  review_state?: string;
+  customer_match_count: number;
+  customer_matches?: Array<Record<string, unknown>>;
+  urgency_posture?: string;
+  applicability_posture?: string;
+  final_approval_issued?: boolean;
+  last_refreshed?: string | null;
+};
+
+export type SecurityActionCenterGroup = {
+  vendor_id: string;
+  vendor_name: string;
+  count: number;
+  customer_match_count: number;
+  known_exploited_count: number;
+  highest_urgency: string;
+  product_families: Array<{
+    product_family: string;
+    count: number;
+    customer_match_count: number;
+    items: SecurityActionCenterRow[];
+  }>;
+};
+
+export type SecurityActionCenterState = {
+  tenant_id: string;
+  generated_at: string;
+  catalogue_rows: SecurityActionCenterRow[];
+  groups: SecurityActionCenterGroup[];
+  vendors?: Array<Record<string, unknown>>;
+  filters?: Record<string, Array<{ value: string; count: number }>>;
+  source_feed_status?: SourceFeedRun[];
+  summary?: Record<string, number>;
+  boundary?: Record<string, boolean>;
+};
+
+export type CustomerEstateState = {
+  assets: CustomerNetworkAsset[];
+  services: ServiceRecord[];
+  exposure_matches: ConfigApplicabilityAssessment[];
+  patch_comparisons: VendorLensPatchComparison[];
+};
+
+export type CustomerAssetExtraction = CustomerNetworkAsset & {
+  customer?: string | null;
+  vendor_name?: string | null;
+  extraction_confidence?: number;
+  extracted_from?: string;
+  final_approval_issued?: boolean;
+  human_review_required?: boolean;
+};
+
+export type CustomerEstateMatch = {
+  asset: CustomerNetworkAsset | null;
+  matches: Array<ConfigApplicabilityAssessment & Record<string, unknown>>;
+  match_count: number;
+  highest_urgency?: string;
+  final_approval_issued: boolean;
+  human_review_required: boolean;
+};
+
+export type AskPatchForgeAnswer = {
+  response: {
+    short_answer: string;
+    current_governed_posture: string;
+    why: string;
+    what_we_know: string[];
+    what_we_do_not_know: string[];
+    evidence_needed: string[];
+    recommended_next_action: string;
+    decision_not_allowed_yet: string;
+    human_approval_required: boolean;
+    final_approval_issued: boolean;
+    advisory_only: boolean;
+  };
+  asset?: CustomerAssetExtraction;
+  matched_assessment?: Record<string, unknown> | null;
+  candidate_matches?: Array<Record<string, unknown>>;
+  final_approval_issued: boolean;
+};
+
+export type ReportsPacksState = {
+  reports: ReportCatalogItem[];
+  decision_packs: DecisionPackRecord[];
+  export_options: string[];
+  pre_export_state?: Record<string, unknown> | null;
+};
+
 export type VulnerabilityRecord = {
   tenant_id?: string;
   vulnerability_id: string;
@@ -409,6 +533,8 @@ export type DecisionPackRecord = {
   signing_provider?: string | null;
   product_baseline?: string;
   report_template_version?: string;
+  report_renderer_commit?: string;
+  report_renderer_image_tag?: string;
   report_context_version?: string;
   artefacts?: Record<string, unknown>;
   created_at?: string;
@@ -431,6 +557,18 @@ export type AdminConfig = Record<string, unknown>;
 
 export type PatchForgeApi = {
   metrics(tenantId: string): Promise<PatchForgeMetrics>;
+  securityActionCenter(tenantId: string): Promise<SecurityActionCenterState>;
+  searchSecurityActionCenter(tenantId: string, params?: Record<string, string | number | boolean | undefined>): Promise<SecurityActionCenterState>;
+  securityActionCenterVendors(tenantId: string): Promise<Array<Record<string, unknown>>>;
+  cveDetail(tenantId: string, id: string): Promise<Record<string, unknown>>;
+  customerEstate(tenantId: string): Promise<CustomerEstateState>;
+  extractCustomerAsset(tenantId: string, description: string): Promise<CustomerAssetExtraction>;
+  upsertCustomerEstateAsset(tenantId: string, payload: Record<string, unknown>): Promise<CustomerNetworkAsset>;
+  matchCustomerEstate(tenantId: string, payload: Record<string, unknown>): Promise<CustomerEstateMatch>;
+  compareCustomerEstatePatch(tenantId: string, payload: Record<string, unknown>): Promise<VendorLensPatchComparison>;
+  askPatchForge(tenantId: string, payload: Record<string, unknown>): Promise<AskPatchForgeAnswer>;
+  reportsPacks(tenantId: string): Promise<ReportsPacksState>;
+  generateReportsPack(tenantId: string, payload: Record<string, unknown>): Promise<DecisionPackRecord>;
   listVulnerabilities(tenantId: string): Promise<VulnerabilityRecord[]>;
   ingestVulnerability(tenantId: string, payload: Record<string, unknown>): Promise<VulnerabilityRecord>;
   listAssets(tenantId: string): Promise<AssetRecord[]>;
@@ -536,6 +674,72 @@ export function createPatchForgeApi(getAccessToken: () => Promise<string>, confi
   return {
     async metrics(tenantId) {
       return request<PatchForgeMetrics>("/api/patchforge/dashboard/metrics", tenantId);
+    },
+    async securityActionCenter(tenantId) {
+      return request<SecurityActionCenterState>("/api/patchforge/security-action-center", tenantId);
+    },
+    async searchSecurityActionCenter(tenantId, params = {}) {
+      const query = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          query.set(key, String(value));
+        }
+      });
+      const suffix = query.toString() ? `?${query.toString()}` : "";
+      return request<SecurityActionCenterState>(`/api/patchforge/security-action-center/search${suffix}`, tenantId);
+    },
+    async securityActionCenterVendors(tenantId) {
+      const body = await request<{ vendors: Array<Record<string, unknown>> }>("/api/patchforge/security-action-center/vendors", tenantId);
+      return body.vendors || [];
+    },
+    async cveDetail(tenantId, id) {
+      return request<Record<string, unknown>>(`/api/patchforge/security-action-center/cves/${encodeURIComponent(id)}`, tenantId);
+    },
+    async customerEstate(tenantId) {
+      return request<CustomerEstateState>("/api/patchforge/customer-estate/assets", tenantId);
+    },
+    async extractCustomerAsset(tenantId, description) {
+      const body = await request<{ extracted_asset: CustomerAssetExtraction }>("/api/patchforge/customer-estate/assets/extract", tenantId, {
+        method: "POST",
+        body: JSON.stringify({ description })
+      });
+      return body.extracted_asset;
+    },
+    async upsertCustomerEstateAsset(tenantId, payload) {
+      const body = await request<{ asset: CustomerNetworkAsset }>("/api/patchforge/customer-estate/assets/upsert", tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return body.asset;
+    },
+    async matchCustomerEstate(tenantId, payload) {
+      return request<CustomerEstateMatch>("/api/patchforge/customer-estate/match", tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+    },
+    async compareCustomerEstatePatch(tenantId, payload) {
+      const body = await request<{ comparison: VendorLensPatchComparison }>("/api/patchforge/customer-estate/patch-compare", tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return body.comparison;
+    },
+    async askPatchForge(tenantId, payload) {
+      return request<AskPatchForgeAnswer>("/api/patchforge/ask", tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+    },
+    async reportsPacks(tenantId) {
+      return request<ReportsPacksState>("/api/patchforge/reports-packs", tenantId);
+    },
+    async generateReportsPack(tenantId, payload) {
+      const body = await request<{ decision_pack: DecisionPackRecord }>("/api/patchforge/reports-packs/generate", tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return body.decision_pack;
     },
     async listVulnerabilities(tenantId) {
       const body = await request<{ vulnerabilities: VulnerabilityRecord[] }>("/api/patchforge/vulnerabilities", tenantId);

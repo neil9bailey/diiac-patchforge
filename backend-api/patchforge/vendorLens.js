@@ -567,8 +567,8 @@ function buildPatchVersionComparison(input = {}) {
   const affectedVersions = list(advisory.affected_versions);
   const fixedVersions = list(advisory.fixed_versions);
   const affectedFeatures = list(advisory.affected_features || advisory.affected_feature || advisory.feature);
-  const currentAffected = currentVersion && (affectedVersions.includes(currentVersion) || affectedVersions.length === 0);
-  const targetRecorded = targetVersion && (fixedVersions.includes(targetVersion) || fixedVersions.length === 0);
+  const currentAffected = currentVersion && (versionMatchesAnyRecord(currentVersion, affectedVersions) || affectedVersions.length === 0);
+  const targetRecorded = targetVersion && (versionMatchesAnyRecord(targetVersion, fixedVersions) || fixedVersions.length === 0);
   const versionStatus = !currentVersion
     ? "current_version_unknown"
     : currentAffected
@@ -620,6 +620,51 @@ function buildPatchVersionComparison(input = {}) {
     final_approval_issued: false,
     no_patch_deployment: true
   };
+}
+
+function versionMatchesAnyRecord(version, records) {
+  const normalizedVersion = String(version || "").trim().replace(/^v/i, "");
+  if (!normalizedVersion) {
+    return false;
+  }
+  return list(records).some((record) => {
+    const text = String(record || "").trim().replace(/^v/i, "");
+    if (!text) {
+      return false;
+    }
+    if (text.toLowerCase() === normalizedVersion.toLowerCase()) {
+      return true;
+    }
+    const range = text.match(/^(<=|>=|<|>|=)\s*v?([0-9][0-9a-z.-]*)$/i);
+    if (range) {
+      const comparison = compareSemanticVersionish(normalizedVersion, range[2]);
+      if (range[1] === "<") return comparison < 0;
+      if (range[1] === "<=") return comparison <= 0;
+      if (range[1] === ">") return comparison > 0;
+      if (range[1] === ">=") return comparison >= 0;
+      return comparison === 0;
+    }
+    return text.toLowerCase().includes(normalizedVersion.toLowerCase());
+  });
+}
+
+function compareSemanticVersionish(left, right) {
+  const leftParts = String(left || "").split(/[^0-9a-z]+/i).filter(Boolean);
+  const rightParts = String(right || "").split(/[^0-9a-z]+/i).filter(Boolean);
+  const max = Math.max(leftParts.length, rightParts.length);
+  for (let index = 0; index < max; index += 1) {
+    const a = leftParts[index] || "0";
+    const b = rightParts[index] || "0";
+    const aNumber = Number(a);
+    const bNumber = Number(b);
+    const result = Number.isFinite(aNumber) && Number.isFinite(bNumber)
+      ? aNumber - bNumber
+      : a.localeCompare(b);
+    if (result !== 0) {
+      return result > 0 ? 1 : -1;
+    }
+  }
+  return 0;
 }
 
 function advisoryFromNvd(item, sourceUrl, body) {

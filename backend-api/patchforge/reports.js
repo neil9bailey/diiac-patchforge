@@ -19,9 +19,15 @@ import PDFDocument from "pdfkit";
 
 export const REPORT_CATALOG = [
   {
-    report_type: "executive_vulnerability_remediation_one_pager",
-    title: "Executive Vulnerability Remediation One-Pager",
-    audience: "Executive and board brief",
+    report_type: "customer_patch_governance_pack",
+    title: "Customer Patch Governance Pack",
+    audience: "Customer assurance",
+    formats: ["docx", "pdf"]
+  },
+  {
+    report_type: "board_vulnerability_remediation_summary",
+    title: "Board Vulnerability Summary",
+    audience: "Board and senior leadership",
     formats: ["docx", "pdf"]
   },
   {
@@ -31,33 +37,15 @@ export const REPORT_CATALOG = [
     formats: ["docx", "pdf"]
   },
   {
-    report_type: "board_vulnerability_remediation_summary",
-    title: "Board Vulnerability Remediation Summary",
-    audience: "Board and senior leadership",
-    formats: ["docx", "pdf"]
-  },
-  {
-    report_type: "customer_patch_governance_pack",
-    title: "Customer Patch Governance Pack",
-    audience: "Customer assurance",
+    report_type: "technical_evidence_appendix",
+    title: "Technical Evidence Appendix",
+    audience: "Security engineering and audit",
     formats: ["docx", "pdf"]
   },
   {
     report_type: "ciso_patch_version_comparison_report",
-    title: "CISO Patch Version Comparison Report",
+    title: "Patch Compare Appendix",
     audience: "CISO and security leadership",
-    formats: ["docx", "pdf"]
-  },
-  {
-    report_type: "risk_acceptance_report",
-    title: "Risk Acceptance Report",
-    audience: "Risk owner and audit",
-    formats: ["docx", "pdf"]
-  },
-  {
-    report_type: "ot_patch_deferral_report",
-    title: "OT Patch Deferral Report",
-    audience: "OT operations and safety review",
     formats: ["docx", "pdf"]
   }
 ];
@@ -66,12 +54,20 @@ const BOUNDARY_TEXT = "PatchForge is a governance product. It does not scan envi
 const HUMAN_APPROVAL_NOTICE = "Human approval remains required. PatchForge does not approve CAB decisions, risk acceptance, patch deployment, or closure autonomously.";
 const UNCONFIRMED_SCOPE_TEXT = "PatchForge has public-source vulnerability intelligence, but customer asset and service exposure are not yet confirmed.";
 const NO_CUSTOMER_ASSURANCE_TEXT = "No customer remediation assurance can be issued yet because affected customer service scope and patch applicability evidence are not reviewed.";
-const REPORT_TEMPLATE_VERSION = "patchforge-report-template.v2026-05-28.1";
-const REPORT_CONTEXT_VERSION = "patchforge-report-context.v2";
-const DEFAULT_PRODUCT_BASELINE = process.env.PATCHFORGE_PRODUCT_BASELINE || "PF-AZ9A-VENDORLENS";
+const REPORT_TEMPLATE_VERSION = "patchforge-report-template.v2026-05-30.1";
+const REPORT_CONTEXT_VERSION = "patchforge-report-context.v3";
+const DEFAULT_PRODUCT_BASELINE = process.env.PATCHFORGE_PRODUCT_BASELINE || "PF-AZ10-SIMPLIFIED-EXPERIENCE";
 const DEFAULT_RENDERER_COMMIT = process.env.PATCHFORGE_RENDERER_COMMIT || process.env.PATCHFORGE_COMMIT_SHA || process.env.GIT_COMMIT || "local";
 const DEFAULT_IMAGE_TAG = process.env.PATCHFORGE_IMAGE_TAG || process.env.CONTAINER_IMAGE_TAG || "local";
-const REPORT_TYPE_MAP = new Map(REPORT_CATALOG.map((item) => [item.report_type, item]));
+const REPORT_TYPE_MAP = new Map([
+  ...REPORT_CATALOG.map((item) => [item.report_type, item]),
+  ["board_vulnerability_summary", {
+    report_type: "board_vulnerability_summary",
+    title: "Board Vulnerability Summary",
+    audience: "Board and senior leadership",
+    formats: ["docx", "pdf"]
+  }]
+]);
 const COLORS = {
   ink: "17212B",
   muted: "5E6B76",
@@ -459,55 +455,41 @@ function reportTypeRequiredDocxSections(context) {
       ])
     ];
   }
-  if (context.reportType === "board_vulnerability_remediation_summary") {
+  if (["board_vulnerability_remediation_summary", "board_vulnerability_summary"].includes(context.reportType)) {
     return [
-      heading("Current Governed Posture", HeadingLevel.HEADING_1),
-      para(`${displayPosture(context)}. ${finalApprovalSentence(context)} ${context.humanApprovalNotice}`),
-      heading("Business / Service Impact", HeadingLevel.HEADING_1),
+      heading("Executive Decision Summary", HeadingLevel.HEADING_1),
+      para(context.executiveReadout || `${context.vulnerabilityId} is governed as ${displayPosture(context)}. ${finalApprovalSentence(context)} ${context.humanApprovalNotice}`),
+      heading("Top Risks", HeadingLevel.HEADING_1),
+      para(context.whyNow || "Top risk requires source review, customer exposure confirmation, and patch applicability evidence before a final decision."),
+      heading("Affected Vendors / Products", HeadingLevel.HEADING_1),
+      para([context.networkVendor?.vendor_name, context.vendorSecurityAdvisory?.product_family || context.customerNetworkAsset?.product_family || context.whatItAffects].filter(Boolean).join(" | ") || "Affected vendor/product mapping is not yet reviewed."),
+      heading("Customer Exposure", HeadingLevel.HEADING_1),
       para(context.whatItAffects || "Customer asset and service exposure are not yet confirmed."),
-      heading("Source Intelligence Summary", HeadingLevel.HEADING_1),
-      para("Threat metrics are source-bound public-intelligence signals and do not close hard gates."),
-      heading("VendorLens Applicability Summary", HeadingLevel.HEADING_1),
-      para(context.configApplicability ? `Applicability is ${humanize(context.configApplicability.applicability_posture)} with urgency ${humanize(context.configApplicability.urgency_posture)}.` : "VendorLens applicability evidence was not attached to this pack."),
-      heading("Key Evidence Gaps", HeadingLevel.HEADING_1),
-      ...evidenceGapBlocks(context).slice(0, 18),
-      heading("Required Human Actions", HeadingLevel.HEADING_1),
+      heading("Recommended Next Actions", HeadingLevel.HEADING_1),
       ...bulletList(context.recommendation?.do_now || ["Confirm scope, attach reviewed evidence, and record accountable human approval or rejection."]),
-      heading("Residual Risk and Governance Position", HeadingLevel.HEADING_1),
-      para("Residual risk remains governed, evidence-bound, and subject to human approval. PatchForge does not issue autonomous CAB, closure, or risk acceptance decisions."),
-      heading("Signed Pack and Trust Evidence", HeadingLevel.HEADING_1),
-      ...keyValueBlocks([
-        ["Signed pack", context.packId],
-        ["Signing provider", humanize(context.signingProvider)],
-        ["Verification state", context.verificationState]
-      ])
+      heading("Evidence Gaps", HeadingLevel.HEADING_1),
+      ...evidenceGapBlocks(context).slice(0, 18),
+      heading("Final Approval State", HeadingLevel.HEADING_1),
+      warningBox(finalApprovalSentence(context))
     ];
   }
   if (context.reportType === "cab_patch_decision_report") {
     return [
-      heading("CAB Decision Request", HeadingLevel.HEADING_1),
+      heading("Change Decision Request", HeadingLevel.HEADING_1),
       para(`CAB is asked to review ${context.vulnerabilityId} under governed posture ${displayPosture(context)}. ${finalApprovalSentence(context)}`),
+      heading("Affected Devices", HeadingLevel.HEADING_1),
+      para(context.customerNetworkAsset ? `Asset ${context.customerNetworkAsset.asset_id || "not recorded"} uses ${context.customerNetworkAsset.product_family || "product pending"} ${context.customerNetworkAsset.firmware_version || "version pending"}.` : "Affected devices are not attached."),
       heading("Patch Applicability", HeadingLevel.HEADING_1),
       para(context.configApplicability ? `VendorLens applicability posture: ${humanize(context.configApplicability.applicability_posture)}. Urgency: ${humanize(context.configApplicability.urgency_posture)}.` : "Patch applicability remains blocked until reviewed vendor, version, configuration, and exposure evidence is attached."),
-      heading("Network Vendor Applicability", HeadingLevel.HEADING_1),
-      para(context.configApplicability ? "Network vendor applicability context is attached as source-bound advisory intelligence." : "Network vendor applicability context is not attached."),
-      heading("Customer Configuration Context", HeadingLevel.HEADING_1),
-      para(context.customerNetworkAsset ? `Asset ${context.customerNetworkAsset.asset_id || "not recorded"} uses ${context.customerNetworkAsset.product_family || "product pending"} ${context.customerNetworkAsset.firmware_version || "version pending"}.` : "Customer configuration context is not attached."),
-      heading("Patch / Workaround Evidence", HeadingLevel.HEADING_1),
-      para(context.patchFeasibility?.summary || "Vendor patch note, fixed version mapping, workaround evidence, and remediation applicability require reviewed evidence."),
-      heading("Change Readiness", HeadingLevel.HEADING_1),
-      para(`Readiness state: ${humanize(context.readinessState)}.`),
-      heading("Test Evidence", HeadingLevel.HEADING_1),
-      para("Test evidence must be attached and reviewed before CAB approval."),
-      heading("Rollback and Recovery", HeadingLevel.HEADING_1),
-      para("Rollback evidence and recovery owner must be recorded before approval."),
-      heading("Maintenance Window", HeadingLevel.HEADING_1),
-      para("Maintenance window evidence is required for accountable change approval."),
-      heading("Implementation Ownership", HeadingLevel.HEADING_1),
-      para("Implementation ownership remains outside PatchForge automation and must be recorded by the accountable service or platform owner."),
+      heading("Patch Compare", HeadingLevel.HEADING_1),
+      para(context.vendorLensPatchComparison ? context.vendorLensPatchComparison.ciso_summary || "Patch comparison attached for review." : "Patch Compare was not attached to this pack."),
+      heading("Test / Rollback Evidence Needed", HeadingLevel.HEADING_1),
+      para("Test evidence, rollback evidence, maintenance window, and implementation ownership must be attached and reviewed before CAB approval."),
       heading("Approval Conditions", HeadingLevel.HEADING_1),
       para(context.humanApprovalNotice),
-      heading("Required Evidence Before CAB Approval", HeadingLevel.HEADING_1),
+      heading("Final Approval State", HeadingLevel.HEADING_1),
+      warningBox(finalApprovalSentence(context)),
+      heading("Evidence Before CAB Approval", HeadingLevel.HEADING_1),
       ...evidenceGapBlocks(context).slice(0, 18),
       heading("Signed Pack and Audit Trace", HeadingLevel.HEADING_1),
       ...keyValueBlocks([
@@ -516,6 +498,26 @@ function reportTypeRequiredDocxSections(context) {
         ["Verification state", context.verificationState],
         ["Governance manifest SHA-256", context.governanceManifestHash]
       ])
+    ];
+  }
+  if (context.reportType === "technical_evidence_appendix") {
+    return [
+      heading("Technical Evidence Appendix", HeadingLevel.HEADING_1),
+      para("This appendix consolidates source records, customer context, applicability assessment, Patch Compare result, and signed-pack metadata for audit review."),
+      heading("Customer Device / Service Context", HeadingLevel.HEADING_1),
+      para(context.customerNetworkAsset ? `Asset ${context.customerNetworkAsset.asset_id || "not recorded"}: ${context.customerNetworkAsset.vendor_id || "vendor pending"} ${context.customerNetworkAsset.product_family || "product pending"} ${context.customerNetworkAsset.firmware_version || "version pending"}.` : "Customer device/service context is not attached."),
+      heading("Matching CVEs / Advisories", HeadingLevel.HEADING_1),
+      para(context.vendorSecurityAdvisory ? `${context.vendorSecurityAdvisory.cve || context.vendorSecurityAdvisory.advisory_id}: ${context.vendorSecurityAdvisory.title || "Vendor advisory"}` : context.vulnerabilityId),
+      heading("Applicability Assessment", HeadingLevel.HEADING_1),
+      para(context.configApplicability ? `Applicability: ${humanize(context.configApplicability.applicability_posture)}. Urgency: ${humanize(context.configApplicability.urgency_posture)}.` : "Applicability assessment is not attached."),
+      heading("Patch Compare Result", HeadingLevel.HEADING_1),
+      para(context.vendorLensPatchComparison ? context.vendorLensPatchComparison.ciso_summary || "Patch Compare result attached." : "Patch Compare was not used for this pack."),
+      heading("Evidence Needed", HeadingLevel.HEADING_1),
+      ...evidenceGapBlocks(context).slice(0, 18),
+      heading("Final Approval State", HeadingLevel.HEADING_1),
+      warningBox(finalApprovalSentence(context)),
+      heading("Signed Pack Metadata", HeadingLevel.HEADING_1),
+      ...keyValueBlocks(reportVersionRows(context))
     ];
   }
   return [];
@@ -537,6 +539,14 @@ function customerSpecificSections(context) {
   return [
     heading("Customer Assurance Position", HeadingLevel.HEADING_1),
     warningBox(assurancePosition),
+    heading("Customer Device / Service Context", HeadingLevel.HEADING_2),
+    para(context.customerNetworkAsset ? `Customer asset ${context.customerNetworkAsset.asset_id || "not recorded"}: ${context.customerNetworkAsset.vendor_id || "vendor pending"} ${context.customerNetworkAsset.product_family || "product pending"} ${context.customerNetworkAsset.model || ""} ${context.customerNetworkAsset.firmware_version || "version pending"}.` : "Customer device context is not attached."),
+    heading("Matching CVEs / Advisories", HeadingLevel.HEADING_2),
+    para(context.vendorSecurityAdvisory ? `${context.vendorSecurityAdvisory.cve || context.vendorSecurityAdvisory.advisory_id}: ${context.vendorSecurityAdvisory.title || "Vendor advisory"}` : `${context.vulnerabilityId}: ${context.vulnerabilityTitle}`),
+    heading("Applicability Assessment", HeadingLevel.HEADING_2),
+    para(context.configApplicability ? `Applicability: ${humanize(context.configApplicability.applicability_posture)}. Urgency: ${humanize(context.configApplicability.urgency_posture)}. Final approval false.` : "Applicability assessment is not attached."),
+    heading("Patch Compare Result", HeadingLevel.HEADING_2),
+    para(context.vendorLensPatchComparison ? context.vendorLensPatchComparison.ciso_summary || "Patch Compare result is attached for human review." : "Patch Compare was not used for this pack."),
     heading("Customer Impact Status", HeadingLevel.HEADING_2),
     para(impactStatus),
     heading("Customer Evidence Required", HeadingLevel.HEADING_2),
@@ -1120,49 +1130,43 @@ function pdfReportTypeRequiredSections(doc, context) {
     ]);
     return;
   }
-  if (context.reportType === "board_vulnerability_remediation_summary") {
-    pdfSection(doc, "Current Governed Posture");
-    pdfParagraph(doc, `${displayPosture(context)}. ${finalApprovalSentence(context)} ${context.humanApprovalNotice}`);
-    pdfSection(doc, "Business / Service Impact");
+  if (["board_vulnerability_remediation_summary", "board_vulnerability_summary"].includes(context.reportType)) {
+    pdfSection(doc, "Executive Decision Summary");
+    pdfParagraph(doc, context.executiveReadout || `${context.vulnerabilityId} is governed as ${displayPosture(context)}. ${finalApprovalSentence(context)} ${context.humanApprovalNotice}`);
+    pdfSection(doc, "Top Risks");
+    pdfParagraph(doc, context.whyNow || "Top risk requires source review, customer exposure confirmation, and patch applicability evidence before a final decision.");
+    pdfSection(doc, "Affected Vendors / Products");
+    pdfParagraph(doc, [context.networkVendor?.vendor_name, context.vendorSecurityAdvisory?.product_family || context.customerNetworkAsset?.product_family || context.whatItAffects].filter(Boolean).join(" | ") || "Affected vendor/product mapping is not yet reviewed.");
+    pdfSection(doc, "Customer Exposure");
     pdfParagraph(doc, context.whatItAffects || "Customer asset and service exposure are not yet confirmed.");
-    pdfSection(doc, "Source Intelligence Summary");
-    pdfParagraph(doc, "Threat metrics are source-bound public-intelligence signals and do not close hard gates.");
-    pdfSection(doc, "VendorLens Applicability Summary");
-    pdfParagraph(doc, context.configApplicability ? `Applicability is ${humanize(context.configApplicability.applicability_posture)} with urgency ${humanize(context.configApplicability.urgency_posture)}.` : "VendorLens applicability evidence was not attached to this pack.");
-    pdfSection(doc, "Key Evidence Gaps");
-    for (const detail of (context.evidenceGapDetails?.length ? context.evidenceGapDetails : context.blockers.map(gapDetailForReport)).slice(0, 5)) {
-      pdfBullet(doc, `${humanize(detail.gap || detail.plain_english_gap)}: ${detail.required_evidence || "Reviewed evidence required"}`);
-    }
-    pdfSection(doc, "Required Human Actions");
+    pdfSection(doc, "Recommended Next Actions");
     for (const action of (context.recommendation?.do_now || ["Confirm scope, attach reviewed evidence, and record accountable human approval or rejection."]).slice(0, 5)) {
       pdfBullet(doc, action);
     }
-    pdfSection(doc, "Residual Risk and Governance Position");
-    pdfParagraph(doc, "Residual risk remains governed, evidence-bound, and subject to human approval. PatchForge does not issue autonomous CAB, closure, or risk acceptance decisions.");
-    pdfSection(doc, "Signed Pack and Trust Evidence");
-    pdfKeyValues(doc, [
-      ["Signed pack", context.packId],
-      ["Signing provider", humanize(context.signingProvider)],
-      ["Verification state", context.verificationState]
-    ]);
+    pdfSection(doc, "Evidence Gaps");
+    for (const detail of (context.evidenceGapDetails?.length ? context.evidenceGapDetails : context.blockers.map(gapDetailForReport)).slice(0, 5)) {
+      pdfBullet(doc, `${humanize(detail.gap || detail.plain_english_gap)}: ${detail.required_evidence || "Reviewed evidence required"}`);
+    }
+    pdfSection(doc, "Final Approval State");
+    pdfCallout(doc, finalApprovalSentence(context));
     return;
   }
   if (context.reportType === "cab_patch_decision_report") {
-    pdfSection(doc, "CAB Decision Request");
+    pdfSection(doc, "Change Decision Request");
     pdfParagraph(doc, `CAB is asked to review ${context.vulnerabilityId} under governed posture ${displayPosture(context)}. ${finalApprovalSentence(context)}`);
+    pdfSection(doc, "Affected Devices");
+    pdfParagraph(doc, context.customerNetworkAsset ? `Asset ${context.customerNetworkAsset.asset_id || "not recorded"} uses ${context.customerNetworkAsset.product_family || "product pending"} ${context.customerNetworkAsset.firmware_version || "version pending"}.` : "Affected devices are not attached.");
     pdfSection(doc, "Patch Applicability");
     pdfParagraph(doc, context.configApplicability ? `VendorLens applicability posture: ${humanize(context.configApplicability.applicability_posture)}. Urgency: ${humanize(context.configApplicability.urgency_posture)}.` : "Patch applicability remains blocked until reviewed vendor, version, configuration, and exposure evidence is attached.");
-    pdfSection(doc, "Affected Assets and Services");
-    pdfParagraph(doc, context.whatItAffects || "Customer asset and service exposure are not yet confirmed.");
-    pdfSection(doc, "Network Vendor Applicability");
-    pdfParagraph(doc, context.configApplicability ? "Network vendor applicability context is attached as source-bound advisory intelligence." : "Network vendor applicability context is not attached.");
-    pdfSection(doc, "Customer Configuration Context");
-    pdfParagraph(doc, context.customerNetworkAsset ? `Asset ${context.customerNetworkAsset.asset_id || "not recorded"} uses ${context.customerNetworkAsset.product_family || "product pending"} ${context.customerNetworkAsset.firmware_version || "version pending"}.` : "Customer configuration context is not attached.");
-    for (const title of ["Patch / Workaround Evidence", "Change Readiness", "Test Evidence", "Rollback and Recovery", "Maintenance Window", "Implementation Ownership", "Approval Conditions"]) {
-      pdfSection(doc, title);
-      pdfParagraph(doc, title === "Approval Conditions" ? context.humanApprovalNotice : "Reviewed evidence and accountable ownership are required before CAB approval.");
-    }
-    pdfSection(doc, "Required Evidence Before CAB Approval");
+    pdfSection(doc, "Patch Compare");
+    pdfParagraph(doc, context.vendorLensPatchComparison ? context.vendorLensPatchComparison.ciso_summary || "Patch comparison attached for review." : "Patch Compare was not attached to this pack.");
+    pdfSection(doc, "Test / Rollback Evidence Needed");
+    pdfParagraph(doc, "Test evidence, rollback evidence, maintenance window, and implementation ownership must be attached and reviewed before CAB approval.");
+    pdfSection(doc, "Approval Conditions");
+    pdfParagraph(doc, context.humanApprovalNotice);
+    pdfSection(doc, "Final Approval State");
+    pdfCallout(doc, finalApprovalSentence(context));
+    pdfSection(doc, "Evidence Before CAB Approval");
     for (const detail of (context.evidenceGapDetails?.length ? context.evidenceGapDetails : context.blockers.map(gapDetailForReport)).slice(0, 5)) {
       pdfBullet(doc, `${humanize(detail.gap || detail.plain_english_gap)}: ${detail.required_evidence || "Reviewed evidence required"}`);
     }
@@ -1173,6 +1177,27 @@ function pdfReportTypeRequiredSections(doc, context) {
       ["Verification state", context.verificationState],
       ["Governance manifest SHA-256", context.governanceManifestHash]
     ]);
+    return;
+  }
+  if (context.reportType === "technical_evidence_appendix") {
+    pdfSection(doc, "Technical Evidence Appendix");
+    pdfParagraph(doc, "This appendix consolidates source records, customer context, applicability assessment, Patch Compare result, and signed-pack metadata for audit review.");
+    pdfSection(doc, "Customer Device / Service Context");
+    pdfParagraph(doc, context.customerNetworkAsset ? `Customer asset ${context.customerNetworkAsset.asset_id || "not recorded"}: ${context.customerNetworkAsset.vendor_id || "vendor pending"} ${context.customerNetworkAsset.product_family || "product pending"} ${context.customerNetworkAsset.firmware_version || "version pending"}.` : "Customer device/service context is not attached.");
+    pdfSection(doc, "Matching CVEs / Advisories");
+    pdfParagraph(doc, context.vendorSecurityAdvisory ? `${context.vendorSecurityAdvisory.cve || context.vendorSecurityAdvisory.advisory_id}: ${context.vendorSecurityAdvisory.title || "Vendor advisory"}` : context.vulnerabilityId);
+    pdfSection(doc, "Applicability Assessment");
+    pdfParagraph(doc, context.configApplicability ? `Applicability: ${humanize(context.configApplicability.applicability_posture)}. Urgency: ${humanize(context.configApplicability.urgency_posture)}.` : "Applicability assessment is not attached.");
+    pdfSection(doc, "Patch Compare Result");
+    pdfParagraph(doc, context.vendorLensPatchComparison ? context.vendorLensPatchComparison.ciso_summary || "Patch Compare result attached." : "Patch Compare was not used for this pack.");
+    pdfSection(doc, "Evidence Needed");
+    for (const detail of (context.evidenceGapDetails?.length ? context.evidenceGapDetails : context.blockers.map(gapDetailForReport)).slice(0, 5)) {
+      pdfBullet(doc, `${humanize(detail.gap || detail.plain_english_gap)}: ${detail.required_evidence || "Reviewed evidence required"}`);
+    }
+    pdfSection(doc, "Final Approval State");
+    pdfCallout(doc, finalApprovalSentence(context));
+    pdfSection(doc, "Signed Pack Metadata");
+    pdfKeyValues(doc, reportVersionRows(context));
   }
 }
 
@@ -1196,6 +1221,14 @@ function pdfCustomerSections(doc, context) {
   pdfCallout(doc, customerScopeConfirmed && patchApplicabilityReviewed
     ? "Customer remediation assurance can be prepared only for the reviewed services and evidence references listed in this pack."
     : NO_CUSTOMER_ASSURANCE_TEXT);
+  pdfSection(doc, "Customer Device / Service Context");
+  pdfParagraph(doc, context.customerNetworkAsset ? `Customer asset ${context.customerNetworkAsset.asset_id || "not recorded"}: ${context.customerNetworkAsset.vendor_id || "vendor pending"} ${context.customerNetworkAsset.product_family || "product pending"} ${context.customerNetworkAsset.model || ""} ${context.customerNetworkAsset.firmware_version || "version pending"}.` : "Customer device context is not attached.");
+  pdfSection(doc, "Matching CVEs / Advisories");
+  pdfParagraph(doc, context.vendorSecurityAdvisory ? `${context.vendorSecurityAdvisory.cve || context.vendorSecurityAdvisory.advisory_id}: ${context.vendorSecurityAdvisory.title || "Vendor advisory"}` : `${context.vulnerabilityId}: ${context.vulnerabilityTitle}`);
+  pdfSection(doc, "Applicability Assessment");
+  pdfParagraph(doc, context.configApplicability ? `Applicability: ${humanize(context.configApplicability.applicability_posture)}. Urgency: ${humanize(context.configApplicability.urgency_posture)}. Final approval false.` : "Applicability assessment is not attached.");
+  pdfSection(doc, "Patch Compare Result");
+  pdfParagraph(doc, context.vendorLensPatchComparison ? context.vendorLensPatchComparison.ciso_summary || "Patch Compare result is attached for human review." : "Patch Compare was not used for this pack.");
   pdfSection(doc, "Customer Impact Status");
   pdfParagraph(doc, customerScopeConfirmed ? "Reviewed customer-facing service scope is present. Confirm the listed service owner, SLA/OLA impact, and communication owner before issuing customer-facing assurance." : `${UNCONFIRMED_SCOPE_TEXT} Customer impact must be treated as unconfirmed.`);
   pdfSection(doc, "Customer Evidence Required");
