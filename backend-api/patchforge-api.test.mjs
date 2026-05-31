@@ -1841,3 +1841,30 @@ test("admin diagnostic tenant override works only when explicitly enabled", asyn
     upn: "admin@diiac.io"
   }), { production: true, allowTenantOverride: true, adminDiagnosticTenantOverride: true });
 });
+
+test("malformed JSON bodies return 400 invalid_json, not 500", async () => {
+  await withApi(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/patchforge/vulnerabilities/ingest`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "{ this is not valid json"
+    });
+    const body = await response.json();
+    assert.equal(response.status, 400);
+    assert.equal(body.error, "invalid_json");
+  });
+});
+
+test("oversized request bodies are rejected with 413 before processing", async () => {
+  await withApi(async (baseUrl) => {
+    const oversized = JSON.stringify({ filler: "x".repeat(2 * 1024 * 1024 + 16) });
+    const response = await fetch(`${baseUrl}/api/patchforge/vulnerabilities/ingest`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: oversized
+    });
+    const body = await response.json();
+    assert.equal(response.status, 413);
+    assert.equal(body.error, "request_body_too_large");
+  });
+});

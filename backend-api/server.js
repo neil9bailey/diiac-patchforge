@@ -36,6 +36,7 @@ import {
 import { runSraTool } from "./sra/securityResearchAgent.js";
 
 const DEFAULT_PORT = Number(process.env.PORT || 8080);
+const MAX_REQUEST_BODY_BYTES = Number(process.env.PATCHFORGE_MAX_REQUEST_BODY_BYTES || 2 * 1024 * 1024);
 const DEFAULT_TENANT = process.env.PATCHFORGE_DEFAULT_TENANT || "diiac.io";
 const DEFAULT_RUNTIME_URL = process.env.PATCHFORGE_RUNTIME_URL || "http://127.0.0.1:8081";
 const AGENT_FINDING_SOURCE_CLASSES = new Set(["mcp_agent_finding", "mythos_finding", "agi_agent_finding", "sra_trace"]);
@@ -871,9 +872,16 @@ export function createServer(options = {}) {
         boundary: "No scanner, exploit, patch deployment, or production mutation endpoint exists."
       });
     } catch (error) {
+      if (error && error.statusCode) {
+        return sendJson(res, error.statusCode, {
+          error: error.publicError || "request_error",
+          message: error.publicMessage || "The request could not be processed."
+        });
+      }
+      console.error("patchforge_internal_error", error);
       return sendJson(res, 500, {
         error: "internal_error",
-        message: error.message
+        message: "An internal error occurred while processing the request."
       });
     }
   });
@@ -989,13 +997,30 @@ async function ingestAgentFinding(storage, tenantId, body) {
 
 async function readJson(req) {
   const chunks = [];
+  let total = 0;
   for await (const chunk of req) {
+    total += chunk.length;
+    if (total > MAX_REQUEST_BODY_BYTES) {
+      const error = new Error(`Request body exceeds the ${MAX_REQUEST_BODY_BYTES}-byte limit.`);
+      error.statusCode = 413;
+      error.publicError = "request_body_too_large";
+      error.publicMessage = error.message;
+      throw error;
+    }
     chunks.push(chunk);
   }
   if (chunks.length === 0) {
     return {};
   }
-  return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  try {
+    return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  } catch {
+    const error = new Error("Request body is not valid JSON.");
+    error.statusCode = 400;
+    error.publicError = "invalid_json";
+    error.publicMessage = error.message;
+    throw error;
+  }
 }
 
 function sendJson(res, statusCode, payload) {

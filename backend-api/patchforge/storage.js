@@ -265,6 +265,9 @@ export class PatchForgeJsonStorage {
     return records.filter((record) => record.tenant_id === tenantId);
   }
 
+  // Local-json is single-writer only: this read-modify-write is not safe under
+  // concurrent appends (the atomic rename in _write prevents file corruption but
+  // not lost updates). Production runs on PatchForgePostgresStorage, which upserts.
   async append(collection, record) {
     const records = await this._read(collection);
     const idField = COLLECTION_ID_FIELDS[collection];
@@ -279,44 +282,6 @@ export class PatchForgeJsonStorage {
     }
     await this._write(collection, records);
     return record;
-  }
-
-  async querySecurityActionCatalogue(tenantId, options = {}) {
-    await this.ensureReady();
-    const collections = Array.isArray(options.collections) && options.collections.length
-      ? options.collections
-      : [
-          "vulnerabilities",
-          "vendor_security_advisories",
-          "vendor_advisories",
-          "vendors",
-          "network_vendors",
-          "customer_network_assets",
-          "config_applicability_assessments",
-          "source_feed_runs",
-          "sources"
-        ];
-    const result = await this.pool.query(
-      `select collection, record
-       from patchforge_records
-       where tenant_id = $1 and collection = any($2::text[])
-       order by collection asc, created_at asc`,
-      [tenantId, collections]
-    );
-    const grouped = Object.fromEntries(collections.map((collection) => [collection, []]));
-    for (const row of result.rows) {
-      if (!grouped[row.collection]) {
-        grouped[row.collection] = [];
-      }
-      grouped[row.collection].push(row.record);
-    }
-    return {
-      tenant_id: tenantId,
-      generated_at: new Date().toISOString(),
-      search_backend: "postgres_records_catalogue",
-      tenant_isolation: "tenant_id predicate enforced by PostgreSQL query",
-      collections: grouped
-    };
   }
 
   async replace(collection, predicate, updater) {
@@ -786,6 +751,44 @@ export class PatchForgePostgresStorage extends PatchForgeJsonStorage {
       );
     }
     return updatedRecord;
+  }
+
+  async querySecurityActionCatalogue(tenantId, options = {}) {
+    await this.ensureReady();
+    const collections = Array.isArray(options.collections) && options.collections.length
+      ? options.collections
+      : [
+          "vulnerabilities",
+          "vendor_security_advisories",
+          "vendor_advisories",
+          "vendors",
+          "network_vendors",
+          "customer_network_assets",
+          "config_applicability_assessments",
+          "source_feed_runs",
+          "sources"
+        ];
+    const result = await this.pool.query(
+      `select collection, record
+       from patchforge_records
+       where tenant_id = $1 and collection = any($2::text[])
+       order by collection asc, created_at asc`,
+      [tenantId, collections]
+    );
+    const grouped = Object.fromEntries(collections.map((collection) => [collection, []]));
+    for (const row of result.rows) {
+      if (!grouped[row.collection]) {
+        grouped[row.collection] = [];
+      }
+      grouped[row.collection].push(row.record);
+    }
+    return {
+      tenant_id: tenantId,
+      generated_at: new Date().toISOString(),
+      search_backend: "postgres_records_catalogue",
+      tenant_isolation: "tenant_id predicate enforced by PostgreSQL query",
+      collections: grouped
+    };
   }
 
   async _readAdminConfigFile() {
