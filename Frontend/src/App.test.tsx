@@ -598,6 +598,7 @@ describe("PatchForge simplified customer experience", () => {
     })));
     expect(await screen.findByText("Exposure Matches")).toBeInTheDocument();
 
+    fireEvent.change(screen.getByLabelText("Advisory / CVE"), { target: { value: "FG-PFAZ10-SSLVPN" } });
     fireEvent.click(screen.getByRole("button", { name: "Run Patch Compare" }));
     await waitFor(() => expect(api.compareCustomerEstatePatch).toHaveBeenCalled());
     expect(screen.getAllByText("False").length).toBeGreaterThanOrEqual(1);
@@ -608,9 +609,12 @@ describe("PatchForge simplified customer experience", () => {
     render(<App auth={auth} api={api} />);
 
     fireEvent.click(await screen.findByRole("button", { name: "Ask PatchForge" }));
+    expect(screen.getByText(/No CVE\/advisory is selected/i)).toBeInTheDocument();
     fireEvent.click(screen.getAllByRole("button", { name: "Ask PatchForge" }).at(-1)!);
 
-    await waitFor(() => expect(api.askPatchForge).toHaveBeenCalled());
+    await waitFor(() => expect(api.askPatchForge).toHaveBeenCalledWith("diiac.io", expect.not.objectContaining({
+      advisory_id: expect.anything()
+    })));
     expect(await screen.findByText("Short Answer")).toBeInTheDocument();
     expect(screen.getByText("Current Governed Posture")).toBeInTheDocument();
     expect(screen.getByText("Decision Not Allowed Yet")).toBeInTheDocument();

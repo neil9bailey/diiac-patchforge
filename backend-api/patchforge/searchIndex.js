@@ -161,7 +161,11 @@ export function extractCustomerAssetDescription(description = "", overrides = {}
   const model = overrides.model || detectModel(text, lower, productFamily);
   const firmwareVersion = overrides.firmware_version || detectFirmwareVersion(text);
   const disabledFeatures = unique([...list(overrides.disabled_features), ...detectFeatureStates(text, "disabled")]);
-  const enabledFeatures = unique([...list(overrides.enabled_features), ...detectFeatureStates(text, "enabled")]);
+  const enabledFeatures = unique([
+    ...list(overrides.enabled_features),
+    ...detectFeatureStates(text, "enabled"),
+    ...detectMentionedFeatures(text).filter((feature) => !disabledFeatures.includes(feature))
+  ]);
   const managementExposure = overrides.management_exposure || detectManagementExposure(lower);
   const internetFacing = overrides.internet_facing ?? detectInternetFacing(lower, managementExposure);
 
@@ -275,13 +279,21 @@ export async function buildAskPatchForgeResponse({ storage, tenantId, body = {} 
   const question = String(body.question || body.prompt || body.message || "");
   const extracted = body.asset || extractCustomerAssetDescription(question, body);
   const matchResult = await matchCustomerEstate({ storage, tenantId, body: { ...body, asset: extracted }, persist: body.persist_matches === true });
-  const match = findRelevantMatch(matchResult.matches, body, question);
+  const unnamedSpecificReference = requiresNamedCveContext(question, body);
+  const match = unnamedSpecificReference ? null : findRelevantMatch(matchResult.matches, body, question);
   const gaps = match?.evidence_gaps || [];
-  const posture = match?.urgency_posture || "urgent_scope_confirmation_required";
+  const posture = unnamedSpecificReference ? "cve_or_advisory_required" : match?.urgency_posture || "urgent_scope_confirmation_required";
   const known = whatWeKnow(extracted, match, body);
   const unknown = gaps.length
     ? gaps.map((gap) => gap.plain_english_gap || gap.gap_id || "Reviewed evidence is missing.")
     : ["Reviewed source, asset, feature, exposure, and patch evidence must be attached before final approval."];
+  if (unnamedSpecificReference) {
+    unknown.unshift("The question refers to this CVE/advisory, but no CVE/advisory identifier or explicit selected advisory context was provided.");
+  }
+  const evidenceNeeded = evidenceNeededFromGaps(gaps);
+  if (unnamedSpecificReference) {
+    evidenceNeeded.unshift("Specific CVE/advisory ID or an explicitly selected advisory from the catalogue.");
+  }
 
   return {
     response: {
@@ -290,7 +302,7 @@ export async function buildAskPatchForgeResponse({ storage, tenantId, body = {} 
       why: whyForAdvisor(posture, match),
       what_we_know: known,
       what_we_do_not_know: unknown,
-      evidence_needed: evidenceNeededFromGaps(gaps),
+      evidence_needed: unique(evidenceNeeded),
       recommended_next_action: nextActionForPosture(posture),
       decision_not_allowed_yet: "PatchForge cannot issue final approval, risk acceptance, closure, or not-applicable status without reviewed evidence and named human approval.",
       human_approval_required: true,
@@ -769,6 +781,14 @@ function assetMatchesAdvisory(asset, advisory) {
 }
 
 function findRelevantMatch(matches, body, question) {
+  const cve = cveFrom(question);
+  if (cve) {
+    const exact = matches.find((match) => String(match.cve).toLowerCase() === cve.toLowerCase());
+    if (exact) {
+      return exact;
+    }
+    return null;
+  }
   if (body.advisory_id || body.cve) {
     const requested = String(body.advisory_id || body.cve).toLowerCase();
     const exact = matches.find((match) =>
@@ -778,19 +798,19 @@ function findRelevantMatch(matches, body, question) {
       return exact;
     }
   }
-  const cve = cveFrom(question);
-  if (cve) {
-    const exact = matches.find((match) => String(match.cve).toLowerCase() === cve.toLowerCase());
-    if (exact) {
-      return exact;
-    }
-  }
   return [...matches].sort((a, b) => urgencyValue(b.urgency_posture) - urgencyValue(a.urgency_posture))[0] || null;
+}
+
+function requiresNamedCveContext(question, body) {
+  if (body.advisory_id || body.cve || cveFrom(question)) {
+    return false;
+  }
+  return /\b(this|that|the)\s+(cve|advisory|vendor advisory|finding)\b/i.test(String(question || ""));
 }
 
 function whatWeKnow(asset, match, body) {
   return [
-    asset.vendor_name || asset.vendor_id ? `Vendor/product: ${[asset.vendor_name || humanize(asset.vendor_id), asset.product_family, asset.model].filter(Boolean).join(" ")}` : null,
+    asset.vendor_name || asset.vendor_id || asset.product_family || asset.model ? `Vendor/product: ${assetProductSummary(asset)}` : null,
     asset.firmware_version ? `Version: ${asset.firmware_version}` : null,
     list(asset.enabled_features).length ? `Enabled features: ${list(asset.enabled_features).join(", ")}` : null,
     list(asset.disabled_features).length ? `Disabled features: ${list(asset.disabled_features).join(", ")}` : null,
@@ -800,7 +820,25 @@ function whatWeKnow(asset, match, body) {
   ].filter(Boolean);
 }
 
+function assetProductSummary(asset = {}) {
+  const vendor = asset.vendor_name || humanize(asset.vendor_id);
+  const productFamily = asset.product_family || "";
+  const model = asset.model || "";
+  const productWithoutVendor = vendor && productFamily.toLowerCase().startsWith(String(vendor).toLowerCase())
+    ? productFamily
+    : [vendor, productFamily].filter(Boolean).join(" ");
+  const productTokens = productWithoutVendor.split(/\s+/).filter(Boolean);
+  const modelTokens = model.split(/\s+/).filter(Boolean);
+  if (productTokens.length && modelTokens.length && productTokens.at(-1)?.toLowerCase() === modelTokens[0].toLowerCase()) {
+    return [...productTokens, ...modelTokens.slice(1)].join(" ");
+  }
+  return [productWithoutVendor, model].filter(Boolean).join(" ");
+}
+
 function shortAnswerFor(posture, match) {
+  if (posture === "cve_or_advisory_required") {
+    return "PatchForge needs the specific CVE/advisory ID or an explicitly selected advisory before it can answer whether this CVE requires urgent patching.";
+  }
   if (!match) {
     return "PatchForge needs a matching advisory/CVE and reviewed customer evidence before it can recommend an urgency posture.";
   }
@@ -817,6 +855,9 @@ function shortAnswerFor(posture, match) {
 }
 
 function whyForAdvisor(posture, match) {
+  if (posture === "cve_or_advisory_required") {
+    return "The question refers to a specific CVE/advisory, but the governed advisor was not given a named CVE/advisory context to assess.";
+  }
   if (!match) {
     return "The question did not resolve to enough governed source and customer-estate evidence.";
   }
@@ -841,6 +882,9 @@ function evidenceNeededFromGaps(gaps) {
 }
 
 function nextActionForPosture(posture) {
+  if (posture === "cve_or_advisory_required") {
+    return "Enter the CVE/advisory ID, select a row in the Global Security Action Center, or run Customer Estate matching before asking whether urgent patching is required.";
+  }
   if (posture === "emergency_patch_required") {
     return "Open human-led emergency CAB/security review and attach vendor patch, test, rollback, asset, feature, and exposure evidence.";
   }
@@ -1015,9 +1059,11 @@ function detectProductFamily(text, lower, vendor) {
   if (/globalprotect/i.test(text)) return "GlobalProtect";
   if (/big-?ip/i.test(text)) return "BIG-IP";
   if (/netscaler|citrix adc/i.test(text)) return "NetScaler ADC";
-  if (/junos|srx/i.test(text)) return "Junos OS";
+  if (/\bsrx\s*\d*|srx[- ]?series/i.test(text)) return "Juniper SRX";
+  if (/junos/i.test(text)) return "Junos OS";
   if (vendor.vendor_id === "fortinet") return "FortiGate";
   if (vendor.vendor_id === "cisco") return "Cisco ASA";
+  if (vendor.vendor_id === "juniper") return "Juniper SRX";
   return lower ? "Product family pending" : null;
 }
 
@@ -1026,6 +1072,8 @@ function detectModel(text, lower, productFamily) {
   if (forti) return forti[1].toUpperCase();
   const asa = text.match(/asa\s+([0-9]+[-a-z]*)/i);
   if (asa) return `ASA ${asa[1].toUpperCase()}`;
+  const srx = text.match(/\bsrx[- ]?([0-9]{3,5}[a-z]*)\b/i);
+  if (srx) return `SRX ${srx[1].toUpperCase()}`;
   const model = text.match(/\b(model|appliance)\s+([a-z0-9-]+)/i);
   if (model) return model[2].toUpperCase();
   if (productFamily && lower.includes("100f")) return "100F";
@@ -1059,6 +1107,22 @@ function detectFeatureStates(text, state) {
   return features;
 }
 
+function detectMentionedFeatures(text) {
+  const patterns = [
+    ["ssl_vpn", /ssl[- ]?vpn/i],
+    ["ipsec_vpn", /ipsec|site[- ]?to[- ]?site\s+vpn/i],
+    ["anyconnect", /anyconnect/i],
+    ["globalprotect", /globalprotect|global protect/i],
+    ["icontrol_rest", /icontrol\s*rest/i],
+    ["web_management", /management|admin ui|web ui/i],
+    ["internet_access_control", /internet\s+access\s+controls?|access\s+controls?/i],
+    ["proxy", /\bproxy\b/i],
+    ["azure_site_to_site_vpn", /azure.*site[- ]?to[- ]?site\s+vpn|site[- ]?to[- ]?site\s+vpn.*azure/i],
+    ["ot_cloud_connectivity", /\bot\b|operational\s+technology|core\s+ot|azure\s+cloud/i]
+  ];
+  return patterns.filter(([, pattern]) => pattern.test(text)).map(([feature]) => feature);
+}
+
 function detectManagementExposure(lower) {
   if (/management\s+(internal|private)\s+only|management.*internal|internal\s+only/.test(lower)) {
     return "internal";
@@ -1076,7 +1140,7 @@ function detectInternetFacing(lower, managementExposure) {
   if (["internet", "public", "external"].includes(normalize(managementExposure))) {
     return true;
   }
-  if (/internet[- ]facing|publicly\s+exposed|public\s+ip/.test(lower)) {
+  if (/internet[- ]facing|publicly\s+exposed|public\s+ip|internet\s+gateway|internet\s+access\s+controls?|edge\s+firewall|perimeter\s+firewall/.test(lower)) {
     return true;
   }
   if (/internal\s+only|management\s+internal|not\s+internet[- ]facing/.test(lower)) {

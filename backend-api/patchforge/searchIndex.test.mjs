@@ -60,6 +60,20 @@ async function seed(storage) {
     patch_available: false,
     epss_score: 0.42
   });
+  await ingestVendorSecurityAdvisory(storage, TENANT, {
+    advisory_id: "JUNIPER-SRX-GATEWAY",
+    vendor_id: "juniper",
+    vendor_name: "Juniper",
+    cve: "CVE-2026-30003",
+    title: "Juniper SRX gateway advisory",
+    severity: "high",
+    product_family: "Juniper SRX",
+    affected_versions: ["Junos OS < 23.4R2"],
+    affected_features: ["ipsec_vpn", "internet_access_control"],
+    known_exploited: false,
+    patch_available: true,
+    epss_score: 0.28
+  });
   await upsertCustomerNetworkAsset(storage, TENANT, {
     asset_id: "fw-100f",
     vendor_id: "fortinet",
@@ -120,6 +134,23 @@ test("customer estate extraction, matching, advisor, and patch compare remain ad
     assert.equal(answer.response.human_approval_required, true);
     assert.match(answer.response.decision_not_allowed_yet, /cannot issue final approval/i);
     assert.doesNotMatch(JSON.stringify(answer), /exploit instructions|procedural exploit|deploy patch/i);
+
+    const juniper = extractCustomerAssetDescription("Juniper SRX 4100 used for internet Gateway firewall IPSec Site to Site VPNs and Internet access controls and proxy for internal services to access internet resources. Also used for enabling CORE OT devices to access Azure Cloud services via site to site VPN. Does this CVE require urgent patching?");
+    assert.equal(juniper.vendor_id, "juniper");
+    assert.equal(juniper.product_family, "Juniper SRX");
+    assert.equal(juniper.model, "SRX 4100");
+    assert.equal(juniper.internet_facing, true);
+    assert.ok(juniper.enabled_features.includes("ipsec_vpn"));
+    assert.ok(juniper.enabled_features.includes("internet_access_control"));
+    const ambiguousAnswer = await buildAskPatchForgeResponse({
+      storage,
+      tenantId: TENANT,
+      body: { question: "We use Juniper SRX 4100 used for internet Gateway firewall IPSec Site to Site VPNs and Internet access controls and proxy for internal services to access internet resources. Also used for enabling CORE OT devices to access Azure Cloud services via site to site VPN. Does this CVE require urgent patching?" }
+    });
+    assert.equal(ambiguousAnswer.response.current_governed_posture, "cve_or_advisory_required");
+    assert.equal(ambiguousAnswer.matched_assessment, null);
+    assert.match(ambiguousAnswer.response.short_answer, /specific CVE\/advisory ID/i);
+    assert.ok(ambiguousAnswer.response.what_we_know.some((item) => item.includes("Juniper SRX 4100")));
 
     const comparison = await compareAndStorePatchVersion(storage, TENANT, {
       asset_id: "fw-100f",

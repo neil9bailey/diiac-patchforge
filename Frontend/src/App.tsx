@@ -270,6 +270,10 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
     () => navItems.filter((item) => item.label !== "Admin" || isAdmin),
     [isAdmin]
   );
+  const activePatchComparison = useMemo(
+    () => relevantPatchComparison(state.vendorLens.latestComparison, selectedAdvisoryId),
+    [selectedAdvisoryId, state.vendorLens.latestComparison]
+  );
 
   const loadLiveState = useCallback(async () => {
     if (session.status !== "authenticated") {
@@ -330,7 +334,6 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
       }));
       setSelectedVulnerabilityId((current) => current || vulnerabilities[0]?.vulnerability_id || "");
       setSelectedCustomerAssetId((current) => current || customerEstate.assets[0]?.asset_id || customerNetworkAssets[0]?.asset_id || "");
-      setSelectedAdvisoryId((current) => current || vendorSecurityAdvisories[0]?.advisory_id || "");
       const general = adminConfig.general as { environment?: string; governance_tier?: string } | undefined;
       setAdminEnvironment(general?.environment || config.environmentLabel);
       setAdminTier(general?.governance_tier || "Enterprise Strict");
@@ -580,10 +583,14 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
   async function handleCustomerPatchCompare() {
     setOperationMessage(null);
     setOperationError(null);
+    if (!selectedAdvisoryId) {
+      setOperationError("Select a CVE/advisory before running Patch Compare.");
+      return;
+    }
     try {
       const comparison = await liveApi.compareCustomerEstatePatch(tenantId, {
         asset_id: selectedCustomerAssetId || state.customerEstate.assets[0]?.asset_id || state.vendorLens.assets[0]?.asset_id,
-        advisory_id: selectedAdvisoryId || state.vendorLens.advisories[0]?.advisory_id,
+        advisory_id: selectedAdvisoryId,
         current_version: patchCompareForm.current_version,
         proposed_version: patchCompareForm.proposed_version
       });
@@ -609,7 +616,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         question: askQuestion,
         asset_id: selectedCustomerAssetId || undefined,
         advisory_id: selectedAdvisoryId || undefined,
-        patch_compare: state.vendorLens.latestComparison || undefined
+        patch_compare: activePatchComparison || undefined
       });
       setState((current) => ({ ...current, latestAskPatchForge: answer }));
       setOperationMessage(`Ask PatchForge answered: ${answer.response.short_answer}`);
@@ -856,7 +863,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 onSearch={handleSearchSecurityActionCenter}
                 onSelectCve={(row) => {
                   setSelectedVulnerabilityId(row.vulnerability_id || row.cve_id || row.advisory_id || "");
-                  setSelectedAdvisoryId(row.advisory_id || selectedAdvisoryId);
+                  setSelectedAdvisoryId(row.advisory_id || row.cve_id || row.id || "");
                 }}
                 canWrite={canWrite}
                 onRefreshSourceFeed={handleRefreshSourceFeed}
@@ -878,7 +885,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 patchCompareForm={patchCompareForm}
                 setPatchCompareForm={setPatchCompareForm}
                 latestMatch={state.latestCustomerMatch}
-                latestComparison={state.vendorLens.latestComparison}
+                latestComparison={activePatchComparison}
                 onExtract={handleExtractCustomerAsset}
                 onConfirmAsset={handleConfirmCustomerAsset}
                 onMatch={handleMatchCustomerEstate}
@@ -893,7 +900,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 answer={state.latestAskPatchForge}
                 selectedAssetId={selectedCustomerAssetId}
                 selectedAdvisoryId={selectedAdvisoryId}
-                latestComparison={state.vendorLens.latestComparison}
+                latestComparison={activePatchComparison}
                 onAsk={handleAskPatchForge}
                 onPatchCompare={handleCustomerPatchCompare}
                 canWrite={canWrite}
@@ -1535,6 +1542,11 @@ function AskPatchForge({
           <span>Ask about vendor, model, feature, CVE, patch, or evidence.</span>
           <textarea rows={4} value={question} onChange={(event) => setQuestion(event.target.value)} />
         </label>
+        <p className="boundary-copy">
+          {selectedAdvisoryId
+            ? `Using selected advisory context ${selectedAdvisoryId}${selectedAssetId ? ` and asset ${selectedAssetId}` : ""}.`
+            : "No CVE/advisory is selected. Include a CVE/advisory ID in the question, select one in the Global Security Action Center, or run Customer Estate matching first."}
+        </p>
         <div className="report-actions">
           <button type="button" className="action-button" onClick={onAsk} disabled={!canWrite}>
             <MessageSquareText size={16} aria-hidden /> Ask PatchForge
@@ -3463,6 +3475,14 @@ function newestDecisionPacks(decisionPacks: DecisionPackRecord[]): DecisionPackR
 function decisionPackTime(pack: DecisionPackRecord): number {
   const parsed = Date.parse(pack.created_at || "");
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function relevantPatchComparison(comparison: VendorLensPatchComparison | null, selectedAdvisoryId: string): VendorLensPatchComparison | null {
+  if (!comparison || !selectedAdvisoryId) {
+    return null;
+  }
+  const comparisonIds = [comparison.advisory_id, comparison.cve].filter(Boolean).map((value) => String(value).toLowerCase());
+  return comparisonIds.includes(selectedAdvisoryId.toLowerCase()) ? comparison : null;
 }
 
 function severityTone(severity = "") {
