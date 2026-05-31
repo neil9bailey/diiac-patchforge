@@ -1225,7 +1225,7 @@ function GlobalSecurityActionCenter({
           <span className="pill amber">Final approval false by default</span>
         </div>
         <div className="table-scroll">
-          <table>
+          <table className="data-table catalogue-table">
             <thead>
               <tr>
                 <th>CVE / Advisory ID</th>
@@ -1437,7 +1437,7 @@ function CustomerEstate({
           <span className="pill teal">{assets.length} asset(s)</span>
         </div>
         <div className="table-scroll">
-          <table>
+          <table className="data-table estate-assets-table">
             <thead><tr><th>Customer</th><th>Site</th><th>Vendor</th><th>Product family</th><th>Model</th><th>Firmware</th><th>Internet-facing</th><th>Management exposure</th><th>Enabled features</th><th>Disabled features</th><th>Evidence state</th><th>Matching CVEs</th><th>Highest urgency</th><th>Owner</th><th>Last checked</th></tr></thead>
             <tbody>
               {assetsPage.items.map((asset) => {
@@ -1474,7 +1474,7 @@ function CustomerEstate({
           <span className="pill amber">{matches.length} governed match(es)</span>
         </div>
         <div className="table-scroll">
-          <table>
+          <table className="data-table exposure-table">
             <thead><tr><th>CVE / advisory</th><th>Asset</th><th>Product</th><th>Feature</th><th>Applicability</th><th>Urgency</th><th>Evidence required</th><th>Final approval</th></tr></thead>
             <tbody>
               {matchPage.items.map((match, index) => (
@@ -2183,7 +2183,7 @@ function VulnerabilityQueue({
       </div>
 
       <div className="table-wrap">
-        <table>
+        <table className="data-table queue-table">
           <thead>
             <tr>
               <th>Vulnerability</th>
@@ -2476,7 +2476,7 @@ function SourceFeeds({
           <span className="pill teal">{sourceFeedState.recent_runs.length} recorded</span>
         </div>
         <div className="table-wrap">
-          <table>
+          <table className="data-table feed-runs-table">
             <thead>
               <tr>
                 <th>Run</th>
@@ -2540,7 +2540,7 @@ function VendorThreatLandscape({ vendors, threatSummary }: { vendors: VendorProf
         </section>
       </div>
       <div className="table-wrap">
-        <table>
+        <table className="data-table compact-table">
           <thead>
             <tr>
               <th>Vendor</th>
@@ -3024,7 +3024,7 @@ function DecisionPacks({
         <span className="pill trust">{sortedPacks.filter((pack) => pack.verification?.verified).length} verified</span>
       </div>
       <div className="table-wrap">
-        <table>
+        <table className="data-table decision-packs-table">
           <thead>
             <tr>
               <th>Pack ID</th>
