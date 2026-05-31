@@ -31,7 +31,7 @@ def test_reports_render_required_sections():
     assert "report_renderer_image_tag:" in report
     assert "generated_from_pack_id: PF-TEST" in report
     assert "generated_at_utc:" in report
-    assert "product_baseline: PF-AZ10-SIMPLIFIED-EXPERIENCE" in report
+    assert "product_baseline: PF-AZ11-CUSTOMER-DEMO-MATURITY" in report
     assert "report_context_version:" in report
     assert "source_pack_id:" in report
     assert "report_type: cab_patch_decision_report" in report

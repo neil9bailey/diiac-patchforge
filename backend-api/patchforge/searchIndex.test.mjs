@@ -9,6 +9,7 @@ import {
   buildSecurityActionCenterIndex,
   extractCustomerAssetDescription,
   matchCustomerEstate,
+  securityActionCatalogueSql,
   searchSecurityActionCenterIndex,
   summarizePatchComparison
 } from "./searchIndex.js";
@@ -105,11 +106,66 @@ test("security action center search covers CVE, vendor, product, feature, firmwa
     assert.equal(searchSecurityActionCenterIndex(index, { kev: "true" }).catalogue_rows[0].cve_id, "CVE-2026-10001");
     assert.equal(searchSecurityActionCenterIndex(index, { patch_available: "true" }).catalogue_rows[0].advisory_id, "FG-2026-SSLVPN");
     assert.equal(searchSecurityActionCenterIndex(index, { customer_match: "true" }).catalogue_rows[0].customer_match_count, 1);
+    assert.equal(searchSecurityActionCenterIndex(index, { sort: "urgency" }).catalogue_rows[0].urgency_posture, "urgent_scope_confirmation_required");
+    assert.equal(searchSecurityActionCenterIndex(index, { sort: "severity" }).catalogue_rows[0].severity, "critical");
 
     const fortinetGroup = index.groups.find((group) => group.vendor_name === "Fortinet");
     assert.ok(fortinetGroup);
     assert.ok(fortinetGroup.product_families.some((group) => group.product_family === "FortiGate"));
   });
+});
+
+test("optional PostgreSQL search path stays tenant-scoped and documents catalogue SQL", async () => {
+  const previous = process.env.PATCHFORGE_SEARCH_MODE;
+  process.env.PATCHFORGE_SEARCH_MODE = "postgres";
+  const fakeStorage = {
+    async querySecurityActionCatalogue(tenantId) {
+      assert.equal(tenantId, "tenant-a");
+      return {
+        tenant_id: tenantId,
+        generated_at: "2026-05-31T00:00:00Z",
+        search_backend: "postgres_records_catalogue",
+        collections: {
+          vulnerabilities: [],
+          vendor_security_advisories: [{
+            tenant_id: "tenant-a",
+            advisory_id: "TENANT-A-ADV",
+            vendor_id: "fortinet",
+            vendor_name: "Fortinet",
+            cve: "CVE-2026-TENANT-A",
+            title: "Tenant A Fortinet advisory",
+            severity: "high",
+            product_family: "FortiGate",
+            affected_features: ["SSL-VPN"],
+            patch_available: true,
+            retrieved_at: "2026-05-31T00:00:00Z"
+          }],
+          vendor_advisories: [],
+          vendors: [],
+          network_vendors: [],
+          customer_network_assets: [],
+          config_applicability_assessments: [],
+          source_feed_runs: [],
+          sources: []
+        }
+      };
+    }
+  };
+  try {
+    const index = await buildSecurityActionCenterIndex({ storage: fakeStorage, tenantId: "tenant-a" });
+    assert.equal(index.search_backend, "postgres_records_catalogue");
+    assert.equal(index.catalogue_rows.length, 1);
+    assert.equal(searchSecurityActionCenterIndex(index, { query: "TENANT-A" }).count, 1);
+    assert.doesNotMatch(JSON.stringify(index), /tenant-b/i);
+    assert.match(securityActionCatalogueSql(), /tenant_id/);
+    assert.match(securityActionCatalogueSql(), /materialized view/i);
+  } finally {
+    if (previous === undefined) {
+      delete process.env.PATCHFORGE_SEARCH_MODE;
+    } else {
+      process.env.PATCHFORGE_SEARCH_MODE = previous;
+    }
+  }
 });
 
 test("customer estate extraction, matching, advisor, and patch compare remain advisory-only", async () => {

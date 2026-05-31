@@ -36,6 +36,7 @@ import {
   AdminConfig,
   AdminHealth,
   AssetRecord,
+  AgentGuidanceSnapshot,
   BayesianAssessment,
   ConfigApplicabilityAssessment,
   CustomerAssetExtraction,
@@ -45,6 +46,7 @@ import {
   DecisionPackRecord,
   FindingIntelligence,
   NetworkVendorProfile,
+  OpenAiAgentStatus,
   PatchForgeApi,
   PatchForgeMetrics,
   AskPatchForgeAnswer,
@@ -119,15 +121,17 @@ type LiveState = {
   vendorLens: VendorLensState;
   latestCustomerMatch: CustomerEstateMatch | null;
   latestAskPatchForge: AskPatchForgeAnswer | null;
+  openAiAgentStatus: OpenAiAgentStatus | null;
+  latestAgentGuidance: AgentGuidanceSnapshot | null;
   sourceFeedState: SourceFeedState;
   adminHealth: AdminHealth | null;
   adminConfig: AdminConfig;
 };
 
 const PRODUCT_MARK = "DIIaC\u2122";
-const ACTIVE_BASELINE = "PF-AZ10-SIMPLIFIED-EXPERIENCE";
-const REPORT_TEMPLATE_VERSION = "patchforge-report-template.v2026-05-30.1";
-const REPORT_CONTEXT_VERSION = "patchforge-report-context.v3";
+const ACTIVE_BASELINE = "PF-AZ11-CUSTOMER-DEMO-MATURITY";
+const REPORT_TEMPLATE_VERSION = "patchforge-report-template.v2026-05-31.1";
+const REPORT_CONTEXT_VERSION = "patchforge-report-context.v4";
 const config = getPatchForgeConfig();
 
 const navItems: NavItem[] = [
@@ -282,7 +286,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
     setRefreshing(true);
     setOperationError(null);
     try {
-      const [metrics, securityActionCenter, customerEstate, reportsPacks, vulnerabilities, findings, assets, services, decisionPacks, reports, threatSummary, vendors, sourceFeedState, vendorLensDashboard, networkVendors, customerNetworkAssets, vendorSecurityAdvisories, adminHealth, adminConfig] = await Promise.all([
+      const [metrics, securityActionCenter, customerEstate, reportsPacks, vulnerabilities, findings, assets, services, decisionPacks, reports, threatSummary, vendors, sourceFeedState, vendorLensDashboard, networkVendors, customerNetworkAssets, vendorSecurityAdvisories, openAiAgentStatus, adminHealth, adminConfig] = await Promise.all([
         liveApi.metrics(tenantId),
         liveApi.securityActionCenter(tenantId),
         liveApi.customerEstate(tenantId),
@@ -300,6 +304,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         liveApi.listNetworkVendors(tenantId),
         liveApi.listCustomerNetworkAssets(tenantId),
         liveApi.listVendorSecurityAdvisories(tenantId),
+        liveApi.openAiAgentStatus(tenantId),
         canReadAdmin ? liveApi.adminHealth(tenantId) : Promise.resolve(null),
         canReadAdmin ? liveApi.adminConfig(tenantId) : Promise.resolve({} as AdminConfig)
       ]);
@@ -328,6 +333,8 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         },
         latestCustomerMatch: current.latestCustomerMatch,
         latestAskPatchForge: current.latestAskPatchForge,
+        openAiAgentStatus,
+        latestAgentGuidance: current.latestAgentGuidance,
         bayesian: null,
         adminHealth,
         adminConfig
@@ -618,7 +625,19 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         advisory_id: selectedAdvisoryId || undefined,
         patch_compare: activePatchComparison || undefined
       });
-      setState((current) => ({ ...current, latestAskPatchForge: answer }));
+      let agentGuidance: AgentGuidanceSnapshot | null = null;
+      if (state.openAiAgentStatus?.enabled && state.openAiAgentStatus.configured) {
+        agentGuidance = await liveApi.askOpenAiAgent(tenantId, {
+          question: askQuestion,
+          deterministic_answer: answer.response,
+          evidence: {
+            asset_id: selectedCustomerAssetId || undefined,
+            advisory_id: selectedAdvisoryId || undefined,
+            patch_compare: activePatchComparison || undefined
+          }
+        });
+      }
+      setState((current) => ({ ...current, latestAskPatchForge: answer, latestAgentGuidance: agentGuidance || current.latestAgentGuidance }));
       setOperationMessage(`Ask PatchForge answered: ${answer.response.short_answer}`);
     } catch (error) {
       setOperationError(error instanceof Error ? error.message : "Ask PatchForge failed.");
@@ -901,6 +920,8 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 selectedAssetId={selectedCustomerAssetId}
                 selectedAdvisoryId={selectedAdvisoryId}
                 latestComparison={activePatchComparison}
+                agentStatus={state.openAiAgentStatus}
+                agentGuidance={state.latestAgentGuidance}
                 onAsk={handleAskPatchForge}
                 onPatchCompare={handleCustomerPatchCompare}
                 canWrite={canWrite}
@@ -1513,6 +1534,8 @@ function AskPatchForge({
   selectedAssetId,
   selectedAdvisoryId,
   latestComparison,
+  agentStatus,
+  agentGuidance,
   onAsk,
   onPatchCompare,
   canWrite
@@ -1523,6 +1546,8 @@ function AskPatchForge({
   selectedAssetId: string;
   selectedAdvisoryId: string;
   latestComparison: VendorLensPatchComparison | null;
+  agentStatus: OpenAiAgentStatus | null;
+  agentGuidance: AgentGuidanceSnapshot | null;
   onAsk: () => void;
   onPatchCompare: () => void;
   canWrite: boolean;
@@ -1556,6 +1581,11 @@ function AskPatchForge({
           </button>
         </div>
         {latestComparison && <p className="boundary-copy">Patch Compare attached: current {humanize(latestComparison.current_version_affected || latestComparison.current_version_status)}, proposed {humanize(latestComparison.proposed_version_remediates || latestComparison.target_version_status)}. Final approval false.</p>}
+        <div className="agent-status-strip">
+          <StatusLine label="OpenAI agent" value={agentStatus?.enabled ? (agentStatus.configured ? "Enabled and verified" : "Enabled, key missing") : "Disabled by default"} tone={agentStatus?.enabled && agentStatus.configured ? "teal" : "steel"} />
+          <StatusLine label="Verifier" value={agentStatus?.verifier_required ? "Required" : "Required"} tone="amber" />
+          <StatusLine label="Agent authority" value="Advisory only" tone="amber" />
+        </div>
       </section>
 
       {response ? (
@@ -1576,6 +1606,21 @@ function AskPatchForge({
             <StatusLine label="Human Approval Required" value={response.human_approval_required ? "Yes" : "Yes"} tone="amber" />
             <StatusLine label="Final Approval Issued" value={response.final_approval_issued ? "True" : "False"} tone="amber" />
           </div>
+          <section className="advisor-agent-panel">
+            <div className="section-title compact-title">
+              <h4>Optional AI-Assisted Answer</h4>
+              <span className={`pill ${agentGuidance?.status === "verified" ? "teal" : "steel"}`}>{agentGuidance?.status ? humanize(agentGuidance.status) : "Not used"}</span>
+            </div>
+            {agentGuidance?.status === "verified" && agentGuidance.output ? (
+              <>
+                <AdvisorBlock title="Verifier Status" content={humanize(agentGuidance.verifier_status)} />
+                <AdvisorBlock title="Recommended Next Action" content={agentGuidance.output.recommended_next_action || "Attach reviewed evidence and request human review."} />
+                <AdvisorBlock title="Decision Not Allowed Yet" content={agentGuidance.output.decision_not_allowed_yet || response.decision_not_allowed_yet} />
+              </>
+            ) : (
+              <p className="boundary-copy">{agentStatus?.enabled ? agentGuidance?.fallback?.message || "AI-assisted output will appear only after passing deterministic governance verification." : "Optional OpenAI-native agents are disabled. The deterministic PatchForge answer is active."}</p>
+            )}
+          </section>
         </section>
       ) : (
         <EmptyState title="No advisor response yet" detail="Ask a governed PatchForge question. The response will stay advisory-only and will not approve, deploy, or accept risk." />
@@ -1941,6 +1986,7 @@ function ReportsPacks({
   canWrite: boolean;
 }) {
   const preExport = reportsPacks.pre_export_state || {};
+  const qualityReviews = preExport.report_quality_reviews || [];
   const sortedPacks = newestDecisionPacks(decisionPacks);
   const latestPack = sortedPacks[0];
   return (
@@ -1975,6 +2021,22 @@ function ReportsPacks({
           <StatusLine label="Verification" value={humanize(String(preExport.verification_state || (latestPack?.verification?.verified ? "verified" : "pending_or_not_recorded")))} tone={latestPack?.verification?.verified ? "trust" : "amber"} />
         </div>
         <p className="boundary-copy">{String(preExport.report_current_stale_warning || "Reports are generated from the selected signed pack state and current evidence still requires review.")}</p>
+      </section>
+      <section className="data-band">
+        <div className="section-title">
+          <h3>Report Content QA</h3>
+          <span className={`pill ${qualityReviews.every((review) => review.status === "PASS") && qualityReviews.length ? "trust" : "amber"}`}>{qualityReviews.length ? `${qualityReviews.filter((review) => review.status === "PASS").length}/${qualityReviews.length} PASS` : "Run after pack generation"}</span>
+        </div>
+        <div className="quality-grid">
+          {qualityReviews.map((review) => (
+            <article className="quality-item" key={review.review_id}>
+              <strong>{humanize(review.report_type)}</strong>
+              <span className={`pill ${review.status === "PASS" ? "trust" : "amber"}`}>{review.status}</span>
+              <p>{review.checks.filter((check) => check.status === "pass").length} of {review.checks.length} deterministic content checks passed. Final approval {review.final_approval_issued ? "issued" : "false"}.</p>
+            </article>
+          ))}
+        </div>
+        {!qualityReviews.length && <p className="boundary-copy">Content QA appears after a signed pack exists. It checks audience fit, known/unknown clarity, specific evidence gaps, metadata, final approval state, and governance-safe wording.</p>}
       </section>
       <DecisionPacks decisionPacks={sortedPacks} reports={reports} onExportPack={onExportPack} onDownloadReport={onDownloadReport} />
       <Reports decisionPacks={sortedPacks} reports={reports} onDownloadReport={onDownloadReport} />
@@ -3451,6 +3513,8 @@ function emptyLiveState(tenantId: string): LiveState {
     },
     latestCustomerMatch: null,
     latestAskPatchForge: null,
+    openAiAgentStatus: null,
+    latestAgentGuidance: null,
     sourceFeedState: { feeds: [], recent_runs: [] },
     adminHealth: null,
     adminConfig: {}

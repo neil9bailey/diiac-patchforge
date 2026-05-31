@@ -38,7 +38,31 @@ const FEATURE_ALIAS_GROUPS = [
   ["web_management", "management_interface", "management interface", "api_management", "api management", "admin_web_ui"]
 ];
 
+const SEARCH_COLLECTIONS = [
+  "vulnerabilities",
+  "vendor_security_advisories",
+  "vendor_advisories",
+  "vendors",
+  "network_vendors",
+  "customer_network_assets",
+  "config_applicability_assessments",
+  "source_feed_runs",
+  "sources"
+];
+
 export async function buildSecurityActionCenterIndex({ storage, tenantId }) {
+  if (searchMode() === "postgres" && typeof storage.querySecurityActionCatalogue === "function") {
+    const catalogue = await storage.querySecurityActionCatalogue(tenantId, { collections: SEARCH_COLLECTIONS });
+    if (catalogue?.collections) {
+      return buildIndexFromCollections({
+        tenantId,
+        collections: catalogue.collections,
+        generatedAt: catalogue.generated_at,
+        searchBackend: catalogue.search_backend || "postgres_catalogue"
+      });
+    }
+  }
+
   const [
     vulnerabilities,
     vendorSecurityAdvisories,
@@ -61,6 +85,59 @@ export async function buildSecurityActionCenterIndex({ storage, tenantId }) {
     storage.list("sources", tenantId)
   ]);
 
+  return buildIndexFromCollections({
+    tenantId,
+    collections: {
+      vulnerabilities,
+      vendor_security_advisories: vendorSecurityAdvisories,
+      vendor_advisories: vendorAdvisories,
+      vendors: vendorProfiles,
+      network_vendors: networkVendors,
+      customer_network_assets: customerAssets,
+      config_applicability_assessments: configAssessments,
+      source_feed_runs: sourceFeedRuns,
+      sources: sourceRecords
+    },
+    searchBackend: "local_deterministic"
+  });
+}
+
+export function securityActionCatalogueSql() {
+  return `
+-- Optional PF-AZ11 PostgreSQL catalogue pattern. JSON/local search remains the fallback.
+create materialized view if not exists patchforge_security_action_catalogue as
+select
+  tenant_id,
+  collection,
+  record_id,
+  record,
+  coalesce(record->>'updated_at', record->>'retrieved_at', record->>'created_at')::text as last_refreshed,
+  to_tsvector('simple', lower(record::text)) as search_vector
+from patchforge_records
+where collection in ('vulnerabilities','vendor_security_advisories','vendor_advisories','vendors','network_vendors','customer_network_assets','config_applicability_assessments','source_feed_runs','sources');
+
+create index if not exists idx_pfaz11_security_action_catalogue_tenant_collection
+on patchforge_security_action_catalogue (tenant_id, collection);
+
+create index if not exists idx_pfaz11_security_action_catalogue_search
+on patchforge_security_action_catalogue using gin (search_vector);
+
+-- Refresh from a scheduler/worker with:
+-- refresh materialized view concurrently patchforge_security_action_catalogue;
+`.trim();
+}
+
+function buildIndexFromCollections({ tenantId, collections, generatedAt = null, searchBackend = "local_deterministic" }) {
+  const vulnerabilities = collections.vulnerabilities || [];
+  const vendorSecurityAdvisories = collections.vendor_security_advisories || [];
+  const vendorAdvisories = collections.vendor_advisories || [];
+  const vendorProfiles = collections.vendors || [];
+  const networkVendors = collections.network_vendors || [];
+  const customerAssets = collections.customer_network_assets || [];
+  const configAssessments = collections.config_applicability_assessments || [];
+  const sourceFeedRuns = collections.source_feed_runs || [];
+  const sourceRecords = collections.sources || [];
+
   const vendorLookup = buildVendorLookup([...vendorProfiles, ...networkVendors, ...vendorSecurityAdvisories, ...vendorAdvisories]);
   const rows = [
     ...vendorSecurityAdvisories.map((record) => rowFromVendorSecurityAdvisory(record, vendorLookup)),
@@ -74,7 +151,8 @@ export async function buildSecurityActionCenterIndex({ storage, tenantId }) {
 
   return {
     tenant_id: tenantId,
-    generated_at: new Date().toISOString(),
+    generated_at: generatedAt || new Date().toISOString(),
+    search_backend: searchBackend,
     catalogue_rows: sortedRows,
     groups: groupRows(sortedRows),
     vendors: vendorFacet(sortedRows, [...vendorProfiles, ...networkVendors]),
@@ -353,9 +431,12 @@ function rowFromVendorSecurityAdvisory(record, vendorLookup) {
     source_feed: record.source_feed || record.feed_id || "vendor_advisory",
     source_state: record.source_state || "source_bound",
     review_state: record.review_state || "pending_review",
+    evidence_state: record.evidence_state || "referenced",
     urgency_posture: record.urgency_posture || null,
     applicability_posture: record.applicability_posture || null,
     final_approval_issued: Boolean(record.final_approval_issued),
+    retrieved_at: record.retrieved_at || null,
+    published_at: record.published_at || record.published || null,
     last_refreshed: record.last_modified_at || record.retrieved_at || record.updated_at || record.created_at || null,
     raw_record: record
   });
@@ -383,7 +464,10 @@ function rowFromVendorAdvisory(record, vendorLookup) {
     source_feed: record.source_feed || "vendor_group",
     source_state: record.source_state || "source_bound",
     review_state: record.review_state || "pending_review",
+    evidence_state: record.evidence_state || "referenced",
     final_approval_issued: Boolean(record.final_approval_issued),
+    retrieved_at: record.retrieved_at || null,
+    published_at: record.published_at || record.published || null,
     last_refreshed: record.updated_at || record.created_at || null,
     raw_record: record
   });
@@ -428,10 +512,13 @@ function rowFromVulnerability(record, sourceRecords, vendorLookup) {
     source_feed: record.source_feed || source.feed_id || source.source_class || "vulnerability_record",
     source_state: record.source_state || "source_bound",
     review_state: record.review_state || "pending_review",
+    evidence_state: record.evidence_state || "referenced",
     urgency_posture: record.urgency_posture || null,
     applicability_posture: record.applicability_posture || null,
     final_approval_issued: Boolean(record.final_approval_issued),
-    last_refreshed: record.updated_at || record.created_at || null,
+    retrieved_at: record.retrieved_at || source.retrieved_at || null,
+    published_at: record.published_at || source.published_at || null,
+    last_refreshed: record.retrieved_at || record.updated_at || record.created_at || source.retrieved_at || null,
     customer_asset_ids: list(record.affected_asset_ids),
     customer_service_ids: list(record.affected_service_ids),
     raw_record: record
@@ -473,9 +560,16 @@ function baseCatalogueRow(input) {
     source_feed: input.source_feed || "source_bound",
     source_state: input.source_state || "source_bound",
     review_state: input.review_state || "pending_review",
+    evidence_state: input.evidence_state || "referenced",
+    internet_facing: input.internet_facing ?? null,
+    management_exposure: input.management_exposure || null,
+    enabled_features: list(input.enabled_features),
+    disabled_features: list(input.disabled_features),
     urgency_posture: input.urgency_posture || "unknown",
     applicability_posture: input.applicability_posture || "unknown",
     final_approval_issued: Boolean(input.final_approval_issued),
+    retrieved_at: input.retrieved_at || null,
+    published_at: input.published_at || null,
     last_refreshed: input.last_refreshed || null,
     customer_asset_ids: list(input.customer_asset_ids),
     customer_service_ids: list(input.customer_service_ids),
@@ -507,7 +601,11 @@ function enrichRowWithCustomerMatches(row, assets, assessments) {
     customer_match_count: matches.length,
     urgency_posture: highest?.urgency_posture || row.urgency_posture || "unknown",
     applicability_posture: highest?.applicability_posture || row.applicability_posture || "unknown",
-    customer_asset_ids: unique([...row.customer_asset_ids, ...matches.map((match) => match.asset_id).filter(Boolean)])
+    customer_asset_ids: unique([...row.customer_asset_ids, ...matches.map((match) => match.asset_id).filter(Boolean)]),
+    internet_facing: highest?.internet_facing ?? row.internet_facing,
+    management_exposure: highest?.management_exposure || row.management_exposure,
+    enabled_features: unique([...row.enabled_features, ...matches.flatMap((match) => match.enabled_features || [])]),
+    disabled_features: unique([...row.disabled_features, ...matches.flatMap((match) => match.disabled_features || [])])
   };
 }
 
@@ -523,6 +621,10 @@ function exposureMatchFromAssessment(assessment, advisory, asset) {
     product_family: assessment.product_family || asset.product_family || advisory.product_family || null,
     model: assessment.model || asset.model || null,
     firmware_version: assessment.firmware_version || asset.firmware_version || null,
+    internet_facing: asset.internet_facing ?? null,
+    management_exposure: asset.management_exposure || null,
+    enabled_features: list(asset.enabled_features),
+    disabled_features: list(asset.disabled_features),
     affected_feature: assessment.affected_feature || firstValue(advisory.affected_features),
     applicability_posture: assessment.applicability_posture || "unknown",
     urgency_posture: assessment.urgency_posture || "unknown",
@@ -587,12 +689,16 @@ function passesFilters(row, filters) {
   if (filterBool(filters, "patch_available") !== null && Boolean(row.patch_available) !== filterBool(filters, "patch_available")) return false;
   if (filterBool(filters, "known_exploited") !== null && Boolean(row.known_exploited) !== filterBool(filters, "known_exploited")) return false;
   if (filterBool(filters, "customer_match") !== null && (row.customer_match_count > 0) !== filterBool(filters, "customer_match")) return false;
-  if (dateFrom && row.last_refreshed && Date.parse(row.last_refreshed) < Date.parse(dateFrom)) return false;
-  if (dateTo && row.last_refreshed && Date.parse(row.last_refreshed) > Date.parse(dateTo)) return false;
+  if (filterBool(filters, "final_approval_issued") !== null && Boolean(row.final_approval_issued) !== filterBool(filters, "final_approval_issued")) return false;
+  if (dateFrom && rowDate(row) && rowDate(row) < Date.parse(dateFrom)) return false;
+  if (dateTo && rowDate(row) && rowDate(row) > Date.parse(dateTo)) return false;
   return true;
 }
 
 function sorterFor(sort) {
+  if (sort === "urgency") {
+    return defaultRowSort;
+  }
   if (sort === "severity") {
     return (a, b) => severityValue(b.severity) - severityValue(a.severity) || defaultRowSort(a, b);
   }
@@ -606,7 +712,10 @@ function sorterFor(sort) {
     return (a, b) => String(a.vendor_name).localeCompare(String(b.vendor_name)) || defaultRowSort(a, b);
   }
   if (sort === "date") {
-    return (a, b) => Date.parse(b.last_refreshed || 0) - Date.parse(a.last_refreshed || 0) || defaultRowSort(a, b);
+    return (a, b) => rowDate(b) - rowDate(a) || defaultRowSort(a, b);
+  }
+  if (sort === "last_refreshed") {
+    return (a, b) => rowDate(b) - rowDate(a) || defaultRowSort(a, b);
   }
   return defaultRowSort;
 }
@@ -683,6 +792,14 @@ function countFacet(values) {
     counts.set(key, (counts.get(key) || 0) + 1);
   }
   return Array.from(counts.entries()).map(([value, count]) => ({ value, count })).sort((a, b) => b.count - a.count || a.value.localeCompare(b.value));
+}
+
+function rowDate(row) {
+  return Date.parse(row.last_refreshed || row.retrieved_at || row.published_at || 0) || 0;
+}
+
+function searchMode() {
+  return String(process.env.PATCHFORGE_SEARCH_MODE || "local").trim().toLowerCase();
 }
 
 function vendorFacet(rows, vendors) {
@@ -970,11 +1087,20 @@ function searchTextFor(row) {
     row.source_name,
     row.source_class,
     row.source_feed,
+    row.retrieved_at,
+    row.published_at,
+    row.review_state,
+    row.evidence_state,
     row.customer_asset_ids,
     row.customer_service_ids,
+    row.internet_facing === true ? "internet facing" : row.internet_facing === false ? "not internet facing" : "",
+    row.management_exposure,
+    row.enabled_features,
+    row.disabled_features,
     customerMatchText,
     row.urgency_posture,
-    row.applicability_posture
+    row.applicability_posture,
+    row.final_approval_issued ? "final approval issued" : "final approval false"
   ].flat().join(" ")).join(" ");
 }
 

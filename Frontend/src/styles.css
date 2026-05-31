@@ -646,6 +646,51 @@ td small {
   min-width: 0;
 }
 
+.agent-status-strip,
+.quality-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+
+.agent-status-strip {
+  margin-top: 10px;
+}
+
+.advisor-agent-panel {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.compact-title {
+  margin-bottom: 8px;
+}
+
+.quality-item {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #101719;
+}
+
+.quality-item strong,
+.quality-item p {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.quality-item p {
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
 .report-brief {
   display: grid;
   grid-template-columns: minmax(320px, 1fr) minmax(240px, 420px);

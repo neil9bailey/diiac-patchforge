@@ -50,13 +50,13 @@ export const REPORT_CATALOG = [
   }
 ];
 
-const BOUNDARY_TEXT = "PatchForge is a governance product. It does not scan environments, generate exploit code, provide procedural exploit steps, deploy patches, mutate production systems, approve CAB decisions, or accept risk autonomously.";
-const HUMAN_APPROVAL_NOTICE = "Human approval remains required. PatchForge does not approve CAB decisions, risk acceptance, patch deployment, or closure autonomously.";
-const UNCONFIRMED_SCOPE_TEXT = "PatchForge has public-source vulnerability intelligence, but customer asset and service exposure are not yet confirmed.";
+const BOUNDARY_TEXT = "PatchForge is a governance product. PatchForge does not deploy patches, approve CAB decisions, accept risk, or close evidence gates autonomously. It does not scan environments, generate exploit code, provide procedural exploit steps, or mutate production systems.";
+const HUMAN_APPROVAL_NOTICE = "Human approval remains required. PatchForge does not deploy patches, approve CAB decisions, accept risk, or close evidence gates autonomously.";
+const UNCONFIRMED_SCOPE_TEXT = "Customer asset and service exposure are not yet confirmed.";
 const NO_CUSTOMER_ASSURANCE_TEXT = "No customer remediation assurance can be issued yet because affected customer service scope and patch applicability evidence are not reviewed.";
-const REPORT_TEMPLATE_VERSION = "patchforge-report-template.v2026-05-30.1";
-const REPORT_CONTEXT_VERSION = "patchforge-report-context.v3";
-const DEFAULT_PRODUCT_BASELINE = process.env.PATCHFORGE_PRODUCT_BASELINE || "PF-AZ10-SIMPLIFIED-EXPERIENCE";
+const REPORT_TEMPLATE_VERSION = "patchforge-report-template.v2026-05-31.1";
+const REPORT_CONTEXT_VERSION = "patchforge-report-context.v4";
+const DEFAULT_PRODUCT_BASELINE = process.env.PATCHFORGE_PRODUCT_BASELINE || "PF-AZ11-CUSTOMER-DEMO-MATURITY";
 const DEFAULT_RENDERER_COMMIT = process.env.PATCHFORGE_RENDERER_COMMIT || process.env.PATCHFORGE_COMMIT_SHA || process.env.GIT_COMMIT || "local";
 const DEFAULT_IMAGE_TAG = process.env.PATCHFORGE_IMAGE_TAG || process.env.CONTAINER_IMAGE_TAG || "local";
 const REPORT_TYPE_MAP = new Map([
@@ -100,6 +100,120 @@ export async function generateDecisionPackReport({ reportType, format, pack, vul
     contentType: "application/pdf",
     fileName: fileNameFor(context, "pdf")
   };
+}
+
+export function buildReportContentReview({ reportType, pack, vulnerability = null, intelligence = null, sourceFeedRuns = [] }) {
+  const context = buildReportContext({ reportType, pack, vulnerability, intelligence, sourceFeedRuns });
+  const text = reportReviewText(context);
+  const checks = [
+    check("known_explained", /what we know|source-bound|recorded/i.test(text)),
+    check("unknown_explained", /not yet confirmed|not reviewed|what cannot yet be claimed|remain unverified/i.test(text)),
+    check("why_it_matters", /why it matters|why this matters now|prioritisation inputs/i.test(text)),
+    check("action_required_next", /recommended next action|recommended next actions|attach reviewed|confirm customer exposure/i.test(text)),
+    check("decision_not_allowed_yet", /cannot issue final approval|cannot be issued|not allowed|blocked pending reviewed evidence/i.test(text)),
+    check("final_approval_not_issued", /final approval not issued|final_approval_issued:\s*false|final approval false/i.test(text)),
+    check("avoids_exploit_instructions", !/\b(metasploit|reverse shell|exploit payload)\b/i.test(text)),
+    check("avoids_patch_deployment_implication", !/\b(deploy|install|apply|push)\s+(?:the\s+)?(?:security\s+)?patch\b/i.test(text)),
+    check("avoids_autonomous_approval", !/\b(auto(?:nomous)?\s+approval|cab\s+approved|risk\s+accepted)\b/i.test(text)),
+    check("avoids_unsafe_not_vulnerable_claim", !/\b(the\s+customer\s+is\s+safe|device\s+is\s+not\s+vulnerable)\b/i.test(text)),
+    check("specific_evidence_gaps", reportGapDetails(context).every((gap) => gap.why_it_matters && gap.required_evidence && gap.suggested_owner_role && gap.next_decision_gate)),
+    check("metadata_present", ["report_template_version", "report_renderer_commit", "report_renderer_image_tag", "generated_from_pack_id", "generated_at_utc", "product_baseline", "verification_state"].every((item) => text.includes(item))),
+    check("audience_specific", audienceSpecificCheck(context, text)),
+    check("source_bound_intelligence_explained", /source-bound|prioritisation inputs/i.test(text)),
+    check("boundary_statement_visible", text.includes("PatchForge does not deploy patches, approve CAB decisions, accept risk, or close evidence gates autonomously."))
+  ];
+  const status = checks.every((item) => item.status === "pass") ? "PASS" : "FAIL";
+  return {
+    review_id: `report-review-${context.reportType}-${context.packId || "unpacked"}`,
+    report_type: context.reportType,
+    pack_id: context.packId,
+    generated_at_utc: new Date().toISOString(),
+    deterministic_review: true,
+    optional_agent_critic_used: false,
+    status,
+    checks,
+    final_approval_issued: context.finalApprovalIssued,
+    audience: context.audience,
+    report_template_version: context.reportTemplateVersion,
+    report_renderer_commit: context.rendererCommit,
+    report_renderer_image_tag: context.imageTag,
+    generated_from_pack_id: context.generatedFromPackId,
+    product_baseline: context.productBaseline,
+    verification_state: context.verificationState
+  };
+}
+
+function check(name, passed) {
+  return { name, status: passed ? "pass" : "fail" };
+}
+
+function reportReviewText(context) {
+  const sections = [
+    "Report Version Metadata",
+    `report_template_version: ${context.reportTemplateVersion}`,
+    `report_renderer_commit: ${context.rendererCommit}`,
+    `report_renderer_image_tag: ${context.imageTag}`,
+    `generated_from_pack_id: ${context.generatedFromPackId}`,
+    `generated_at_utc: ${context.generatedAt}`,
+    `product_baseline: ${context.productBaseline}`,
+    `report_context_version: ${context.reportContextVersion}`,
+    `verification_state: ${context.verificationState}`,
+    `final_approval_issued: ${String(context.finalApprovalIssued)}`,
+    "What we know",
+    `${context.vulnerabilityId} is source-bound. ${vendorAdvisoryEvidenceSentence(context)}`,
+    "What we do not know",
+    context.exposure?.affected_service_count > 0 ? "Reviewed customer exposure evidence is attached for the listed scope." : "Customer asset and service exposure are not yet confirmed.",
+    "Why this matters now",
+    kevEpssSignalSentence(context),
+    "Recommended Next Action",
+    recommendedNextActionText(context),
+    "Decision Not Allowed Yet",
+    finalApprovalSentence(context),
+    "Evidence Gaps",
+    ...reportGapDetails(context).flatMap((gap) => [
+      gap.plain_english_gap,
+      gap.why_it_matters,
+      gap.required_evidence,
+      gap.suggested_owner_role,
+      gap.next_decision_gate
+    ]),
+    "Decision Boundary",
+    context.boundaryText
+  ];
+
+  if (context.reportType === "customer_patch_governance_pack") {
+    sections.push("Customer Assurance Position", "What Can Be Shared With Customer", "What Cannot Yet Be Claimed");
+  }
+  if (["board_vulnerability_remediation_summary", "board_vulnerability_summary"].includes(context.reportType)) {
+    sections.push("Executive Decision Summary", "Top Risks", "Residual Risk / Governance Position");
+  }
+  if (context.reportType === "cab_patch_decision_report") {
+    sections.push("Change Decision Request", "Required Evidence Before CAB Approval", "Maintenance Window / Implementation Owner if known");
+  }
+  return sections.join("\n");
+}
+
+function reportGapDetails(context) {
+  const direct = Array.isArray(context.evidenceGapDetails) && context.evidenceGapDetails.length
+    ? context.evidenceGapDetails
+    : Array.isArray(context.configApplicability?.evidence_gaps) && context.configApplicability.evidence_gaps.length
+      ? context.configApplicability.evidence_gaps
+      : context.blockers;
+  const details = direct.length ? direct.map(gapDetailForReport) : [gapDetailForReport("human review event")];
+  return details.map(completeGapDetail);
+}
+
+function audienceSpecificCheck(context, text) {
+  if (context.reportType === "customer_patch_governance_pack") {
+    return /Customer Assurance Position/.test(text) && /What Cannot Yet Be Claimed/.test(text);
+  }
+  if (["board_vulnerability_remediation_summary", "board_vulnerability_summary"].includes(context.reportType)) {
+    return /Executive Decision Summary/.test(text) && /Residual Risk \/ Governance Position/.test(text);
+  }
+  if (context.reportType === "cab_patch_decision_report") {
+    return /Change Decision Request/.test(text) && /Required Evidence Before CAB Approval/.test(text);
+  }
+  return true;
 }
 
 export function buildReportContext({ reportType, pack, vulnerability = null, intelligence = null, sourceFeedRuns = [] }) {
@@ -278,7 +392,7 @@ async function buildDocxReport(context) {
         heading("Exploitability Intelligence", HeadingLevel.HEADING_1),
         warningBox(context.exploitability?.prohibited_detail || "Exploit code, exploit payloads, and procedural exploitation steps are intentionally not provided."),
         para(context.exploitability?.safe_description || "PatchForge records exploitability signals for governance prioritisation only. They do not prove tenant compromise, and they do not close evidence gates without human review."),
-        para(context.exploitability?.kev_epss_interpretation || "KEV and EPSS are prioritisation signals only. They do not prove tenant exposure and cannot close hard gates without reviewed customer asset and service evidence."),
+        para(context.exploitability?.kev_epss_interpretation || kevEpssSignalSentence(context)),
         ...keyValueBlocks(exploitabilityRows(context)),
         heading("Recommended Governance Posture", HeadingLevel.HEADING_1),
         para(recommendationNarrative(context)),
@@ -312,6 +426,7 @@ async function buildDocxReport(context) {
         heading("Bayesian Advisory", HeadingLevel.HEADING_1),
         ...keyValueBlocks(bayesianRows(context)),
         heading("Vendor and Threat Landscape", HeadingLevel.HEADING_1),
+        para(vendorAdvisoryEvidenceSentence(context)),
         ...keyValueBlocks(threatRows(context)),
         ...vendorLensDocxSections(context),
         ...patchComparisonDocxSections(context),
@@ -369,7 +484,7 @@ function leadCallout(context) {
   const lines = [
     new TextRun({ text: context.title, bold: true, size: 32, color: COLORS.navy, break: 1 }),
     new TextRun({ text: `${context.audience} | ${context.vulnerabilityId} | Pack ${context.packId}`, size: 20, color: COLORS.muted, break: 1 }),
-    new TextRun({ text: `Generated ${formatDate(context.generatedAt)}. Governed posture: ${displayPosture(context)}. Readiness: ${humanize(context.readinessState)}. ${approvalLine}`, size: 20, color: COLORS.ink, break: 1 })
+    new TextRun({ text: `Generated ${formatDate(context.generatedAt)}. Governed posture: ${customerPosturePhrase(context)}. Readiness: ${humanize(context.readinessState)}. ${approvalLine}`, size: 20, color: COLORS.ink, break: 1 })
   ];
   return new Paragraph({
     shading: { type: ShadingType.CLEAR, fill: COLORS.softBlue },
@@ -383,7 +498,7 @@ function leadCallout(context) {
 function finalApprovalSentence(context) {
   return context.finalApprovalIssued
     ? "Final approval issued by recorded human approval event."
-    : "Final approval not issued.";
+    : "Final approval not issued; final remediation decision remains blocked pending reviewed evidence and named human approval.";
 }
 
 function heading(text, level, options = {}) {
@@ -415,12 +530,61 @@ function bulletList(items) {
 
 function decisionSummaryTable(context) {
   return keyValueTable([
-    ["Recommended posture", displayPosture(context)],
+    ["Recommended posture", customerPosturePhrase(context)],
     ["Next best action", context.recommendation?.next_best_action || "Review evidence and compile the signed decision pack."],
     ["Confidence", humanize(context.recommendation?.confidence || "not recorded")],
     ["Human approval", context.finalApprovalIssued ? "Recorded in signed pack" : "Still required"],
     ["Decision boundary", "Automated evidence preparation is complete where stated; approval, risk acceptance, patch deployment, and closure remain human-controlled"]
   ]);
+}
+
+function customerPosturePhrase(context) {
+  const urgency = String(context.configApplicability?.urgency_posture || context.recommendation?.display_posture || context.decisionPosture || "").toLowerCase();
+  const highRisk = ["critical", "high"].includes(String(context.severity || "").toLowerCase()) || context.knownExploited || context.configApplicability?.known_exploited;
+  const evidenceMissing = context.blockers.length > 0
+    || context.evidenceGapDetails.length > 0
+    || (Array.isArray(context.configApplicability?.evidence_gaps) && context.configApplicability.evidence_gaps.length > 0);
+  if (urgency === "urgent_scope_confirmation_required" || (highRisk && evidenceMissing)) {
+    return "Urgent scope confirmation required";
+  }
+  if (urgency === "defer_pending_evidence" && evidenceMissing) {
+    return "Final remediation decision remains blocked pending reviewed evidence";
+  }
+  return displayPosture(context);
+}
+
+function vendorAdvisoryEvidenceSentence(context) {
+  const advisory = context.vendorSecurityAdvisory || {};
+  const reviewed = ["reviewed", "accepted", "approved"].includes(String(advisory.review_state || "").toLowerCase())
+    && ["accepted_positive_evidence", "reviewed", "attached"].includes(String(advisory.evidence_state || "").toLowerCase());
+  return reviewed
+    ? "Reviewed vendor advisory evidence is attached for the named source record. Human approval is still required before final decision or customer assurance."
+    : "Reviewed vendor advisory evidence has not yet been attached. Patch maturity, affected versions, workaround guidance, and remediation applicability remain unverified.";
+}
+
+function kevEpssSignalSentence(context) {
+  const hasKev = Boolean(context.knownExploited || context.exploitability?.known_exploited || context.vendorSecurityAdvisory?.known_exploited || context.vendorSecurityAdvisory?.kev);
+  const hasEpss = context.exploitability?.epss_score !== null && context.exploitability?.epss_score !== undefined
+    || context.vendorSecurityAdvisory?.epss_score !== null && context.vendorSecurityAdvisory?.epss_score !== undefined;
+  if (hasKev && hasEpss) {
+    return "CISA KEV is a known-exploited source signal. EPSS is a probability-style exploitation signal. These are prioritisation inputs, not proof of customer exposure.";
+  }
+  return "KEV and EPSS are prioritisation signals only. They do not prove tenant exposure and cannot close hard gates without reviewed customer asset and service evidence.";
+}
+
+function featureDisabledUnreviewedSentence(context) {
+  const assessment = context.configApplicability || {};
+  if (assessment.feature_enabled_status === "disabled_unreviewed") {
+    return "The feature is user-stated as disabled, but reviewed configuration evidence has not been accepted. PatchForge cannot mark the advisory not applicable yet.";
+  }
+  return null;
+}
+
+function recommendedNextActionText(context) {
+  if (context.configApplicability?.urgency_posture === "urgent_scope_confirmation_required") {
+    return "Confirm customer exposure, affected feature state, firmware/version, vendor advisory source review, and fixed-version evidence with named owners before requesting final approval.";
+  }
+  return context.recommendation?.next_best_action || context.vendorLensDecisionContext?.recommended_next_action || "Attach reviewed source, asset, version, feature, exposure, test, rollback, and owner evidence before requesting accountable human approval.";
 }
 
 function reportVersionRows(context) {
@@ -458,19 +622,31 @@ function reportTypeRequiredDocxSections(context) {
   if (["board_vulnerability_remediation_summary", "board_vulnerability_summary"].includes(context.reportType)) {
     return [
       heading("Executive Decision Summary", HeadingLevel.HEADING_1),
-      para(context.executiveReadout || `${context.vulnerabilityId} is governed as ${displayPosture(context)}. ${finalApprovalSentence(context)} ${context.humanApprovalNotice}`),
+      para(context.executiveReadout || `${context.vulnerabilityId} is governed as ${customerPosturePhrase(context)}. ${finalApprovalSentence(context)} ${context.humanApprovalNotice}`),
       heading("Top Risks", HeadingLevel.HEADING_1),
       para(context.whyNow || "Top risk requires source review, customer exposure confirmation, and patch applicability evidence before a final decision."),
       heading("Affected Vendors / Products", HeadingLevel.HEADING_1),
       para([context.networkVendor?.vendor_name, context.vendorSecurityAdvisory?.product_family || context.customerNetworkAsset?.product_family || context.whatItAffects].filter(Boolean).join(" | ") || "Affected vendor/product mapping is not yet reviewed."),
       heading("Customer Exposure", HeadingLevel.HEADING_1),
-      para(context.whatItAffects || "Customer asset and service exposure are not yet confirmed."),
+      para(context.exposure?.affected_service_count > 0 ? context.whatItAffects || "Reviewed customer exposure evidence is attached." : "Customer asset and service exposure are not yet confirmed."),
+      heading("Why This Matters Now", HeadingLevel.HEADING_1),
+      para(`${kevEpssSignalSentence(context)} ${vendorAdvisoryEvidenceSentence(context)}`),
       heading("Recommended Next Actions", HeadingLevel.HEADING_1),
-      ...bulletList(context.recommendation?.do_now || ["Confirm scope, attach reviewed evidence, and record accountable human approval or rejection."]),
+      ...bulletList(context.recommendation?.do_now || [recommendedNextActionText(context)]),
       heading("Evidence Gaps", HeadingLevel.HEADING_1),
       ...evidenceGapBlocks(context).slice(0, 18),
+      heading("Residual Risk / Governance Position", HeadingLevel.HEADING_1),
+      para("Residual risk cannot be accepted by PatchForge. Risk ownership, expiry, compensating controls, and accountable approval must be recorded by the relevant human owner if risk acceptance is later proposed."),
       heading("Final Approval State", HeadingLevel.HEADING_1),
-      warningBox(finalApprovalSentence(context))
+      warningBox(finalApprovalSentence(context)),
+      heading("Signed Pack Metadata", HeadingLevel.HEADING_1),
+      ...keyValueBlocks([
+        ["Signed pack", context.packId],
+        ["Source pack", context.sourcePackId],
+        ["Verification state", context.verificationState],
+        ["Renderer commit", context.rendererCommit],
+        ["Image tag", context.imageTag]
+      ])
     ];
   }
   if (context.reportType === "cab_patch_decision_report") {
@@ -487,11 +663,13 @@ function reportTypeRequiredDocxSections(context) {
       para("Test evidence, rollback evidence, maintenance window, and implementation ownership must be attached and reviewed before CAB approval."),
       heading("Approval Conditions", HeadingLevel.HEADING_1),
       para(context.humanApprovalNotice),
+      heading("Maintenance Window / Implementation Owner if known", HeadingLevel.HEADING_1),
+      para(context.patchFeasibility?.maintenance_window || context.patchFeasibility?.implementation_owner ? `Maintenance window: ${context.patchFeasibility?.maintenance_window || "not recorded"}. Implementation owner: ${context.patchFeasibility?.implementation_owner || "not recorded"}.` : "Maintenance window and implementation owner are not yet recorded in reviewed evidence."),
+      heading("Required Evidence Before CAB Approval", HeadingLevel.HEADING_1),
+      ...evidenceGapBlocks(context).slice(0, 18),
       heading("Final Approval State", HeadingLevel.HEADING_1),
       warningBox(finalApprovalSentence(context)),
-      heading("Evidence Before CAB Approval", HeadingLevel.HEADING_1),
-      ...evidenceGapBlocks(context).slice(0, 18),
-      heading("Signed Pack and Audit Trace", HeadingLevel.HEADING_1),
+      heading("Signed Pack Metadata", HeadingLevel.HEADING_1),
       ...keyValueBlocks([
         ["Signed pack", context.packId],
         ["Source pack", context.sourcePackId],
@@ -544,13 +722,15 @@ function customerSpecificSections(context) {
     heading("Matching CVEs / Advisories", HeadingLevel.HEADING_2),
     para(context.vendorSecurityAdvisory ? `${context.vendorSecurityAdvisory.cve || context.vendorSecurityAdvisory.advisory_id}: ${context.vendorSecurityAdvisory.title || "Vendor advisory"}` : `${context.vulnerabilityId}: ${context.vulnerabilityTitle}`),
     heading("Applicability Assessment", HeadingLevel.HEADING_2),
-    para(context.configApplicability ? `Applicability: ${humanize(context.configApplicability.applicability_posture)}. Urgency: ${humanize(context.configApplicability.urgency_posture)}. Final approval false.` : "Applicability assessment is not attached."),
+    para(context.configApplicability ? `Applicability: ${humanize(context.configApplicability.applicability_posture)}. Urgency: ${customerPosturePhrase(context)}. ${featureDisabledUnreviewedSentence(context) || "PatchForge cannot mark the advisory not applicable without reviewed configuration, exposure, and version evidence."} Final approval false.` : "Applicability assessment is not attached."),
     heading("Patch Compare Result", HeadingLevel.HEADING_2),
     para(context.vendorLensPatchComparison ? context.vendorLensPatchComparison.ciso_summary || "Patch Compare result is attached for human review." : "Patch Compare was not used for this pack."),
     heading("Customer Impact Status", HeadingLevel.HEADING_2),
     para(impactStatus),
     heading("Evidence Needed", HeadingLevel.HEADING_2),
     ...evidenceGapBlocks(context),
+    heading("Recommended Next Action", HeadingLevel.HEADING_2),
+    para(recommendedNextActionText(context)),
     heading("Customer Communication Position", HeadingLevel.HEADING_2),
     para(customerScopeConfirmed ? "Customer communication can describe reviewed source-bound risk, affected services, current blockers, and the accountable decision timeline." : "Customer communication should be limited to source-bound public-intelligence awareness and the active scope-confirmation work. Do not state that the customer estate is affected or remediated until reviewed exposure and patch applicability evidence exists."),
     heading("What Can Be Shared With Customer", HeadingLevel.HEADING_2),
@@ -608,7 +788,7 @@ function recommendationNarrative(context) {
   const rationale = Array.isArray(recommendation.rationale) && recommendation.rationale.length
     ? recommendation.rationale.join(" ")
     : "PatchForge recommends completing evidence review before final approval.";
-  return `${humanize(recommendation.posture || context.decisionPosture)} is the current advisory posture. ${rationale} This remains a governed decision: PatchForge can prepare the evidence and report, but a human approver must issue the decision outcome.`;
+  return `${customerPosturePhrase(context)} is the current advisory posture. ${rationale} This remains a governed decision: PatchForge can prepare the evidence and report, but a human approver must issue the decision outcome. PatchForge does not deploy patches, approve CAB decisions, accept risk, or close evidence gates autonomously.`;
 }
 
 function actionPlanTable(context) {
@@ -707,7 +887,8 @@ function evidenceGapBlocks(context) {
         ["Required evidence", detail.required_evidence || "Reviewed evidence required"],
         ["Evidence examples", (detail.evidence_examples || []).join(", ") || "Accepted source record"],
         ["Suggested owner", detail.suggested_owner_role || "Evidence owner"],
-        ["Next decision gate", detail.next_decision_gate || "Evidence review"]
+        ["Next decision gate", detail.next_decision_gate || "Evidence review"],
+        ["Current state", detail.current_state || "missing_or_unreviewed"]
       ]));
     }
   } else {
@@ -1040,10 +1221,10 @@ async function buildPdfReport(context) {
     pdfSection(doc, "Report Version Metadata");
     pdfKeyValues(doc, reportVersionRows(context));
     pdfSection(doc, "Executive Decision Summary");
-    pdfParagraph(doc, context.executiveReadout || `${context.vulnerabilityId} is currently governed as ${humanize(context.decisionPosture)}. Final approval remains human-controlled.`);
+    pdfParagraph(doc, context.executiveReadout || `${context.vulnerabilityId} is currently governed as ${customerPosturePhrase(context)}. Final approval remains human-controlled.`);
     pdfParagraph(doc, finalApprovalSentence(context));
     pdfKeyValues(doc, [
-      ["Recommended posture", displayPosture(context)],
+      ["Recommended posture", customerPosturePhrase(context)],
       ["Next best action", context.recommendation?.next_best_action || "Review evidence and compile the signed decision pack."],
       ["Confidence", humanize(context.recommendation?.confidence || "not recorded")],
       ["Human approval", context.finalApprovalIssued ? "Recorded" : "Still required"]
@@ -1059,7 +1240,7 @@ async function buildPdfReport(context) {
     pdfSection(doc, "Exploitability Intelligence");
     pdfCallout(doc, context.exploitability?.prohibited_detail || "Exploit code, exploit payloads, and procedural exploitation steps are intentionally not provided.");
     pdfParagraph(doc, context.exploitability?.safe_description || "Exploitability signals inform prioritisation only and do not close evidence gates.");
-    pdfParagraph(doc, context.exploitability?.kev_epss_interpretation || "KEV and EPSS are prioritisation signals only. They do not prove tenant exposure and cannot close hard gates without reviewed customer asset and service evidence.");
+    pdfParagraph(doc, context.exploitability?.kev_epss_interpretation || kevEpssSignalSentence(context));
     pdfKeyValues(doc, exploitabilityRows(context));
     pdfSection(doc, "Recommended Action Plan");
     pdfParagraph(doc, recommendationNarrative(context));
@@ -1094,6 +1275,7 @@ async function buildPdfReport(context) {
     pdfSection(doc, "Bayesian Advisory");
     pdfKeyValues(doc, bayesianRows(context));
     pdfSection(doc, "Vendor and Threat Landscape");
+    pdfParagraph(doc, vendorAdvisoryEvidenceSentence(context));
     pdfKeyValues(doc, threatRows(context));
     pdfVendorLensSections(doc, context);
     pdfPatchComparisonSections(doc, context);
@@ -1132,23 +1314,35 @@ function pdfReportTypeRequiredSections(doc, context) {
   }
   if (["board_vulnerability_remediation_summary", "board_vulnerability_summary"].includes(context.reportType)) {
     pdfSection(doc, "Executive Decision Summary");
-    pdfParagraph(doc, context.executiveReadout || `${context.vulnerabilityId} is governed as ${displayPosture(context)}. ${finalApprovalSentence(context)} ${context.humanApprovalNotice}`);
+    pdfParagraph(doc, context.executiveReadout || `${context.vulnerabilityId} is governed as ${customerPosturePhrase(context)}. ${finalApprovalSentence(context)} ${context.humanApprovalNotice}`);
     pdfSection(doc, "Top Risks");
     pdfParagraph(doc, context.whyNow || "Top risk requires source review, customer exposure confirmation, and patch applicability evidence before a final decision.");
     pdfSection(doc, "Affected Vendors / Products");
     pdfParagraph(doc, [context.networkVendor?.vendor_name, context.vendorSecurityAdvisory?.product_family || context.customerNetworkAsset?.product_family || context.whatItAffects].filter(Boolean).join(" | ") || "Affected vendor/product mapping is not yet reviewed.");
     pdfSection(doc, "Customer Exposure");
-    pdfParagraph(doc, context.whatItAffects || "Customer asset and service exposure are not yet confirmed.");
+    pdfParagraph(doc, context.exposure?.affected_service_count > 0 ? context.whatItAffects || "Reviewed customer exposure evidence is attached." : "Customer asset and service exposure are not yet confirmed.");
+    pdfSection(doc, "Why This Matters Now");
+    pdfParagraph(doc, `${kevEpssSignalSentence(context)} ${vendorAdvisoryEvidenceSentence(context)}`);
     pdfSection(doc, "Recommended Next Actions");
-    for (const action of (context.recommendation?.do_now || ["Confirm scope, attach reviewed evidence, and record accountable human approval or rejection."]).slice(0, 5)) {
+    for (const action of (context.recommendation?.do_now || [recommendedNextActionText(context)]).slice(0, 5)) {
       pdfBullet(doc, action);
     }
     pdfSection(doc, "Evidence Gaps");
     for (const detail of (context.evidenceGapDetails?.length ? context.evidenceGapDetails : context.blockers.map(gapDetailForReport)).slice(0, 5)) {
       pdfBullet(doc, `${humanize(detail.gap || detail.plain_english_gap)}: ${detail.required_evidence || "Reviewed evidence required"}`);
     }
+    pdfSection(doc, "Residual Risk / Governance Position");
+    pdfParagraph(doc, "Residual risk cannot be accepted by PatchForge. Risk ownership, expiry, compensating controls, and accountable approval must be recorded by the relevant human owner if risk acceptance is later proposed.");
     pdfSection(doc, "Final Approval State");
     pdfCallout(doc, finalApprovalSentence(context));
+    pdfSection(doc, "Signed Pack Metadata");
+    pdfKeyValues(doc, [
+      ["Signed pack", context.packId],
+      ["Source pack", context.sourcePackId],
+      ["Verification state", context.verificationState],
+      ["Renderer commit", context.rendererCommit],
+      ["Image tag", context.imageTag]
+    ]);
     return;
   }
   if (context.reportType === "cab_patch_decision_report") {
@@ -1164,13 +1358,15 @@ function pdfReportTypeRequiredSections(doc, context) {
     pdfParagraph(doc, "Test evidence, rollback evidence, maintenance window, and implementation ownership must be attached and reviewed before CAB approval.");
     pdfSection(doc, "Approval Conditions");
     pdfParagraph(doc, context.humanApprovalNotice);
-    pdfSection(doc, "Final Approval State");
-    pdfCallout(doc, finalApprovalSentence(context));
-    pdfSection(doc, "Evidence Before CAB Approval");
+    pdfSection(doc, "Maintenance Window / Implementation Owner if known");
+    pdfParagraph(doc, context.patchFeasibility?.maintenance_window || context.patchFeasibility?.implementation_owner ? `Maintenance window: ${context.patchFeasibility?.maintenance_window || "not recorded"}. Implementation owner: ${context.patchFeasibility?.implementation_owner || "not recorded"}.` : "Maintenance window and implementation owner are not yet recorded in reviewed evidence.");
+    pdfSection(doc, "Required Evidence Before CAB Approval");
     for (const detail of (context.evidenceGapDetails?.length ? context.evidenceGapDetails : context.blockers.map(gapDetailForReport)).slice(0, 5)) {
       pdfBullet(doc, `${humanize(detail.gap || detail.plain_english_gap)}: ${detail.required_evidence || "Reviewed evidence required"}`);
     }
-    pdfSection(doc, "Signed Pack and Audit Trace");
+    pdfSection(doc, "Final Approval State");
+    pdfCallout(doc, finalApprovalSentence(context));
+    pdfSection(doc, "Signed Pack Metadata");
     pdfKeyValues(doc, [
       ["Signed pack", context.packId],
       ["Source pack", context.sourcePackId],
@@ -1208,7 +1404,7 @@ function pdfTitle(doc, context) {
   doc.moveDown(0.4);
   doc.fillColor(`#${COLORS.muted}`).font("Helvetica").fontSize(9).text(`${context.audience} | ${context.vulnerabilityId} | Pack ${context.packId}`);
   doc.moveDown(0.8);
-  pdfCallout(doc, `Generated ${formatDate(context.generatedAt)}. Governed posture: ${displayPosture(context)}. Readiness: ${humanize(context.readinessState)}.`);
+    pdfCallout(doc, `Generated ${formatDate(context.generatedAt)}. Governed posture: ${customerPosturePhrase(context)}. Readiness: ${humanize(context.readinessState)}.`);
 }
 
 function pdfCustomerSections(doc, context) {
@@ -1226,7 +1422,7 @@ function pdfCustomerSections(doc, context) {
   pdfSection(doc, "Matching CVEs / Advisories");
   pdfParagraph(doc, context.vendorSecurityAdvisory ? `${context.vendorSecurityAdvisory.cve || context.vendorSecurityAdvisory.advisory_id}: ${context.vendorSecurityAdvisory.title || "Vendor advisory"}` : `${context.vulnerabilityId}: ${context.vulnerabilityTitle}`);
   pdfSection(doc, "Applicability Assessment");
-  pdfParagraph(doc, context.configApplicability ? `Applicability: ${humanize(context.configApplicability.applicability_posture)}. Urgency: ${humanize(context.configApplicability.urgency_posture)}. Final approval false.` : "Applicability assessment is not attached.");
+  pdfParagraph(doc, context.configApplicability ? `Applicability: ${humanize(context.configApplicability.applicability_posture)}. Urgency: ${customerPosturePhrase(context)}. ${featureDisabledUnreviewedSentence(context) || "PatchForge cannot mark the advisory not applicable without reviewed configuration, exposure, and version evidence."} Final approval false.` : "Applicability assessment is not attached.");
   pdfSection(doc, "Patch Compare Result");
   pdfParagraph(doc, context.vendorLensPatchComparison ? context.vendorLensPatchComparison.ciso_summary || "Patch Compare result is attached for human review." : "Patch Compare was not used for this pack.");
   pdfSection(doc, "Customer Impact Status");
@@ -1235,6 +1431,8 @@ function pdfCustomerSections(doc, context) {
   for (const detail of (context.evidenceGapDetails?.length ? context.evidenceGapDetails : context.blockers.map(gapDetailForReport)).slice(0, 6)) {
     pdfBullet(doc, `${humanize(detail.gap)} - Required evidence: ${detail.required_evidence}. Owner: ${detail.suggested_owner_role}.`);
   }
+  pdfSection(doc, "Recommended Next Action");
+  pdfParagraph(doc, recommendedNextActionText(context));
   pdfSection(doc, "Customer Communication Position");
   pdfParagraph(doc, customerScopeConfirmed ? "Customer communication can describe reviewed source-bound risk, affected services, current blockers, and the accountable decision timeline." : "Customer communication should be limited to source-bound public-intelligence awareness and the active scope-confirmation work. Do not state that the customer estate is affected or remediated until reviewed exposure and patch applicability evidence exists.");
   pdfSection(doc, "What Can Be Shared With Customer");
@@ -1384,63 +1582,105 @@ function displayPosture(context) {
 
 function gapDetailForReport(gap) {
   const normalized = String(gap || "").toLowerCase();
-  if (normalized.includes("vulnerability") || normalized.includes("identity")) {
-    return {
-      gap,
-      why_it_matters: "CAB and customer assurance need confidence that the CVE, product, affected versions, and source provenance are correct.",
-      required_evidence: "Reviewed CISA/CVE/vendor advisory record confirming CVE, product, affected versions, and source provenance.",
-      evidence_examples: ["CISA KEV record", "NVD/CVE record", "vendor advisory", "source review event"],
-      suggested_owner_role: "Security lead or vulnerability manager",
-      next_decision_gate: "Source identity review"
-    };
+  if (gap && typeof gap === "object") {
+    return completeGapDetail(gap);
   }
-  if (normalized.includes("asset")) {
-    return {
+  if (normalized.includes("vulnerability") || normalized.includes("identity") || normalized.includes("source") || normalized.includes("advisory")) {
+    return completeGapDetail({
       gap,
-      why_it_matters: "Without asset scope, the organisation cannot tell whether the public-source finding affects the customer estate.",
-      required_evidence: "CMDB, hosting control panel inventory, scanner output, asset owner confirmation.",
-      evidence_examples: ["CMDB asset record", "hosting control panel inventory", "scanner output", "asset owner confirmation"],
-      suggested_owner_role: "Asset owner or infrastructure lead",
-      next_decision_gate: "Asset exposure confirmation"
-    };
+      plain_english_gap: "Reviewed vulnerability identity evidence is missing.",
+      why_it_matters: "CAB and customer assurance need confidence that the CVE, vendor advisory, affected product, affected versions, and source provenance are correct.",
+      required_evidence: "Reviewed CVE/vendor advisory record confirming CVE, affected product, affected versions, and source provenance.",
+      evidence_examples: ["CISA KEV record", "NVD/CVE record", "vendor advisory", "source review event"],
+      suggested_owner_role: "Security lead",
+      next_decision_gate: "Source Review",
+      current_state: "pending_review"
+    });
+  }
+  if (normalized.includes("asset") || normalized.includes("scope") || normalized.includes("estate")) {
+    return completeGapDetail({
+      gap,
+      plain_english_gap: "Customer asset scope is not reviewed.",
+      why_it_matters: "Without asset scope, the organisation cannot tell whether the public-source advisory affects the customer estate.",
+      required_evidence: "CMDB record, network asset inventory, firewall manager export, scanner output, or asset-owner confirmation.",
+      evidence_examples: ["CMDB asset record", "network asset inventory", "firewall manager export", "asset owner confirmation"],
+      suggested_owner_role: "Network Asset Owner",
+      next_decision_gate: "Scope Confirmation",
+      current_state: "missing_or_unreviewed"
+    });
   }
   if (normalized.includes("service")) {
-    return {
+    return completeGapDetail({
       gap,
+      plain_english_gap: "Customer service exposure is not reviewed.",
       why_it_matters: "Severity alone does not identify the affected customer journey, SLA/OLA, service owner, or communication need.",
-      required_evidence: "Service map, customer-facing flag, SLA/OLA impact, service owner.",
+      required_evidence: "Service map, customer-facing flag, SLA/OLA impact, and service-owner confirmation.",
       evidence_examples: ["service catalogue map", "customer-facing flag", "SLA/OLA record", "service owner confirmation"],
-      suggested_owner_role: "Service owner",
-      next_decision_gate: "Business impact review"
-    };
+      suggested_owner_role: "Service Owner",
+      next_decision_gate: "Business Impact Review",
+      current_state: "missing_or_unreviewed"
+    });
   }
-  if (normalized.includes("patch")) {
-    return {
+  if (normalized.includes("config") || normalized.includes("feature") || normalized.includes("firmware") || normalized.includes("version")) {
+    return completeGapDetail({
       gap,
+      plain_english_gap: "Customer configuration context is not reviewed.",
+      why_it_matters: "PatchForge cannot judge applicability when firmware, enabled/disabled feature state, or management exposure is user-stated but unreviewed.",
+      required_evidence: "Configuration export, change record, firewall manager evidence, or named reviewer attestation confirming enabled/disabled feature state.",
+      evidence_examples: ["running configuration", "show version output", "firewall manager export", "named reviewer attestation"],
+      suggested_owner_role: "Network Engineering Lead",
+      next_decision_gate: "Configuration Applicability Review",
+      current_state: "missing_or_unreviewed"
+    });
+  }
+  if (normalized.includes("patch") || normalized.includes("rollback") || normalized.includes("test") || normalized.includes("window")) {
+    return completeGapDetail({
+      gap,
+      plain_english_gap: "Patch availability and feasibility evidence is not reviewed.",
       why_it_matters: "Patch, mitigation, deferral, or customer assurance cannot be selected confidently until affected versions, testing, rollback, and applicability are known.",
-      required_evidence: "Vendor patch note, affected version mapping, test evidence, rollback plan.",
-      evidence_examples: ["vendor patch note", "affected version mapping", "test evidence", "rollback plan"],
-      suggested_owner_role: "Change owner or platform engineer",
-      next_decision_gate: "Patch feasibility review"
-    };
+      required_evidence: "Vendor patch note, fixed-version evidence, rollout/test evidence, and rollback plan.",
+      evidence_examples: ["vendor patch note", "fixed-version release note", "test evidence", "rollback plan"],
+      suggested_owner_role: "Platform Owner / Change Manager",
+      next_decision_gate: "Patch Feasibility Review",
+      current_state: "missing_or_unreviewed"
+    });
   }
-  if (normalized.includes("human")) {
-    return {
+  if (normalized.includes("human") || normalized.includes("approval") || normalized.includes("reviewer")) {
+    return completeGapDetail({
       gap,
-      why_it_matters: "Source-bound intelligence cannot become accepted positive evidence without a named reviewer decision.",
-      required_evidence: "Named reviewer decision accepting or rejecting source records.",
+      plain_english_gap: "Named human review event is missing.",
+      why_it_matters: "Source-bound intelligence cannot become accepted positive evidence or a final decision without a named reviewer decision.",
+      required_evidence: "Named human reviewer acceptance, rejection, or clarification event.",
       evidence_examples: ["source review event", "reviewer name or role", "review outcome", "review notes"],
-      suggested_owner_role: "Security lead or CAB reviewer",
-      next_decision_gate: "Human evidence review"
-    };
+      suggested_owner_role: "Security Lead / CAB Chair",
+      next_decision_gate: "Human Approval",
+      current_state: "not_recorded"
+    });
   }
-  return {
+  return completeGapDetail({
     gap,
-    why_it_matters: "The decision gate remains open until reviewed evidence is attached and accepted.",
+    plain_english_gap: `Reviewed evidence is missing for ${humanize(gap || "this decision point")}.`,
+    why_it_matters: "This decision point cannot support customer assurance, CAB approval, risk acceptance, or closure until an accountable owner attaches reviewed evidence.",
     required_evidence: actionForBlocker(gap),
     evidence_examples: ["accepted evidence record", "review note", "owner confirmation"],
-    suggested_owner_role: "Accountable evidence owner",
-    next_decision_gate: "Evidence review"
+    suggested_owner_role: "Accountable Evidence Owner",
+    next_decision_gate: "Evidence Review",
+    current_state: "missing_or_unreviewed"
+  });
+}
+
+function completeGapDetail(detail = {}) {
+  const label = detail.gap || detail.gap_id || detail.plain_english_gap || "Evidence gap";
+  return {
+    gap: label,
+    gap_id: detail.gap_id || String(label).toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, ""),
+    plain_english_gap: detail.plain_english_gap || humanize(label),
+    why_it_matters: detail.why_it_matters || "This point blocks accountable customer, CAB, risk, or closure decisions until reviewed evidence is attached.",
+    required_evidence: detail.required_evidence || actionForBlocker(label),
+    evidence_examples: Array.isArray(detail.evidence_examples) && detail.evidence_examples.length ? detail.evidence_examples : ["accepted evidence record", "review note", "owner confirmation"],
+    suggested_owner_role: detail.suggested_owner_role || "Accountable Evidence Owner",
+    next_decision_gate: detail.next_decision_gate || "Evidence Review",
+    current_state: detail.current_state || "missing_or_unreviewed"
   };
 }
 

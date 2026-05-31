@@ -5,7 +5,8 @@ import { authorizeRequest, createAuthConfigFromEnv } from "./auth.js";
 import { createPatchForgeStorage } from "./patchforge/storage.js";
 import { createSourceFeedClient } from "./patchforge/sourceFeeds.js";
 import { buildFindingIntelligence, buildIntelligenceForTenant } from "./patchforge/intelligence.js";
-import { REPORT_CATALOG, generateDecisionPackReport } from "./patchforge/reports.js";
+import { REPORT_CATALOG, buildReportContentReview, generateDecisionPackReport } from "./patchforge/reports.js";
+import { getOpenAiAgentStatus, OPENAI_AGENT_NAMES, runOpenAiAgent } from "./patchforge/openaiAgentService.js";
 import { startScheduler } from "./patchforge/scheduler.js";
 import {
   buildAskPatchForgeResponse,
@@ -82,6 +83,7 @@ export function createServer(options = {}) {
   const runtimeClient = options.runtimeClient || createRuntimeClientFromEnv();
   const sourceFeedClient = options.sourceFeedClient || createSourceFeedClient();
   const vendorLensFetchImpl = options.vendorLensFetchImpl || globalThis.fetch;
+  const openAiAgentFetchImpl = options.openAiAgentFetchImpl || globalThis.fetch;
   const corsConfig = options.cors || createCorsConfigFromEnv();
 
   return http.createServer(async (req, res) => {
@@ -362,6 +364,50 @@ export function createServer(options = {}) {
           tenant_id: tenantContext.effective_tenant_id,
           tenant_context: tenantContext,
           ...answer
+        });
+      }
+
+      if (route === "GET /api/patchforge/agents/status") {
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          openai_agent: getOpenAiAgentStatus()
+        });
+      }
+
+      const agentMatch = url.pathname.match(/^\/api\/patchforge\/agents\/([^/]+)$/);
+      if (req.method === "POST" && agentMatch) {
+        const agentKey = decodeURIComponent(agentMatch[1]);
+        if (!Object.prototype.hasOwnProperty.call(OPENAI_AGENT_NAMES, agentKey)) {
+          return sendJson(res, 404, {
+            error: "unknown_agent_type",
+            allowed_agents: Object.keys(OPENAI_AGENT_NAMES)
+          });
+        }
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const result = await runOpenAiAgent({
+          agentName: OPENAI_AGENT_NAMES[agentKey],
+          prompt: body.question || body.prompt || body.message || "",
+          evidence: {
+            ...body.evidence,
+            deterministic_answer: body.deterministic_answer || null,
+            reviewed_exposure_evidence: Boolean(body.reviewed_exposure_evidence),
+            reviewed_applicability_evidence: Boolean(body.reviewed_applicability_evidence),
+            reviewed_customer_assurance_evidence: Boolean(body.reviewed_customer_assurance_evidence)
+          },
+          tenantId: tenantContext.effective_tenant_id,
+          fetchImpl: openAiAgentFetchImpl
+        });
+        await storage.append("agent_guidance_snapshots", {
+          tenant_id: tenantContext.effective_tenant_id,
+          ...result,
+          ...lineageFields(tenantContext, authorization)
+        });
+        return sendJson(res, result.status === "verified" ? 200 : 202, {
+          tenant_id: tenantContext.effective_tenant_id,
+          tenant_context: tenantContext,
+          agent_guidance: result
         });
       }
 
@@ -1072,7 +1118,7 @@ async function generateDecisionPackForRequest({ storage, runtimeClient, tenantCo
     report_renderer_commit: body.report_renderer_commit || process.env.PATCHFORGE_RENDERER_COMMIT || process.env.PATCHFORGE_COMMIT_SHA || process.env.GIT_COMMIT || null,
     report_renderer_image_tag: body.report_renderer_image_tag || process.env.PATCHFORGE_IMAGE_TAG || process.env.CONTAINER_IMAGE_TAG || null,
     generated_from_pack_id: runtimeResult.pack_id,
-    product_baseline: body.product_baseline || process.env.PATCHFORGE_PRODUCT_BASELINE || "PF-AZ10-SIMPLIFIED-EXPERIENCE",
+    product_baseline: body.product_baseline || process.env.PATCHFORGE_PRODUCT_BASELINE || "PF-AZ11-CUSTOMER-DEMO-MATURITY",
     report_context_version: body.report_context_version || null,
     ...lineageFields(tenantContext, authorization),
     created_at: runtimeResult.created_at || new Date().toISOString()
@@ -1091,6 +1137,7 @@ async function generateDecisionPackForRequest({ storage, runtimeClient, tenantCo
       tenant_context: tenantContext,
       decision_pack: packRecord,
       pre_export_state: reportPreExportState(packRecord),
+      report_quality_reviews: reportPreExportState(packRecord).report_quality_reviews,
       runtime: {
         verification: runtimeResult.verification || null,
         boundary: runtimeResult.boundary || null
@@ -1119,7 +1166,7 @@ function reportPreExportState(pack = {}) {
     : "Report is generated from the selected signed pack state.";
   return {
     pack_id: pack.pack_id || pack.decision_pack_id,
-    baseline: pack.product_baseline || governance.product_baseline || "PF-AZ10-SIMPLIFIED-EXPERIENCE",
+    baseline: pack.product_baseline || governance.product_baseline || "PF-AZ11-CUSTOMER-DEMO-MATURITY",
     renderer_commit: pack.report_renderer_commit || governance.report_renderer_commit || "not recorded",
     image_tag: pack.report_renderer_image_tag || governance.report_renderer_image_tag || "not recorded",
     final_approval_state: pack.final_approval_issued ? "issued" : "not_issued",
@@ -1129,7 +1176,12 @@ function reportPreExportState(pack = {}) {
     customer_context_included: hasCustomerContext,
     report_current_stale_warning: staleWarning,
     signing_provider: pack.signing_provider || "not recorded",
-    verification_state: pack.verification?.verified ? "verified" : "pending_or_not_recorded"
+    verification_state: pack.verification?.verified ? "verified" : "pending_or_not_recorded",
+    report_quality_reviews: [
+      "customer_patch_governance_pack",
+      "board_vulnerability_remediation_summary",
+      "cab_patch_decision_report"
+    ].map((reportType) => buildReportContentReview({ reportType, pack }))
   };
 }
 

@@ -23,6 +23,8 @@ const COLLECTIONS = [
   "vendorlens_patch_comparisons",
   "vendorlens_chat_sessions",
   "vendorlens_chat_messages",
+  "agent_guidance_snapshots",
+  "report_quality_reviews",
   "source_feed_runs",
   "audit_events"
 ];
@@ -48,6 +50,8 @@ const COLLECTION_ID_FIELDS = {
   vendorlens_patch_comparisons: "comparison_id",
   vendorlens_chat_sessions: "session_id",
   vendorlens_chat_messages: "message_id",
+  agent_guidance_snapshots: "snapshot_id",
+  report_quality_reviews: "review_id",
   source_feed_runs: "run_id",
   audit_events: "audit_id"
 };
@@ -84,6 +88,9 @@ const DEFAULT_ADMIN_CONFIG = {
     mcp_agent_findings_enabled: true,
     mythos_findings_enabled: true,
     agi_agent_findings_enabled: true,
+    openai_native_agents_enabled: false,
+    openai_model: process.env.PATCHFORGE_OPENAI_MODEL || "gpt-4o-mini",
+    openai_key_source: "Azure Key Vault or environment only",
     advisory_only: true,
     review_required: true,
     can_close_hard_gates_alone: false,
@@ -272,6 +279,44 @@ export class PatchForgeJsonStorage {
     }
     await this._write(collection, records);
     return record;
+  }
+
+  async querySecurityActionCatalogue(tenantId, options = {}) {
+    await this.ensureReady();
+    const collections = Array.isArray(options.collections) && options.collections.length
+      ? options.collections
+      : [
+          "vulnerabilities",
+          "vendor_security_advisories",
+          "vendor_advisories",
+          "vendors",
+          "network_vendors",
+          "customer_network_assets",
+          "config_applicability_assessments",
+          "source_feed_runs",
+          "sources"
+        ];
+    const result = await this.pool.query(
+      `select collection, record
+       from patchforge_records
+       where tenant_id = $1 and collection = any($2::text[])
+       order by collection asc, created_at asc`,
+      [tenantId, collections]
+    );
+    const grouped = Object.fromEntries(collections.map((collection) => [collection, []]));
+    for (const row of result.rows) {
+      if (!grouped[row.collection]) {
+        grouped[row.collection] = [];
+      }
+      grouped[row.collection].push(row.record);
+    }
+    return {
+      tenant_id: tenantId,
+      generated_at: new Date().toISOString(),
+      search_backend: "postgres_records_catalogue",
+      tenant_isolation: "tenant_id predicate enforced by PostgreSQL query",
+      collections: grouped
+    };
   }
 
   async replace(collection, predicate, updater) {

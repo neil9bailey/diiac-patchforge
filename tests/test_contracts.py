@@ -45,6 +45,9 @@ EXPECTED_SCHEMAS = {
     "sra_config_chat_session.schema.json",
     "sra_config_chat_message.schema.json",
     "vendorlens_decision_context.schema.json",
+    "agent_guidance_snapshot.schema.json",
+    "config_applicability_agent_response.schema.json",
+    "report_quality_review.schema.json",
 }
 
 COMMON_REQUIRED_CLASSES = {
@@ -108,6 +111,8 @@ def test_final_approval_defaults_false():
         "patch_risk_acceptance_state.schema.json",
         "patch_decision_context.schema.json",
         "patch_decision_pack_manifest.schema.json",
+        "agent_guidance_snapshot.schema.json",
+        "config_applicability_agent_response.schema.json",
     ]:
         schema = load_json(SCHEMA_DIR / schema_name)
         assert schema["properties"]["final_approval_issued"]["default"] is False

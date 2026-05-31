@@ -453,11 +453,59 @@ export type AskPatchForgeAnswer = {
   final_approval_issued: boolean;
 };
 
+export type OpenAiAgentStatus = {
+  enabled: boolean;
+  configured: boolean;
+  provider: string;
+  model: string;
+  timeout_ms: number;
+  max_output_tokens: number;
+  verifier_required: boolean;
+  advisory_only: boolean;
+  final_approval_issued: boolean;
+  can_close_hard_gates: boolean;
+  can_approve: boolean;
+  can_patch: boolean;
+  can_accept_risk: boolean;
+};
+
+export type AgentGuidanceSnapshot = {
+  snapshot_id: string;
+  agent_name: string;
+  status: "disabled" | "verified" | "blocked";
+  verifier_status: "not_run" | "passed" | "blocked";
+  output?: {
+    recommended_next_action?: string;
+    decision_not_allowed_yet?: string;
+    evidence_missing?: Array<Record<string, unknown>>;
+    source_bound_warnings?: string[];
+    final_approval_issued?: boolean;
+  } | null;
+  fallback?: {
+    message?: string;
+    recommended_next_action?: string;
+    decision_not_allowed_yet?: string;
+    final_approval_issued?: boolean;
+  } | null;
+  verification_failures?: Array<{ code?: string; message?: string }>;
+  final_approval_issued: boolean;
+  can_close_hard_gates: boolean;
+};
+
+export type ReportQualityReview = {
+  review_id: string;
+  report_type: string;
+  pack_id?: string | null;
+  status: "PASS" | "FAIL";
+  checks: Array<{ name: string; status: "pass" | "fail" }>;
+  final_approval_issued: boolean;
+};
+
 export type ReportsPacksState = {
   reports: ReportCatalogItem[];
   decision_packs: DecisionPackRecord[];
   export_options: string[];
-  pre_export_state?: Record<string, unknown> | null;
+  pre_export_state?: (Record<string, unknown> & { report_quality_reviews?: ReportQualityReview[] }) | null;
 };
 
 export type VulnerabilityRecord = {
@@ -567,6 +615,8 @@ export type PatchForgeApi = {
   matchCustomerEstate(tenantId: string, payload: Record<string, unknown>): Promise<CustomerEstateMatch>;
   compareCustomerEstatePatch(tenantId: string, payload: Record<string, unknown>): Promise<VendorLensPatchComparison>;
   askPatchForge(tenantId: string, payload: Record<string, unknown>): Promise<AskPatchForgeAnswer>;
+  openAiAgentStatus(tenantId: string): Promise<OpenAiAgentStatus>;
+  askOpenAiAgent(tenantId: string, payload: Record<string, unknown>): Promise<AgentGuidanceSnapshot>;
   reportsPacks(tenantId: string): Promise<ReportsPacksState>;
   generateReportsPack(tenantId: string, payload: Record<string, unknown>): Promise<DecisionPackRecord>;
   listVulnerabilities(tenantId: string): Promise<VulnerabilityRecord[]>;
@@ -730,6 +780,17 @@ export function createPatchForgeApi(getAccessToken: () => Promise<string>, confi
         method: "POST",
         body: JSON.stringify(payload)
       });
+    },
+    async openAiAgentStatus(tenantId) {
+      const body = await request<{ openai_agent: OpenAiAgentStatus }>("/api/patchforge/agents/status", tenantId);
+      return body.openai_agent;
+    },
+    async askOpenAiAgent(tenantId, payload) {
+      const body = await request<{ agent_guidance: AgentGuidanceSnapshot }>("/api/patchforge/agents/ask", tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return body.agent_guidance;
     },
     async reportsPacks(tenantId) {
       return request<ReportsPacksState>("/api/patchforge/reports-packs", tenantId);

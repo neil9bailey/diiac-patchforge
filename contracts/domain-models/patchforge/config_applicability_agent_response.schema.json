@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/config_applicability_agent_response.schema.json",
+  "title": "PatchForge Config Applicability Agent Response",
+  "type": "object",
+  "required": [
+    "agent_name",
+    "advisory_only",
+    "can_close_hard_gates",
+    "can_approve",
+    "can_patch",
+    "can_accept_risk",
+    "final_approval_issued",
+    "human_review_required",
+    "evidence_used",
+    "evidence_missing",
+    "source_bound_warnings",
+    "recommended_next_action",
+    "decision_not_allowed_yet"
+  ],
+  "properties": {
+    "agent_name": { "type": "string" },
+    "advisory_only": { "const": true },
+    "can_close_hard_gates": { "const": false },
+    "can_approve": { "const": false },
+    "can_patch": { "const": false },
+    "can_accept_risk": { "const": false },
+    "final_approval_issued": { "default": false, "const": false },
+    "human_review_required": { "const": true },
+    "evidence_used": { "type": "array", "items": { "type": "object" } },
+    "evidence_missing": { "type": "array", "items": { "type": "object" } },
+    "source_bound_warnings": { "type": "array", "items": { "type": "string" } },
+    "recommended_next_action": { "type": "string" },
+    "decision_not_allowed_yet": { "type": "string" },
+    "output_hash": { "type": "string" },
+    "created_at": { "type": "string" }
+  }
+}

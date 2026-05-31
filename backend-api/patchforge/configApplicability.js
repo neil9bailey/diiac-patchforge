@@ -278,13 +278,35 @@ function gap(gapId, plainEnglishGap, requiredEvidence, ownerRole = null, decisio
   return {
     gap_id: gapId,
     plain_english_gap: plainEnglishGap,
-    why_it_matters: "PatchForge cannot support an accountable customer/CAB decision without reviewed evidence for this point.",
+    why_it_matters: whyGapMatters(gapId),
     required_evidence: requiredEvidence,
     evidence_examples: Array.isArray(evidenceExamples) ? evidenceExamples : list(evidenceExamples),
     suggested_owner_role: ownerRole || ownerForGap(gapId),
     next_decision_gate: decisionGate || gateForGap(gapId),
     current_state: currentState
   };
+}
+
+function whyGapMatters(gapId) {
+  if (gapId.includes("advisory") || gapId.includes("vulnerability")) {
+    return "The source record must be reviewed before PatchForge can treat CVE identity, affected product, affected versions, and provenance as accepted evidence.";
+  }
+  if (gapId.includes("asset") || gapId.includes("product_model")) {
+    return "The organisation cannot determine whether the public advisory touches the customer estate until asset, product, and model scope are reviewed.";
+  }
+  if (gapId.includes("firmware")) {
+    return "Affected and fixed-version comparisons are unreliable until the running firmware or software version is reviewed.";
+  }
+  if (gapId.includes("feature")) {
+    return "A user-stated enabled or disabled feature cannot support not-applicable or urgent patch posture until configuration evidence is reviewed.";
+  }
+  if (gapId.includes("exposure")) {
+    return "Internet and management-plane exposure change urgency, customer communication, and CAB timing, so exposure must be reviewed.";
+  }
+  if (gapId.includes("superseded")) {
+    return "Superseded advisories need reviewer confirmation so PatchForge uses the authoritative source record.";
+  }
+  return "PatchForge cannot support an accountable customer/CAB decision without reviewed evidence for this point.";
 }
 
 function ownerForGap(gapId) {

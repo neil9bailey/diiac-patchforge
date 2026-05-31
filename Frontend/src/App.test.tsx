@@ -291,6 +291,35 @@ function createApi(overrides: Partial<PatchForgeApi> = {}): PatchForgeApi {
       candidate_matches: [match],
       final_approval_issued: false
     })),
+    openAiAgentStatus: vi.fn(async () => ({
+      enabled: false,
+      configured: false,
+      provider: "openai",
+      model: "gpt-4o-mini",
+      timeout_ms: 15000,
+      max_output_tokens: 1000,
+      verifier_required: true,
+      advisory_only: true,
+      final_approval_issued: false,
+      can_close_hard_gates: false,
+      can_approve: false,
+      can_patch: false,
+      can_accept_risk: false
+    })),
+    askOpenAiAgent: vi.fn(async () => ({
+      snapshot_id: "agent-test",
+      agent_name: "Ask PatchForge Agent",
+      status: "disabled" as const,
+      verifier_status: "not_run" as const,
+      output: null,
+      fallback: {
+        message: "PatchForge could not use this agent response because it failed governance verification.",
+        final_approval_issued: false
+      },
+      verification_failures: [],
+      final_approval_issued: false,
+      can_close_hard_gates: false
+    })),
     reportsPacks: vi.fn(async () => ({
       reports: [{
         report_type: "customer_patch_governance_pack",
@@ -316,21 +345,43 @@ function createApi(overrides: Partial<PatchForgeApi> = {}): PatchForgeApi {
         readiness: { readiness_state: "blocked", final_approval_issued: false },
         verification: { verified: true },
         final_approval_issued: false,
-        product_baseline: "PF-AZ10-SIMPLIFIED-EXPERIENCE",
+        product_baseline: "PF-AZ11-CUSTOMER-DEMO-MATURITY",
         report_renderer_commit: "test-commit",
-        report_renderer_image_tag: "pfaz10-test"
+        report_renderer_image_tag: "pfaz11-test"
       }],
       export_options: ["Customer Patch Governance Pack", "Board Vulnerability Summary", "CAB Patch Decision Report", "Technical Evidence Appendix", "Signed Decision Pack ZIP", "Verification"],
       pre_export_state: {
         pack_id: "PF-TEST-0001",
-        baseline: "PF-AZ10-SIMPLIFIED-EXPERIENCE",
+        baseline: "PF-AZ11-CUSTOMER-DEMO-MATURITY",
         renderer_commit: "test-commit",
-        image_tag: "pfaz10-test",
+        image_tag: "pfaz11-test",
         evidence_state: "evidence_review_required",
         vendorlens_context_included: true,
         customer_context_included: true,
         verification_state: "verified",
-        final_approval_issued: false
+        final_approval_issued: false,
+        report_quality_reviews: [{
+          review_id: "report-review-customer",
+          report_type: "customer_patch_governance_pack",
+          pack_id: "PF-TEST-0001",
+          status: "PASS" as const,
+          checks: [{ name: "known_explained", status: "pass" as const }],
+          final_approval_issued: false
+        }, {
+          review_id: "report-review-board",
+          report_type: "board_vulnerability_remediation_summary",
+          pack_id: "PF-TEST-0001",
+          status: "PASS" as const,
+          checks: [{ name: "audience_specific", status: "pass" as const }],
+          final_approval_issued: false
+        }, {
+          review_id: "report-review-cab",
+          report_type: "cab_patch_decision_report",
+          pack_id: "PF-TEST-0001",
+          status: "PASS" as const,
+          checks: [{ name: "required_evidence", status: "pass" as const }],
+          final_approval_issued: false
+        }]
       }
     })),
     generateReportsPack: vi.fn(async () => ({
@@ -359,9 +410,9 @@ function createApi(overrides: Partial<PatchForgeApi> = {}): PatchForgeApi {
       vulnerability_id: "CVE-2026-REAL-001",
       final_approval_issued: false,
       verification: { verified: true },
-      product_baseline: "PF-AZ10-SIMPLIFIED-EXPERIENCE",
+      product_baseline: "PF-AZ11-CUSTOMER-DEMO-MATURITY",
       report_renderer_commit: "test-commit",
-      report_renderer_image_tag: "pfaz10-test"
+      report_renderer_image_tag: "pfaz11-test"
     }]),
     generateDecisionPack: vi.fn(async () => ({
       decision_pack_id: "PF-TEST-0001",
@@ -620,6 +671,8 @@ describe("PatchForge simplified customer experience", () => {
     expect(screen.getByText("Decision Not Allowed Yet")).toBeInTheDocument();
     expect(screen.getByText(/cannot issue final approval/i)).toBeInTheDocument();
     expect(screen.getByText("Human Approval Required")).toBeInTheDocument();
+    expect(screen.getByText("Optional AI-Assisted Answer")).toBeInTheDocument();
+    expect(screen.getByText(/Optional OpenAI-native agents are disabled/i)).toBeInTheDocument();
   });
 
   it("consolidates report generation, metadata, downloads, and signed pack export", async () => {
@@ -630,9 +683,11 @@ describe("PatchForge simplified customer experience", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Reports & Packs" }));
     expect(screen.getByRole("heading", { name: "Reports & Packs" })).toBeInTheDocument();
     expect(screen.getByText("Pre-Export Check")).toBeInTheDocument();
-    expect(screen.getAllByText("PF-AZ10-SIMPLIFIED-EXPERIENCE").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText("pfaz10-test")).toBeInTheDocument();
+    expect(screen.getAllByText("PF-AZ11-CUSTOMER-DEMO-MATURITY").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("pfaz11-test")).toBeInTheDocument();
     expect(screen.getByText("Final approval false")).toBeInTheDocument();
+    expect(screen.getByText("Report Content QA")).toBeInTheDocument();
+    expect(screen.getByText("3/3 PASS")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Generate Signed Pack" }));
     await waitFor(() => expect(api.generateReportsPack).toHaveBeenCalled());

@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchforge.diiac.io/contracts/report_quality_review.schema.json",
+  "title": "PatchForge Report Quality Review",
+  "type": "object",
+  "required": [
+    "review_id",
+    "report_type",
+    "pack_id",
+    "generated_at_utc",
+    "deterministic_review",
+    "status",
+    "checks",
+    "final_approval_issued",
+    "report_template_version",
+    "report_renderer_commit",
+    "report_renderer_image_tag",
+    "generated_from_pack_id",
+    "product_baseline",
+    "verification_state"
+  ],
+  "properties": {
+    "review_id": { "type": "string" },
+    "report_type": { "type": "string" },
+    "pack_id": { "type": ["string", "null"] },
+    "generated_at_utc": { "type": "string" },
+    "deterministic_review": { "const": true },
+    "optional_agent_critic_used": { "type": "boolean", "default": false },
+    "status": { "enum": ["PASS", "FAIL"] },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "status"],
+        "properties": {
+          "name": { "type": "string" },
+          "status": { "enum": ["pass", "fail"] }
+        }
+      }
+    },
+    "final_approval_issued": { "default": false, "type": "boolean" },
+    "audience": { "type": "string" },
+    "report_template_version": { "type": "string" },
+    "report_renderer_commit": { "type": "string" },
+    "report_renderer_image_tag": { "type": "string" },
+    "generated_from_pack_id": { "type": ["string", "null"] },
+    "product_baseline": { "type": "string" },
+    "verification_state": { "type": "string" }
+  }
+}

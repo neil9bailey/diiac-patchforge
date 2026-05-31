@@ -20,24 +20,30 @@ REPORT_SECTIONS = [
     "Evidence Needed",
     "What Can Be Shared With Customer",
     "What Cannot Yet Be Claimed",
+    "Recommended Next Action",
     "Executive Decision Summary",
     "Top Risks",
     "Affected Vendors / Products",
     "Customer Exposure",
+    "Why This Matters Now",
     "Recommended Next Actions",
     "Evidence Gaps",
+    "Residual Risk / Governance Position",
     "Change Decision Request",
     "Affected Devices",
     "Patch Applicability",
+    "Patch Compare",
     "Test / Rollback Evidence Needed",
     "Approval Conditions",
+    "Maintenance Window / Implementation Owner if known",
+    "Required Evidence Before CAB Approval",
     "Final Approval State",
     "Signed Pack Metadata",
     "Decision Boundary",
 ]
 
-REPORT_TEMPLATE_VERSION = "patchforge-report-template.v2026-05-30.1"
-REPORT_CONTEXT_VERSION = "patchforge-report-context.v3"
+REPORT_TEMPLATE_VERSION = "patchforge-report-template.v2026-05-31.1"
+REPORT_CONTEXT_VERSION = "patchforge-report-context.v4"
 
 
 def render_report(report_type: str, context: dict[str, Any]) -> str:
@@ -65,7 +71,7 @@ def render_report(report_type: str, context: dict[str, Any]) -> str:
         f"report_renderer_image_tag: {context.get('report_renderer_image_tag', context.get('image_tag', 'local'))}",
         f"generated_from_pack_id: {generated_from_pack_id}",
         f"generated_at_utc: {generated_at}",
-        f"product_baseline: {context.get('product_baseline', 'PF-AZ10-SIMPLIFIED-EXPERIENCE')}",
+        f"product_baseline: {context.get('product_baseline', 'PF-AZ11-CUSTOMER-DEMO-MATURITY')}",
         f"report_context_version: {context.get('report_context_version', REPORT_CONTEXT_VERSION)}",
         f"source_pack_id: {context.get('source_pack_id', pack.get('pack_id', 'not recorded'))}",
         f"report_type: {report_type}",
@@ -95,8 +101,9 @@ def render_all_reports(context: dict[str, Any]) -> dict[str, str]:
 def _render_section(section: str, context: dict[str, Any]) -> list[str]:
     summary = context.get("summary", {})
     boundary = (
-        "PatchForge governs vulnerability and patch decisions. It does not scan, provide procedural exploitation detail, "
-        "deploy patches, mutate production systems, or approve risk without accountable human review."
+        "PatchForge governs vulnerability and patch decisions. PatchForge does not deploy patches, approve CAB decisions, "
+        "accept risk, or close evidence gates autonomously. It does not scan, provide procedural exploitation detail, "
+        "or mutate production systems."
     )
     content = {
         "Customer Assurance Position": summary.get("customer_assurance", "Customer assurance remains limited until reviewed customer scope and patch applicability evidence are attached."),
@@ -111,13 +118,19 @@ def _render_section(section: str, context: dict[str, Any]) -> list[str]:
         "Top Risks": summary.get("top_risks", "Top risks depend on severity, KEV/EPSS signals, patch availability, and customer exposure evidence."),
         "Affected Vendors / Products": _vendor_summary(context.get("vendor_intelligence_snapshot"), context.get("threat_landscape_snapshot")),
         "Customer Exposure": summary.get("customer_exposure", "Customer exposure must be reviewed before customer-facing assurance is issued."),
+        "Recommended Next Action": "Confirm customer exposure, affected feature state, firmware/version, vendor advisory source review, and fixed-version evidence with named owners before requesting final approval.",
+        "Why This Matters Now": "CISA KEV is a known-exploited source signal. EPSS is a probability-style exploitation signal. These are prioritisation inputs, not proof of customer exposure.",
         "Recommended Next Actions": _blocker_summary(context.get("blockers", []), context.get("next_actions", [])),
         "Evidence Gaps": _blocker_summary(context.get("blockers", []), context.get("next_actions", [])),
+        "Residual Risk / Governance Position": "Residual risk cannot be accepted by PatchForge. Risk ownership, expiry, compensating controls, and accountable approval must be recorded by a human owner.",
         "Change Decision Request": summary.get("change_request", "CAB decision request remains human approved and evidence bound."),
         "Affected Devices": summary.get("affected_devices", "Affected device evidence must identify customer, site, vendor, model, firmware, feature, and exposure."),
         "Patch Applicability": summary.get("patch_applicability", "Patch applicability requires reviewed vendor advisory, affected-version, fixed-version, and customer configuration evidence."),
+        "Patch Compare": summary.get("patch_compare", "Patch Compare requires reviewed current and proposed version evidence before it can support a CAB decision."),
         "Test / Rollback Evidence Needed": "Testing evidence, rollback plan, maintenance window, and implementation owner must be recorded before CAB approval.",
         "Approval Conditions": "Final approval requires an explicit named human approval event.",
+        "Maintenance Window / Implementation Owner if known": "Maintenance window and implementation owner are not yet recorded unless reviewed evidence provides them.",
+        "Required Evidence Before CAB Approval": _blocker_summary(context.get("blockers", []), context.get("next_actions", [])),
         "Final Approval State": summary.get("human_review", "Final approval is false until an explicit approval event is recorded."),
         "Signed Pack Metadata": _signed_pack_summary(context.get("signed_pack", {})),
         "Decision Boundary": boundary,

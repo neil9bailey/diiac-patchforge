@@ -1027,6 +1027,26 @@ test("PF-AZ10 simplified security action center, customer estate, ask, and repor
     assert.equal(ask.body.response.final_approval_issued, false);
     assert.equal(ask.body.response.human_approval_required, true);
 
+    const agentStatus = await request(baseUrl, "/api/patchforge/agents/status", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(agentStatus.response.status, 200);
+    assert.equal(agentStatus.body.openai_agent.enabled, false);
+    assert.equal(agentStatus.body.openai_agent.final_approval_issued, false);
+
+    const disabledAgent = await request(baseUrl, "/api/patchforge/agents/ask", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        question: "Does CVE-2026-PFAZ10-001 require urgent patching?",
+        deterministic_answer: ask.body.response
+      })
+    });
+    assert.equal(disabledAgent.response.status, 202);
+    assert.equal(disabledAgent.body.agent_guidance.status, "disabled");
+    assert.equal(disabledAgent.body.agent_guidance.fallback.final_approval_issued, false);
+    assert.equal(disabledAgent.body.agent_guidance.can_close_hard_gates, false);
+
     const reports = await request(baseUrl, "/api/patchforge/reports-packs", {
       headers: { "x-tenant-id": "tenant-a" }
     });
@@ -1046,6 +1066,7 @@ test("PF-AZ10 simplified security action center, customer estate, ask, and repor
     assert.equal(generated.response.status, 201);
     assert.equal(generated.body.decision_pack.final_approval_issued, false);
     assert.equal(generated.body.pre_export_state.final_approval_issued, false);
+    assert.ok(generated.body.report_quality_reviews.every((review) => review.status === "PASS"));
   });
 });
 
@@ -1376,7 +1397,7 @@ test("professional decision pack reports export as specific DOCX and PDF decisio
     assert.match(boardDocxText, /final_approval_issued/);
     assert.match(boardDocxText, /signing_provider/);
     assert.match(boardDocxText, /verification_state/);
-    assert.match(boardDocxText, /PF-AZ10-SIMPLIFIED-EXPERIENCE/);
+    assert.match(boardDocxText, /PF-AZ11-CUSTOMER-DEMO-MATURITY/);
     assert.match(boardDocxText, /PF-TEST-0001/);
     assert.doesNotMatch(boardDocxText, /PF-20260526-8312f908/);
     assert.match(boardDocxText, /Executive Decision Summary/);
