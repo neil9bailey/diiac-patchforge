@@ -37,7 +37,7 @@ PatchForge does not scan environments, exploit vulnerabilities, deploy patches, 
 
 ## Current Product Scope
 
-This repository now contains the PF-AZ10-SIMPLIFIED-EXPERIENCE production product line for PatchForge:
+This repository now contains the PF-AZ11-CUSTOMER-DEMO-MATURITY production product line for PatchForge:
 
 - product identity
 - product boundary
@@ -62,8 +62,13 @@ This repository now contains the PF-AZ10-SIMPLIFIED-EXPERIENCE production produc
 - decision-grade DOCX/PDF board and CAB reports
 - signed-pack finding intelligence snapshots
 - board-grade validation evidence
+- an operational user guide for day-to-day security, service-owner, CAB, and customer-assurance use
 
 No scanner, exploit, or patch-deployment capability is created. PatchForge remains a governance and assurance product only.
+
+## Operational User Guide
+
+Start with [PatchForge Operational User Guide](docs/operations/PATCHFORGE_OPERATIONAL_USER_GUIDE.md) when helping end users understand how to use PatchForge correctly in day-to-day operations. It covers the Global Security Action Center, Customer Estate, Ask PatchForge, Patch Compare, Reports & Packs, evidence discipline, human approval boundaries, and credibility checks before customer or board reporting.
 
 ## Local Validation
 
