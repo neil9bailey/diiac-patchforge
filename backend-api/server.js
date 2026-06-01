@@ -259,7 +259,16 @@ export function createServer(options = {}) {
         return sendJson(res, 200, await buildSecurityActionCenterIndex({ storage, tenantId }));
       }
 
+      if (route === "GET /api/patchforge/vendors-exploits-register") {
+        return sendJson(res, 200, await buildSecurityActionCenterIndex({ storage, tenantId }));
+      }
+
       if (route === "GET /api/patchforge/security-action-center/search") {
+        const index = await buildSecurityActionCenterIndex({ storage, tenantId });
+        return sendJson(res, 200, searchSecurityActionCenterIndex(index, Object.fromEntries(url.searchParams.entries())));
+      }
+
+      if (route === "GET /api/patchforge/vendors-exploits-register/search") {
         const index = await buildSecurityActionCenterIndex({ storage, tenantId });
         return sendJson(res, 200, searchSecurityActionCenterIndex(index, Object.fromEntries(url.searchParams.entries())));
       }
@@ -285,7 +294,17 @@ export function createServer(options = {}) {
         return detail ? sendJson(res, 200, { tenant_context: baseTenantContext, ...detail }) : sendJson(res, 404, { error: "cve_or_advisory_not_found" });
       }
 
-      if (route === "GET /api/patchforge/customer-estate/assets") {
+      const vendorsExploitsCveMatch = url.pathname.match(/^\/api\/patchforge\/vendors-exploits-register\/cves\/([^/]+)$/);
+      if (req.method === "GET" && vendorsExploitsCveMatch) {
+        const detail = await securityActionCenterDetail({
+          storage,
+          tenantId,
+          id: decodeURIComponent(vendorsExploitsCveMatch[1])
+        });
+        return detail ? sendJson(res, 200, { tenant_context: baseTenantContext, ...detail }) : sendJson(res, 404, { error: "cve_or_advisory_not_found" });
+      }
+
+      if (route === "GET /api/patchforge/customer-estate/assets" || route === "GET /api/patchforge/customer-operational-assets/assets") {
         const [assets, services, assessments, comparisons] = await Promise.all([
           listCustomerNetworkAssets(storage, tenantId),
           storage.list("services", tenantId),
@@ -309,7 +328,7 @@ export function createServer(options = {}) {
         });
       }
 
-      if (route === "POST /api/patchforge/customer-estate/assets/extract") {
+      if (route === "POST /api/patchforge/customer-estate/assets/extract" || route === "POST /api/patchforge/customer-operational-assets/assets/extract") {
         const body = await readJson(req);
         const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
         return sendJson(res, 200, {
@@ -321,7 +340,7 @@ export function createServer(options = {}) {
         });
       }
 
-      if (route === "POST /api/patchforge/customer-estate/assets/upsert") {
+      if (route === "POST /api/patchforge/customer-estate/assets/upsert" || route === "POST /api/patchforge/customer-operational-assets/assets/upsert") {
         const body = await readJson(req);
         const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
         const asset = await upsertCustomerNetworkAsset(storage, tenantContext.effective_tenant_id, withLineage(body.asset || body, tenantContext, authorization));
@@ -333,7 +352,7 @@ export function createServer(options = {}) {
         });
       }
 
-      if (route === "POST /api/patchforge/customer-estate/match") {
+      if (route === "POST /api/patchforge/customer-estate/match" || route === "POST /api/patchforge/customer-operational-assets/match") {
         const body = await readJson(req);
         const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
         const match = await matchCustomerEstate({
@@ -349,7 +368,7 @@ export function createServer(options = {}) {
         });
       }
 
-      if (route === "POST /api/patchforge/customer-estate/patch-compare") {
+      if (route === "POST /api/patchforge/customer-estate/patch-compare" || route === "POST /api/patchforge/customer-operational-assets/patch-compare") {
         const body = await readJson(req);
         const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
         const comparison = await compareAndStorePatchVersion(storage, tenantContext.effective_tenant_id, withLineage({
@@ -798,7 +817,7 @@ export function createServer(options = {}) {
         return chat ? sendJson(res, 200, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, ...chat }) : sendJson(res, 404, { error: "vendorlens_chat_not_found" });
       }
 
-      if (route === "GET /api/patchforge/reports-packs") {
+      if (route === "GET /api/patchforge/reports-packs" || route === "GET /api/patchforge/reports/overview") {
         const decisionPacks = await storage.list("decision_packs", tenantId);
         const latestPack = decisionPacks.slice(-1)[0] || null;
         return sendJson(res, 200, {
@@ -825,7 +844,7 @@ export function createServer(options = {}) {
         });
       }
 
-      if (route === "POST /api/patchforge/reports-packs/generate") {
+      if (route === "POST /api/patchforge/reports-packs/generate" || route === "POST /api/patchforge/reports/generate") {
         const body = await readJson(req);
         const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
         const result = await generateDecisionPackForRequest({ storage, runtimeClient, tenantContext, authorization, body });

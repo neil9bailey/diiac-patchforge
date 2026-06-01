@@ -916,7 +916,7 @@ test("VendorLens NVD catalogue refresh records rate limits without failing the U
   });
 });
 
-test("PF-AZ10 simplified security action center, customer estate, ask, and reports APIs work", async () => {
+test("PatchForge catalogue, customer operational assets, ask, and reports APIs work", async () => {
   await withApi(async (baseUrl) => {
     await request(baseUrl, "/api/patchforge/vendorlens/advisories/ingest", {
       method: "POST",
@@ -967,6 +967,14 @@ test("PF-AZ10 simplified security action center, customer estate, ask, and repor
     assert.equal(extracted.body.extracted_asset.model, "100F");
     assert.equal(extracted.body.extracted_asset.evidence_state, "user_stated_unreviewed");
 
+    const extractedOperationalAsset = await request(baseUrl, "/api/patchforge/customer-operational-assets/assets/extract", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ description: "FortiGate 100F running FortiOS 7.2.7. SSL-VPN disabled. IPsec enabled. Management internal only." })
+    });
+    assert.equal(extractedOperationalAsset.response.status, 200);
+    assert.equal(extractedOperationalAsset.body.extracted_asset.vendor_id, "fortinet");
+
     const upsert = await request(baseUrl, "/api/patchforge/customer-estate/assets/upsert", {
       method: "POST",
       headers: { "x-tenant-id": "tenant-a" },
@@ -983,11 +991,23 @@ test("PF-AZ10 simplified security action center, customer estate, ask, and repor
     assert.ok(match.body.matches.some((item) => item.cve === "CVE-2026-PFAZ10-001"));
     assert.equal(match.body.final_approval_issued, false);
 
+    const operationalAssets = await request(baseUrl, "/api/patchforge/customer-operational-assets/assets", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(operationalAssets.response.status, 200);
+    assert.ok(operationalAssets.body.assets.some((asset) => asset.asset_id === "pfaz10-fw-100f"));
+
     const actionCenter = await request(baseUrl, "/api/patchforge/security-action-center", {
       headers: { "x-tenant-id": "tenant-a" }
     });
     assert.equal(actionCenter.response.status, 200);
     assert.ok(actionCenter.body.groups.some((group) => group.vendor_name === "Fortinet"));
+
+    const register = await request(baseUrl, "/api/patchforge/vendors-exploits-register", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(register.response.status, 200);
+    assert.ok(register.body.catalogue_rows.some((row) => row.cve_id === "CVE-2026-PFAZ10-001"));
 
     const search = await request(baseUrl, "/api/patchforge/security-action-center/search?q=SSL-VPN&vendor=fortinet&customer_match=true", {
       headers: { "x-tenant-id": "tenant-a" }
@@ -1000,6 +1020,12 @@ test("PF-AZ10 simplified security action center, customer estate, ask, and repor
     });
     assert.equal(detail.response.status, 200);
     assert.equal(detail.body.cve.cve_id, "CVE-2026-PFAZ10-001");
+
+    const registerDetail = await request(baseUrl, "/api/patchforge/vendors-exploits-register/cves/CVE-2026-PFAZ10-001", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(registerDetail.response.status, 200);
+    assert.equal(registerDetail.body.cve.cve_id, "CVE-2026-PFAZ10-001");
 
     const patchCompare = await request(baseUrl, "/api/patchforge/customer-estate/patch-compare", {
       method: "POST",
@@ -1053,6 +1079,12 @@ test("PF-AZ10 simplified security action center, customer estate, ask, and repor
     assert.equal(reports.response.status, 200);
     assert.ok(reports.body.export_options.includes("Technical Evidence Appendix"));
 
+    const reportsOverview = await request(baseUrl, "/api/patchforge/reports/overview", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(reportsOverview.response.status, 200);
+    assert.ok(reportsOverview.body.export_options.includes("Technical Evidence Appendix"));
+
     const generated = await request(baseUrl, "/api/patchforge/reports-packs/generate", {
       method: "POST",
       headers: { "x-tenant-id": "tenant-a" },
@@ -1078,6 +1110,9 @@ test("PatchForge rebuild source adapters normalise fixture-backed intelligence",
     assert.equal(adapters.response.status, 200);
     assert(adapters.body.adapters.some((adapter) => adapter.adapter_id === "nvd-cve-api"));
     assert(adapters.body.adapters.some((adapter) => adapter.adapter_id === "github-advisory"));
+    for (const adapterId of ["microsoft-msrc", "cisco-psirt", "fortinet-psirt", "juniper-advisories", "cisa-alerts", "ncsc-advisories"]) {
+      assert(adapters.body.adapters.some((adapter) => adapter.adapter_id === adapterId), `${adapterId} adapter missing`);
+    }
 
     const sync = await request(baseUrl, "/api/patchforge/sources/sync", {
       method: "POST",

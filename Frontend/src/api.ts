@@ -761,30 +761,30 @@ export function createPatchForgeApi(getAccessToken: () => Promise<string>, confi
       return request<Record<string, unknown>>(`/api/patchforge/security-action-center/cves/${encodeURIComponent(id)}`, tenantId);
     },
     async customerEstate(tenantId) {
-      return request<CustomerEstateState>("/api/patchforge/customer-estate/assets", tenantId);
+      return request<CustomerEstateState>("/api/patchforge/customer-operational-assets/assets", tenantId);
     },
     async extractCustomerAsset(tenantId, description) {
-      const body = await request<{ extracted_asset: CustomerAssetExtraction }>("/api/patchforge/customer-estate/assets/extract", tenantId, {
+      const body = await request<{ extracted_asset: CustomerAssetExtraction }>("/api/patchforge/customer-operational-assets/assets/extract", tenantId, {
         method: "POST",
         body: JSON.stringify({ description })
       });
       return body.extracted_asset;
     },
     async upsertCustomerEstateAsset(tenantId, payload) {
-      const body = await request<{ asset: CustomerNetworkAsset }>("/api/patchforge/customer-estate/assets/upsert", tenantId, {
+      const body = await request<{ asset: CustomerNetworkAsset }>("/api/patchforge/customer-operational-assets/assets/upsert", tenantId, {
         method: "POST",
         body: JSON.stringify(payload)
       });
       return body.asset;
     },
     async matchCustomerEstate(tenantId, payload) {
-      return request<CustomerEstateMatch>("/api/patchforge/customer-estate/match", tenantId, {
+      return request<CustomerEstateMatch>("/api/patchforge/customer-operational-assets/match", tenantId, {
         method: "POST",
         body: JSON.stringify(payload)
       });
     },
     async compareCustomerEstatePatch(tenantId, payload) {
-      const body = await request<{ comparison: VendorLensPatchComparison }>("/api/patchforge/customer-estate/patch-compare", tenantId, {
+      const body = await request<{ comparison: VendorLensPatchComparison }>("/api/patchforge/customer-operational-assets/patch-compare", tenantId, {
         method: "POST",
         body: JSON.stringify(payload)
       });
@@ -808,10 +808,10 @@ export function createPatchForgeApi(getAccessToken: () => Promise<string>, confi
       return body.agent_guidance;
     },
     async reportsPacks(tenantId) {
-      return request<ReportsPacksState>("/api/patchforge/reports-packs", tenantId);
+      return request<ReportsPacksState>("/api/patchforge/reports/overview", tenantId);
     },
     async generateReportsPack(tenantId, payload) {
-      const body = await request<{ decision_pack: DecisionPackRecord }>("/api/patchforge/reports-packs/generate", tenantId, {
+      const body = await request<{ decision_pack: DecisionPackRecord }>("/api/patchforge/reports/generate", tenantId, {
         method: "POST",
         body: JSON.stringify(payload)
       });

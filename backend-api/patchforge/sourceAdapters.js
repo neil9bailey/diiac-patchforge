@@ -8,7 +8,19 @@ const ADAPTERS = [
   adapter("first-epss", "FIRST EPSS", "FIRST", "https://api.first.org/data/v1/epss", "epss_signal"),
   adapter("cve-services", "CVE Program Services", "CVE Program", "https://cveawg.mitre.org/api/cve", "cve_program_record"),
   adapter("github-advisory", "GitHub Advisory Database", "GitHub", "https://api.github.com/advisories", "github_advisory"),
-  adapter("vendor-advisory", "Vendor Advisory", "Vendor", "https://example.invalid/vendor-advisory", "vendor_advisory")
+  adapter("vendor-advisory", "Vendor Advisory", "Vendor", "https://example.invalid/vendor-advisory", "vendor_advisory"),
+  adapter("microsoft-msrc", "Microsoft MSRC", "Microsoft", "https://msrc.microsoft.com/update-guide", "vendor_advisory"),
+  adapter("cisco-psirt", "Cisco PSIRT", "Cisco", "https://sec.cloudapps.cisco.com/security/center/publicationListing.x", "vendor_advisory"),
+  adapter("fortinet-psirt", "Fortinet PSIRT", "Fortinet", "https://www.fortiguard.com/psirt", "vendor_advisory"),
+  adapter("palo-alto-advisories", "Palo Alto Advisories", "Palo Alto Networks", "https://security.paloaltonetworks.com/", "vendor_advisory"),
+  adapter("juniper-advisories", "Juniper Advisories", "Juniper", "https://supportportal.juniper.net/s/global-search/%40uri", "vendor_advisory"),
+  adapter("vmware-broadcom-advisories", "VMware/Broadcom Advisories", "Broadcom", "https://support.broadcom.com/web/ecx/security-advisory", "vendor_advisory"),
+  adapter("ivanti-advisories", "Ivanti Advisories", "Ivanti", "https://forums.ivanti.com/s/security-advisories", "vendor_advisory"),
+  adapter("citrix-advisories", "Citrix Advisories", "Citrix", "https://support.citrix.com/s/topic/0TO8b0000000I5TGAU/security-bulletins", "vendor_advisory"),
+  adapter("linux-distro-advisories", "Linux Distribution Advisories", "Linux", "https://example.invalid/linux-distro-advisories", "vendor_advisory"),
+  adapter("apple-security-updates", "Apple Security Updates", "Apple", "https://support.apple.com/en-us/100100", "vendor_advisory"),
+  adapter("cisa-alerts", "CISA Alerts", "CISA", "https://www.cisa.gov/news-events/cybersecurity-advisories", "vendor_advisory"),
+  adapter("ncsc-advisories", "NCSC Advisories", "NCSC", "https://www.ncsc.gov.uk/section/keep-up-to-date/advisories", "vendor_advisory")
 ];
 
 const FIXTURES = {
@@ -89,6 +101,43 @@ const FIXTURES = {
     last_modified: "2026-05-26T00:00:00.000Z"
   }]
 };
+
+for (const adapterInfo of ADAPTERS.filter((item) => item.source_class === "vendor_advisory" && !FIXTURES[item.adapter_id])) {
+  FIXTURES[adapterInfo.adapter_id] = [vendorFixtureFor(adapterInfo)];
+}
+
+function vendorFixtureFor(adapterInfo) {
+  const product = {
+    Microsoft: "Windows Server",
+    Cisco: "ASA",
+    Fortinet: "FortiGate",
+    "Palo Alto Networks": "PAN-OS",
+    Juniper: "Junos OS",
+    Broadcom: "VMware ESXi",
+    Ivanti: "Ivanti Connect Secure",
+    Citrix: "Citrix ADC",
+    Linux: "Linux Kernel",
+    Apple: "macOS",
+    CISA: "CISA Alert",
+    NCSC: "NCSC Advisory"
+  }[adapterInfo.provider] || "Vendor Product";
+  const suffix = hash(adapterInfo.adapter_id).slice(0, 4).toUpperCase();
+  return {
+    cve_id: `CVE-2026-${suffix}`,
+    advisory_id: `${adapterInfo.adapter_id.toUpperCase()}-2026-${suffix}`,
+    title: `${adapterInfo.name} synthetic fixed-version advisory`,
+    description: `Synthetic ${adapterInfo.name} advisory fixture used to verify source-bound PatchForge catalogue ingestion.`,
+    severity: "high",
+    vendor: adapterInfo.provider,
+    product,
+    affected_versions: ["vendor-stated affected versions pending review"],
+    fixed_versions: ["vendor-stated fixed version pending review"],
+    patch_urls: [adapterInfo.source_url],
+    workaround: "Use vendor-documented workaround only after human review.",
+    published_at: "2026-06-01T00:00:00.000Z",
+    last_modified: "2026-06-01T00:00:00.000Z"
+  };
+}
 
 export function listSourceAdapters() {
   return ADAPTERS.map((item) => ({ ...item }));
