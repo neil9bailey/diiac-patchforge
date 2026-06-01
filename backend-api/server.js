@@ -2,7 +2,7 @@ import http from "node:http";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { authorizeRequest, createAuthConfigFromEnv } from "./auth.js";
-import { createPatchForgeStorage } from "./patchforge/storage.js";
+import { PATCHFORGE_PURGE_CONFIRMATION, createPatchForgeStorage } from "./patchforge/storage.js";
 import { createSourceFeedClient } from "./patchforge/sourceFeeds.js";
 import { listSourceAdapters, syncSourceAdapter } from "./patchforge/sourceAdapters.js";
 import { importAssetsFromCsv, parseConfigEvidence, redactConfigInput } from "./patchforge/configParsers.js";
@@ -1029,6 +1029,53 @@ export function createServer(options = {}) {
 
       if (route === "GET /api/patchforge/admin/health") {
         return sendJson(res, 200, { ...(await storage.adminHealth(tenantId)), tenant_context: baseTenantContext });
+      }
+
+      if (route === "GET /api/patchforge/admin/purge") {
+        const scopes = (url.searchParams.get("scopes") || "")
+          .split(",")
+          .map((scope) => scope.trim())
+          .filter(Boolean);
+        const plan = await storage.purgePatchForgeData(tenantId, {
+          scopes,
+          all: url.searchParams.get("all") === "true",
+          reports: url.searchParams.get("reports") === "true",
+          catalogue: url.searchParams.get("catalogue") === "true",
+          assets: url.searchParams.get("assets") === "true",
+          uploads: url.searchParams.get("uploads") === "true",
+          logs: url.searchParams.get("logs") === "true",
+          cache: url.searchParams.get("cache") === "true",
+          dry_run: true
+        });
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          purge: plan
+        });
+      }
+
+      if (route === "POST /api/patchforge/admin/purge") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const purge = await storage.purgePatchForgeData(tenantContext.effective_tenant_id, {
+          ...body,
+          dry_run: body.dry_run !== false,
+          confirm: body.confirm
+        });
+        if (purge.blocked || purge.error === "typed_confirmation_required") {
+          return sendJson(res, 400, {
+            tenant_id: tenantContext.effective_tenant_id,
+            tenant_context: tenantContext,
+            error: "typed_confirmation_required",
+            message: `Type ${PATCHFORGE_PURGE_CONFIRMATION} to run a destructive PatchForge purge.`,
+            purge
+          });
+        }
+        return sendJson(res, purge.dry_run ? 200 : 202, {
+          tenant_id: tenantContext.effective_tenant_id,
+          tenant_context: tenantContext,
+          purge
+        });
       }
 
       if (route === "POST /api/patchforge/bayesian/assess") {

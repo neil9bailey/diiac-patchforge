@@ -35,6 +35,7 @@ import {
 import {
   AdminConfig,
   AdminHealth,
+  AdminPurgePlan,
   AssetRecord,
   AgentGuidanceSnapshot,
   BayesianAssessment,
@@ -187,6 +188,15 @@ const adminSections = [
   "Feature Flags"
 ];
 
+const purgeScopeOptions = [
+  { key: "reports", label: "Generated reports" },
+  { key: "catalogue", label: "Vulnerability catalogue" },
+  { key: "assets", label: "Customer assets" },
+  { key: "uploads", label: "Uploaded configs" },
+  { key: "logs", label: "Logs" },
+  { key: "cache", label: "Cache" }
+] as const;
+
 const emptyForm = {
   vulnerability_id: "",
   title: "",
@@ -263,6 +273,16 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
   const canWrite = hasAnyRole(session.roles, ["PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.Admin"]);
   const isAdmin = hasAnyRole(session.roles, ["PatchForge.Admin"]);
   const canReadAdmin = hasAnyRole(session.roles, ["PatchForge.Admin", "PatchForge.Auditor"]);
+  const [purgeScopes, setPurgeScopes] = useState<Record<string, boolean>>({
+    reports: false,
+    catalogue: false,
+    assets: false,
+    uploads: false,
+    logs: false,
+    cache: false
+  });
+  const [purgeConfirm, setPurgeConfirm] = useState("");
+  const [latestPurgePlan, setLatestPurgePlan] = useState<AdminPurgePlan | null>(null);
   const selectedFinding = useMemo(
     () => state.findings.find((item) => item.vulnerability_id === selectedVulnerabilityId) || state.findings[0] || null,
     [selectedVulnerabilityId, state.findings]
@@ -820,6 +840,31 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
     }
   }
 
+  async function handlePreviewPurge() {
+    setOperationMessage(null);
+    setOperationError(null);
+    try {
+      const purge = await liveApi.adminPurge(tenantId, { ...purgeScopes, dry_run: true });
+      setLatestPurgePlan(purge);
+      setOperationMessage(`Purge dry-run found ${purge.total_records} record(s) across ${purge.collections.length} collection(s).`);
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : "Purge preview failed.");
+    }
+  }
+
+  async function handleExecutePurge() {
+    setOperationMessage(null);
+    setOperationError(null);
+    try {
+      const purge = await liveApi.adminPurge(tenantId, { ...purgeScopes, dry_run: false, confirm: purgeConfirm });
+      setLatestPurgePlan(purge);
+      setOperationMessage(`Confirmed purge completed for ${Object.values(purge.removed || {}).reduce((total, count) => total + count, 0)} record(s).`);
+      await loadLiveState();
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : "Confirmed purge failed.");
+    }
+  }
+
   if (session.status !== "authenticated") {
     return <SignedOutShell session={session} />;
   }
@@ -1078,6 +1123,13 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 setAdminTier={setAdminTier}
                 adminHealth={state.adminHealth}
                 onSave={handleSaveAdmin}
+                purgeScopes={purgeScopes}
+                setPurgeScopes={setPurgeScopes}
+                purgeConfirm={purgeConfirm}
+                setPurgeConfirm={setPurgeConfirm}
+                latestPurgePlan={latestPurgePlan}
+                onPreviewPurge={handlePreviewPurge}
+                onExecutePurge={handleExecutePurge}
               /> : <PageBand icon={LockKeyhole} title="Admin" lines={["PatchForge.Admin role required", "Admin controls are read-only for non-admin users", "API app roles are enforced server-side"]} />
             )}
           </section>
@@ -3467,7 +3519,14 @@ function Admin({
   adminTier,
   setAdminTier,
   adminHealth,
-  onSave
+  onSave,
+  purgeScopes,
+  setPurgeScopes,
+  purgeConfirm,
+  setPurgeConfirm,
+  latestPurgePlan,
+  onPreviewPurge,
+  onExecutePurge
 }: {
   tenantId: string;
   setTenantId: (tenantId: string) => void;
@@ -3477,9 +3536,17 @@ function Admin({
   setAdminTier: (value: string) => void;
   adminHealth: AdminHealth | null;
   onSave: () => void;
+  purgeScopes: Record<string, boolean>;
+  setPurgeScopes: (value: Record<string, boolean>) => void;
+  purgeConfirm: string;
+  setPurgeConfirm: (value: string) => void;
+  latestPurgePlan: AdminPurgePlan | null;
+  onPreviewPurge: () => void;
+  onExecutePurge: () => void;
 }) {
   const healthPage = usePagination(adminHealth?.checks || [], 8, "admin-health");
   const sectionPage = usePagination(adminSections, 12, "admin-sections");
+  const selectedPurgeScopeCount = Object.values(purgeScopes).filter(Boolean).length;
 
   return (
     <>
@@ -3535,6 +3602,48 @@ function Admin({
           <PaginationControls {...healthPage} label="health checks" />
         </section>
       </div>
+
+      <section className="wide-band">
+        <div>
+          <p className="eyebrow">Factory reset and purge</p>
+          <h3>Typed confirmation required before destructive data cleanup</h3>
+          <p className="muted-copy">Preview generated reports, catalogue, asset, upload, log, and cache cleanup before execution. Git history, restore tags, signing/verifier core, RBAC, Azure deployment scripts, tests, and release evidence are preserved.</p>
+        </div>
+        <div className="purge-panel">
+          <div className="toggle-grid">
+            {purgeScopeOptions.map((scope) => (
+              <label className="check-option" key={scope.key}>
+                <input
+                  type="checkbox"
+                  checked={Boolean(purgeScopes[scope.key])}
+                  onChange={(event) => setPurgeScopes({ ...purgeScopes, [scope.key]: event.target.checked })}
+                />
+                <span>{scope.label}</span>
+              </label>
+            ))}
+          </div>
+          <label className="stacked-input">
+            <span>Typed confirmation</span>
+            <input value={purgeConfirm} onChange={(event) => setPurgeConfirm(event.target.value)} placeholder="FACTORY_RESET_PATCHFORGE" />
+          </label>
+          <div className="report-actions">
+            <button type="button" className="action-button secondary-action" onClick={onPreviewPurge} disabled={!selectedPurgeScopeCount}>
+              <Search size={16} aria-hidden /> Preview Purge
+            </button>
+            <button type="button" className="action-button" onClick={onExecutePurge} disabled={!selectedPurgeScopeCount || purgeConfirm !== "FACTORY_RESET_PATCHFORGE"}>
+              <Archive size={16} aria-hidden /> Execute Confirmed Purge
+            </button>
+          </div>
+          {latestPurgePlan && (
+            <div className="insight-list">
+              <StatusLine label="Dry run" value={latestPurgePlan.dry_run ? "Yes" : "No"} tone={latestPurgePlan.dry_run ? "steel" : "amber"} />
+              <StatusLine label="Scopes" value={latestPurgePlan.scopes.join(", ") || "None selected"} tone="steel" />
+              <StatusLine label="Records in scope" value={String(latestPurgePlan.total_records)} tone={latestPurgePlan.total_records ? "amber" : "teal"} />
+              <StatusLine label="Confirmation" value={latestPurgePlan.required_confirmation} tone="trust" />
+            </div>
+          )}
+        </div>
+      </section>
 
       <div className="admin-grid admin-section-grid">
         {sectionPage.items.map((section) => (

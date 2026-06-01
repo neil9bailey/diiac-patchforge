@@ -602,6 +602,19 @@ export type AdminHealth = {
   checks: Array<{ name: string; status: string; mode: string }>;
 };
 
+export type AdminPurgePlan = {
+  dry_run: boolean;
+  scopes: string[];
+  collections: string[];
+  counts: Record<string, number>;
+  total_records: number;
+  removed?: Record<string, number>;
+  required_confirmation: string;
+  blocked?: boolean;
+  error?: string;
+  boundary?: Record<string, unknown>;
+};
+
 export type AdminConfig = Record<string, unknown>;
 
 export type PatchForgeApi = {
@@ -651,6 +664,7 @@ export type PatchForgeApi = {
   analyseFinding(tenantId: string, vulnerabilityId: string, payload?: Record<string, unknown>): Promise<{ intelligence: FindingIntelligence; bayesian?: BayesianAssessment }>;
   sraResearch(tenantId: string, path: string, payload: Record<string, unknown>): Promise<Record<string, unknown>>;
   adminHealth(tenantId: string): Promise<AdminHealth>;
+  adminPurge(tenantId: string, payload: Record<string, unknown>): Promise<AdminPurgePlan>;
   adminConfig(tenantId: string): Promise<AdminConfig>;
   saveAdminConfig(tenantId: string, payload: AdminConfig): Promise<AdminConfig>;
 };
@@ -961,6 +975,13 @@ export function createPatchForgeApi(getAccessToken: () => Promise<string>, confi
     },
     async adminHealth(tenantId) {
       return request<AdminHealth>("/api/patchforge/admin/health", tenantId);
+    },
+    async adminPurge(tenantId, payload) {
+      const body = await request<{ purge: AdminPurgePlan }>("/api/patchforge/admin/purge", tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return body.purge;
     },
     async adminConfig(tenantId) {
       const body = await request<{ config: AdminConfig }>("/api/patchforge/admin/config", tenantId);

@@ -582,6 +582,14 @@ function createApi(overrides: Partial<PatchForgeApi> = {}): PatchForgeApi {
         { name: "Signing trust", status: "ready", mode: "key-vault" }
       ]
     })),
+    adminPurge: vi.fn(async () => ({
+      dry_run: true,
+      scopes: ["reports"],
+      collections: ["decision_packs"],
+      counts: { decision_packs: 1 },
+      total_records: 1,
+      required_confirmation: "FACTORY_RESET_PATCHFORGE"
+    })),
     adminConfig: vi.fn(async () => ({
       general: { environment: "Production", governance_tier: "Enterprise Strict" }
     })),
@@ -720,6 +728,8 @@ describe("PatchForge simplified customer experience", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Admin" }));
     expect(screen.getAllByRole("heading", { name: "System & Data Health" }).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Entra ID / RBAC")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Typed confirmation required before destructive data cleanup" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Execute Confirmed Purge" })).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "admin sections page 2" }));
     expect(screen.getByText("Signing & Trust")).toBeInTheDocument();
     expect(container.textContent?.toLowerCase()).not.toContain("autonomous patching");

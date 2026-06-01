@@ -1397,6 +1397,69 @@ test("admin config saves locally, masks secrets, and blocks live Azure mutation"
   });
 });
 
+test("admin purge previews and requires typed confirmation before deleting records", async () => {
+  await withApi(async (baseUrl) => {
+    await request(baseUrl, "/api/patchforge/vulnerabilities/ingest", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        vulnerability_id: "CVE-2099-PURGE-001",
+        title: "Synthetic purge test",
+        severity: "critical",
+        sources: [{ source_name: "Synthetic", evidence_state: "accepted_positive_evidence" }]
+      })
+    });
+    const pack = await request(baseUrl, "/api/patchforge/action-packs", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        report: { title: "Synthetic report" },
+        selected_scope: { cves: ["CVE-2099-PURGE-001"] },
+        source_evidence: [],
+        cve_records: [],
+        vendor_advisories: [],
+        asset_matches: [],
+        patch_compare: {},
+        confidence: "synthetic",
+        evidence_gaps: [],
+        human_approval_state: "not_approved"
+      })
+    });
+    assert.equal(pack.response.status, 201);
+
+    const dryRun = await request(baseUrl, "/api/patchforge/admin/purge", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ reports: true, catalogue: true, dry_run: true })
+    });
+    assert.equal(dryRun.response.status, 200);
+    assert.equal(dryRun.body.purge.dry_run, true);
+    assert.ok(dryRun.body.purge.total_records >= 2);
+
+    const blocked = await request(baseUrl, "/api/patchforge/admin/purge", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ reports: true, catalogue: true, dry_run: false, confirm: "DELETE CATALOGUE" })
+    });
+    assert.equal(blocked.response.status, 400);
+    assert.equal(blocked.body.error, "typed_confirmation_required");
+
+    const confirmed = await request(baseUrl, "/api/patchforge/admin/purge", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ reports: true, catalogue: true, dry_run: false, confirm: "FACTORY_RESET_PATCHFORGE" })
+    });
+    assert.equal(confirmed.response.status, 202);
+    assert.equal(confirmed.body.purge.dry_run, false);
+    assert.equal(confirmed.body.purge.final_approval_issued, false);
+
+    const vulnerabilities = await request(baseUrl, "/api/patchforge/vulnerabilities", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(vulnerabilities.body.vulnerabilities.length, 0);
+  });
+});
+
 test("decision packs are generated only from ingested tenant vulnerabilities", async () => {
   await withApi(async (baseUrl) => {
     const missingId = await request(baseUrl, "/api/patchforge/decision-packs/generate", {

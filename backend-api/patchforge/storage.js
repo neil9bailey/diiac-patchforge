@@ -38,6 +38,54 @@ const COLLECTIONS = [
   "audit_events"
 ];
 
+export const PATCHFORGE_PURGE_CONFIRMATION = "FACTORY_RESET_PATCHFORGE";
+
+export const PATCHFORGE_PURGE_SCOPES = {
+  reports: [
+    "decision_packs",
+    "signed_action_packs",
+    "report_quality_reviews",
+    "patch_compare_reports"
+  ],
+  catalogue: [
+    "vulnerabilities",
+    "sources",
+    "vendors",
+    "vendor_advisories",
+    "vendor_security_advisories",
+    "threat_signals",
+    "network_vendors",
+    "network_product_families",
+    "network_product_models",
+    "network_firmware_versions",
+    "source_feed_runs"
+  ],
+  assets: [
+    "assets",
+    "services",
+    "customers",
+    "customer_estates",
+    "customer_assets",
+    "customer_network_assets",
+    "config_applicability_assessments",
+    "exposure_matches",
+    "patch_actions",
+    "workflow_items"
+  ],
+  uploads: [
+    "config_evidence",
+    "vendorlens_chat_sessions",
+    "vendorlens_chat_messages",
+    "agent_guidance_snapshots"
+  ],
+  logs: [
+    "audit_events"
+  ],
+  cache: [
+    "bayesian_assessments"
+  ]
+};
+
 const COLLECTION_ID_FIELDS = {
   vulnerabilities: "vulnerability_id",
   sources: "source_record_id",
@@ -314,6 +362,46 @@ export class PatchForgeJsonStorage {
     });
     await this._write(collection, updated);
     return updatedRecord;
+  }
+
+  async purgePatchForgeData(tenantId, options = {}) {
+    const plan = await buildPurgePlan(this, tenantId, options);
+    if (plan.dry_run) {
+      return plan;
+    }
+    if (options.confirm !== PATCHFORGE_PURGE_CONFIRMATION) {
+      return {
+        ...plan,
+        blocked: true,
+        error: "typed_confirmation_required",
+        required_confirmation: PATCHFORGE_PURGE_CONFIRMATION
+      };
+    }
+
+    const removed = {};
+    for (const collection of plan.collections) {
+      const records = await this._read(collection);
+      const before = records.length;
+      await this._write(collection, records.filter((record) => record.tenant_id !== tenantId));
+      removed[collection] = before - (await this._read(collection)).length;
+    }
+
+    await this.audit(tenantId, "patchforge_factory_reset", {
+      scopes: plan.scopes,
+      collections: plan.collections,
+      removed,
+      dry_run: false,
+      blueprint: "docs/product/PATCHFORGE_INTELLIGENCE_REBUILD_BLUEPRINT.md"
+    });
+
+    return {
+      ...plan,
+      dry_run: false,
+      removed,
+      final_approval_issued: false,
+      storage_mutation_executed: true,
+      no_patch_deployment: true
+    };
   }
 
   async ingestVulnerability(tenantId, payload) {
@@ -771,6 +859,49 @@ export class PatchForgePostgresStorage extends PatchForgeJsonStorage {
     return updatedRecord;
   }
 
+  async purgePatchForgeData(tenantId, options = {}) {
+    const plan = await buildPurgePlan(this, tenantId, options);
+    if (plan.dry_run) {
+      return plan;
+    }
+    if (options.confirm !== PATCHFORGE_PURGE_CONFIRMATION) {
+      return {
+        ...plan,
+        blocked: true,
+        error: "typed_confirmation_required",
+        required_confirmation: PATCHFORGE_PURGE_CONFIRMATION
+      };
+    }
+
+    const removed = {};
+    for (const collection of plan.collections) {
+      const before = plan.counts[collection] || 0;
+      await this.pool.query(
+        `delete from patchforge_records
+         where tenant_id = $1 and collection = $2`,
+        [tenantId, collection]
+      );
+      removed[collection] = before;
+    }
+
+    await this.audit(tenantId, "patchforge_factory_reset", {
+      scopes: plan.scopes,
+      collections: plan.collections,
+      removed,
+      dry_run: false,
+      blueprint: "docs/product/PATCHFORGE_INTELLIGENCE_REBUILD_BLUEPRINT.md"
+    });
+
+    return {
+      ...plan,
+      dry_run: false,
+      removed,
+      final_approval_issued: false,
+      storage_mutation_executed: true,
+      no_patch_deployment: true
+    };
+  }
+
   async querySecurityActionCatalogue(tenantId, options = {}) {
     await this.ensureReady();
     const collections = Array.isArray(options.collections) && options.collections.length
@@ -849,6 +980,55 @@ export function createPatchForgeStorage(options = {}) {
     });
   }
   return new PatchForgeJsonStorage(options.storageRoot || process.env.PATCHFORGE_STORAGE_ROOT);
+}
+
+async function buildPurgePlan(storage, tenantId, options = {}) {
+  const scopes = resolvePurgeScopes(options);
+  const collections = Array.from(new Set(scopes.flatMap((scope) => PATCHFORGE_PURGE_SCOPES[scope] || [])))
+    .filter((collection) => COLLECTIONS.includes(collection));
+  const counts = {};
+  for (const collection of collections) {
+    counts[collection] = (await storage.list(collection, tenantId)).length;
+  }
+  return {
+    tenant_id: tenantId,
+    generated_at: new Date().toISOString(),
+    blueprint: "docs/product/PATCHFORGE_INTELLIGENCE_REBUILD_BLUEPRINT.md",
+    dry_run: options.dry_run !== false,
+    scopes,
+    collections,
+    counts,
+    total_records: Object.values(counts).reduce((total, count) => total + count, 0),
+    required_confirmation: PATCHFORGE_PURGE_CONFIRMATION,
+    preserves: [
+      "Git history",
+      "restore tags and branches",
+      "signing/verifier/replay core",
+      "auth/RBAC",
+      "Azure deployment scripts",
+      "test harnesses",
+      "deployment evidence",
+      "purge event documentation"
+    ],
+    boundary: {
+      no_patch_deployment: true,
+      no_autonomous_approval: true,
+      final_approval_issued: false,
+      human_confirmation_required: true
+    }
+  };
+}
+
+function resolvePurgeScopes(options = {}) {
+  if (options.all) {
+    return Object.keys(PATCHFORGE_PURGE_SCOPES);
+  }
+  const requested = Array.isArray(options.scopes)
+    ? options.scopes
+    : Object.keys(PATCHFORGE_PURGE_SCOPES).filter((scope) => Boolean(options[scope]));
+  return requested
+    .map((scope) => String(scope).trim().toLowerCase())
+    .filter((scope) => Object.prototype.hasOwnProperty.call(PATCHFORGE_PURGE_SCOPES, scope));
 }
 
 export function isPositiveEvidence(source) {
