@@ -4,6 +4,16 @@ import path from "node:path";
 import { authorizeRequest, createAuthConfigFromEnv } from "./auth.js";
 import { createPatchForgeStorage } from "./patchforge/storage.js";
 import { createSourceFeedClient } from "./patchforge/sourceFeeds.js";
+import { listSourceAdapters, syncSourceAdapter } from "./patchforge/sourceAdapters.js";
+import { importAssetsFromCsv, parseConfigEvidence, redactConfigInput } from "./patchforge/configParsers.js";
+import {
+  buildPriorityIndex,
+  buildSignedActionPack,
+  comparePatchActions,
+  createWorkflowItem,
+  transitionWorkflowItem,
+  verifySignedActionPack
+} from "./patchforge/priority.js";
 import { buildFindingIntelligence, buildIntelligenceForTenant } from "./patchforge/intelligence.js";
 import { REPORT_CATALOG, buildReportContentReview, generateDecisionPackReport } from "./patchforge/reports.js";
 import { getOpenAiAgentStatus, OPENAI_AGENT_NAMES, runOpenAiAgent } from "./patchforge/openaiAgentService.js";
@@ -353,6 +363,182 @@ export function createServer(options = {}) {
         });
       }
 
+      if (route === "GET /api/patchforge/customers") {
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          customers: await storage.list("customers", tenantId)
+        });
+      }
+
+      if (route === "POST /api/patchforge/customers") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const customer = {
+          tenant_id: tenantContext.effective_tenant_id,
+          id: body.id || body.customer_id || `customer-${Date.now()}`,
+          name: body.name || body.customer_name || "Customer pending",
+          tenant_key: body.tenant_key || body.id || body.customer_id || null,
+          service_tier: body.service_tier || "standard",
+          status: body.status || "active",
+          created_at: body.created_at || new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          ...lineageFields(tenantContext, authorization)
+        };
+        await storage.append("customers", customer);
+        await storage.audit(tenantContext.effective_tenant_id, "customer_upserted", { customer_id: customer.id });
+        return sendJson(res, 201, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, customer });
+      }
+
+      const customerAssetsMatch = url.pathname.match(/^\/api\/patchforge\/customers\/([^/]+)\/assets$/);
+      if (req.method === "GET" && customerAssetsMatch) {
+        const customerId = decodeURIComponent(customerAssetsMatch[1]);
+        const assets = (await storage.list("customer_assets", tenantId)).filter((asset) => String(asset.customer_id) === customerId);
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          customer_id: customerId,
+          assets
+        });
+      }
+
+      if (req.method === "POST" && customerAssetsMatch) {
+        const customerId = decodeURIComponent(customerAssetsMatch[1]);
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const assets = body.csv
+          ? importAssetsFromCsv({ tenantId: tenantContext.effective_tenant_id, customerId, estateId: body.estate_id, csv: body.csv, source: body.source || "csv_import" })
+          : [{
+              tenant_id: tenantContext.effective_tenant_id,
+              id: body.id || body.asset_id || `asset-${Date.now()}`,
+              customer_id: customerId,
+              estate_id: body.estate_id || null,
+              site: body.site || null,
+              hostname: body.hostname || body.name || null,
+              asset_type: body.asset_type || "server_or_device",
+              vendor: body.vendor || body.vendor_id || null,
+              product: body.product || body.product_family || null,
+              version: body.version || body.software_version || null,
+              firmware_version: body.firmware_version || null,
+              software_packages: Array.isArray(body.software_packages) ? body.software_packages : [],
+              cpe: body.cpe || null,
+              internet_exposed: Boolean(body.internet_exposed),
+              criticality: body.criticality || "unknown",
+              source: body.source || "manual",
+              source_confidence: body.source_confidence ?? 0.75,
+              parser_confidence: body.parser_confidence ?? 0.75,
+              tags: Array.isArray(body.tags) ? body.tags : [],
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }];
+        for (const asset of assets) {
+          await storage.append("customer_assets", { ...asset, ...lineageFields(tenantContext, authorization) });
+        }
+        return sendJson(res, 201, {
+          tenant_id: tenantContext.effective_tenant_id,
+          tenant_context: tenantContext,
+          customer_id: customerId,
+          assets,
+          imported: assets.length
+        });
+      }
+
+      if (route === "POST /api/patchforge/config/redact") {
+        const body = await readJson(req);
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          redaction: redactConfigInput(body.config || body.text || body.raw || "")
+        });
+      }
+
+      if (route === "POST /api/patchforge/config/parse") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const evidence = parseConfigEvidence({
+          tenantId: tenantContext.effective_tenant_id,
+          customerId: body.customer_id || null,
+          assetId: body.asset_id || null,
+          input: body.config || body.text || body.raw || "",
+          sourceType: body.source_type || "paste",
+          parser: body.parser || "auto"
+        });
+        await storage.append("config_evidence", { ...evidence, ...lineageFields(tenantContext, authorization) });
+        return sendJson(res, 200, {
+          tenant_id: tenantContext.effective_tenant_id,
+          tenant_context: tenantContext,
+          config_evidence: evidence
+        });
+      }
+
+      if (route === "POST /api/patchforge/exposure/match") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const match = await matchCustomerEstate({
+          storage,
+          tenantId: tenantContext.effective_tenant_id,
+          body: withLineage(body, tenantContext, authorization),
+          persist: body.persist !== false
+        });
+        for (const item of match.matches || []) {
+          await storage.append("exposure_matches", {
+            tenant_id: tenantContext.effective_tenant_id,
+            id: item.id || item.assessment_id || `exposure-${Date.now()}`,
+            customer_id: body.customer_id || null,
+            asset_id: item.asset_id || body.asset_id || null,
+            cve_id: item.cve || body.cve_id || null,
+            vendor_id: item.vendor_id || body.vendor_id || null,
+            product_id: item.product_id || item.product_family || body.product_id || null,
+            match_confidence: item.match_confidence || (item.applicability_posture === "applicable" ? 0.85 : 0.55),
+            match_reason: item.decision_not_allowed_yet || item.urgency_posture || "source-bound deterministic match",
+            affected_version: item.firmware_version || body.version || null,
+            fixed_version: body.fixed_version || null,
+            evidence_refs: item.evidence_required || [],
+            unresolved_gaps: item.evidence_gaps || [],
+            created_at: new Date().toISOString(),
+            ...lineageFields(tenantContext, authorization)
+          });
+        }
+        return sendJson(res, 200, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, ...match });
+      }
+
+      if (route === "POST /api/patchforge/priority/index") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const priority = buildPriorityIndex(body);
+        await storage.append("patch_actions", {
+          tenant_id: tenantContext.effective_tenant_id,
+          id: priority.id,
+          cve_id: priority.cve_id,
+          asset_id: priority.asset_id,
+          action_type: "priority_index",
+          recommended_action: priority.posture,
+          risk_reduction: priority.priority_score,
+          operational_risk: body.operational_risk || "unknown",
+          service_impact: body.service_impact || "pending review",
+          rollback_risk: body.rollback_risk || "pending review",
+          change_window_suitability: body.change_window_suitability || "pending review",
+          ciso_approval_required: priority.posture === "Emergency action recommended" || priority.posture === "Exception review required",
+          human_change_approval_required: true,
+          no_autonomous_production_approval: true,
+          evidence_refs: body.evidence_refs || [],
+          ...lineageFields(tenantContext, authorization)
+        });
+        return sendJson(res, 200, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, priority });
+      }
+
+      if (route === "POST /api/patchforge/patch-compare") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const report = comparePatchActions(body);
+        await storage.append("patch_compare_reports", {
+          tenant_id: tenantContext.effective_tenant_id,
+          ...report,
+          ...lineageFields(tenantContext, authorization)
+        });
+        return sendJson(res, 200, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, patch_compare_report: report });
+      }
+
       if (route === "POST /api/patchforge/ask") {
         const body = await readJson(req);
         const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
@@ -449,6 +635,43 @@ export function createServer(options = {}) {
             error: error.code || "source_feed_refresh_failed",
             message: error.message,
             allowed_feeds: error.allowedFeeds || sourceFeedClient.listFeeds().map((feed) => feed.feed_id)
+          });
+        }
+      }
+
+      if (route === "GET /api/patchforge/sources/adapters") {
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          adapters: listSourceAdapters(),
+          boundary: {
+            source_bound: true,
+            fixture_backed_when_needed: true,
+            no_exploit_payloads: true,
+            review_required: true
+          }
+        });
+      }
+
+      if (route === "POST /api/patchforge/sources/sync") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        try {
+          const result = await syncSourceAdapter({
+            storage,
+            tenantId: tenantContext.effective_tenant_id,
+            body: withLineage(body, tenantContext, authorization)
+          });
+          return sendJson(res, 202, {
+            tenant_id: tenantContext.effective_tenant_id,
+            tenant_context: tenantContext,
+            ...result
+          });
+        } catch (error) {
+          return sendJson(res, error.code === "unsupported_source_adapter" ? 400 : 502, {
+            error: error.code || "source_adapter_sync_failed",
+            message: error.message,
+            allowed_adapters: error.allowedAdapters || listSourceAdapters().map((adapterInfo) => adapterInfo.adapter_id)
           });
         }
       }
@@ -697,6 +920,87 @@ export function createServer(options = {}) {
         const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
         const result = await generateDecisionPackForRequest({ storage, runtimeClient, tenantContext, authorization, body });
         return sendJson(res, result.statusCode, result.payload);
+      }
+
+      if (route === "POST /api/patchforge/reports") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const report = buildSignedActionPack({
+          ...body,
+          report_type: body.report_type || "Security Operations Action Plan"
+        });
+        await storage.append("signed_action_packs", {
+          tenant_id: tenantContext.effective_tenant_id,
+          ...report,
+          ...lineageFields(tenantContext, authorization)
+        });
+        return sendJson(res, 201, {
+          tenant_id: tenantContext.effective_tenant_id,
+          tenant_context: tenantContext,
+          report,
+          signed_action_pack: report
+        });
+      }
+
+      if (route === "POST /api/patchforge/action-packs") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const pack = buildSignedActionPack(body);
+        await storage.append("signed_action_packs", {
+          tenant_id: tenantContext.effective_tenant_id,
+          ...pack,
+          ...lineageFields(tenantContext, authorization)
+        });
+        return sendJson(res, 201, {
+          tenant_id: tenantContext.effective_tenant_id,
+          tenant_context: tenantContext,
+          signed_action_pack: pack
+        });
+      }
+
+      const actionPackVerifyMatch = url.pathname.match(/^\/api\/patchforge\/action-packs\/([^/]+)\/verify$/);
+      if (req.method === "GET" && actionPackVerifyMatch) {
+        const packId = decodeURIComponent(actionPackVerifyMatch[1]);
+        const packs = await storage.list("signed_action_packs", tenantId);
+        const pack = packs.find((item) => item.id === packId || item.pack_id === packId);
+        return pack
+          ? sendJson(res, 200, { tenant_id: tenantId, tenant_context: baseTenantContext, verifier_result: verifySignedActionPack(pack), signed_action_pack: pack })
+          : sendJson(res, 404, { error: "signed_action_pack_not_found" });
+      }
+
+      if (route === "GET /api/patchforge/workflow/items") {
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          workflow_items: await storage.list("workflow_items", tenantId)
+        });
+      }
+
+      if (route === "POST /api/patchforge/workflow/items") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const item = createWorkflowItem({
+          ...withLineage(body, tenantContext, authorization),
+          tenant_id: tenantContext.effective_tenant_id
+        });
+        await storage.append("workflow_items", item);
+        await storage.audit(tenantContext.effective_tenant_id, "workflow_item_created", { id: item.id, status: item.status });
+        return sendJson(res, 201, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, workflow_item: item });
+      }
+
+      const workflowTransitionMatch = url.pathname.match(/^\/api\/patchforge\/workflow\/items\/([^/]+)\/transition$/);
+      if (req.method === "POST" && workflowTransitionMatch) {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const itemId = decodeURIComponent(workflowTransitionMatch[1]);
+        const existing = (await storage.list("workflow_items", tenantContext.effective_tenant_id)).find((item) => item.id === itemId);
+        if (!existing) {
+          return sendJson(res, 404, { error: "workflow_item_not_found" });
+        }
+        const item = transitionWorkflowItem(existing, withLineage(body, tenantContext, authorization));
+        await storage.append("workflow_items", item);
+        await storage.audit(tenantContext.effective_tenant_id, "workflow_item_transitioned", { id: item.id, status: item.status });
+        return sendJson(res, 200, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, workflow_item: item });
       }
 
       if (route === "GET /api/patchforge/admin/config") {

@@ -26,6 +26,15 @@ const COLLECTIONS = [
   "agent_guidance_snapshots",
   "report_quality_reviews",
   "source_feed_runs",
+  "customers",
+  "customer_estates",
+  "customer_assets",
+  "config_evidence",
+  "exposure_matches",
+  "patch_actions",
+  "patch_compare_reports",
+  "signed_action_packs",
+  "workflow_items",
   "audit_events"
 ];
 
@@ -53,6 +62,15 @@ const COLLECTION_ID_FIELDS = {
   agent_guidance_snapshots: "snapshot_id",
   report_quality_reviews: "review_id",
   source_feed_runs: "run_id",
+  customers: "id",
+  customer_estates: "id",
+  customer_assets: "id",
+  config_evidence: "id",
+  exposure_matches: "id",
+  patch_actions: "id",
+  patch_compare_reports: "id",
+  signed_action_packs: "id",
+  workflow_items: "id",
   audit_events: "audit_id"
 };
 

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PatchForge Customer Estate",
+  "type": "object",
+  "required": ["id", "customer_id", "name", "evidence_boundary", "created_at", "updated_at"],
+  "properties": {
+    "id": { "type": "string" },
+    "customer_id": { "type": "string" },
+    "name": { "type": "string" },
+    "description": { "type": ["string", "null"] },
+    "sites": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "evidence_boundary": { "type": "string" },
+    "created_at": { "type": "string" },
+    "updated_at": { "type": "string" }
+  }
+}

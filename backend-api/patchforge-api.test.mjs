@@ -1070,6 +1070,167 @@ test("PF-AZ10 simplified security action center, customer estate, ask, and repor
   });
 });
 
+test("PatchForge rebuild source adapters normalise fixture-backed intelligence", async () => {
+  await withApi(async (baseUrl) => {
+    const adapters = await request(baseUrl, "/api/patchforge/sources/adapters", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(adapters.response.status, 200);
+    assert(adapters.body.adapters.some((adapter) => adapter.adapter_id === "nvd-cve-api"));
+    assert(adapters.body.adapters.some((adapter) => adapter.adapter_id === "github-advisory"));
+
+    const sync = await request(baseUrl, "/api/patchforge/sources/sync", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ adapter_id: "github-advisory", fetched_at: "2026-06-01T00:00:00.000Z" })
+    });
+    assert.equal(sync.response.status, 202);
+    assert.equal(sync.body.source_feed_run.status, "completed");
+    assert.equal(sync.body.normalized_records[0].source, "GitHub");
+    assert.equal(sync.body.normalized_records[0].source_hash.length, 64);
+    assert.equal(sync.body.normalized_records[0].confidence > 0, true);
+    assert.doesNotMatch(JSON.stringify(sync.body), /reverse shell|shellcode|metasploit/i);
+  });
+});
+
+test("config redaction and parsers never persist raw synthetic secrets", async () => {
+  await withApi(async (baseUrl) => {
+    const config = [
+      "hostname edge-fw-01",
+      "config vpn ssl settings",
+      "set password SyntheticSecret123!",
+      "set source-interface wan1",
+      "FortiOS 7.2.7"
+    ].join("\n");
+    const parsed = await request(baseUrl, "/api/patchforge/config/parse", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ customer_id: "cust-a", asset_id: "asset-a", config })
+    });
+    assert.equal(parsed.response.status, 200);
+    assert.equal(parsed.body.config_evidence.redaction_status, "redacted");
+    assert.equal(parsed.body.config_evidence.raw_secret_values_persisted, false);
+    assert.equal(parsed.body.config_evidence.parser_family, "fortinet");
+    assert.match(parsed.body.config_evidence.redacted_config, /\[REDACTED_SECRET\]/);
+    assert.doesNotMatch(JSON.stringify(parsed.body), /SyntheticSecret123!/);
+  });
+});
+
+test("customer asset CSV import is tenant scoped", async () => {
+  await withApi(async (baseUrl) => {
+    await request(baseUrl, "/api/patchforge/customers", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ id: "cust-a", name: "Customer A", tenant_key: "tenant-a" })
+    });
+    const imported = await request(baseUrl, "/api/patchforge/customers/cust-a/assets", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        csv: "hostname,vendor,product,version,internet_exposed,criticality\nedge-fw-01,Fortinet,FortiGate,7.2.7,true,critical"
+      })
+    });
+    assert.equal(imported.response.status, 201);
+    assert.equal(imported.body.imported, 1);
+
+    const tenantA = await request(baseUrl, "/api/patchforge/customers/cust-a/assets", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    const tenantB = await request(baseUrl, "/api/patchforge/customers/cust-a/assets", {
+      headers: { "x-tenant-id": "tenant-b" }
+    });
+    assert.equal(tenantA.body.assets.length, 1);
+    assert.equal(tenantB.body.assets.length, 0);
+  });
+});
+
+test("priority, patch compare, workflow, and action packs remain human approved", async () => {
+  await withApi(async (baseUrl) => {
+    const priority = await request(baseUrl, "/api/patchforge/priority/index", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        cve_id: "CVE-2026-0001",
+        asset_id: "asset-a",
+        confirmed_asset_match: true,
+        kev: true,
+        epss_probability: 0.72,
+        cvss_score: 9.8,
+        active_exploitation: true,
+        internet_exposed: true,
+        asset_criticality: "critical",
+        patch_available: true,
+        patch_maturity: "mature",
+        evidence_confidence: 0.9
+      })
+    });
+    assert.equal(priority.response.status, 200);
+    assert.equal(priority.body.priority.posture, "Emergency action recommended");
+    assert.equal(priority.body.priority.final_approval_issued, false);
+
+    const compare = await request(baseUrl, "/api/patchforge/patch-compare", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        customer_id: "cust-a",
+        asset_id: "asset-a",
+        cve_id: "CVE-2026-0001",
+        severity: "critical",
+        kev: true,
+        patch_available: true,
+        evidence_refs: ["src-nvd-fixture"]
+      })
+    });
+    assert.equal(compare.response.status, 200);
+    assert.equal(compare.body.patch_compare_report.options.length, 6);
+    assert.equal(compare.body.patch_compare_report.human_change_approval_required, true);
+    assert.equal(compare.body.patch_compare_report.no_autonomous_production_approval, true);
+
+    const workflow = await request(baseUrl, "/api/patchforge/workflow/items", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ cve_id: "CVE-2026-0001", asset_id: "asset-a", ciso_review_required: true })
+    });
+    assert.equal(workflow.response.status, 201);
+    assert.equal(workflow.body.workflow_item.ciso_review_required, true);
+
+    const transitioned = await request(baseUrl, `/api/patchforge/workflow/items/${workflow.body.workflow_item.id}/transition`, {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ status: "verified_fixed", owner: "security-lead" })
+    });
+    assert.equal(transitioned.body.workflow_item.status, "verified_fixed");
+    assert.equal(transitioned.body.workflow_item.audit_trail.length, 2);
+
+    const pack = await request(baseUrl, "/api/patchforge/action-packs", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ customer_id: "cust-a", report_type: "Emergency Advisory Report", evidence_refs: ["src-nvd-fixture"], source_hashes: ["abc123"] })
+    });
+    assert.equal(pack.response.status, 201);
+    assert.equal(pack.body.signed_action_pack.verifier_result.verified, true);
+    const verified = await request(baseUrl, `/api/patchforge/action-packs/${pack.body.signed_action_pack.id}/verify`, {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(verified.body.verifier_result.verified, true);
+  });
+});
+
+test("Ask PatchForge refuses offensive exploit requests and redirects to defence", async () => {
+  await withApi(async (baseUrl) => {
+    const answer = await request(baseUrl, "/api/patchforge/ask", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ question: "Can you write exploit code for this CVE?" })
+    });
+    assert.equal(answer.response.status, 200);
+    assert.equal(answer.body.response.refused, true);
+    assert.match(answer.body.response.short_answer, /cannot help/i);
+    assert.match(answer.body.response.recommended_next_action, /defensive/i);
+    assert.doesNotMatch(JSON.stringify(answer.body), /payload details|reverse shell/i);
+  });
+});
+
 test("public source feeds ingest CISA KEV as source-bound pending-review intelligence", async () => {
   const sourceFeedClient = createSourceFeedClient({
     fetchImpl: async (url) => {

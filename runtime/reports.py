@@ -5,6 +5,13 @@ from typing import Any
 
 
 REPORT_TYPES = {
+    "ciso_executive_risk_brief": "CISO Executive Risk Brief",
+    "security_operations_action_plan": "Security Operations Action Plan",
+    "vendor_exposure_report": "Vendor Exposure Report",
+    "customer_estate_vulnerability_report": "Customer Estate Vulnerability Report",
+    "patch_hotfix_decision_pack": "Patch / Hotfix Decision Pack",
+    "emergency_advisory_report": "Emergency Advisory Report",
+    "monthly_vulnerability_governance_pack": "Monthly Vulnerability Governance Pack",
     "customer_patch_governance_pack": "Customer Patch Governance Pack",
     "board_vulnerability_remediation_summary": "Board Vulnerability Summary",
     "cab_patch_decision_report": "CAB Patch Decision Report",

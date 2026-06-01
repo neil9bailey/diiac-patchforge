@@ -355,6 +355,29 @@ export function summarizePatchComparison(comparison = {}, body = {}) {
 
 export async function buildAskPatchForgeResponse({ storage, tenantId, body = {} }) {
   const question = String(body.question || body.prompt || body.message || "");
+  if (isOffensiveExploitRequest(question)) {
+    return {
+      response: {
+        short_answer: "I cannot help with exploit code, payloads, bypass instructions, or attacker playbooks.",
+        current_governed_posture: "defensive_redirection_required",
+        why: "PatchForge is a defensive governance product. It can discuss affected products, known exploited status, KEV, EPSS, patch availability, mitigations, evidence gaps, and human approval needs without exploit mechanics.",
+        what_we_know: [],
+        what_we_do_not_know: ["Specific defensive CVE/advisory and estate context were not provided in a safe form."],
+        evidence_needed: ["CVE/advisory ID", "Affected product and version", "Customer asset exposure", "Vendor patch or mitigation evidence"],
+        recommended_next_action: "Ask for defensive impact analysis, patch or hotfix comparison, mitigation guidance, detection evidence, or a signed action pack.",
+        decision_not_allowed_yet: "PatchForge cannot issue final approval, risk acceptance, closure, or not-applicable status without reviewed evidence and named human approval.",
+        human_approval_required: true,
+        final_approval_issued: false,
+        advisory_only: true,
+        refused: true,
+        boundary: governanceBoundary()
+      },
+      asset: null,
+      matched_assessment: null,
+      candidate_matches: [],
+      final_approval_issued: false
+    };
+  }
   const extracted = body.asset || extractCustomerAssetDescription(question, body);
   const matchResult = await matchCustomerEstate({ storage, tenantId, body: { ...body, asset: extracted }, persist: body.persist_matches === true });
   const unnamedSpecificReference = requiresNamedCveContext(question, body);
@@ -393,6 +416,10 @@ export async function buildAskPatchForgeResponse({ storage, tenantId, body = {} 
     candidate_matches: matchResult.matches.slice(0, 5),
     final_approval_issued: false
   };
+}
+
+function isOffensiveExploitRequest(question) {
+  return /\b(exploit code|write an exploit|weaponi[sz]e|payload|reverse shell|shellcode|bypass authentication|privilege escalation steps|metasploit module|attacker playbook|how do i exploit|rce proof of concept|poc exploit)\b/i.test(String(question || ""));
 }
 
 function rowFromVendorSecurityAdvisory(record, vendorLookup) {

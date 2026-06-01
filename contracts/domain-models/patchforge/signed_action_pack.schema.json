@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PatchForge Signed Action Pack",
+  "type": "object",
+  "required": ["id", "customer_id", "report_type", "payload", "evidence_refs", "source_hashes", "pack_hash", "signature", "verifier_result", "replay_metadata", "created_at"],
+  "properties": {
+    "id": { "type": "string" },
+    "customer_id": { "type": ["string", "null"] },
+    "report_type": { "type": "string" },
+    "payload": { "type": "object" },
+    "evidence_refs": { "type": "array", "items": { "type": "string" } },
+    "source_hashes": { "type": "array", "items": { "type": "string" } },
+    "pack_hash": { "type": "string" },
+    "signature": { "type": "string" },
+    "verifier_result": { "type": "object" },
+    "replay_metadata": { "type": "object" },
+    "created_at": { "type": "string" }
+  }
+}

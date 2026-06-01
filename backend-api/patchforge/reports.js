@@ -19,6 +19,48 @@ import PDFDocument from "pdfkit";
 
 export const REPORT_CATALOG = [
   {
+    report_type: "ciso_executive_risk_brief",
+    title: "CISO Executive Risk Brief",
+    audience: "CISO and executive risk owners",
+    formats: ["docx", "pdf"]
+  },
+  {
+    report_type: "security_operations_action_plan",
+    title: "Security Operations Action Plan",
+    audience: "Security operations",
+    formats: ["docx", "pdf"]
+  },
+  {
+    report_type: "vendor_exposure_report",
+    title: "Vendor Exposure Report",
+    audience: "Vendor and platform owners",
+    formats: ["docx", "pdf"]
+  },
+  {
+    report_type: "customer_estate_vulnerability_report",
+    title: "Customer Estate Vulnerability Report",
+    audience: "Customer assurance and MSP operations",
+    formats: ["docx", "pdf"]
+  },
+  {
+    report_type: "patch_hotfix_decision_pack",
+    title: "Patch / Hotfix Decision Pack",
+    audience: "CAB and change owners",
+    formats: ["docx", "pdf"]
+  },
+  {
+    report_type: "emergency_advisory_report",
+    title: "Emergency Advisory Report",
+    audience: "Incident and crisis response leads",
+    formats: ["docx", "pdf"]
+  },
+  {
+    report_type: "monthly_vulnerability_governance_pack",
+    title: "Monthly Vulnerability Governance Pack",
+    audience: "Board, CISO, and governance forums",
+    formats: ["docx", "pdf"]
+  },
+  {
     report_type: "customer_patch_governance_pack",
     title: "Customer Patch Governance Pack",
     audience: "Customer assurance",

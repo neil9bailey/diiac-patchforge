@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PatchForge Product",
+  "type": "object",
+  "required": ["id", "vendor_id", "name", "evidence_refs", "created_at", "updated_at"],
+  "properties": {
+    "id": { "type": "string" },
+    "vendor_id": { "type": "string" },
+    "name": { "type": "string" },
+    "aliases": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "cpe_patterns": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "product_family": { "type": ["string", "null"] },
+    "evidence_refs": { "type": "array", "items": { "type": "string" } },
+    "created_at": { "type": "string" },
+    "updated_at": { "type": "string" }
+  }
+}
