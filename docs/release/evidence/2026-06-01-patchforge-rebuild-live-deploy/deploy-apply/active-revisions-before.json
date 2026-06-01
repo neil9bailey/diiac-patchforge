@@ -1,0 +1,68 @@
+[
+    {
+        "app":  "ca-patchforge-ui-prod",
+        "activeRevisions":  {
+                                "name":  "ca-patchforge-ui-prod--0000027",
+                                "trafficWeight":  100,
+                                "runningState":  "Running",
+                                "provisioningState":  "Provisioned",
+                                "createdTime":  "2026-06-01T10:43:25+00:00",
+                                "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-frontend:pfrebuild-20260601-c6d59a8"
+                            }
+    },
+    {
+        "app":  "ca-patchforge-bridge-prod",
+        "activeRevisions":  {
+                                "name":  "ca-patchforge-bridge-prod--0000024",
+                                "trafficWeight":  100,
+                                "runningState":  "Running",
+                                "provisioningState":  "Provisioned",
+                                "createdTime":  "2026-06-01T10:43:47+00:00",
+                                "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-bridge:pfrebuild-20260601-c6d59a8"
+                            }
+    },
+    {
+        "app":  "ca-patchforge-runtime-prod",
+        "activeRevisions":  {
+                                "name":  "ca-patchforge-runtime-prod--0000022",
+                                "trafficWeight":  100,
+                                "runningState":  "Running",
+                                "provisioningState":  "Provisioned",
+                                "createdTime":  "2026-06-01T10:44:03+00:00",
+                                "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-runtime:pfrebuild-20260601-c6d59a8"
+                            }
+    },
+    {
+        "app":  "ca-patchforge-sra-prod",
+        "activeRevisions":  {
+                                "name":  "ca-patchforge-sra-prod--0000021",
+                                "trafficWeight":  100,
+                                "runningState":  "ScaledToZero",
+                                "provisioningState":  "Provisioned",
+                                "createdTime":  "2026-06-01T10:44:21+00:00",
+                                "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-sra-agent:pfrebuild-20260601-c6d59a8"
+                            }
+    },
+    {
+        "app":  "ca-patchforge-worker-prod",
+        "activeRevisions":  {
+                                "name":  "ca-patchforge-worker-prod--0000021",
+                                "trafficWeight":  100,
+                                "runningState":  "ScaledToZero",
+                                "provisioningState":  "Provisioned",
+                                "createdTime":  "2026-06-01T10:44:41+00:00",
+                                "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-ingest-worker:pfrebuild-20260601-c6d59a8"
+                            }
+    },
+    {
+        "app":  "ca-patchforge-scheduler-prod",
+        "activeRevisions":  {
+                                "name":  "ca-patchforge-scheduler-prod--0000021",
+                                "trafficWeight":  100,
+                                "runningState":  "RunningAtMaxScale",
+                                "provisioningState":  "Provisioned",
+                                "createdTime":  "2026-06-01T10:44:58+00:00",
+                                "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-scheduler:pfrebuild-20260601-c6d59a8"
+                            }
+    }
+]

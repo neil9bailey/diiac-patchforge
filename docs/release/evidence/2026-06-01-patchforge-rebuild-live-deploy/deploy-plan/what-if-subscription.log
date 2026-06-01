@@ -1,0 +1,1087 @@
+az : WARNING: A new Bicep release is available: v0.43.8. Upgrade now by running "az bicep upgrade".
+At line:2 char:1
++ az deployment sub what-if --location uksouth --template-file infra\bi ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (WARNING: A new ...bicep upgrade".:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+Note: The result may contain false positive predictions (noise).
+You can help us improve the accuracy of the result by opening an issue here: https://aka.ms/WhatIfIssues
+
+Resource and property changes are indicated with these symbols:
+  - Delete
+  + Create
+  ~ Modify
+  = Nochange
+  x Unsupported
+  * Ignore
+  x Noeffect
+
+The deployment will update the following scopes:
+
+Scope: /
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Scope: /subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4
+
+  = resourceGroups/rg-diiac-patchforge-prod [2024-03-01]
+
+Scope: /subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod
+
+  ~ Microsoft.App/containerApps/ca-patchforge-bridge-prod [2024-03-01]
+    - properties.configuration.ingress.exposedPort: 0
+    - properties.configuration.ingress.traffic: [
+        0:
+
+          latestRevision: true
+          weight:         100
+
+      ]
+    - properties.runningStatus:                     "Running"
+    ~ properties.configuration.registries: [
+      ~ 0:
+
+        ~ server: "acrdiiacpatchforgeprod.azurecr.io" => "[reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ContainerRegistry/registries/acrdiiacpatchforgeprod', '2023-07-01').loginServer]"
+
+      ]
+    ~ properties.template.containers: [
+      ~ 0:
+
+        ~ env: [
+          ~ 0:
+
+            ~ name:  "PATCHFORGE_ENVIRONMENT" => "APP_ENV"
+            ~ value: "prod" => "production"
+
+          ~ 1:
+
+            ~ name:  "PATCHFORGE_BOUNDARY" => "PATCHFORGE_ENV"
+            ~ value: "governance-only-no-scanner-no-exploit-no-deployment" => "production"
+
+          ~ 2:
+
+            ~ name:  "PATCHFORGE_STORAGE_ACCOUNT" => "PATCHFORGE_ENVIRONMENT"
+            ~ value: "stdiiacpatchforgeprod01" => "prod"
+
+          ~ 3:
+
+            ~ name:  "PATCHFORGE_KEYVAULT_URI" => "PATCHFORGE_BOUNDARY"
+            ~ value: "https://kv-diiac-patchforge-prod.vault.azure.net/" => "governance-only-no-scanner-no-exploit-no-deployment"
+
+          ~ 4:
+
+            ~ name:  "PATCHFORGE_DATABASE_HOST" => "PATCHFORGE_STORAGE_ACCOUNT"
+            ~ value: "psql-diiac-patchforge-prod.postgres.database.azure.com" => "stdiiacpatchforgeprod01"
+
+          ~ 5:
+
+            ~ name:  "PATCHFORGE_DATABASE_NAME" => "PATCHFORGE_DEFAULT_TENANT"
+            ~ value: "patchforge_prod" => "diiac.io"
+
+          ~ 6:
+
+            ~ name:  "PATCHFORGE_DATABASE_USER" => "PATCHFORGE_KEYVAULT_URI"
+            ~ value: "patchforgeadmin" => "[reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.KeyVault/vaults/kv-diiac-patchforge-prod', '2023-07-01').vaultUri]"
+
+          ~ 7:
+
+            ~ name:  "PATCHFORGE_DATABASE_PASSWORD_SECRET_NAME" => "PATCHFORGE_DATABASE_HOST"
+            ~ value: "patchforge-postgres-admin-password" => "local-json-storage-placeholder"
+
+          ~ 8:
+
+            ~ name:  "PATCHFORGE_STORAGE_MODE" => "PATCHFORGE_DATABASE_NAME"
+            ~ value: "postgresql" => "patchforge_prod"
+
+          ~ 9:
+
+            ~ name:  "PATCHFORGE_ENTRA_TENANT_ID" => "PATCHFORGE_DATABASE_USER"
+            ~ value: "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da" => "patchforgeadmin"
+
+          ~ 10:
+
+            ~ name:  "PATCHFORGE_ENTRA_AUDIENCE" => "PATCHFORGE_DATABASE_PASSWORD_SECRET_NAME"
+            ~ value: "api://ec30b0eb-cfc4-48cc-a5f2-2a1345d96736" => "patchforge-postgres-admin-password"
+
+          ~ 11:
+
+            ~ name:  "PATCHFORGE_AUTH_REQUIRED" => "PATCHFORGE_STORAGE_MODE"
+            ~ value: "True" => "local-json"
+
+          ~ 12:
+
+            ~ name:  "PATCHFORGE_KEYVAULT_SIGNING_KEY_ID" => "PATCHFORGE_ENTRA_TENANT_ID"
+            ~ value: "https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod" => "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da"
+
+          ~ 13:
+
+            ~ name:  "AZURE_CLIENT_ID" => "PATCHFORGE_ENTRA_AUDIENCE"
+            ~ value: "5d6d92eb-e3da-41cb-951d-5bbe852f870f" => "api://ec30b0eb-cfc4-48cc-a5f2-2a1345d96736"
+
+          ~ 14:
+
+            ~ name:  "PATCHFORGE_COMPONENT" => "PATCHFORGE_AUTH_REQUIRED"
+            ~ value: "bridge-api" => "True"
+
+          ~ 15:
+
+            ~ name:  "PATCHFORGE_RUNTIME_URL" => "PATCHFORGE_KEYVAULT_SIGNING_KEY_ID"
+            ~ value: "http://ca-patchforge-runtime-prod" => "[format('{0}keys/{1}', reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.KeyVault/vaults/kv-diiac-patchforge-prod', '2023-07-01').vaultUri, 'pf-pack-signing-prod')]"
+
+          ~ 16:
+
+            ~ name:  "PATCHFORGE_ALLOWED_ORIGINS" => "PATCHFORGE_RUNTIME_URL"
+            ~ value: "https://patchforge.diiac.io" => "http://ca-patchforge-runtime-prod"
+
+          ~ 17:
+
+            ~ name:  "PATCHFORGE_DEFAULT_TENANT" => "PATCHFORGE_ALLOWED_ORIGINS"
+            ~ value: "diiac.io" => "https://patchforge.diiac.io"
+
+          ~ 22:
+
+            ~ name:  "PATCHFORGE_IMAGE_TAG" => "PATCHFORGE_SCHEDULER_INTERVAL_MS"
+            ~ value: "pfrebuild-20260601-c6d59a8" => "21600000"
+
+          ~ 23:
+
+            ~ name:  "PATCHFORGE_RENDERER_COMMIT" => "PATCHFORGE_SCHEDULER_CISA_LIMIT"
+            ~ value: "c6d59a8" => "10"
+
+          ~ 24:
+
+            ~ name:  "PATCHFORGE_PRODUCT_BASELINE" => "PATCHFORGE_SCHEDULER_EPSS_LIMIT"
+            ~ value: "PATCHFORGE-REBUILD-20260601" => "10"
+
+          ~ 25:
+
+            ~ name:  "PATCHFORGE_REPORT_CONTEXT_VERSION" => "AZURE_CLIENT_ID"
+            ~ value: "patchforge-report-context.rebuild.v1" => "[reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-bridge-prod', '2023-01-31').clientId]"
+
+          ~ 26:
+
+            ~ name:  "CONTAINER_IMAGE_TAG" => "PATCHFORGE_COMPONENT"
+            ~ value: "pfrebuild-20260601-c6d59a8" => "bridge-api"
+
+          - 27:
+
+              name:  "PATCHFORGE_COMMIT_SHA"
+              value: "c6d59a8"
+
+          - 28:
+
+              name:  "PATCHFORGE_OPENAI_AGENT_ENABLED"
+              value: "false"
+
+          - 29:
+
+              name:  "PATCHFORGE_SEARCH_MODE"
+              value: "postgres"
+
+          ]
+        ~ image: "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-bridge:pfrebuild-20260601-c6d59a8" => "[format('{0}/diiac/patchforge-bridge:{1}', reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ContainerRegistry/registries/acrdiiacpatchforgeprod', '2023-07-01').loginServer, 'bootstrap')]"
+
+      ]
+
+  ~ Microsoft.App/containerApps/ca-patchforge-runtime-prod [2024-03-01]
+    - properties.configuration.ingress.exposedPort: 0
+    - properties.configuration.ingress.traffic: [
+        0:
+
+          latestRevision: true
+          weight:         100
+
+      ]
+    - properties.runningStatus:                     "Running"
+    ~ properties.configuration.registries: [
+      ~ 0:
+
+        ~ server: "acrdiiacpatchforgeprod.azurecr.io" => "[reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ContainerRegistry/registries/acrdiiacpatchforgeprod', '2023-07-01').loginServer]"
+
+      ]
+    ~ properties.template.containers: [
+      ~ 0:
+
+        ~ env: [
+          ~ 0:
+
+            ~ name:  "PATCHFORGE_ENVIRONMENT" => "APP_ENV"
+            ~ value: "prod" => "production"
+
+          ~ 1:
+
+            ~ name:  "PATCHFORGE_BOUNDARY" => "PATCHFORGE_ENV"
+            ~ value: "governance-only-no-scanner-no-exploit-no-deployment" => "production"
+
+          ~ 2:
+
+            ~ name:  "PATCHFORGE_STORAGE_ACCOUNT" => "PATCHFORGE_ENVIRONMENT"
+            ~ value: "stdiiacpatchforgeprod01" => "prod"
+
+          ~ 3:
+
+            ~ name:  "PATCHFORGE_KEYVAULT_URI" => "PATCHFORGE_BOUNDARY"
+            ~ value: "https://kv-diiac-patchforge-prod.vault.azure.net/" => "governance-only-no-scanner-no-exploit-no-deployment"
+
+          ~ 4:
+
+            ~ name:  "PATCHFORGE_DATABASE_HOST" => "PATCHFORGE_STORAGE_ACCOUNT"
+            ~ value: "psql-diiac-patchforge-prod.postgres.database.azure.com" => "stdiiacpatchforgeprod01"
+
+          ~ 5:
+
+            ~ name:  "PATCHFORGE_DATABASE_NAME" => "PATCHFORGE_DEFAULT_TENANT"
+            ~ value: "patchforge_prod" => "diiac.io"
+
+          ~ 6:
+
+            ~ name:  "PATCHFORGE_DATABASE_USER" => "PATCHFORGE_KEYVAULT_URI"
+            ~ value: "patchforgeadmin" => "[reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.KeyVault/vaults/kv-diiac-patchforge-prod', '2023-07-01').vaultUri]"
+
+          ~ 7:
+
+            ~ name:  "PATCHFORGE_DATABASE_PASSWORD_SECRET_NAME" => "PATCHFORGE_DATABASE_HOST"
+            ~ value: "patchforge-postgres-admin-password" => "local-json-storage-placeholder"
+
+          ~ 8:
+
+            ~ name:  "PATCHFORGE_STORAGE_MODE" => "PATCHFORGE_DATABASE_NAME"
+            ~ value: "postgresql" => "patchforge_prod"
+
+          ~ 9:
+
+            ~ name:  "PATCHFORGE_ENTRA_TENANT_ID" => "PATCHFORGE_DATABASE_USER"
+            ~ value: "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da" => "patchforgeadmin"
+
+          ~ 10:
+
+            ~ name:  "PATCHFORGE_ENTRA_AUDIENCE" => "PATCHFORGE_DATABASE_PASSWORD_SECRET_NAME"
+            ~ value: "api://ec30b0eb-cfc4-48cc-a5f2-2a1345d96736" => "patchforge-postgres-admin-password"
+
+          ~ 11:
+
+            ~ name:  "PATCHFORGE_AUTH_REQUIRED" => "PATCHFORGE_STORAGE_MODE"
+            ~ value: "True" => "local-json"
+
+          ~ 12:
+
+            ~ name:  "PATCHFORGE_KEYVAULT_SIGNING_KEY_ID" => "PATCHFORGE_ENTRA_TENANT_ID"
+            ~ value: "https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod" => "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da"
+
+          ~ 13:
+
+            ~ name:  "AZURE_CLIENT_ID" => "PATCHFORGE_ENTRA_AUDIENCE"
+            ~ value: "c149eac8-fce9-4ab4-ad23-9f5348f3a673" => "api://ec30b0eb-cfc4-48cc-a5f2-2a1345d96736"
+
+          ~ 14:
+
+            ~ name:  "PATCHFORGE_COMPONENT" => "PATCHFORGE_AUTH_REQUIRED"
+            ~ value: "runtime-governance" => "True"
+
+          ~ 15:
+
+            ~ name:  "PATCHFORGE_AGENT_INTAKE_ENABLED" => "PATCHFORGE_KEYVAULT_SIGNING_KEY_ID"
+            ~ value: "true" => "[format('{0}keys/{1}', reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.KeyVault/vaults/kv-diiac-patchforge-prod', '2023-07-01').vaultUri, 'pf-pack-signing-prod')]"
+
+          ~ 16:
+
+            ~ name:  "PATCHFORGE_PUBLIC_SOURCE_FEEDS_ENABLED" => "PATCHFORGE_RUNTIME_URL"
+            ~ value: "true" => "http://ca-patchforge-runtime-prod"
+
+          ~ 17:
+
+            ~ name:  "PATCHFORGE_WORKER_ENABLED" => "PATCHFORGE_ALLOWED_ORIGINS"
+            ~ value: "true" => "https://patchforge.diiac.io"
+
+          ~ 18:
+
+            ~ name: "PATCHFORGE_SCHEDULER_ENABLED" => "PATCHFORGE_AGENT_INTAKE_ENABLED"
+
+          ~ 19:
+
+            ~ name:  "PATCHFORGE_IMAGE_TAG" => "PATCHFORGE_PUBLIC_SOURCE_FEEDS_ENABLED"
+            ~ value: "pfrebuild-20260601-c6d59a8" => "true"
+
+          ~ 20:
+
+            ~ name:  "PATCHFORGE_RENDERER_COMMIT" => "PATCHFORGE_WORKER_ENABLED"
+            ~ value: "c6d59a8" => "true"
+
+          ~ 21:
+
+            ~ name:  "PATCHFORGE_PRODUCT_BASELINE" => "PATCHFORGE_SCHEDULER_ENABLED"
+            ~ value: "PATCHFORGE-REBUILD-20260601" => "true"
+
+          ~ 22:
+
+            ~ name:  "PATCHFORGE_REPORT_CONTEXT_VERSION" => "PATCHFORGE_SCHEDULER_INTERVAL_MS"
+            ~ value: "patchforge-report-context.rebuild.v1" => "21600000"
+
+          ~ 23:
+
+            ~ name:  "CONTAINER_IMAGE_TAG" => "PATCHFORGE_SCHEDULER_CISA_LIMIT"
+            ~ value: "pfrebuild-20260601-c6d59a8" => "10"
+
+          ~ 24:
+
+            ~ name:  "PATCHFORGE_COMMIT_SHA" => "PATCHFORGE_SCHEDULER_EPSS_LIMIT"
+            ~ value: "c6d59a8" => "10"
+
+          ~ 25:
+
+            ~ name:  "PATCHFORGE_OPENAI_AGENT_ENABLED" => "AZURE_CLIENT_ID"
+            ~ value: "false" => "[reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-runtime-prod', '2023-01-31').clientId]"
+
+          + 26:
+
+              name:  "PATCHFORGE_COMPONENT"
+              value: "runtime-governance"
+
+          ]
+        ~ image: "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-runtime:pfrebuild-20260601-c6d59a8" => "[format('{0}/diiac/patchforge-runtime:{1}', reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ContainerRegistry/registries/acrdiiacpatchforgeprod', '2023-07-01').loginServer, 'bootstrap')]"
+
+      ]
+
+  ~ Microsoft.App/containerApps/ca-patchforge-scheduler-prod [2024-03-01]
+    - properties.configuration.ingress.exposedPort: 0
+    - properties.configuration.ingress.traffic: [
+        0:
+
+          latestRevision: true
+          weight:         100
+
+      ]
+    - properties.runningStatus:                     "Running"
+    ~ properties.configuration.registries: [
+      ~ 0:
+
+        ~ server: "acrdiiacpatchforgeprod.azurecr.io" => "[reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ContainerRegistry/registries/acrdiiacpatchforgeprod', '2023-07-01').loginServer]"
+
+      ]
+    ~ properties.template.containers: [
+      ~ 0:
+
+        ~ env: [
+          ~ 0:
+
+            ~ name:  "PATCHFORGE_ENVIRONMENT" => "APP_ENV"
+            ~ value: "prod" => "production"
+
+          ~ 1:
+
+            ~ name:  "PATCHFORGE_BOUNDARY" => "PATCHFORGE_ENV"
+            ~ value: "governance-only-no-scanner-no-exploit-no-deployment" => "production"
+
+          ~ 2:
+
+            ~ name:  "PATCHFORGE_STORAGE_ACCOUNT" => "PATCHFORGE_ENVIRONMENT"
+            ~ value: "stdiiacpatchforgeprod01" => "prod"
+
+          ~ 3:
+
+            ~ name:  "PATCHFORGE_KEYVAULT_URI" => "PATCHFORGE_BOUNDARY"
+            ~ value: "https://kv-diiac-patchforge-prod.vault.azure.net/" => "governance-only-no-scanner-no-exploit-no-deployment"
+
+          ~ 4:
+
+            ~ name:  "PATCHFORGE_DATABASE_HOST" => "PATCHFORGE_STORAGE_ACCOUNT"
+            ~ value: "psql-diiac-patchforge-prod.postgres.database.azure.com" => "stdiiacpatchforgeprod01"
+
+          ~ 5:
+
+            ~ name:  "PATCHFORGE_DATABASE_NAME" => "PATCHFORGE_DEFAULT_TENANT"
+            ~ value: "patchforge_prod" => "diiac.io"
+
+          ~ 6:
+
+            ~ name:  "PATCHFORGE_DATABASE_USER" => "PATCHFORGE_KEYVAULT_URI"
+            ~ value: "patchforgeadmin" => "[reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.KeyVault/vaults/kv-diiac-patchforge-prod', '2023-07-01').vaultUri]"
+
+          ~ 7:
+
+            ~ name:  "PATCHFORGE_DATABASE_PASSWORD_SECRET_NAME" => "PATCHFORGE_DATABASE_HOST"
+            ~ value: "patchforge-postgres-admin-password" => "local-json-storage-placeholder"
+
+          ~ 8:
+
+            ~ name:  "PATCHFORGE_STORAGE_MODE" => "PATCHFORGE_DATABASE_NAME"
+            ~ value: "postgresql" => "patchforge_prod"
+
+          ~ 9:
+
+            ~ name:  "PATCHFORGE_ENTRA_TENANT_ID" => "PATCHFORGE_DATABASE_USER"
+            ~ value: "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da" => "patchforgeadmin"
+
+          ~ 10:
+
+            ~ name:  "PATCHFORGE_ENTRA_AUDIENCE" => "PATCHFORGE_DATABASE_PASSWORD_SECRET_NAME"
+            ~ value: "api://ec30b0eb-cfc4-48cc-a5f2-2a1345d96736" => "patchforge-postgres-admin-password"
+
+          ~ 11:
+
+            ~ name:  "PATCHFORGE_AUTH_REQUIRED" => "PATCHFORGE_STORAGE_MODE"
+            ~ value: "True" => "local-json"
+
+          ~ 12:
+
+            ~ name:  "PATCHFORGE_KEYVAULT_SIGNING_KEY_ID" => "PATCHFORGE_ENTRA_TENANT_ID"
+            ~ value: "https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod" => "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da"
+
+          ~ 13:
+
+            ~ name:  "AZURE_CLIENT_ID" => "PATCHFORGE_ENTRA_AUDIENCE"
+            ~ value: "51ed854c-bc9a-403b-b452-38cb074eea46" => "api://ec30b0eb-cfc4-48cc-a5f2-2a1345d96736"
+
+          ~ 14:
+
+            ~ name:  "PATCHFORGE_COMPONENT" => "PATCHFORGE_AUTH_REQUIRED"
+            ~ value: "scheduler" => "True"
+
+          ~ 15:
+
+            ~ name:  "PATCHFORGE_SCHEDULER_INTERVAL_MS" => "PATCHFORGE_KEYVAULT_SIGNING_KEY_ID"
+            ~ value: "21600000" => "[format('{0}keys/{1}', reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.KeyVault/vaults/kv-diiac-patchforge-prod', '2023-07-01').vaultUri, 'pf-pack-signing-prod')]"
+
+          ~ 16:
+
+            ~ name:  "PATCHFORGE_SCHEDULER_CISA_LIMIT" => "PATCHFORGE_RUNTIME_URL"
+            ~ value: "10" => "http://ca-patchforge-runtime-prod"
+
+          ~ 17:
+
+            ~ name:  "PATCHFORGE_SCHEDULER_EPSS_LIMIT" => "PATCHFORGE_ALLOWED_ORIGINS"
+            ~ value: "10" => "https://patchforge.diiac.io"
+
+          ~ 22:
+
+            ~ name:  "PATCHFORGE_IMAGE_TAG" => "PATCHFORGE_SCHEDULER_INTERVAL_MS"
+            ~ value: "pfrebuild-20260601-c6d59a8" => "21600000"
+
+          ~ 23:
+
+            ~ name:  "PATCHFORGE_RENDERER_COMMIT" => "PATCHFORGE_SCHEDULER_CISA_LIMIT"
+            ~ value: "c6d59a8" => "10"
+
+          ~ 24:
+
+            ~ name:  "PATCHFORGE_PRODUCT_BASELINE" => "PATCHFORGE_SCHEDULER_EPSS_LIMIT"
+            ~ value: "PATCHFORGE-REBUILD-20260601" => "10"
+
+          ~ 25:
+
+            ~ name:  "PATCHFORGE_REPORT_CONTEXT_VERSION" => "AZURE_CLIENT_ID"
+            ~ value: "patchforge-report-context.rebuild.v1" => "[reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-worker-prod', '2023-01-31').clientId]"
+
+          ~ 26:
+
+            ~ name:  "CONTAINER_IMAGE_TAG" => "PATCHFORGE_COMPONENT"
+            ~ value: "pfrebuild-20260601-c6d59a8" => "scheduler"
+
+          - 27:
+
+              name:  "PATCHFORGE_COMMIT_SHA"
+              value: "c6d59a8"
+
+          - 28:
+
+              name:  "PATCHFORGE_OPENAI_AGENT_ENABLED"
+              value: "false"
+
+          - 29:
+
+              name:  "PATCHFORGE_SEARCH_MODE"
+              value: "postgres"
+
+          ]
+        ~ image: "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-scheduler:pfrebuild-20260601-c6d59a8" => "[format('{0}/diiac/patchforge-scheduler:{1}', reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ContainerRegistry/registries/acrdiiacpatchforgeprod', '2023-07-01').loginServer, 'bootstrap')]"
+
+      ]
+
+  ~ Microsoft.App/containerApps/ca-patchforge-sra-prod [2024-03-01]
+    - properties.configuration.ingress.exposedPort: 0
+    - properties.configuration.ingress.traffic: [
+        0:
+
+          latestRevision: true
+          weight:         100
+
+      ]
+    - properties.runningStatus:                     "Running"
+    ~ properties.configuration.registries: [
+      ~ 0:
+
+        ~ server: "acrdiiacpatchforgeprod.azurecr.io" => "[reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ContainerRegistry/registries/acrdiiacpatchforgeprod', '2023-07-01').loginServer]"
+
+      ]
+    ~ properties.template.containers: [
+      ~ 0:
+
+        ~ env: [
+          ~ 0:
+
+            ~ name:  "PATCHFORGE_ENVIRONMENT" => "APP_ENV"
+            ~ value: "prod" => "production"
+
+          ~ 1:
+
+            ~ name:  "PATCHFORGE_BOUNDARY" => "PATCHFORGE_ENV"
+            ~ value: "governance-only-no-scanner-no-exploit-no-deployment" => "production"
+
+          ~ 2:
+
+            ~ name:  "PATCHFORGE_STORAGE_ACCOUNT" => "PATCHFORGE_ENVIRONMENT"
+            ~ value: "stdiiacpatchforgeprod01" => "prod"
+
+          ~ 3:
+
+            ~ name:  "PATCHFORGE_KEYVAULT_URI" => "PATCHFORGE_BOUNDARY"
+            ~ value: "https://kv-diiac-patchforge-prod.vault.azure.net/" => "governance-only-no-scanner-no-exploit-no-deployment"
+
+          ~ 4:
+
+            ~ name:  "PATCHFORGE_DATABASE_HOST" => "PATCHFORGE_STORAGE_ACCOUNT"
+            ~ value: "psql-diiac-patchforge-prod.postgres.database.azure.com" => "stdiiacpatchforgeprod01"
+
+          ~ 5:
+
+            ~ name:  "PATCHFORGE_DATABASE_NAME" => "PATCHFORGE_DEFAULT_TENANT"
+            ~ value: "patchforge_prod" => "diiac.io"
+
+          ~ 6:
+
+            ~ name:  "PATCHFORGE_DATABASE_USER" => "PATCHFORGE_KEYVAULT_URI"
+            ~ value: "patchforgeadmin" => "[reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.KeyVault/vaults/kv-diiac-patchforge-prod', '2023-07-01').vaultUri]"
+
+          ~ 7:
+
+            ~ name:  "PATCHFORGE_DATABASE_PASSWORD_SECRET_NAME" => "PATCHFORGE_DATABASE_HOST"
+            ~ value: "patchforge-postgres-admin-password" => "local-json-storage-placeholder"
+
+          ~ 8:
+
+            ~ name:  "PATCHFORGE_STORAGE_MODE" => "PATCHFORGE_DATABASE_NAME"
+            ~ value: "postgresql" => "patchforge_prod"
+
+          ~ 9:
+
+            ~ name:  "PATCHFORGE_ENTRA_TENANT_ID" => "PATCHFORGE_DATABASE_USER"
+            ~ value: "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da" => "patchforgeadmin"
+
+          ~ 10:
+
+            ~ name:  "PATCHFORGE_ENTRA_AUDIENCE" => "PATCHFORGE_DATABASE_PASSWORD_SECRET_NAME"
+            ~ value: "api://ec30b0eb-cfc4-48cc-a5f2-2a1345d96736" => "patchforge-postgres-admin-password"
+
+          ~ 11:
+
+            ~ name:  "PATCHFORGE_AUTH_REQUIRED" => "PATCHFORGE_STORAGE_MODE"
+            ~ value: "True" => "local-json"
+
+          ~ 12:
+
+            ~ name:  "PATCHFORGE_KEYVAULT_SIGNING_KEY_ID" => "PATCHFORGE_ENTRA_TENANT_ID"
+            ~ value: "https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod" => "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da"
+
+          ~ 13:
+
+            ~ name:  "AZURE_CLIENT_ID" => "PATCHFORGE_ENTRA_AUDIENCE"
+            ~ value: "6631a621-19e7-4629-bcf5-2ec99d5f0676" => "api://ec30b0eb-cfc4-48cc-a5f2-2a1345d96736"
+
+          ~ 14:
+
+            ~ name:  "PATCHFORGE_COMPONENT" => "PATCHFORGE_AUTH_REQUIRED"
+            ~ value: "sra-advisory-only" => "True"
+
+          ~ 15:
+
+            ~ name:  "PATCHFORGE_AGENT_INTAKE_ENABLED" => "PATCHFORGE_KEYVAULT_SIGNING_KEY_ID"
+            ~ value: "true" => "[format('{0}keys/{1}', reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.KeyVault/vaults/kv-diiac-patchforge-prod', '2023-07-01').vaultUri, 'pf-pack-signing-prod')]"
+
+          ~ 16:
+
+            ~ name:  "PATCHFORGE_PUBLIC_SOURCE_FEEDS_ENABLED" => "PATCHFORGE_RUNTIME_URL"
+            ~ value: "true" => "http://ca-patchforge-runtime-prod"
+
+          ~ 17:
+
+            ~ name:  "PATCHFORGE_WORKER_ENABLED" => "PATCHFORGE_ALLOWED_ORIGINS"
+            ~ value: "true" => "https://patchforge.diiac.io"
+
+          ~ 18:
+
+            ~ name: "PATCHFORGE_SCHEDULER_ENABLED" => "PATCHFORGE_AGENT_INTAKE_ENABLED"
+
+          ~ 19:
+
+            ~ name:  "PATCHFORGE_IMAGE_TAG" => "PATCHFORGE_PUBLIC_SOURCE_FEEDS_ENABLED"
+            ~ value: "pfrebuild-20260601-c6d59a8" => "true"
+
+          ~ 20:
+
+            ~ name:  "PATCHFORGE_RENDERER_COMMIT" => "PATCHFORGE_WORKER_ENABLED"
+            ~ value: "c6d59a8" => "true"
+
+          ~ 21:
+
+            ~ name:  "PATCHFORGE_PRODUCT_BASELINE" => "PATCHFORGE_SCHEDULER_ENABLED"
+            ~ value: "PATCHFORGE-REBUILD-20260601" => "true"
+
+          ~ 22:
+
+            ~ name:  "PATCHFORGE_REPORT_CONTEXT_VERSION" => "PATCHFORGE_SCHEDULER_INTERVAL_MS"
+            ~ value: "patchforge-report-context.rebuild.v1" => "21600000"
+
+          ~ 23:
+
+            ~ name:  "CONTAINER_IMAGE_TAG" => "PATCHFORGE_SCHEDULER_CISA_LIMIT"
+            ~ value: "pfrebuild-20260601-c6d59a8" => "10"
+
+          ~ 24:
+
+            ~ name:  "PATCHFORGE_COMMIT_SHA" => "PATCHFORGE_SCHEDULER_EPSS_LIMIT"
+            ~ value: "c6d59a8" => "10"
+
+          ~ 25:
+
+            ~ name:  "PATCHFORGE_OPENAI_AGENT_ENABLED" => "AZURE_CLIENT_ID"
+            ~ value: "false" => "[reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-sra-prod', '2023-01-31').clientId]"
+
+          ~ 26:
+
+            ~ name:  "PATCHFORGE_SEARCH_MODE" => "PATCHFORGE_COMPONENT"
+            ~ value: "postgres" => "sra-advisory-only"
+
+          ]
+        ~ image: "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-sra-agent:pfrebuild-20260601-c6d59a8" => "[format('{0}/diiac/patchforge-sra-agent:{1}', reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ContainerRegistry/registries/acrdiiacpatchforgeprod', '2023-07-01').loginServer, 'bootstrap')]"
+
+      ]
+
+  ~ Microsoft.App/containerApps/ca-patchforge-ui-prod [2024-03-01]
+    - properties.configuration.ingress.exposedPort: 0
+    - properties.configuration.ingress.traffic: [
+        0:
+
+          latestRevision: true
+          weight:         100
+
+      ]
+    - properties.runningStatus:                     "Running"
+    ~ properties.configuration.registries: [
+      ~ 0:
+
+        ~ server: "acrdiiacpatchforgeprod.azurecr.io" => "[reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ContainerRegistry/registries/acrdiiacpatchforgeprod', '2023-07-01').loginServer]"
+
+      ]
+    ~ properties.template.containers: [
+      ~ 0:
+
+        ~ env: [
+          ~ 0:
+
+            ~ name:  "PATCHFORGE_ENVIRONMENT" => "APP_ENV"
+            ~ value: "prod" => "production"
+
+          ~ 1:
+
+            ~ name:  "PATCHFORGE_BOUNDARY" => "PATCHFORGE_ENV"
+            ~ value: "governance-only-no-scanner-no-exploit-no-deployment" => "production"
+
+          ~ 2:
+
+            ~ name:  "PATCHFORGE_STORAGE_ACCOUNT" => "PATCHFORGE_ENVIRONMENT"
+            ~ value: "stdiiacpatchforgeprod01" => "prod"
+
+          ~ 3:
+
+            ~ name:  "PATCHFORGE_KEYVAULT_URI" => "PATCHFORGE_BOUNDARY"
+            ~ value: "https://kv-diiac-patchforge-prod.vault.azure.net/" => "governance-only-no-scanner-no-exploit-no-deployment"
+
+          ~ 4:
+
+            ~ name:  "PATCHFORGE_DATABASE_HOST" => "PATCHFORGE_STORAGE_ACCOUNT"
+            ~ value: "psql-diiac-patchforge-prod.postgres.database.azure.com" => "stdiiacpatchforgeprod01"
+
+          ~ 5:
+
+            ~ name:  "PATCHFORGE_DATABASE_NAME" => "PATCHFORGE_DEFAULT_TENANT"
+            ~ value: "patchforge_prod" => "diiac.io"
+
+          ~ 6:
+
+            ~ name:  "PATCHFORGE_DATABASE_USER" => "PATCHFORGE_KEYVAULT_URI"
+            ~ value: "patchforgeadmin" => "[reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.KeyVault/vaults/kv-diiac-patchforge-prod', '2023-07-01').vaultUri]"
+
+          ~ 7:
+
+            ~ name:  "PATCHFORGE_DATABASE_PASSWORD_SECRET_NAME" => "PATCHFORGE_DATABASE_HOST"
+            ~ value: "patchforge-postgres-admin-password" => "local-json-storage-placeholder"
+
+          ~ 8:
+
+            ~ name:  "PATCHFORGE_STORAGE_MODE" => "PATCHFORGE_DATABASE_NAME"
+            ~ value: "postgresql" => "patchforge_prod"
+
+          ~ 9:
+
+            ~ name:  "PATCHFORGE_ENTRA_TENANT_ID" => "PATCHFORGE_DATABASE_USER"
+            ~ value: "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da" => "patchforgeadmin"
+
+          ~ 10:
+
+            ~ name:  "PATCHFORGE_ENTRA_AUDIENCE" => "PATCHFORGE_DATABASE_PASSWORD_SECRET_NAME"
+            ~ value: "api://ec30b0eb-cfc4-48cc-a5f2-2a1345d96736" => "patchforge-postgres-admin-password"
+
+          ~ 11:
+
+            ~ name:  "PATCHFORGE_AUTH_REQUIRED" => "PATCHFORGE_STORAGE_MODE"
+            ~ value: "True" => "local-json"
+
+          ~ 12:
+
+            ~ name:  "PATCHFORGE_KEYVAULT_SIGNING_KEY_ID" => "PATCHFORGE_ENTRA_TENANT_ID"
+            ~ value: "https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod" => "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da"
+
+          ~ 13:
+
+            ~ name:  "AZURE_CLIENT_ID" => "PATCHFORGE_ENTRA_AUDIENCE"
+            ~ value: "bfe97bcf-de61-4349-844f-d1fee1403d42" => "api://ec30b0eb-cfc4-48cc-a5f2-2a1345d96736"
+
+          ~ 14:
+
+            ~ name:  "PATCHFORGE_COMPONENT" => "PATCHFORGE_AUTH_REQUIRED"
+            ~ value: "frontend" => "True"
+
+          ~ 15:
+
+            ~ name:  "PATCHFORGE_AGENT_INTAKE_ENABLED" => "PATCHFORGE_KEYVAULT_SIGNING_KEY_ID"
+            ~ value: "true" => "[format('{0}keys/{1}', reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.KeyVault/vaults/kv-diiac-patchforge-prod', '2023-07-01').vaultUri, 'pf-pack-signing-prod')]"
+
+          ~ 16:
+
+            ~ name:  "PATCHFORGE_PUBLIC_SOURCE_FEEDS_ENABLED" => "PATCHFORGE_RUNTIME_URL"
+            ~ value: "true" => "http://ca-patchforge-runtime-prod"
+
+          ~ 17:
+
+            ~ name:  "PATCHFORGE_WORKER_ENABLED" => "PATCHFORGE_ALLOWED_ORIGINS"
+            ~ value: "true" => "https://patchforge.diiac.io"
+
+          ~ 18:
+
+            ~ name: "PATCHFORGE_SCHEDULER_ENABLED" => "PATCHFORGE_AGENT_INTAKE_ENABLED"
+
+          ~ 19:
+
+            ~ name:  "PATCHFORGE_IMAGE_TAG" => "PATCHFORGE_PUBLIC_SOURCE_FEEDS_ENABLED"
+            ~ value: "pfrebuild-20260601-c6d59a8" => "true"
+
+          ~ 20:
+
+            ~ name:  "PATCHFORGE_RENDERER_COMMIT" => "PATCHFORGE_WORKER_ENABLED"
+            ~ value: "c6d59a8" => "true"
+
+          ~ 21:
+
+            ~ name:  "PATCHFORGE_PRODUCT_BASELINE" => "PATCHFORGE_SCHEDULER_ENABLED"
+            ~ value: "PATCHFORGE-REBUILD-20260601" => "true"
+
+          ~ 22:
+
+            ~ name:  "PATCHFORGE_REPORT_CONTEXT_VERSION" => "PATCHFORGE_SCHEDULER_INTERVAL_MS"
+            ~ value: "patchforge-report-context.rebuild.v1" => "21600000"
+
+          ~ 23:
+
+            ~ name:  "CONTAINER_IMAGE_TAG" => "PATCHFORGE_SCHEDULER_CISA_LIMIT"
+            ~ value: "pfrebuild-20260601-c6d59a8" => "10"
+
+          ~ 24:
+
+            ~ name:  "PATCHFORGE_COMMIT_SHA" => "PATCHFORGE_SCHEDULER_EPSS_LIMIT"
+            ~ value: "c6d59a8" => "10"
+
+          ~ 25:
+
+            ~ name:  "PATCHFORGE_OPENAI_AGENT_ENABLED" => "AZURE_CLIENT_ID"
+            ~ value: "false" => "[reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-ui-prod', '2023-01-31').clientId]"
+
+          + 26:
+
+              name:  "PATCHFORGE_COMPONENT"
+              value: "frontend"
+
+          ]
+        ~ image: "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-frontend:pfrebuild-20260601-c6d59a8" => "[format('{0}/diiac/patchforge-frontend:{1}', reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ContainerRegistry/registries/acrdiiacpatchforgeprod', '2023-07-01').loginServer, 'bootstrap')]"
+
+      ]
+
+  ~ Microsoft.App/containerApps/ca-patchforge-worker-prod [2024-03-01]
+    - properties.configuration.ingress.exposedPort: 0
+    - properties.configuration.ingress.traffic: [
+        0:
+
+          latestRevision: true
+          weight:         100
+
+      ]
+    - properties.runningStatus:                     "Running"
+    ~ properties.configuration.registries: [
+      ~ 0:
+
+        ~ server: "acrdiiacpatchforgeprod.azurecr.io" => "[reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ContainerRegistry/registries/acrdiiacpatchforgeprod', '2023-07-01').loginServer]"
+
+      ]
+    ~ properties.template.containers: [
+      ~ 0:
+
+        ~ env: [
+          ~ 0:
+
+            ~ name:  "PATCHFORGE_ENVIRONMENT" => "APP_ENV"
+            ~ value: "prod" => "production"
+
+          ~ 1:
+
+            ~ name:  "PATCHFORGE_BOUNDARY" => "PATCHFORGE_ENV"
+            ~ value: "governance-only-no-scanner-no-exploit-no-deployment" => "production"
+
+          ~ 2:
+
+            ~ name:  "PATCHFORGE_STORAGE_ACCOUNT" => "PATCHFORGE_ENVIRONMENT"
+            ~ value: "stdiiacpatchforgeprod01" => "prod"
+
+          ~ 3:
+
+            ~ name:  "PATCHFORGE_KEYVAULT_URI" => "PATCHFORGE_BOUNDARY"
+            ~ value: "https://kv-diiac-patchforge-prod.vault.azure.net/" => "governance-only-no-scanner-no-exploit-no-deployment"
+
+          ~ 4:
+
+            ~ name:  "PATCHFORGE_DATABASE_HOST" => "PATCHFORGE_STORAGE_ACCOUNT"
+            ~ value: "psql-diiac-patchforge-prod.postgres.database.azure.com" => "stdiiacpatchforgeprod01"
+
+          ~ 5:
+
+            ~ name:  "PATCHFORGE_DATABASE_NAME" => "PATCHFORGE_DEFAULT_TENANT"
+            ~ value: "patchforge_prod" => "diiac.io"
+
+          ~ 6:
+
+            ~ name:  "PATCHFORGE_DATABASE_USER" => "PATCHFORGE_KEYVAULT_URI"
+            ~ value: "patchforgeadmin" => "[reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.KeyVault/vaults/kv-diiac-patchforge-prod', '2023-07-01').vaultUri]"
+
+          ~ 7:
+
+            ~ name:  "PATCHFORGE_DATABASE_PASSWORD_SECRET_NAME" => "PATCHFORGE_DATABASE_HOST"
+            ~ value: "patchforge-postgres-admin-password" => "local-json-storage-placeholder"
+
+          ~ 8:
+
+            ~ name:  "PATCHFORGE_STORAGE_MODE" => "PATCHFORGE_DATABASE_NAME"
+            ~ value: "postgresql" => "patchforge_prod"
+
+          ~ 9:
+
+            ~ name:  "PATCHFORGE_ENTRA_TENANT_ID" => "PATCHFORGE_DATABASE_USER"
+            ~ value: "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da" => "patchforgeadmin"
+
+          ~ 10:
+
+            ~ name:  "PATCHFORGE_ENTRA_AUDIENCE" => "PATCHFORGE_DATABASE_PASSWORD_SECRET_NAME"
+            ~ value: "api://ec30b0eb-cfc4-48cc-a5f2-2a1345d96736" => "patchforge-postgres-admin-password"
+
+          ~ 11:
+
+            ~ name:  "PATCHFORGE_AUTH_REQUIRED" => "PATCHFORGE_STORAGE_MODE"
+            ~ value: "True" => "local-json"
+
+          ~ 12:
+
+            ~ name:  "PATCHFORGE_KEYVAULT_SIGNING_KEY_ID" => "PATCHFORGE_ENTRA_TENANT_ID"
+            ~ value: "https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod" => "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da"
+
+          ~ 13:
+
+            ~ name:  "AZURE_CLIENT_ID" => "PATCHFORGE_ENTRA_AUDIENCE"
+            ~ value: "51ed854c-bc9a-403b-b452-38cb074eea46" => "api://ec30b0eb-cfc4-48cc-a5f2-2a1345d96736"
+
+          ~ 14:
+
+            ~ name:  "PATCHFORGE_COMPONENT" => "PATCHFORGE_AUTH_REQUIRED"
+            ~ value: "ingest-export-worker" => "True"
+
+          ~ 15:
+
+            ~ name:  "PATCHFORGE_AGENT_INTAKE_ENABLED" => "PATCHFORGE_KEYVAULT_SIGNING_KEY_ID"
+            ~ value: "true" => "[format('{0}keys/{1}', reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.KeyVault/vaults/kv-diiac-patchforge-prod', '2023-07-01').vaultUri, 'pf-pack-signing-prod')]"
+
+          ~ 16:
+
+            ~ name:  "PATCHFORGE_PUBLIC_SOURCE_FEEDS_ENABLED" => "PATCHFORGE_RUNTIME_URL"
+            ~ value: "true" => "http://ca-patchforge-runtime-prod"
+
+          ~ 17:
+
+            ~ name:  "PATCHFORGE_WORKER_ENABLED" => "PATCHFORGE_ALLOWED_ORIGINS"
+            ~ value: "true" => "https://patchforge.diiac.io"
+
+          ~ 18:
+
+            ~ name: "PATCHFORGE_SCHEDULER_ENABLED" => "PATCHFORGE_AGENT_INTAKE_ENABLED"
+
+          ~ 19:
+
+            ~ name:  "PATCHFORGE_IMAGE_TAG" => "PATCHFORGE_PUBLIC_SOURCE_FEEDS_ENABLED"
+            ~ value: "pfrebuild-20260601-c6d59a8" => "true"
+
+          ~ 20:
+
+            ~ name:  "PATCHFORGE_RENDERER_COMMIT" => "PATCHFORGE_WORKER_ENABLED"
+            ~ value: "c6d59a8" => "true"
+
+          ~ 21:
+
+            ~ name:  "PATCHFORGE_PRODUCT_BASELINE" => "PATCHFORGE_SCHEDULER_ENABLED"
+            ~ value: "PATCHFORGE-REBUILD-20260601" => "true"
+
+          ~ 22:
+
+            ~ name:  "PATCHFORGE_REPORT_CONTEXT_VERSION" => "PATCHFORGE_SCHEDULER_INTERVAL_MS"
+            ~ value: "patchforge-report-context.rebuild.v1" => "21600000"
+
+          ~ 23:
+
+            ~ name:  "CONTAINER_IMAGE_TAG" => "PATCHFORGE_SCHEDULER_CISA_LIMIT"
+            ~ value: "pfrebuild-20260601-c6d59a8" => "10"
+
+          ~ 24:
+
+            ~ name:  "PATCHFORGE_COMMIT_SHA" => "PATCHFORGE_SCHEDULER_EPSS_LIMIT"
+            ~ value: "c6d59a8" => "10"
+
+          ~ 25:
+
+            ~ name:  "PATCHFORGE_OPENAI_AGENT_ENABLED" => "AZURE_CLIENT_ID"
+            ~ value: "false" => "[reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-worker-prod', '2023-01-31').clientId]"
+
+          ~ 26:
+
+            ~ name:  "PATCHFORGE_SEARCH_MODE" => "PATCHFORGE_COMPONENT"
+            ~ value: "postgres" => "ingest-export-worker"
+
+          ]
+        ~ image: "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-ingest-worker:pfrebuild-20260601-c6d59a8" => "[format('{0}/diiac/patchforge-ingest-worker:{1}', reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ContainerRegistry/registries/acrdiiacpatchforgeprod', '2023-07-01').loginServer, 'bootstrap')]"
+
+      ]
+
+  ~ Microsoft.App/managedEnvironments/acae-diiac-patchforge-prod [2023-05-01]
+    - properties.peerAuthentication:
+
+        mtls.enabled: false
+
+    ~ properties.appLogsConfiguration.logAnalyticsConfiguration.customerId: "5a403398-f2b0-47c8-8c0a-4b5c242a8861" => "[reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.OperationalInsights/workspaces/law-diiac-patchforge-prod', '2022-10-01').customerId]"
+
+  ~ Microsoft.ContainerRegistry/registries/acrdiiacpatchforgeprod [2023-07-01]
+    - properties.anonymousPullEnabled: false
+    - properties.dataEndpointEnabled:  false
+    - properties.encryption:
+
+        status: "disabled"
+
+    - properties.policies.azureADAuthenticationAsArmPolicy:
+
+        status: "enabled"
+
+
+  ~ Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01/blobServices/default [2023-05-01]
+    - properties.deleteRetentionPolicy.allowPermanentDelete: false
+
+  ~ Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01/blobServices/default/containers/audit-slices [2023-05-01]
+    - properties.defaultEncryptionScope:      "$account-encryption-key"
+    - properties.denyEncryptionScopeOverride: false
+
+  ~ Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01/blobServices/default/containers/decision-packs [2023-05-01]
+    - properties.defaultEncryptionScope:      "$account-encryption-key"
+    - properties.denyEncryptionScopeOverride: false
+
+  ~ Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01/blobServices/default/containers/evidence-artifacts [2023-05-01]
+    - properties.defaultEncryptionScope:      "$account-encryption-key"
+    - properties.denyEncryptionScopeOverride: false
+
+  ~ Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01/blobServices/default/containers/import-batches [2023-05-01]
+    - properties.defaultEncryptionScope:      "$account-encryption-key"
+    - properties.denyEncryptionScopeOverride: false
+
+  ~ Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01/blobServices/default/containers/logs-slices [2023-05-01]
+    - properties.defaultEncryptionScope:      "$account-encryption-key"
+    - properties.denyEncryptionScopeOverride: false
+
+  ~ Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01/blobServices/default/containers/raw-vulnerability-sources [2023-05-01]
+    - properties.defaultEncryptionScope:      "$account-encryption-key"
+    - properties.denyEncryptionScopeOverride: false
+
+  ~ Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01/blobServices/default/containers/replay-certificates [2023-05-01]
+    - properties.defaultEncryptionScope:      "$account-encryption-key"
+    - properties.denyEncryptionScopeOverride: false
+
+  ~ Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01/blobServices/default/containers/signed-exports [2023-05-01]
+    - properties.defaultEncryptionScope:      "$account-encryption-key"
+    - properties.denyEncryptionScopeOverride: false
+
+  ~ Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01/blobServices/default/containers/sra-traces [2023-05-01]
+    - properties.defaultEncryptionScope:      "$account-encryption-key"
+    - properties.denyEncryptionScopeOverride: false
+
+  = Microsoft.KeyVault/vaults/kv-diiac-patchforge-prod [2023-07-01]
+  = Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-bridge-prod [2023-01-31]
+  = Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-runtime-prod [2023-01-31]
+  = Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-sra-prod [2023-01-31]
+  = Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-ui-prod [2023-01-31]
+  = Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-worker-prod [2023-01-31]
+  = Microsoft.OperationalInsights/workspaces/law-diiac-patchforge-prod [2022-10-01]
+    x properties.features:
+
+        searchVersion:                               1
+        enableLogAccessUsingOnlyResourcePermissions: true
+
+
+  = Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01 [2023-05-01]
+    x properties.encryption.services:
+
+        blob.enabled: true
+        file.enabled: true
+
+
+  * Microsoft.App/managedEnvironments/acae-diiac-patchforge-prod/managedCertificates/mc-acae-diiac-pat-api-patchforge-d-1628
+  * Microsoft.App/managedEnvironments/acae-diiac-patchforge-prod/managedCertificates/mc-acae-diiac-pat-patchforge-diiac-9158
+  * Microsoft.DBforPostgreSQL/flexibleServers/psql-diiac-patchforge-prod
+
+Resource changes: 18 to modify, 9 no change, 13 unsupported, 3 to ignore.
+
+Diagnostics (13):
+[extensionResourceId('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ContainerRegistry/registries/acrdiiacpatchforgeprod', 'Microsoft.Authorization/roleAssignments', guid('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ContainerRegistry/registries/acrdiiacpatchforgeprod', reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-ui-prod', '2023-01-31').principalId, '/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/providers/Microsoft.Authorization/roleDefinitions/7f951dda-4ed3-4680-a7ca-43fe172d538d'))] (Unsupported) Changes to the resource declared at 'properties.template.resources.registry.properties.template.resources[1]' on line 1 and column 11601 cannot be analyzed because its resource ID or API version cannot be calculated until the deployment is under way. Please see https://aka.ms/WhatIfUnidentifiableResource for more guidance.
+[extensionResourceId('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ContainerRegistry/registries/acrdiiacpatchforgeprod', 'Microsoft.Authorization/roleAssignments', guid('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ContainerRegistry/registries/acrdiiacpatchforgeprod', reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-bridge-prod', '2023-01-31').principalId, '/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/providers/Microsoft.Authorization/roleDefinitions/7f951dda-4ed3-4680-a7ca-43fe172d538d'))] (Unsupported) Changes to the resource declared at 'properties.template.resources.registry.properties.template.resources[1]' on line 1 and column 11601 cannot be analyzed because its resource ID or API version cannot be calculated until the deployment is under way. Please see https://aka.ms/WhatIfUnidentifiableResource for more guidance.
+[extensionResourceId('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ContainerRegistry/registries/acrdiiacpatchforgeprod', 'Microsoft.Authorization/roleAssignments', guid('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ContainerRegistry/registries/acrdiiacpatchforgeprod', reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-runtime-prod', '2023-01-31').principalId, '/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/providers/Microsoft.Authorization/roleDefinitions/7f951dda-4ed3-4680-a7ca-43fe172d538d'))] (Unsupported) Changes to the resource declared at 'properties.template.resources.registry.properties.template.resources[1]' on line 1 and column 11601 cannot be analyzed because its resource ID or API version cannot be calculated until the deployment is under way. Please see https://aka.ms/WhatIfUnidentifiableResource for more guidance.
+[extensionResourceId('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ContainerRegistry/registries/acrdiiacpatchforgeprod', 'Microsoft.Authorization/roleAssignments', guid('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ContainerRegistry/registries/acrdiiacpatchforgeprod', reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-sra-prod', '2023-01-31').principalId, '/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/providers/Microsoft.Authorization/roleDefinitions/7f951dda-4ed3-4680-a7ca-43fe172d538d'))] (Unsupported) Changes to the resource declared at 'properties.template.resources.registry.properties.template.resources[1]' on line 1 and column 11601 cannot be analyzed because its resource ID or API version cannot be calculated until the deployment is under way. Please see https://aka.ms/WhatIfUnidentifiableResource for more guidance.
+[extensionResourceId('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ContainerRegistry/registries/acrdiiacpatchforgeprod', 'Microsoft.Authorization/roleAssignments', guid('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ContainerRegistry/registries/acrdiiacpatchforgeprod', reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-worker-prod', '2023-01-31').principalId, '/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/providers/Microsoft.Authorization/roleDefinitions/7f951dda-4ed3-4680-a7ca-43fe172d538d'))] (Unsupported) Changes to the resource declared at 'properties.template.resources.registry.properties.template.resources[1]' on line 1 and column 11601 cannot be analyzed because its resource ID or API version cannot be calculated until the deployment is under way. Please see https://aka.ms/WhatIfUnidentifiableResource for more guidance.
+[extensionResourceId('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01', 'Microsoft.Authorization/roleAssignments', guid('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01', reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-bridge-prod', '2023-01-31').principalId, '/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/providers/Microsoft.Authorization/roleDefinitions/ba92f5b4-2d11-453d-a403-e96b0029c9fe'))] (Unsupported) Changes to the resource declared at 'properties.template.resources.storage.properties.template.resources[3]' on line 1 and column 15767 cannot be analyzed because its resource ID or API version cannot be calculated until the deployment is under way. Please see https://aka.ms/WhatIfUnidentifiableResource for more guidance.
+[extensionResourceId('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01', 'Microsoft.Authorization/roleAssignments', guid('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01', reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-runtime-prod', '2023-01-31').principalId, '/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/providers/Microsoft.Authorization/roleDefinitions/ba92f5b4-2d11-453d-a403-e96b0029c9fe'))] (Unsupported) Changes to the resource declared at 'properties.template.resources.storage.properties.template.resources[3]' on line 1 and column 15767 cannot be analyzed because its resource ID or API version cannot be calculated until the deployment is under way. Please see https://aka.ms/WhatIfUnidentifiableResource for more guidance.
+[extensionResourceId('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01', 'Microsoft.Authorization/roleAssignments', guid('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01', reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-sra-prod', '2023-01-31').principalId, '/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/providers/Microsoft.Authorization/roleDefinitions/ba92f5b4-2d11-453d-a403-e96b0029c9fe'))] (Unsupported) Changes to the resource declared at 'properties.template.resources.storage.properties.template.resources[3]' on line 1 and column 15767 cannot be analyzed because its resource ID or API version cannot be calculated until the deployment is under way. Please see https://aka.ms/WhatIfUnidentifiableResource for more guidance.
+[extensionResourceId('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01', 'Microsoft.Authorization/roleAssignments', guid('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.Storage/storageAccounts/stdiiacpatchforgeprod01', reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-worker-prod', '2023-01-31').principalId, '/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/providers/Microsoft.Authorization/roleDefinitions/ba92f5b4-2d11-453d-a403-e96b0029c9fe'))] (Unsupported) Changes to the resource declared at 'properties.template.resources.storage.properties.template.resources[3]' on line 1 and column 15767 cannot be analyzed because its resource ID or API version cannot be calculated until the deployment is under way. Please see https://aka.ms/WhatIfUnidentifiableResource for more guidance.
+[extensionResourceId('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.KeyVault/vaults/kv-diiac-patchforge-prod', 'Microsoft.Authorization/roleAssignments', guid('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.KeyVault/vaults/kv-diiac-patchforge-prod', reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-bridge-prod', '2023-01-31').principalId, '/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/providers/Microsoft.Authorization/roleDefinitions/4633458b-17de-408a-b874-0445c86b69e6'))] (Unsupported) Changes to the resource declared at 'properties.template.resources.keyVault.properties.template.resources[1]' on line 1 and column 19094 cannot be analyzed because its resource ID or API version cannot be calculated until the deployment is under way. Please see https://aka.ms/WhatIfUnidentifiableResource for more guidance.
+[extensionResourceId('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.KeyVault/vaults/kv-diiac-patchforge-prod', 'Microsoft.Authorization/roleAssignments', guid('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.KeyVault/vaults/kv-diiac-patchforge-prod', reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-sra-prod', '2023-01-31').principalId, '/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/providers/Microsoft.Authorization/roleDefinitions/4633458b-17de-408a-b874-0445c86b69e6'))] (Unsupported) Changes to the resource declared at 'properties.template.resources.keyVault.properties.template.resources[1]' on line 1 and column 19094 cannot be analyzed because its resource ID or API version cannot be calculated until the deployment is under way. Please see https://aka.ms/WhatIfUnidentifiableResource for more guidance.
+[extensionResourceId('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.KeyVault/vaults/kv-diiac-patchforge-prod', 'Microsoft.Authorization/roleAssignments', guid('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.KeyVault/vaults/kv-diiac-patchforge-prod', reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-worker-prod', '2023-01-31').principalId, '/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/providers/Microsoft.Authorization/roleDefinitions/4633458b-17de-408a-b874-0445c86b69e6'))] (Unsupported) Changes to the resource declared at 'properties.template.resources.keyVault.properties.template.resources[1]' on line 1 and column 19094 cannot be analyzed because its resource ID or API version cannot be calculated until the deployment is under way. Please see https://aka.ms/WhatIfUnidentifiableResource for more guidance.
+[extensionResourceId('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.KeyVault/vaults/kv-diiac-patchforge-prod', 'Microsoft.Authorization/roleAssignments', guid('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.KeyVault/vaults/kv-diiac-patchforge-prod', reference('/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-runtime-prod', '2023-01-31').principalId, '/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/providers/Microsoft.Authorization/roleDefinitions/12338af0-0e69-4776-bea7-57ae8d297424'))] (Unsupported) Changes to the resource declared at 'properties.template.resources.keyVault.properties.template.resources[2]' on line 1 and column 19818 cannot be analyzed because its resource ID or API version cannot be calculated until the deployment is under way. Please see https://aka.ms/WhatIfUnidentifiableResource for more guidance.

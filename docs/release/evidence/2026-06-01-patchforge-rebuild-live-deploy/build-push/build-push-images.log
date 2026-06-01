@@ -1,0 +1,45 @@
+PatchForge image build/push plan
+Registry: acrdiiacpatchforgeprod.azurecr.io
+Tag: pfrebuild-20260601-43f953c
+docker build -f "F:\code\diiac\patchforge\Frontend\Dockerfile" -t acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-frontend:pfrebuild-20260601-43f953c "F:\code\diiac\patchforge\Frontend"
+docker push acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-frontend:pfrebuild-20260601-43f953c
+docker build -f "F:\code\diiac\patchforge\backend-api\Dockerfile" -t acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-bridge:pfrebuild-20260601-43f953c "F:\code\diiac\patchforge\backend-api"
+docker push acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-bridge:pfrebuild-20260601-43f953c
+docker build -f "F:\code\diiac\patchforge\runtime\Dockerfile" -t acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-runtime:pfrebuild-20260601-43f953c "F:\code\diiac\patchforge\."
+docker push acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-runtime:pfrebuild-20260601-43f953c
+docker build -f "F:\code\diiac\patchforge\backend-api\Dockerfile" -t acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-sra-agent:pfrebuild-20260601-43f953c "F:\code\diiac\patchforge\backend-api"
+docker push acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-sra-agent:pfrebuild-20260601-43f953c
+docker build -f "F:\code\diiac\patchforge\backend-api\Dockerfile" -t acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-ingest-worker:pfrebuild-20260601-43f953c "F:\code\diiac\patchforge\backend-api"
+docker push acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-ingest-worker:pfrebuild-20260601-43f953c
+docker build -f "F:\code\diiac\patchforge\backend-api\Dockerfile" -t acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-scheduler:pfrebuild-20260601-43f953c "F:\code\diiac\patchforge\backend-api"
+docker push acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-scheduler:pfrebuild-20260601-43f953c
+powershell : ERROR: error during connect: Get "http://%2F%2F.%2Fpipe%2FdockerDesktopLinuxEngine/_ping": EOF
+At line:2 char:36
++ ... 1-43f953c'; powershell -NoProfile -ExecutionPolicy Bypass -File scrip ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (ERROR: error du...ine/_ping": EOF:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine; check if the path is correct and if
+the daemon is running: open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified.
+ERROR: failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine; check if the path is correct
+and if the daemon is running: open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified.
+failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine; check if the path is correct and if
+the daemon is running: open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified.
+ERROR: failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine; check if the path is correct
+and if the daemon is running: open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified.
+failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine; check if the path is correct and if
+the daemon is running: open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified.
+ERROR: failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine; check if the path is correct
+and if the daemon is running: open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified.
+failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine; check if the path is correct and if
+the daemon is running: open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified.
+ERROR: failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine; check if the path is correct
+and if the daemon is running: open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified.
+failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine; check if the path is correct and if
+the daemon is running: open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified.
+ERROR: failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine; check if the path is correct
+and if the daemon is running: open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified.
+failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine; check if the path is correct and if
+the daemon is running: open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified.
+PatchForge image build/push complete.

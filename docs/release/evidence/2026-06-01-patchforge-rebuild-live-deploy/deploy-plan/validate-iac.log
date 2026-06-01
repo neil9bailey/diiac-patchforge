@@ -1,0 +1,15 @@
+PatchForge IaC validation
+Template: F:\code\diiac\patchforge\infra\bicep\main.bicep
+Parameters: F:\code\diiac\patchforge\infra\parameters\prod.bicepparam
+powershell : WARNING: A new Bicep release is available: v0.43.8. Upgrade now by running "az bicep upgrade".
+At line:2 char:1
++ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\validate_ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (WARNING: A new ...bicep upgrade".:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+Bicep CLI version 0.41.2 (3e403ea7c1)
+
+
+WARNING: A new Bicep release is available: v0.43.8. Upgrade now by running "az bicep upgrade".
+PatchForge IaC validation complete. No deployment was run.

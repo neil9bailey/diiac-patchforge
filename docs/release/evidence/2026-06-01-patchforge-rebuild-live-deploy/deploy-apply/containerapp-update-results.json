@@ -1,0 +1,50 @@
+[
+    {
+        "app":  "ca-patchforge-ui-prod",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-frontend:pfrebuild-20260601-43f953c",
+        "exitCode":  0,
+        "provisioningState":  null,
+        "latestRevisionName":  null,
+        "runningStatus":  null
+    },
+    {
+        "app":  "ca-patchforge-bridge-prod",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-bridge:pfrebuild-20260601-43f953c",
+        "exitCode":  0,
+        "provisioningState":  null,
+        "latestRevisionName":  null,
+        "runningStatus":  null
+    },
+    {
+        "app":  "ca-patchforge-runtime-prod",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-runtime:pfrebuild-20260601-43f953c",
+        "exitCode":  0,
+        "provisioningState":  null,
+        "latestRevisionName":  null,
+        "runningStatus":  null
+    },
+    {
+        "app":  "ca-patchforge-sra-prod",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-sra-agent:pfrebuild-20260601-43f953c",
+        "exitCode":  0,
+        "provisioningState":  null,
+        "latestRevisionName":  null,
+        "runningStatus":  null
+    },
+    {
+        "app":  "ca-patchforge-worker-prod",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-ingest-worker:pfrebuild-20260601-43f953c",
+        "exitCode":  0,
+        "provisioningState":  null,
+        "latestRevisionName":  null,
+        "runningStatus":  null
+    },
+    {
+        "app":  "ca-patchforge-scheduler-prod",
+        "image":  "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-scheduler:pfrebuild-20260601-43f953c",
+        "exitCode":  0,
+        "provisioningState":  null,
+        "latestRevisionName":  null,
+        "runningStatus":  null
+    }
+]

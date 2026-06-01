@@ -1,0 +1,10 @@
+- main:
+  - complementary "PatchForge product boundary":
+    - paragraph: DIIaC\u2122
+    - heading "PatchForge Intelligence" [level=1]
+    - paragraph: Turns CVE, exploit signal, vendor, patch, hotfix, and estate evidence into governed, signed action packs. No scanning, exploit content, deployment, or autonomous approvals.
+  - paragraph: Production | diiac.io | Entra ID
+  - heading "PatchForge Intelligence by DIIaCâ„¢ PatchForge" [level=2]
+  - paragraph: Access is restricted to assigned PatchForge app roles.
+  - button "Sign in with Microsoft":
+    - text: Sign in with Microsoft
