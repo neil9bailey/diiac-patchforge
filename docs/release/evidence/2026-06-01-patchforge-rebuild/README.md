@@ -25,6 +25,8 @@ The rebuild remains source-bound, advisory-only, tenant-scoped, and human-approv
 ## Evidence Files
 
 - `PF0_REPO_AZURE_DISCOVERY.md` - repository identity, Azure topology references, restore point, and starting tree.
+- `PATCHFORGE_PURGE_PLAN.md` - purge strategy, preservation boundaries, typed confirmations, and production mutation guardrails.
+- `../../../product/PATCHFORGE_INTELLIGENCE_REBUILD_BLUEPRINT.md` - canonical catalogue-first rebuild blueprint.
 - `PF13_TRACEABILITY_MATRIX.md` - programme requirement mapping to implementation files and tests.
 - `PF13_PRODUCTION_READINESS_PACK.md` - readiness posture, validation results, known gates, and release constraints.
 - `AZURE_DEPLOYMENT_UPDATE_RUNBOOK.md` - deployment update procedure to use only after explicit deployment approval.

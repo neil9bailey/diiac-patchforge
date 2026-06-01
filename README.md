@@ -70,6 +70,10 @@ No scanner, exploit, or patch-deployment capability is created. PatchForge remai
 
 Start with [PatchForge Operational User Guide](docs/operations/PATCHFORGE_OPERATIONAL_USER_GUIDE.md) when helping end users understand how to use PatchForge correctly in day-to-day operations. It covers the Global Security Action Center, Customer Estate, Ask PatchForge, Patch Compare, Reports & Packs, evidence discipline, human approval boundaries, and credibility checks before customer or board reporting.
 
+## Canonical Rebuild Blueprint
+
+The catalogue-first rebuild is governed by the [PatchForge Intelligence Rebuild Blueprint](docs/product/PATCHFORGE_INTELLIGENCE_REBUILD_BLUEPRINT.md). Implementation work after PF0 must remain aligned to this blueprint: Security Action Center first, Vendors & Exploits Register next, Customer Operational Assets, Patch / Hotfix Compare, Ask PatchForge, user-driven Reports, and Admin as System & Data Health.
+
 ## Local Validation
 
 ```powershell

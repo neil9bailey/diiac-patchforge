@@ -183,3 +183,69 @@ No deploy command was run.
 - Working tree had pre-existing uncommitted changes in `README.md` and `docs/operations/PATCHFORGE_OPERATIONAL_USER_GUIDE.md`; they are not PF0 changes and were preserved.
 - `docs/README.md`, `backend-ui-bridge/package.json`, and `live_verification.json` were not present.
 - Azure live state was discovered from repository docs and evidence only; no live Azure read operation or deployment was run.
+
+## Canonical Blueprint Pass Update
+
+Update timestamp: 2026-06-01T20:51:22+01:00
+
+This section records the PF0 reconciliation pass requested after the canonical catalogue-first rebuild brief was supplied.
+
+Current repository state before blueprint creation:
+
+```text
+git status --short --branch
+## codex/patchforge-rebuild-20260601
+
+git rev-parse --show-toplevel
+F:/code/diiac/patchforge
+
+git rev-parse --abbrev-ref HEAD
+codex/patchforge-rebuild-20260601
+
+git rev-parse --short HEAD
+7d2a121
+
+git remote -v
+origin  https://github.com/neil9bailey/diiac-patchforge.git (fetch)
+origin  https://github.com/neil9bailey/diiac-patchforge.git (push)
+```
+
+Current canonical rebuild restore point:
+
+- Restore point type: annotated git tag
+- Restore point name: `restore/pre-patchforge-rebuild-7d2a121-20260601`
+- Restore point target: `7d2a121`
+- Restore point pushed: no
+
+Documentation and repository identity remain aligned:
+
+- Confirmed local repo path: `F:\code\diiac\patchforge`
+- Confirmed Git remote: `https://github.com/neil9bailey/diiac-patchforge.git`
+- No conflict was found between the repository remote and PatchForge documentation.
+- The prohibited Pharma repository was not inspected or modified.
+
+PF0 files required by the canonical brief:
+
+- `docs/product/PATCHFORGE_INTELLIGENCE_REBUILD_BLUEPRINT.md`
+- `docs/release/evidence/2026-06-01-patchforge-rebuild/PATCHFORGE_PURGE_PLAN.md`
+- `scripts/validate_patchforge_blueprint.py`
+- `docs/README.md`
+
+Azure configuration summary remains:
+
+- Hosting model: Azure Container Apps
+- Public UI URL: `https://patchforge.diiac.io/`
+- API health endpoint: `https://api.patchforge.diiac.io/health`
+- API readiness endpoint: `https://api.patchforge.diiac.io/readiness`
+- Resource group: `rg-diiac-patchforge-prod`
+- ACR: `acrdiiacpatchforgeprod.azurecr.io`
+- Frontend app: `ca-patchforge-ui-prod`
+- Bridge/API app: `ca-patchforge-bridge-prod`
+- Runtime app: `ca-patchforge-runtime-prod`
+- SRA app: `ca-patchforge-sra-prod`
+- Worker app: `ca-patchforge-worker-prod`
+- Scheduler app: `ca-patchforge-scheduler-prod`
+- Key Vault: `kv-diiac-patchforge-prod`
+- Signing key reference: `pf-pack-signing-prod`
+
+No deployment, production purge, production data mutation, or GitHub push was performed during this PF0 reconciliation pass.
