@@ -600,11 +600,11 @@ describe("PatchForge simplified customer experience", () => {
     expect(screen.getAllByRole("heading", { name: "Security Action Center" }).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByRole("button", { name: "Security Action Center" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Vendors & Exploits Register" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Customer Estate" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Customer Operational Assets" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Patch / Hotfix Compare" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Ask PatchForge" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Reports & Signed Action Packs" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Admin / Assurance" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reports" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Admin" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "VendorLens" })).not.toBeInTheDocument();
     expect(screen.getByText("Vendor Groups")).toBeInTheDocument();
     expect(screen.getAllByText("Fortinet").length).toBeGreaterThanOrEqual(1);
@@ -635,7 +635,7 @@ describe("PatchForge simplified customer experience", () => {
     const api = createApi();
     render(<App auth={auth} api={api} />);
 
-    fireEvent.click(await screen.findByRole("button", { name: "Customer Estate" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Customer Operational Assets" }));
     expect(screen.getByRole("heading", { name: "Describe a Device" })).toBeInTheDocument();
     expect(screen.getByText("Devices & Assets")).toBeInTheDocument();
 
@@ -683,8 +683,8 @@ describe("PatchForge simplified customer experience", () => {
     vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
     render(<App auth={auth} api={api} />);
 
-    fireEvent.click(await screen.findByRole("button", { name: "Reports & Signed Action Packs" }));
-    expect(screen.getByRole("heading", { name: "Reports & Signed Action Packs" })).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: "Reports" }));
+    expect(screen.getByRole("heading", { name: "Reports" })).toBeInTheDocument();
     expect(screen.getByText("Pre-Export Check")).toBeInTheDocument();
     expect(screen.getAllByText("PF-AZ11-CUSTOMER-DEMO-MATURITY").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("pfaz11-test")).toBeInTheDocument();
@@ -710,15 +710,15 @@ describe("PatchForge simplified customer experience", () => {
   it("keeps assurance visible and disables write actions without privileged roles", async () => {
     render(<App auth={{ ...auth, roles: ["PatchForge.Reader"] }} api={createApi()} />);
 
-    expect(screen.getByRole("button", { name: "Admin / Assurance" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Admin" })).toBeInTheDocument();
     expect(await screen.findByRole("button", { name: "Refresh KEV" })).toBeDisabled();
   });
 
   it("renders admin controls and avoids prohibited wording", async () => {
     const { container } = render(<App auth={auth} api={createApi()} />);
 
-    fireEvent.click(await screen.findByRole("button", { name: "Admin / Assurance" }));
-    expect(screen.getAllByRole("heading", { name: "Admin / Assurance" }).length).toBeGreaterThanOrEqual(1);
+    fireEvent.click(await screen.findByRole("button", { name: "Admin" }));
+    expect(screen.getAllByRole("heading", { name: "System & Data Health" }).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Entra ID / RBAC")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "admin sections page 2" }));
     expect(screen.getByText("Signing & Trust")).toBeInTheDocument();

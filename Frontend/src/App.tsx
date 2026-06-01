@@ -71,16 +71,14 @@ import { PatchForgeAuthSession, usePatchForgeAuth } from "./auth";
 type PageKey =
   | "Security Action Center"
   | "Vendors & Exploits Register"
-  | "Customer Estate"
+  | "Customer Operational Assets"
   | "Patch / Hotfix Compare"
   | "Ask PatchForge"
-  | "Reports & Signed Action Packs"
-  | "Admin / Assurance"
-  | "Global Security Action Center"
+  | "Reports"
+  | "Admin"
   | "Action Center"
   | "Finding Detail"
   | "Review & Approve"
-  | "Reports & Packs"
   | "Command Center"
   | "Guide"
   | "Vulnerability Queue"
@@ -92,7 +90,6 @@ type PageKey =
   | "SRA Research"
   | "Evidence Catalogue"
   | "Decision Packs"
-  | "Reports"
   | "Source Feeds"
   | "Vendor & Threat Landscape"
   | "VendorLens"
@@ -142,11 +139,11 @@ const config = getPatchForgeConfig();
 const navItems: NavItem[] = [
   { label: "Security Action Center", icon: Gauge },
   { label: "Vendors & Exploits Register", icon: Radar },
-  { label: "Customer Estate", icon: ServerCog },
+  { label: "Customer Operational Assets", icon: ServerCog },
   { label: "Patch / Hotfix Compare", icon: Layers3 },
   { label: "Ask PatchForge", icon: MessageSquareText },
-  { label: "Reports & Signed Action Packs", icon: FileText },
-  { label: "Admin / Assurance", icon: SlidersHorizontal }
+  { label: "Reports", icon: FileText },
+  { label: "Admin", icon: SlidersHorizontal }
 ];
 
 const postures = [
@@ -424,7 +421,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
       });
       setOperationMessage(`Signed decision pack ${pack.pack_id} generated.`);
       await loadLiveState();
-      setActivePage("Reports & Signed Action Packs");
+      setActivePage("Reports");
     } catch (error) {
       setOperationError(error instanceof Error ? error.message : "Decision pack generation failed.");
     }
@@ -872,7 +869,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         <div className="content-grid">
           <section className="primary-panel" aria-label={activePage}>
             <OperationMessages message={operationMessage} error={operationError} />
-            {selectedFinding && ["Security Action Center", "Global Security Action Center", "Action Center", "Finding Detail", "Review & Approve", "Reports & Signed Action Packs", "Reports & Packs"].includes(activePage) && (
+            {selectedFinding && ["Security Action Center", "Action Center", "Finding Detail", "Review & Approve", "Reports"].includes(activePage) && (
               <FindingContextBanner finding={selectedFinding} />
             )}
             {activePage === "Security Action Center" && (
@@ -906,7 +903,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 }}
               />
             )}
-            {activePage === "Customer Estate" && (
+            {activePage === "Customer Operational Assets" && (
               <CustomerEstate
                 state={state.customerEstate}
                 vendorLens={state.vendorLens}
@@ -998,7 +995,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 canWrite={canWrite}
               />
             )}
-            {activePage === "Reports & Signed Action Packs" && (
+            {activePage === "Reports" && (
               <ReportsPacks
                 findings={state.findings}
                 decisionPacks={state.decisionPacks}
@@ -1051,7 +1048,6 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
             {activePage === "SRA Research" && <SraResearch onRun={handleSraResearch} result={sraResult} canWrite={canWrite} />}
             {activePage === "Evidence Catalogue" && <EvidenceCatalogue vulnerabilities={state.vulnerabilities} />}
             {activePage === "Decision Packs" && <DecisionPacks decisionPacks={state.decisionPacks} reports={state.reports} onExportPack={handleExportPack} onDownloadReport={handleDownloadReport} />}
-            {activePage === "Reports" && <Reports decisionPacks={state.decisionPacks} reports={state.reports} onDownloadReport={handleDownloadReport} />}
             {activePage === "Source Feeds" && <SourceFeeds sourceFeedState={state.sourceFeedState} onRefresh={handleRefreshSourceFeed} canWrite={canWrite} />}
             {activePage === "Vendor & Threat Landscape" && <VendorThreatLandscape vendors={state.vendors} threatSummary={state.threatSummary} />}
             {activePage === "VendorLens" && (
@@ -1072,7 +1068,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 canWrite={canWrite}
               />
             )}
-            {activePage === "Admin / Assurance" && (
+            {activePage === "Admin" && (
               isAdmin ? <Admin
                 tenantId={tenantId}
                 setTenantId={setTenantId}
@@ -1082,7 +1078,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 setAdminTier={setAdminTier}
                 adminHealth={state.adminHealth}
                 onSave={handleSaveAdmin}
-              /> : <PageBand icon={LockKeyhole} title="Admin / Assurance" lines={["PatchForge.Admin role required", "Admin controls are read-only for non-admin users", "API app roles are enforced server-side"]} />
+              /> : <PageBand icon={LockKeyhole} title="Admin" lines={["PatchForge.Admin role required", "Admin controls are read-only for non-admin users", "API app roles are enforced server-side"]} />
             )}
           </section>
 
@@ -1801,7 +1797,7 @@ function AskPatchForge({
         <p className="boundary-copy">
           {selectedAdvisoryId
             ? `Using selected advisory context ${selectedAdvisoryId}${selectedAssetId ? ` and asset ${selectedAssetId}` : ""}.`
-            : "No CVE/advisory is selected. Include a CVE/advisory ID, select one in Security Action Center or Vendors & Exploits Register, or run Customer Estate matching first."}
+            : "No CVE/advisory is selected. Include a CVE/advisory ID, select one in Security Action Center or Vendors & Exploits Register, or run Customer Operational Assets matching first."}
         </p>
         <p className="boundary-copy">Defensive-use only: PatchForge can explain impact, exposure, patch, hotfix, mitigation, evidence, and reporting choices. It refuses exploit code, payloads, bypass steps, and attacker playbooks.</p>
         <div className="report-actions">
@@ -2225,7 +2221,7 @@ function ReportsPacks({
     <>
       <section className="wide-band report-brief">
         <div>
-          <p className="eyebrow">Reports & Signed Action Packs</p>
+          <p className="eyebrow">Reports</p>
           <h3>CISO, operations, vendor, customer, emergency, monthly, and CAB packs in one place.</h3>
           <p className="muted-copy">Exports show pack ID, baseline, renderer commit, image tag, evidence state, customer context, VendorLens context, report currency, and final approval state before download.</p>
         </div>
@@ -2874,7 +2870,7 @@ const vendorLensTabs = [
   "Network Vendors",
   "Product Families",
   "Advisories & CVEs",
-  "Customer Estate Match",
+  "Customer Operational Asset Match",
   "Config Applicability",
   "Patch Compare",
   "Urgency & Recommended Posture",
@@ -2940,13 +2936,13 @@ function VendorLens({
   const compareAssetPage = usePagination(vendorLens.assets, 6, "vendorlens-compare-assets");
   const compareAdvisoryPage = usePagination(vendorLens.advisories, 10, "vendorlens-compare-advisories");
   const nextActions: Array<{ number: string; title: string; detail: string; onClick?: () => void }> = [
-    { number: "1", title: "Confirm customer exposure", detail: "Attach reviewed asset, service, internet exposure, and management-plane evidence.", onClick: () => setActiveTab("Customer Estate Match") },
+    { number: "1", title: "Confirm customer exposure", detail: "Attach reviewed asset, service, internet exposure, and management-plane evidence.", onClick: () => setActiveTab("Customer Operational Asset Match") },
     { number: "2", title: "Attach vendor advisory evidence", detail: "Use source-bound vendor/CVE evidence with review state visible.", onClick: () => setActiveTab("Advisories & CVEs") },
-    { number: "3", title: "Attach configuration evidence", detail: "Record firmware, enabled/disabled feature state, and evidence references.", onClick: () => setActiveTab("Customer Estate Match") },
+    { number: "3", title: "Attach configuration evidence", detail: "Record firmware, enabled/disabled feature state, and evidence references.", onClick: () => setActiveTab("Customer Operational Asset Match") },
     { number: "4", title: "Run config applicability", detail: "Compare product, version, feature, and exposure to the advisory.", onClick: () => setActiveTab("Config Applicability") },
     { number: "5", title: "Ask PatchForge", detail: "Get advisory-only explanation of what the evidence means.", onClick: () => setActiveTab("Ask PatchForge") },
     { number: "6", title: "Generate signed pack", detail: "Move to Review & Approve and compile the source-bound signed pack." },
-    { number: "7", title: "Export customer/board/CAB report", detail: "Use Reports & Signed Action Packs after the signed pack is generated." }
+    { number: "7", title: "Export customer/board/CAB report", detail: "Use Reports after the signed pack is generated." }
   ];
 
   useEffect(() => {
@@ -3130,7 +3126,7 @@ function VendorLens({
         </div>
       )}
 
-      {activeTab === "Customer Estate Match" && (
+      {activeTab === "Customer Operational Asset Match" && (
         <div className="split-grid">
           <section className="data-band">
             <h3>Customer Network Asset</h3>
@@ -3155,7 +3151,7 @@ function VendorLens({
             </form>
           </section>
           <section className="data-band">
-            <h3>Customer Estate Records</h3>
+            <h3>Customer Operational Asset Records</h3>
             {assetPage.items.map((item) => (
               <StatusLine key={item.asset_id} label={`${item.vendor_id} ${item.model || item.product_family || ""}`} value={humanize(item.review_state || "pending_review")} tone={item.internet_facing ? "amber" : "steel"} detail={`${item.firmware_version || "version pending"} | ${item.management_exposure || "exposure pending"}`} />
             ))}
@@ -3232,7 +3228,7 @@ function VendorLens({
           <section className="data-band">
             <h3>CISO Review Summary</h3>
             <p className="muted-copy">{comparison?.ciso_summary || "Run patch compare to prepare a CISO-ready summary from source-bound advisory and customer asset evidence."}</p>
-            <p className="boundary-copy">Export the CISO Patch Version Comparison Report from Reports & Signed Action Packs after generating a signed pack with this comparison attached.</p>
+            <p className="boundary-copy">Export the CISO Patch Version Comparison Report from Reports after generating a signed pack with this comparison attached.</p>
             {(comparison?.evidence_required || []).slice(0, 6).map((item) => <p className="rail-note" key={item}><FileCheck2 size={15} aria-hidden /> {item}</p>)}
           </section>
         </div>
@@ -3409,7 +3405,7 @@ function Reports({
           <p className="eyebrow">Customer demo operating pack</p>
           <h3>Professional outputs generated from live signed packs</h3>
           <p className="muted-copy">
-            Reports are generated from the signed decision-pack record, preserving the source-pack/current-state distinction, evidence readiness, Bayesian advisory status, and no-autonomous-action boundary.
+            Reports are generated from the signed decision-pack record, preserving the source-pack/current-state distinction, evidence readiness, advisory status, and no-autonomous-action boundary.
           </p>
         </div>
         <div className="report-pack-selector">
@@ -3488,7 +3484,7 @@ function Admin({
   return (
     <>
       <div className="section-title">
-        <h3>Admin / Assurance</h3>
+        <h3>System & Data Health</h3>
         <span className="pill trust">Production guarded</span>
       </div>
 

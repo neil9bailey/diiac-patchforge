@@ -48,16 +48,16 @@ This repository now contains the PF-AZ11-CUSTOMER-DEMO-MATURITY production produ
 - deterministic runtime governance and signed decision packs
 - Azure Key Vault production signing path
 - Microsoft Entra sign-in and token-backed frontend API use
-- Global Security Action Center for source-bound CVEs, vendor advisories, KEV/EPSS signals, customer match counts, and governance posture
-- Customer Estate for customer devices/assets, services, config evidence, exposure matches, and Patch Compare
+- Security Action Center for source-bound CVEs, vendor advisories, KEV/EPSS signals, customer match counts, and governance posture
+- Customer Operational Assets for customer devices/assets, services, config evidence, exposure matches, and Patch Compare
 - Ask PatchForge advisory workflow for vendor, device, feature, patch, and evidence questions
-- Reports & Packs consolidation for customer, board, CAB, technical appendix, signed pack, and verification outputs
+- Reports consolidation for customer, board, CAB, technical appendix, signed pack, and verification outputs
 - deterministic search index across vulnerabilities, vendor advisories, vendor profiles, customer assets, applicability assessments, and source-feed records
 - vendor intelligence and config-aware patch advisor capabilities surfaced inside the simplified workflows
 - customer network asset, model, firmware, feature, and exposure evidence records
 - Ask PatchForge advisory chat with human accountability
 - source-bound SRA and agent finding intake
-- simplified Global Security Action Center, Customer Estate, Ask PatchForge, Reports & Packs, and Admin navigation
+- simplified Security Action Center, Vendors & Exploits Register, Customer Operational Assets, Patch / Hotfix Compare, Ask PatchForge, Reports, and Admin navigation
 - human-readable finding intelligence API
 - decision-grade DOCX/PDF board and CAB reports
 - signed-pack finding intelligence snapshots
@@ -68,7 +68,7 @@ No scanner, exploit, or patch-deployment capability is created. PatchForge remai
 
 ## Operational User Guide
 
-Start with [PatchForge Operational User Guide](docs/operations/PATCHFORGE_OPERATIONAL_USER_GUIDE.md) when helping end users understand how to use PatchForge correctly in day-to-day operations. It covers the Global Security Action Center, Customer Estate, Ask PatchForge, Patch Compare, Reports & Packs, evidence discipline, human approval boundaries, and credibility checks before customer or board reporting.
+Start with [PatchForge Operational User Guide](docs/operations/PATCHFORGE_OPERATIONAL_USER_GUIDE.md) when helping end users understand how to use PatchForge correctly in day-to-day operations. It covers the Security Action Center, Vendors & Exploits Register, Customer Operational Assets, Patch / Hotfix Compare, Ask PatchForge, Reports, evidence discipline, human approval boundaries, and credibility checks before customer or board reporting.
 
 ## Canonical Rebuild Blueprint
 

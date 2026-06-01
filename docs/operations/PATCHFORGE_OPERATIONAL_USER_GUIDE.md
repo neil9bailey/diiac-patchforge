@@ -40,10 +40,10 @@ PatchForge is organised around five top-level areas.
 
 | Area | Use it for | Typical user question |
 | --- | --- | --- |
-| Global Security Action Center | Global CVE, advisory, vendor, KEV, EPSS, source, review, and customer-match posture | "What threats and advisories are active, urgent, or relevant?" |
-| Customer Estate | Customer devices, services, configuration evidence, exposure matches, and Patch Compare | "Which of our assets may be affected?" |
+| Security Action Center | Global CVE, advisory, vendor, KEV, EPSS, source, review, and customer-match posture | "What threats and advisories are active, urgent, or relevant?" |
+| Customer Operational Assets | Customer devices, services, configuration evidence, exposure matches, and Patch Compare | "Which of our assets may be affected?" |
 | Ask PatchForge | Natural-language advisory questions about vendors, models, features, CVEs, versions, patches, and evidence | "Given what we know, what is the governed posture?" |
-| Reports & Packs | Signed packs, customer reports, board summaries, CAB reports, technical appendices, and verification | "What can we export as proof?" |
+| Reports | Signed packs, customer reports, board summaries, CAB reports, technical appendices, and verification | "What can we export as proof?" |
 | Admin | Configuration, source settings, and operational health | "Is the platform configured and healthy?" |
 
 ## Operating Principles
@@ -78,7 +78,7 @@ Follow these principles every time PatchForge is used operationally.
 
 Use this flow for normal vulnerability and patch governance work.
 
-1. Open Global Security Action Center.
+1. Open Security Action Center.
 
    Review severity, KEV, EPSS, known-exploited, patch availability, urgency posture, source state, review state, and customer-match counts.
 
@@ -90,7 +90,7 @@ Use this flow for normal vulnerability and patch governance work.
 
    Read the source posture, evidence state, affected feature, affected/fixed versions, customer matches, and final approval state.
 
-4. Open Customer Estate.
+4. Open Customer Operational Assets.
 
    Add or confirm affected customer devices, services, firmware/software versions, exposure state, and feature configuration.
 
@@ -112,7 +112,7 @@ Use this flow for normal vulnerability and patch governance work.
 
 9. Generate a signed pack.
 
-   Use Reports & Packs only after the selected assessment has enough context to produce a meaningful output. It is valid for a pack to show blocked decisions and missing evidence.
+   Use Reports only after the selected assessment has enough context to produce a meaningful output. It is valid for a pack to show blocked decisions and missing evidence.
 
 10. Export the right report.
 
@@ -122,7 +122,7 @@ Use this flow for normal vulnerability and patch governance work.
 
    Verify the signed pack, retain the pack metadata, and store the report with the CAB, customer assurance, risk, or governance record.
 
-## Global Security Action Center
+## Security Action Center
 
 Use this page as the first stop for global advisory triage.
 
@@ -174,9 +174,9 @@ Use filters when you need operational queues:
 
 KEV and EPSS are prioritisation signals. They do not prove that a customer asset is exposed. A customer match means PatchForge found a possible relationship between advisory intelligence and estate data. It does not prove affected status until the evidence is reviewed.
 
-## Customer Estate
+## Customer Operational Assets
 
-Use Customer Estate to add, query, and match customer assets and services.
+Use Customer Operational Assets to add, query, and match customer assets and services.
 
 ### Minimum Useful Device Record
 
@@ -335,9 +335,9 @@ Read every Ask PatchForge response through these sections:
 
 The most important section is often "What We Do Not Know". It tells the team what must be resolved before a stronger claim can be made.
 
-## Reports & Packs
+## Reports
 
-Use Reports & Packs when the team needs a signed, replayable, audience-specific record.
+Use Reports when the team needs a signed, replayable, audience-specific record.
 
 ### Before Export
 
@@ -430,13 +430,13 @@ Avoid these patterns:
 ## Example Operational Scenario
 
 1. A new high-severity advisory appears for a firewall product family.
-2. The security lead opens Global Security Action Center and filters by vendor, severity, KEV, EPSS, patch availability, and customer match.
-3. The service owner opens Customer Estate and confirms affected customer devices, versions, enabled features, and management exposure.
+2. The security lead opens Security Action Center and filters by vendor, severity, KEV, EPSS, patch availability, and customer match.
+3. The service owner opens Customer Operational Assets and confirms affected customer devices, versions, enabled features, and management exposure.
 4. PatchForge finds possible customer matches.
 5. The team reviews source records and attaches customer evidence.
 6. Patch Compare is run for the current version and proposed fixed version.
 7. Ask PatchForge is used to explain current governed posture and missing evidence.
-8. Reports & Packs generates a signed pack and the correct audience report.
+8. Reports generates a signed pack and the correct audience report.
 9. CAB or the accountable owner reviews the evidence and records the human decision.
 10. The signed pack and report are archived with the change, risk, or customer assurance record.
 
