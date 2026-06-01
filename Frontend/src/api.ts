@@ -373,6 +373,7 @@ export type SecurityActionCenterRow = {
   known_exploited?: boolean;
   source_state?: string;
   review_state?: string;
+  evidence_state?: string;
   customer_match_count: number;
   customer_matches?: Array<Record<string, unknown>>;
   urgency_posture?: string;

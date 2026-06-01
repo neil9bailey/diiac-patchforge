@@ -69,9 +69,14 @@ import {
 import { PatchForgeAuthSession, usePatchForgeAuth } from "./auth";
 
 type PageKey =
-  | "Global Security Action Center"
+  | "Security Action Center"
+  | "Vendors & Exploits Register"
   | "Customer Estate"
+  | "Patch / Hotfix Compare"
   | "Ask PatchForge"
+  | "Reports & Signed Action Packs"
+  | "Admin / Assurance"
+  | "Global Security Action Center"
   | "Action Center"
   | "Finding Detail"
   | "Review & Approve"
@@ -128,18 +133,20 @@ type LiveState = {
   adminConfig: AdminConfig;
 };
 
-const PRODUCT_MARK = "DIIaC\u2122";
+const PRODUCT_MARK = "PatchForge Intelligence by DIIaC\u2122";
 const ACTIVE_BASELINE = "PF-AZ11-CUSTOMER-DEMO-MATURITY";
 const REPORT_TEMPLATE_VERSION = "patchforge-report-template.v2026-05-31.1";
 const REPORT_CONTEXT_VERSION = "patchforge-report-context.v4";
 const config = getPatchForgeConfig();
 
 const navItems: NavItem[] = [
-  { label: "Global Security Action Center", icon: Gauge },
+  { label: "Security Action Center", icon: Gauge },
+  { label: "Vendors & Exploits Register", icon: Radar },
   { label: "Customer Estate", icon: ServerCog },
+  { label: "Patch / Hotfix Compare", icon: Layers3 },
   { label: "Ask PatchForge", icon: MessageSquareText },
-  { label: "Reports & Packs", icon: FileText },
-  { label: "Admin", icon: SlidersHorizontal }
+  { label: "Reports & Signed Action Packs", icon: FileText },
+  { label: "Admin / Assurance", icon: SlidersHorizontal }
 ];
 
 const postures = [
@@ -233,7 +240,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
   const contextAuth = usePatchForgeAuth();
   const session = auth || contextAuth;
   const liveApi = useMemo(() => api || createPatchForgeApi(session.getAccessToken), [api, session.getAccessToken]);
-  const [activePage, setActivePage] = useState<PageKey>("Global Security Action Center");
+  const [activePage, setActivePage] = useState<PageKey>("Security Action Center");
   const [tenantId, setTenantId] = useState(initialTenantId || config.tenantHeader);
   const [state, setState] = useState<LiveState>(() => emptyLiveState(tenantId));
   const [refreshing, setRefreshing] = useState(false);
@@ -270,10 +277,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
     ) || state.securityActionCenter.catalogue_rows[0] || null,
     [selectedAdvisoryId, selectedVulnerabilityId, state.securityActionCenter.catalogue_rows]
   );
-  const visibleNav = useMemo(
-    () => navItems.filter((item) => item.label !== "Admin" || isAdmin),
-    [isAdmin]
-  );
+  const visibleNav = useMemo(() => navItems, []);
   const activePatchComparison = useMemo(
     () => relevantPatchComparison(state.vendorLens.latestComparison, selectedAdvisoryId),
     [selectedAdvisoryId, state.vendorLens.latestComparison]
@@ -420,7 +424,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
       });
       setOperationMessage(`Signed decision pack ${pack.pack_id} generated.`);
       await loadLiveState();
-      setActivePage("Reports & Packs");
+      setActivePage("Reports & Signed Action Packs");
     } catch (error) {
       setOperationError(error instanceof Error ? error.message : "Decision pack generation failed.");
     }
@@ -868,10 +872,10 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         <div className="content-grid">
           <section className="primary-panel" aria-label={activePage}>
             <OperationMessages message={operationMessage} error={operationError} />
-            {selectedFinding && ["Global Security Action Center", "Action Center", "Finding Detail", "Review & Approve", "Reports & Packs"].includes(activePage) && (
+            {selectedFinding && ["Security Action Center", "Global Security Action Center", "Action Center", "Finding Detail", "Review & Approve", "Reports & Signed Action Packs", "Reports & Packs"].includes(activePage) && (
               <FindingContextBanner finding={selectedFinding} />
             )}
-            {activePage === "Global Security Action Center" && (
+            {activePage === "Security Action Center" && (
               <GlobalSecurityActionCenter
                 state={state.securityActionCenter}
                 query={globalSearch}
@@ -886,6 +890,20 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 }}
                 canWrite={canWrite}
                 onRefreshSourceFeed={handleRefreshSourceFeed}
+              />
+            )}
+            {activePage === "Vendors & Exploits Register" && (
+              <VendorsExploitsRegister
+                state={state.securityActionCenter}
+                query={globalSearch}
+                setQuery={setGlobalSearch}
+                filters={globalFilters}
+                setFilters={setGlobalFilters}
+                onSearch={handleSearchSecurityActionCenter}
+                onSelectCve={(row) => {
+                  setSelectedVulnerabilityId(row.vulnerability_id || row.cve_id || row.advisory_id || "");
+                  setSelectedAdvisoryId(row.advisory_id || row.cve_id || row.id || "");
+                }}
               />
             )}
             {activePage === "Customer Estate" && (
@@ -908,6 +926,20 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 onExtract={handleExtractCustomerAsset}
                 onConfirmAsset={handleConfirmCustomerAsset}
                 onMatch={handleMatchCustomerEstate}
+                onPatchCompare={handleCustomerPatchCompare}
+                canWrite={canWrite}
+              />
+            )}
+            {activePage === "Patch / Hotfix Compare" && (
+              <PatchHotfixCompare
+                vendorLens={state.vendorLens}
+                selectedAssetId={selectedCustomerAssetId}
+                setSelectedAssetId={setSelectedCustomerAssetId}
+                selectedAdvisoryId={selectedAdvisoryId}
+                setSelectedAdvisoryId={setSelectedAdvisoryId}
+                patchCompareForm={patchCompareForm}
+                setPatchCompareForm={setPatchCompareForm}
+                latestComparison={activePatchComparison}
                 onPatchCompare={handleCustomerPatchCompare}
                 canWrite={canWrite}
               />
@@ -966,7 +998,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 canWrite={canWrite}
               />
             )}
-            {activePage === "Reports & Packs" && (
+            {activePage === "Reports & Signed Action Packs" && (
               <ReportsPacks
                 findings={state.findings}
                 decisionPacks={state.decisionPacks}
@@ -1040,7 +1072,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 canWrite={canWrite}
               />
             )}
-            {activePage === "Admin" && (
+            {activePage === "Admin / Assurance" && (
               isAdmin ? <Admin
                 tenantId={tenantId}
                 setTenantId={setTenantId}
@@ -1050,7 +1082,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 setAdminTier={setAdminTier}
                 adminHealth={state.adminHealth}
                 onSave={handleSaveAdmin}
-              /> : <PageBand icon={LockKeyhole} title="Admin" lines={["PatchForge.Admin role required", "Admin controls are hidden for reader users", "API app roles are enforced server-side"]} />
+              /> : <PageBand icon={LockKeyhole} title="Admin / Assurance" lines={["PatchForge.Admin role required", "Admin controls are read-only for non-admin users", "API app roles are enforced server-side"]} />
             )}
           </section>
 
@@ -1092,8 +1124,8 @@ function BrandLockup() {
         <Binary size={24} aria-hidden />
       </div>
       <div>
-        <p>{PRODUCT_MARK}</p>
-        <h1>PatchForge</h1>
+        <p>DIIaC\u2122</p>
+        <h1>PatchForge Intelligence</h1>
       </div>
     </div>
   );
@@ -1103,7 +1135,7 @@ function BoundaryPanel() {
   return (
     <div className="boundary-panel">
       <LockKeyhole size={18} aria-hidden />
-      <p>Governance layer only. No scanning, no exploit content, no patch deployment, no autonomous approvals.</p>
+      <p>Turns CVE, exploit signal, vendor, patch, hotfix, and estate evidence into governed, signed action packs. No scanning, exploit content, deployment, or autonomous approvals.</p>
     </div>
   );
 }
@@ -1203,7 +1235,7 @@ function GlobalSecurityActionCenter({
         <div className="section-title">
           <div>
             <p className="eyebrow">Global CVE/advisory catalogue</p>
-            <h3>Global Security Action Center</h3>
+            <h3>Security Action Center</h3>
           </div>
           <div className="hero-actions">
             <button type="button" className="action-button" onClick={() => onRefreshSourceFeed("cisa-kev")} disabled={!canWrite}>
@@ -1336,6 +1368,205 @@ function GlobalSecurityActionCenter({
           )}
         </section>
       </div>
+    </>
+  );
+}
+
+function VendorsExploitsRegister({
+  state,
+  query,
+  setQuery,
+  filters,
+  setFilters,
+  onSearch,
+  onSelectCve
+}: {
+  state: SecurityActionCenterState;
+  query: string;
+  setQuery: (value: string) => void;
+  filters: { vendor: string; severity: string; customer_match: string; patch_available: string };
+  setFilters: (value: { vendor: string; severity: string; customer_match: string; patch_available: string }) => void;
+  onSearch: () => void;
+  onSelectCve: (row: SecurityActionCenterRow) => void;
+}) {
+  const rows = state.catalogue_rows || [];
+  const rowsPage = usePagination(rows, 10, "vendors-exploits-register");
+  const vendorOptions = state.filters?.vendors || [];
+  const severityOptions = state.filters?.severities || [];
+  return (
+    <>
+      <div className="metric-grid">
+        <MetricCard icon={Database} label="Vendors" value={state.groups.length || state.vendors?.length || 0} tone="steel" />
+        <MetricCard icon={ShieldAlert} label="Known exploited" value={rows.filter((row) => row.known_exploited).length} tone="amber" />
+        <MetricCard icon={Radar} label="KEV records" value={rows.filter((row) => row.kev).length} tone="danger" />
+        <MetricCard icon={Wrench} label="Patch available" value={rows.filter((row) => row.patch_available).length} tone="trust" />
+      </div>
+
+      <section className="wide-band search-console">
+        <div className="section-title">
+          <div>
+            <p className="eyebrow">Defensive vendor, CVE, exploit-signal, patch, and hotfix evidence</p>
+            <h3>Vendors & Exploits Register</h3>
+          </div>
+          <span className="pill amber">No exploit mechanics</span>
+        </div>
+        <div className="search-row">
+          <label className="wide-input">
+            <span>Search</span>
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Vendor, product, CVE, KEV, EPSS, affected or fixed version" />
+          </label>
+          <button type="button" className="action-button" onClick={onSearch}>
+            <Search size={16} aria-hidden /> Search
+          </button>
+        </div>
+        <div className="filter-grid">
+          <label>Vendor<select value={filters.vendor} onChange={(event) => setFilters({ ...filters, vendor: event.target.value })}><option value="">All vendors</option>{vendorOptions.map((item) => <option key={item.value} value={item.value}>{item.value}</option>)}</select></label>
+          <label>Severity<select value={filters.severity} onChange={(event) => setFilters({ ...filters, severity: event.target.value })}><option value="">All severities</option>{severityOptions.map((item) => <option key={item.value} value={item.value}>{humanize(item.value)}</option>)}</select></label>
+          <label>Customer estate<select value={filters.customer_match} onChange={(event) => setFilters({ ...filters, customer_match: event.target.value })}><option value="">All</option><option value="true">Matched</option><option value="false">No match</option></select></label>
+          <label>Fix state<select value={filters.patch_available} onChange={(event) => setFilters({ ...filters, patch_available: event.target.value })}><option value="">All</option><option value="true">Patch or hotfix</option><option value="false">No fix recorded</option></select></label>
+        </div>
+      </section>
+
+      <section className="data-band table-band">
+        <div className="section-title">
+          <h3>Defensive Exploit Signals & Patch Evidence</h3>
+          <span className="pill teal">{rows.length} source-bound record(s)</span>
+        </div>
+        <div className="table-scroll">
+          <table className="data-table catalogue-table">
+            <thead>
+              <tr>
+                <th>CVE / Advisory</th>
+                <th>Vendor</th>
+                <th>Product</th>
+                <th>Severity</th>
+                <th>CVSS</th>
+                <th>EPSS</th>
+                <th>KEV</th>
+                <th>Exploited</th>
+                <th>Affected versions</th>
+                <th>Fixed versions</th>
+                <th>Patch status</th>
+                <th>Customer estate</th>
+                <th>Evidence confidence</th>
+                <th>Unresolved gaps</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rowsPage.items.map((row) => (
+                <tr key={`${row.record_type}-${row.id}`}>
+                  <td><button type="button" className="link-button" onClick={() => onSelectCve(row)}>{row.cve_id || row.advisory_id || row.id}</button></td>
+                  <td>{row.vendor_name}</td>
+                  <td>{row.product_family || "Pending"}</td>
+                  <td><span className={`pill ${severityTone(row.severity)}`}>{humanize(row.severity)}</span></td>
+                  <td>{row.cvss_score ?? "n/a"}</td>
+                  <td>{row.epss_score ?? "n/a"}</td>
+                  <td>{row.kev ? "Yes" : "No"}</td>
+                  <td>{row.known_exploited ? "Active/known signal" : "No reviewed signal"}</td>
+                  <td>{(row.affected_versions || []).join(", ") || "Pending"}</td>
+                  <td>{(row.fixed_versions || []).join(", ") || "Pending"}</td>
+                  <td>{row.patch_available ? "Patch/hotfix recorded" : "No fix recorded"}</td>
+                  <td>{row.customer_match_count ? `${row.customer_match_count} match(es)` : "No match"}</td>
+                  <td>{humanize(row.evidence_state || row.source_state || "referenced")}</td>
+                  <td>{row.customer_match_count ? "Review exposure evidence" : "Map estate evidence"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <PaginationControls {...rowsPage} label="register records" />
+        {!rows.length && <EmptyState title="No register records" detail="Sync public sources or ingest vendor advisories to populate the defensive register." />}
+      </section>
+    </>
+  );
+}
+
+function PatchHotfixCompare({
+  vendorLens,
+  selectedAssetId,
+  setSelectedAssetId,
+  selectedAdvisoryId,
+  setSelectedAdvisoryId,
+  patchCompareForm,
+  setPatchCompareForm,
+  latestComparison,
+  onPatchCompare,
+  canWrite
+}: {
+  vendorLens: VendorLensState;
+  selectedAssetId: string;
+  setSelectedAssetId: (value: string) => void;
+  selectedAdvisoryId: string;
+  setSelectedAdvisoryId: (value: string) => void;
+  patchCompareForm: { current_version: string; proposed_version: string };
+  setPatchCompareForm: (value: { current_version: string; proposed_version: string }) => void;
+  latestComparison: VendorLensPatchComparison | null;
+  onPatchCompare: () => void;
+  canWrite: boolean;
+}) {
+  const asset = vendorLens.assets.find((item) => item.asset_id === selectedAssetId) || vendorLens.assets[0] || null;
+  const advisory = vendorLens.advisories.find((item) => item.advisory_id === selectedAdvisoryId) || vendorLens.advisories[0] || null;
+  const options = [
+    ["Direct patch", "High risk reduction", "Human CAB/change approval required"],
+    ["Hotfix", "Targeted remediation", "CISO review required for severe exposure"],
+    ["Major upgrade", "Broad remediation", "Planned window and rollback review required"],
+    ["Workaround", "Temporary reduction", "Evidence and expiry required"],
+    ["Compensating controls", "Exposure reduction", "Control owner and monitoring evidence required"],
+    ["Defer with exception", "No remediation", "CISO approval and risk-owner expiry required"]
+  ];
+  return (
+    <>
+      <section className="wide-band review-runway">
+        <div>
+          <p className="eyebrow">Governed remediation comparison</p>
+          <h3>Patch / Hotfix Compare</h3>
+          <p className="muted-copy">Compare direct patch, hotfix, major upgrade, workaround, compensating controls, and exception deferral without approving or deploying production changes.</p>
+        </div>
+        <div className="finding-score">
+          <strong>{latestComparison ? "Compared" : "Ready"}</strong>
+          <small>No autonomous approval</small>
+        </div>
+      </section>
+
+      <div className="split-grid">
+        <section className="data-band">
+          <h3>Inputs</h3>
+          <div className="form-grid compact-form">
+            <label>Asset<select value={selectedAssetId} onChange={(event) => setSelectedAssetId(event.target.value)}><option value="">Select asset</option>{vendorLens.assets.map((item) => <option key={item.asset_id} value={item.asset_id}>{item.asset_id} | {item.product_family} {item.firmware_version}</option>)}</select></label>
+            <label>Advisory / CVE<select value={selectedAdvisoryId} onChange={(event) => setSelectedAdvisoryId(event.target.value)}><option value="">Select advisory</option>{vendorLens.advisories.map((item) => <option key={item.advisory_id} value={item.advisory_id}>{item.cve || item.advisory_id}</option>)}</select></label>
+            <label>Current version<input value={patchCompareForm.current_version} onChange={(event) => setPatchCompareForm({ ...patchCompareForm, current_version: event.target.value })} /></label>
+            <label>Proposed version<input value={patchCompareForm.proposed_version} onChange={(event) => setPatchCompareForm({ ...patchCompareForm, proposed_version: event.target.value })} /></label>
+          </div>
+          <button type="button" className="action-button" onClick={onPatchCompare} disabled={!canWrite || !selectedAssetId || !selectedAdvisoryId}>
+            <Layers3 size={16} aria-hidden /> Run Patch Compare
+          </button>
+          <div className="insight-list">
+            <StatusLine label="Selected asset" value={asset?.asset_id || "No asset selected"} tone="steel" />
+            <StatusLine label="Selected advisory" value={advisory?.cve || advisory?.advisory_id || "No advisory selected"} tone="amber" />
+            <StatusLine label="Human approval" value="Required" tone="amber" />
+          </div>
+        </section>
+        <section className="data-band">
+          <h3>Governed Candidate</h3>
+          <StatusLine label="Current version" value={humanize(latestComparison?.current_version_status || "not compared")} tone="amber" />
+          <StatusLine label="Target version" value={humanize(latestComparison?.target_version_status || "not compared")} tone="teal" />
+          <StatusLine label="CISO approval" value={advisory?.known_exploited ? "Required" : "Conditional"} tone="amber" />
+          <StatusLine label="Production approval" value="Never autonomous" tone="steel" />
+          <p className="muted-copy">{latestComparison?.ciso_summary || "Run comparison to prepare a CISO/CAB summary from source-bound advisory and customer asset evidence."}</p>
+        </section>
+      </div>
+
+      <section className="data-band">
+        <div className="section-title">
+          <h3>Action Options</h3>
+          <span className="pill amber">All production-impacting options require human change approval</span>
+        </div>
+        <div className="decision-option-grid">
+          {options.map(([title, value, detail]) => (
+            <StatusLine key={title} label={title} value={value} detail={detail} tone={title === "Defer with exception" ? "amber" : "teal"} />
+          ))}
+        </div>
+      </section>
     </>
   );
 }
@@ -1570,8 +1801,9 @@ function AskPatchForge({
         <p className="boundary-copy">
           {selectedAdvisoryId
             ? `Using selected advisory context ${selectedAdvisoryId}${selectedAssetId ? ` and asset ${selectedAssetId}` : ""}.`
-            : "No CVE/advisory is selected. Include a CVE/advisory ID in the question, select one in the Global Security Action Center, or run Customer Estate matching first."}
+            : "No CVE/advisory is selected. Include a CVE/advisory ID, select one in Security Action Center or Vendors & Exploits Register, or run Customer Estate matching first."}
         </p>
+        <p className="boundary-copy">Defensive-use only: PatchForge can explain impact, exposure, patch, hotfix, mitigation, evidence, and reporting choices. It refuses exploit code, payloads, bypass steps, and attacker playbooks.</p>
         <div className="report-actions">
           <button type="button" className="action-button" onClick={onAsk} disabled={!canWrite}>
             <MessageSquareText size={16} aria-hidden /> Ask PatchForge
@@ -1993,8 +2225,8 @@ function ReportsPacks({
     <>
       <section className="wide-band report-brief">
         <div>
-          <p className="eyebrow">Reports & Packs</p>
-          <h3>Customer, board, CAB, evidence appendix, signed ZIP, and verification in one place.</h3>
+          <p className="eyebrow">Reports & Signed Action Packs</p>
+          <h3>CISO, operations, vendor, customer, emergency, monthly, and CAB packs in one place.</h3>
           <p className="muted-copy">Exports show pack ID, baseline, renderer commit, image tag, evidence state, customer context, VendorLens context, report currency, and final approval state before download.</p>
         </div>
         <div className="report-pack-selector">
@@ -2714,7 +2946,7 @@ function VendorLens({
     { number: "4", title: "Run config applicability", detail: "Compare product, version, feature, and exposure to the advisory.", onClick: () => setActiveTab("Config Applicability") },
     { number: "5", title: "Ask PatchForge", detail: "Get advisory-only explanation of what the evidence means.", onClick: () => setActiveTab("Ask PatchForge") },
     { number: "6", title: "Generate signed pack", detail: "Move to Review & Approve and compile the source-bound signed pack." },
-    { number: "7", title: "Export customer/board/CAB report", detail: "Use Reports & Packs after the signed pack is generated." }
+    { number: "7", title: "Export customer/board/CAB report", detail: "Use Reports & Signed Action Packs after the signed pack is generated." }
   ];
 
   useEffect(() => {
@@ -3000,7 +3232,7 @@ function VendorLens({
           <section className="data-band">
             <h3>CISO Review Summary</h3>
             <p className="muted-copy">{comparison?.ciso_summary || "Run patch compare to prepare a CISO-ready summary from source-bound advisory and customer asset evidence."}</p>
-            <p className="boundary-copy">Export the CISO Patch Version Comparison Report from Reports & Packs after generating a signed pack with this comparison attached.</p>
+            <p className="boundary-copy">Export the CISO Patch Version Comparison Report from Reports & Signed Action Packs after generating a signed pack with this comparison attached.</p>
             {(comparison?.evidence_required || []).slice(0, 6).map((item) => <p className="rail-note" key={item}><FileCheck2 size={15} aria-hidden /> {item}</p>)}
           </section>
         </div>
@@ -3256,9 +3488,17 @@ function Admin({
   return (
     <>
       <div className="section-title">
-        <h3>Admin Control Surfaces</h3>
+        <h3>Admin / Assurance</h3>
         <span className="pill trust">Production guarded</span>
       </div>
+
+      <section className="wide-band">
+        <div>
+          <p className="eyebrow">Defensive-use boundary</p>
+          <h3>Governed intelligence and human-reviewable action packs</h3>
+          <p className="muted-copy">PatchForge sits above scanners, EDR, SIEM, SOAR, ITSM, CMDB, patch-management, cloud-management, and monitoring systems. It explains risk, maps exposure, compares patch or hotfix choices, and produces signed evidence packs without exploit mechanics, production mutation, or autonomous approval.</p>
+        </div>
+      </section>
 
       <div className="admin-layout">
         <section className="config-panel" aria-label="Admin configuration">
