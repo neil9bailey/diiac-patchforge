@@ -78,3 +78,46 @@ Not yet complete:
 ## Release Recommendation
 
 Proceed to deployment only after explicit deploy approval. Use `AZURE_DEPLOYMENT_UPDATE_RUNBOOK.md` for build, push, what-if, update, smoke, and rollback evidence capture.
+
+## Canonical Blueprint Reconciliation Update
+
+Update timestamp: 2026-06-01T21:15:00+01:00
+
+Canonical blueprint: `docs/product/PATCHFORGE_INTELLIGENCE_REBUILD_BLUEPRINT.md`
+
+Current top-level product shell:
+
+- Security Action Center
+- Vendors & Exploits Register
+- Customer Operational Assets
+- Patch / Hotfix Compare
+- Ask PatchForge
+- Reports
+- Admin, presented as System & Data Health
+
+Additional implementation since the original readiness pack:
+
+- PF0 blueprint and validation script committed.
+- PF1 navigation and operational guide aligned to the catalogue-first blueprint.
+- PF2 factory reset and purge controls added with dry-run, typed confirmation, Admin-only execution, and local JSON CLI reset support.
+- PF3 source adapters expanded to the blueprint vendor/source set through deterministic fixtures, not restricted scraping.
+- PF4 Vendors & Exploits Register API aliases added.
+- PF5 Customer Operational Assets API aliases added and used by the frontend.
+- PF11 Reports API aliases added and used by the frontend.
+
+Current validation results:
+
+| Check | Command | Result |
+| --- | --- | --- |
+| Syntax checks | `node --check` on backend server/auth/source/search/report/config/vendor/scheduler/SRA modules | PASS |
+| Blueprint validation | `python scripts\validate_patchforge_blueprint.py` | PASS |
+| Factory reset compile | `python -m py_compile scripts\patchforge_factory_reset.py` | PASS |
+| Factory reset dry-run | `python scripts\patchforge_factory_reset.py --reports --dry-run` | PASS |
+| Backend tests | `npm --prefix backend-api test` | PASS, 44 tests |
+| Frontend tests | `npm --prefix Frontend test` | PASS, 10 tests |
+| Frontend build | `npm --prefix Frontend run build` | PASS, Vite large chunk warning only |
+| Python tests | `python -m pytest -q --basetemp .pytest_tmp` | PASS, 27 tests |
+| IaC validation | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\validate_iac.ps1` | PASS, no deployment run |
+| Bicep build | `az bicep build --file infra\bicep\main.bicep` | PASS, Bicep update warning only |
+
+No Azure deployment, ACR image push, production purge, production data mutation, GitHub push, or live UI validation was performed during this reconciliation pass.

@@ -40,3 +40,22 @@ Status: implemented locally and validated through automated local checks. No dep
 - ACR build/push evidence is not captured for this branch.
 - Azure Container Apps revision update evidence is not captured for this branch.
 - Live custom-domain smoke and signed-in browser validation must be performed only after explicit deploy approval.
+
+## Canonical Blueprint Reconciliation
+
+Update timestamp: 2026-06-01T21:15:00+01:00
+
+Canonical blueprint: `docs/product/PATCHFORGE_INTELLIGENCE_REBUILD_BLUEPRINT.md`
+
+| Epic | Current implementation evidence | Validation evidence | Status |
+| --- | --- | --- | --- |
+| PF0 | Blueprint, purge plan, docs index, README link, and restore tag `restore/pre-patchforge-rebuild-7d2a121-20260601`. | `python scripts\validate_patchforge_blueprint.py`; commit `75d5ff8`. | Complete |
+| PF1 | Main nav is Security Action Center, Vendors & Exploits Register, Customer Operational Assets, Patch / Hotfix Compare, Ask PatchForge, Reports, Admin. | `npm --prefix Frontend test`; `npm --prefix Frontend run build`; commit `e16902d`. | Complete |
+| PF2 | `scripts/patchforge_factory_reset.py`, `/api/patchforge/admin/purge`, dry-run counts, typed confirmation, System & Data Health controls. | Backend purge test; CLI dry-run; commit `e4dbd14`. | Complete |
+| PF3 | Fixture-backed source adapters include NVD, CISA KEV, FIRST EPSS, GitHub Advisory, CVE Services, Microsoft MSRC, Cisco PSIRT, Fortinet PSIRT, Palo Alto, Juniper, VMware/Broadcom, Ivanti, Citrix, Linux, Apple, CISA alerts, and NCSC. | Backend source adapter test; commit `15c99dd`. | Complete |
+| PF4 | Vendors & Exploits Register API aliases: `/api/patchforge/vendors-exploits-register`, `/search`, and `/cves/:id`. | Backend catalogue alias test; commit `15c99dd`. | Complete |
+| PF5-PF7 | Customer Operational Assets API aliases now back the frontend: `/api/patchforge/customer-operational-assets/...`; existing parsers, redaction, and exposure matching remain tenant-scoped. | Backend customer operational asset alias test; frontend tests/build; commit `15c99dd`. | Complete |
+| PF8-PF10 | Patch / Hotfix Compare and Ask PatchForge remain advisory-only, defensive, and human-review gated. | Existing backend patch compare and Ask PatchForge refusal tests. | Complete |
+| PF11-PF12 | Reports API aliases `/api/patchforge/reports/overview` and `/api/patchforge/reports/generate`; signed action packs remain verifiable and final approval remains false unless human workflow records approval. | Backend reports alias and signed pack tests. | Complete |
+| PF13 | Admin is System & Data Health with purge controls, source/data health, and no dead main-nav links. | Frontend Admin test; backend admin health/purge tests. | Complete |
+| PF14 | Local validation completed. No deployment performed in this reconciliation pass. | Node checks, backend tests, frontend tests/build, Python tests, IaC validation, Bicep build. | Local complete; live gated |
