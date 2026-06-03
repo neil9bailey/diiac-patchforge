@@ -738,6 +738,8 @@ describe("PatchForge simplified customer experience", () => {
 
   it("shows the Entra sign-in gate when unauthenticated", () => {
     render(<App auth={{ ...auth, status: "unauthenticated", accountName: null }} api={createApi()} />);
+    expect(screen.getByRole("heading", { name: "PatchForge Intelligence by DIIaC\u2122" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /PatchForge Intelligence by DIIaC.*PatchForge/ })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Sign in with Microsoft" })).toBeInTheDocument();
   });
 

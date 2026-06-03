@@ -1154,7 +1154,7 @@ function SignedOutShell({ session }: { session: PatchForgeAuthSession }) {
         <div className="auth-panel">
           <div className="auth-mark"><LockKeyhole size={30} aria-hidden /></div>
           <p className="eyebrow">Production | diiac.io | Entra ID</p>
-          <h2>{PRODUCT_MARK} PatchForge</h2>
+          <h2>{PRODUCT_MARK}</h2>
           <p className="muted-copy">Access is restricted to assigned PatchForge app roles.</p>
           <button type="button" className="action-button large-action" onClick={() => void session.signIn()} disabled={session.status === "loading"}>
             <LogIn size={18} aria-hidden /> {session.status === "loading" ? "Connecting" : "Sign in with Microsoft"}

@@ -36,12 +36,14 @@ Use PatchForge when you need to answer operational questions such as:
 
 ## Main Navigation
 
-PatchForge is organised around five top-level areas.
+PatchForge is organised around seven top-level areas.
 
 | Area | Use it for | Typical user question |
 | --- | --- | --- |
 | Security Action Center | Global CVE, advisory, vendor, KEV, EPSS, source, review, and customer-match posture | "What threats and advisories are active, urgent, or relevant?" |
-| Customer Operational Assets | Customer devices, services, configuration evidence, exposure matches, and Patch Compare | "Which of our assets may be affected?" |
+| Vendors & Exploits Register | Vendor groups, advisory posture, exploit-risk context, and source-bound vendor evidence | "Which vendors or product families need attention?" |
+| Customer Operational Assets | Customer devices, services, configuration evidence, and exposure matches | "Which of our assets may be affected?" |
+| Patch / Hotfix Compare | Current and proposed version comparison against affected and fixed-version evidence | "Does the proposed version appear to remediate this advisory?" |
 | Ask PatchForge | Natural-language advisory questions about vendors, models, features, CVEs, versions, patches, and evidence | "Given what we know, what is the governed posture?" |
 | Reports | Signed packs, customer reports, board summaries, CAB reports, technical appendices, and verification | "What can we export as proof?" |
 | Admin | Configuration, source settings, and operational health | "Is the platform configured and healthy?" |
