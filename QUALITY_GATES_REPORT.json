@@ -1,104 +1,55 @@
 {
-  "release": "PF-AZ10-SIMPLIFIED-EXPERIENCE",
-  "date": "2026-05-30",
-  "status": "azure_live_browser_validated",
-  "image_tag": "pfaz10-20260530-e728ec0",
-  "commit": "e728ec0",
-  "previous_live_release": {
-    "release": "PF-AZ9A-VENDORLENS",
-    "image_tag": "pfaz9a-20260528-923b386",
-    "commit": "923b386",
+  "release": "PF-AZ11-CUSTOMER-DEMO-MATURITY",
+  "date": "2026-06-04",
+  "status": "partial_pass_signed_in_uat_pending",
+  "current_frontend_image_tag": "pfaz11-20260603-f56fd2b",
+  "current_backend_image_tag": "pfrebuild-20260601-43f953c",
+  "current_frontend_commit": "f56fd2b",
+  "current_rebuild_commit": "43f953c",
+  "previous_validated_release": {
+    "release": "PF-AZ10-SIMPLIFIED-EXPERIENCE",
+    "image_tag": "pfaz10-20260530-e728ec0",
+    "commit": "e728ec0",
     "status": "azure_live_browser_validated"
   },
   "gates": [
     {
-      "name": "backend_server_syntax",
-      "status": "pass"
-    },
-    {
-      "name": "backend_auth_syntax",
-      "status": "pass"
-    },
-    {
-      "name": "backend_search_index_syntax",
-      "status": "pass"
-    },
-    {
-      "name": "backend_reports_syntax",
-      "status": "pass"
-    },
-    {
-      "name": "backend_config_applicability_syntax",
-      "status": "pass"
-    },
-    {
-      "name": "backend_vendorlens_syntax",
-      "status": "pass"
-    },
-    {
-      "name": "backend_scheduler_syntax",
-      "status": "pass"
-    },
-    {
-      "name": "sra_syntax",
-      "status": "pass"
-    },
-    {
-      "name": "backend_tests",
+      "name": "frontend_tests_current_ui",
       "status": "pass",
-      "tests": 32
+      "tests": 10,
+      "commit": "f56fd2b"
     },
     {
-      "name": "frontend_tests",
-      "status": "pass",
-      "tests": 10
-    },
-    {
-      "name": "frontend_build",
+      "name": "frontend_build_current_ui",
       "status": "pass",
       "note": "Vite chunk-size advisory only"
     },
     {
-      "name": "python_runtime_tests",
+      "name": "github_push_current_branch",
       "status": "pass",
-      "tests": 26
+      "commit": "f56fd2b"
     },
     {
-      "name": "iac_validation",
-      "status": "pass"
-    },
-    {
-      "name": "bicep_build",
-      "status": "pass"
-    },
-    {
-      "name": "docker_build_smoke",
+      "name": "acr_frontend_image_build",
       "status": "pass",
-      "images": [
-        "frontend",
-        "bridge",
-        "runtime"
-      ]
+      "image_tag": "pfaz11-20260603-f56fd2b",
+      "note": "Remote ACR build succeeded; local Azure CLI log stream hit a Windows Unicode encoding error after the remote build completed."
     },
     {
-      "name": "github_push",
+      "name": "azure_frontend_update",
       "status": "pass",
-      "commit": "e728ec0"
+      "active_revision": "ca-patchforge-ui-prod--0000029",
+      "traffic_percent": 100
     },
     {
-      "name": "acr_image_push",
+      "name": "live_ui_http",
       "status": "pass",
-      "image_tag": "pfaz10-20260530-e728ec0"
+      "url": "https://patchforge.diiac.io/"
     },
     {
-      "name": "azure_update",
+      "name": "live_api_health",
       "status": "pass",
-      "evidence": "docs/release/evidence/2026-05-30-patchforge-pfaz10-simplified-experience/deploy-apply/"
-    },
-    {
-      "name": "live_api_smoke",
-      "status": "pass",
-      "evidence": "docs/release/evidence/2026-05-30-patchforge-pfaz10-simplified-experience/live-ui/http-smoke-e728ec0.json"
+      "url": "https://api.patchforge.diiac.io/health"
     },
     {
       "name": "protected_routes_unauthenticated",
@@ -106,35 +57,23 @@
       "expected_status": 401
     },
     {
-      "name": "browser_msal_admin_validation",
+      "name": "live_browser_signed_out_shell",
       "status": "pass",
-      "user": "n.bailey@diiac.io",
-      "role": "PatchForge.Admin"
+      "validated_heading": "PatchForge Intelligence by DIIaC(TM)"
     },
     {
-      "name": "global_security_action_center",
-      "status": "pass"
+      "name": "signed_in_patchforge_admin_uat",
+      "status": "pending",
+      "reason": "PF-AZ11 full signed-in seven-area validation has not yet been completed."
     },
     {
-      "name": "customer_estate_extract_match_compare",
-      "status": "pass"
+      "name": "fresh_pfaz11_signed_pack_generation",
+      "status": "pending",
+      "reason": "No fresh PF-AZ11 signed pack is claimed after the rebuild/front-end polish deployment."
     },
     {
-      "name": "ask_patchforge_advisory_response",
-      "status": "pass"
-    },
-    {
-      "name": "live_signed_pack_generation",
-      "status": "pass",
-      "pack_id": "PF-20260530-02cd95b4"
-    },
-    {
-      "name": "live_report_exports",
-      "status": "pass",
-      "formats": [
-        "docx",
-        "pdf"
-      ],
+      "name": "fresh_pfaz11_report_exports",
+      "status": "pending",
       "reports": [
         "customer_patch_governance_pack",
         "board_vulnerability_summary",
@@ -142,27 +81,9 @@
       ]
     },
     {
-      "name": "live_report_review",
-      "status": "pass",
-      "evidence": "docs/release/evidence/2026-05-30-patchforge-pfaz10-simplified-experience/reports/PF-20260530-02cd95b4-report-review.json"
-    },
-    {
-      "name": "keyvault_signing",
-      "status": "pass"
-    },
-    {
-      "name": "postgres_readiness",
-      "status": "pass",
-      "storage": "postgresql"
-    },
-    {
       "name": "production_validation_data_cleanup",
-      "status": "pass",
-      "deleted_records": 9
-    },
-    {
-      "name": "temporary_firewall_cleanup",
-      "status": "pass"
+      "status": "pending_not_applicable",
+      "reason": "No PF-AZ11 signed-in validation records have been created in this increment."
     }
   ],
   "report_stamp_fields": {
@@ -189,8 +110,8 @@
     "autonomous_risk_acceptance_absent": true
   },
   "remaining_notes": [
-    "Frontend build passed with a Vite chunk-size advisory only.",
-    "Temporary validation records were removed from production PostgreSQL after evidence capture.",
+    "PF-AZ11 public UI/API smoke is live, but full signed-in UAT is pending.",
+    "Bridge/API, runtime, SRA, worker, and scheduler remain on the 2026-06-01 rebuild image tag.",
     "No scanner, exploit, patch deployment, autonomous CAB, or autonomous risk-acceptance capability was added."
   ]
 }

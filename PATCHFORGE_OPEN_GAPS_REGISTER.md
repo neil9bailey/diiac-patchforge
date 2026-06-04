@@ -1,6 +1,6 @@
 # PatchForge Open Gaps Register
 
-Date: 2026-05-30
+Date: 2026-06-04
 
 | Gap | Status | Notes |
 | --- | --- | --- |
@@ -25,3 +25,6 @@ Date: 2026-05-30
 | Scheduled live public-source refresh | Closed for PF-AZ7 | Scheduler Container App is running one replica and completed CISA KEV/FIRST EPSS refresh as `patchforge-scheduler@diiac.io`. |
 | Customer production validation | Not claimed | Evidence covers DIIaC live platform validation, not third-party customer signoff. |
 | Azure CLI custom API token consent | Open | Azure CLI token acquisition for the PatchForge API returned AADSTS65001; browser/MSAL validation succeeded and was used for the live user workflow. |
+| PF-AZ11 release truth drift | Closed for PF-AZ12.1 | Current-facing release, readiness, validation, manifest, quality-gate, and document-control records now distinguish PF-AZ11 deployed state from historical PF-AZ10/PF-AZ9A evidence. |
+| PF-AZ11 signed-in end-user UAT | Open | Public UI/API smoke and signed-out browser validation passed for PF-AZ11. Full signed-in seven-area UAT, Ask PatchForge protected workflow, fresh signed pack generation, DOCX/PDF export review, and validation-record cleanup are not yet claimed. |
+| PF-AZ12 operational intelligence value | Approved, not implemented | ADR `governance/adr/ADR-PF-AZ12-001-operational-intelligence-value.md` approves incremental improvements to UI clarity, reports/output credibility, deterministic advisor intelligence, and live UAT evidence while preserving advisory-only boundaries. |

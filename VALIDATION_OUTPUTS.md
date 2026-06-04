@@ -1,3 +1,42 @@
+# PF-AZ11-CUSTOMER-DEMO-MATURITY Validation Outputs
+
+## Current PF-AZ11 Validation Position
+
+Date: 2026-06-04
+
+Status: PARTIAL PASS. PF-AZ11-CUSTOMER-DEMO-MATURITY is deployed on Azure. Public UI/API smoke validation and signed-out browser validation passed. Full signed-in end-user UAT and fresh PF-AZ11 report proof remain pending.
+
+Current image state:
+
+- UI: `pfaz11-20260603-f56fd2b`
+- Bridge/API, runtime, SRA, worker, scheduler: `pfrebuild-20260601-43f953c`
+
+Validation completed:
+
+- `npm --prefix Frontend test`: PASS, 10 tests for UI commit `f56fd2b`
+- `npm --prefix Frontend run build`: PASS, Vite chunk-size advisory only
+- UI HTTP 200 at `https://patchforge.diiac.io/`: PASS
+- API health HTTP 200 at `https://api.patchforge.diiac.io/health`: PASS
+- Protected Security Action Center route unauthenticated HTTP 401: PASS
+- Browser signed-out shell renders `PatchForge Intelligence by DIIaC(TM)` without duplicate product wording: PASS
+- Active UI revision `ca-patchforge-ui-prod--0000029` is healthy and serving 100 percent traffic: PASS
+
+Validation not yet claimed:
+
+- signed-in Microsoft Entra PatchForge.Admin seven-area UAT
+- protected Ask PatchForge Juniper/CVE ambiguity validation in live UI
+- fresh PF-AZ11 signed-pack generation
+- fresh Customer Patch Governance Pack DOCX/PDF export and review
+- fresh Board Vulnerability Summary DOCX/PDF export and review
+- fresh CAB Patch Decision Report DOCX/PDF export and review
+- production validation-record cleanup after any signed-in PF-AZ11 UAT records
+
+Evidence path:
+
+`docs/release/evidence/2026-06-01-patchforge-rebuild-live-deploy/`
+
+Boundary note: PF-AZ11-CUSTOMER-DEMO-MATURITY does not add scanning, exploit generation, procedural exploit steps, patch deployment, production mutation from the UI, autonomous evidence-gate closure, autonomous CAB approval, or autonomous risk acceptance.
+
 # PF-AZ10-SIMPLIFIED-EXPERIENCE Validation Outputs
 
 ## PF-AZ10-SIMPLIFIED-EXPERIENCE Local Validation

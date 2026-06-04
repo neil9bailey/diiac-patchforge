@@ -1,12 +1,12 @@
 {
   "product": "DIIaC PatchForge",
-  "baseline_id": "PF-AZ10-SIMPLIFIED-EXPERIENCE",
-  "baseline_name": "Simplified Customer Experience, Global Security Action Center, Customer Estate, Ask PatchForge, and Reports & Packs Consolidation",
-  "baseline_date": "2026-05-30",
+  "baseline_id": "PF-AZ11-CUSTOMER-DEMO-MATURITY",
+  "baseline_name": "Catalogue-first customer demo maturity and operational intelligence rebuild",
+  "baseline_date": "2026-06-04",
   "target_url": "https://patchforge.diiac.io",
   "api_url": "https://api.patchforge.diiac.io",
   "remote_target": "neil9bailey/diiac-patchforge",
-  "release_state": "azure_live_browser_validated",
+  "release_state": "azure_public_smoke_validated_signed_in_uat_pending",
   "deployment_performed": true,
   "uses_existing_azure_resources": true,
   "new_azure_resources_created_in_this_increment": false,
@@ -15,80 +15,73 @@
   "storage_state": "postgresql_live",
   "auth_state": "entra_rbac_required",
   "signing_state": "azure_key_vault_required_for_production_runtime",
-  "image_tag": "pfaz10-20260530-e728ec0",
-  "commit": "e728ec0",
+  "current_frontend_image_tag": "pfaz11-20260603-f56fd2b",
+  "current_backend_image_tag": "pfrebuild-20260601-43f953c",
+  "current_runtime_image_tag": "pfrebuild-20260601-43f953c",
+  "current_frontend_commit": "f56fd2b",
+  "current_rebuild_commit": "43f953c",
   "release_commits": [
-    "0cb9726",
-    "f77e2e9",
-    "e728ec0"
+    "43f953c",
+    "f56fd2b"
   ],
-  "previous_live_baseline": {
-    "baseline_id": "PF-AZ9A-VENDORLENS",
-    "image_tag": "pfaz9a-20260528-923b386",
-    "commit": "923b386",
+  "previous_validated_release": {
+    "baseline_id": "PF-AZ10-SIMPLIFIED-EXPERIENCE",
+    "image_tag": "pfaz10-20260530-e728ec0",
+    "commit": "e728ec0",
     "release_state": "azure_live_browser_validated"
   },
   "scope": [
-    "simplified top-level navigation around Global Security Action Center, Customer Estate, Ask PatchForge, Reports & Packs, and Admin",
-    "global CVE/advisory catalogue with vendor/product grouping, filters, search, customer exposure counts, and approval posture",
-    "customer estate asset extraction, upsert, exposure matching, config evidence, and patch comparison",
-    "advisory-only Ask PatchForge workflow with human accountability and final approval false",
-    "Reports & Packs consolidation with pre-export metadata, signed pack verification, and simplified customer/board/CAB reports",
-    "deterministic backend search index across vulnerabilities, advisories, vendor profiles, customer assets, applicability assessments, and source-feed records",
-    "production deployment, live UI validation, report export/review, and production validation-record cleanup"
+    "catalogue-first Security Action Center",
+    "Vendors & Exploits Register for vendor, CVE, exploit-signal, patch, and hotfix evidence",
+    "Customer Operational Assets for devices, services, configuration evidence, and exposure matching",
+    "Patch / Hotfix Compare for current and proposed version review",
+    "Ask PatchForge deterministic advisory workflow with human accountability",
+    "Reports for signed packs, customer reports, board summaries, CAB reports, technical appendices, and verification",
+    "Admin as system and data health"
   ],
   "top_level_navigation": [
-    "Global Security Action Center",
-    "Customer Estate",
+    "Security Action Center",
+    "Vendors & Exploits Register",
+    "Customer Operational Assets",
+    "Patch / Hotfix Compare",
     "Ask PatchForge",
-    "Reports & Packs",
+    "Reports",
     "Admin"
   ],
-  "api_endpoints": [
-    "GET /api/patchforge/security-action-center",
-    "GET /api/patchforge/security-action-center/search",
-    "GET /api/patchforge/security-action-center/vendors",
-    "GET /api/patchforge/security-action-center/cves/:id",
-    "GET /api/patchforge/customer-estate/assets",
-    "POST /api/patchforge/customer-estate/assets/extract",
-    "POST /api/patchforge/customer-estate/assets/upsert",
-    "POST /api/patchforge/customer-estate/match",
-    "POST /api/patchforge/customer-estate/patch-compare",
-    "POST /api/patchforge/ask",
-    "GET /api/patchforge/reports-packs",
-    "POST /api/patchforge/reports-packs/generate"
+  "current_active_revisions": {
+    "ui": "ca-patchforge-ui-prod--0000029",
+    "bridge_api": "ca-patchforge-bridge-prod--0000025",
+    "runtime": "ca-patchforge-runtime-prod--0000023",
+    "sra": "ca-patchforge-sra-prod--0000022",
+    "worker": "ca-patchforge-worker-prod--0000022",
+    "scheduler": "ca-patchforge-scheduler-prod--0000022"
+  },
+  "current_validation": {
+    "frontend_tests": "pass_10",
+    "frontend_build": "pass_vite_chunk_size_warning_only",
+    "ui_http_200": "pass",
+    "api_health_http_200": "pass",
+    "protected_security_action_center_unauthenticated_401": "pass",
+    "live_signed_out_browser_shell": "pass",
+    "signed_in_patchforge_admin_uat": "pending_not_claimed",
+    "fresh_pfaz11_signed_pack_generation": "pending_not_claimed",
+    "fresh_pfaz11_docx_pdf_report_review": "pending_not_claimed",
+    "production_validation_record_cleanup_after_pfaz11_uat": "pending_not_applicable_until_uat_records_are_created"
+  },
+  "evidence_paths": [
+    "docs/release/evidence/2026-06-01-patchforge-rebuild-live-deploy/"
   ],
-  "search_index_fields": [
-    "cve_id",
-    "advisory_id",
-    "vendor_name",
-    "vendor_aliases",
-    "product_family",
-    "product_aliases",
-    "model",
-    "affected_models",
-    "affected_versions",
-    "fixed_versions",
-    "affected_feature",
-    "feature_aliases",
-    "title",
-    "description",
-    "severity",
-    "cvss_score",
-    "epss_score",
-    "epss_percentile",
-    "kev_status",
-    "known_exploited",
-    "patch_available",
-    "workaround_status",
-    "source_url",
-    "source_name",
-    "source_class",
-    "source_feed",
-    "customer_asset_ids",
-    "customer_service_ids",
-    "urgency_posture",
-    "applicability_posture"
+  "known_blockers": [
+    {
+      "id": "azure_cli_api_token_consent",
+      "status": "open",
+      "detail": "Azure CLI token acquisition for the PatchForge API returns AADSTS65001 for the Azure CLI application. Browser/MSAL remains the protected UI validation path."
+    },
+    {
+      "id": "pfaz11_signed_in_uat",
+      "status": "open",
+      "detail": "Full signed-in seven-area UAT and fresh PF-AZ11 report proof are not yet claimed."
+    }
   ],
   "report_stamp_fields": [
     "report_template_version",
@@ -102,46 +95,6 @@
     "signing_provider",
     "verification_state"
   ],
-  "local_validation": {
-    "backend_syntax": "pass",
-    "backend_tests": "pass_32",
-    "frontend_tests": "pass_10",
-    "frontend_build": "pass_vite_chunk_size_warning_only",
-    "python_runtime_tests": "pass_26",
-    "iac_validation": "pass",
-    "bicep_build": "pass",
-    "docker_builds": "pass",
-    "evidence_path": "docs/release/evidence/2026-05-30-patchforge-pfaz10-simplified-experience/"
-  },
-  "azure_rollout": {
-    "github_push": "pass",
-    "acr_image_push": "pass",
-    "targeted_containerapp_update": "pass",
-    "active_revisions": {
-      "ui": "ca-patchforge-ui-prod--0000021",
-      "bridge_api": "ca-patchforge-bridge-prod--0000020",
-      "runtime": "ca-patchforge-runtime-prod--0000019",
-      "sra": "ca-patchforge-sra-prod--0000018",
-      "worker": "ca-patchforge-worker-prod--0000018",
-      "scheduler": "ca-patchforge-scheduler-prod--0000018"
-    }
-  },
-  "live_validation": {
-    "status": "pass",
-    "browser_msal_user": "n.bailey@diiac.io",
-    "displayed_role": "PatchForge.Admin",
-    "device_extraction_text": "FortiGate 100F running FortiOS 7.2.7. SSL-VPN disabled. IPsec enabled. Management internal only.",
-    "validation_asset_id": "net-asset-8087dce1-f354-4d86-a1e3-56d6c98de6ff",
-    "signed_pack_id": "PF-20260530-02cd95b4",
-    "signed_pack_verified": true,
-    "keyvault_signing": "pass",
-    "report_exports": "pass_docx_pdf_customer_board_cab",
-    "report_review": "pass",
-    "final_approval_issued": false,
-    "temporary_validation_data_cleanup": "pass_9_records_removed",
-    "temporary_firewall_cleanup": "pass",
-    "evidence_path": "docs/release/evidence/2026-05-30-patchforge-pfaz10-simplified-experience/live-ui/"
-  },
   "excluded_capabilities": [
     "vulnerability_scanner",
     "exploit_generation",

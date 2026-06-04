@@ -1,5 +1,62 @@
 # Current Release
 
+## DIIaC PatchForge PF-AZ11-CUSTOMER-DEMO-MATURITY
+
+Release state: deployed to Azure with public UI/API smoke validation complete; signed-in PF-AZ11 end-user UAT and fresh PF-AZ11 report export proof remain pending.
+
+Date: 2026-06-04
+
+PF-AZ11-CUSTOMER-DEMO-MATURITY is the current application baseline for the catalogue-first PatchForge rebuild. It presents the seven-area operating model: Security Action Center, Vendors & Exploits Register, Customer Operational Assets, Patch / Hotfix Compare, Ask PatchForge, Reports, and Admin.
+
+Current deployed image state:
+
+- UI: `pfaz11-20260603-f56fd2b`
+- Bridge/API: `pfrebuild-20260601-43f953c`
+- Runtime: `pfrebuild-20260601-43f953c`
+- SRA: `pfrebuild-20260601-43f953c`
+- Worker: `pfrebuild-20260601-43f953c`
+- Scheduler: `pfrebuild-20260601-43f953c`
+
+PF-AZ11-CUSTOMER-DEMO-MATURITY commits:
+
+- `43f953c` - canonical PatchForge rebuild deployed to all six Container Apps on 2026-06-01
+- `f56fd2b` - frontend sign-in copy polish and operator/demo doc alignment deployed to the UI on 2026-06-03
+
+Current active revisions:
+
+- UI: `ca-patchforge-ui-prod--0000029`
+- Bridge/API: `ca-patchforge-bridge-prod--0000025`
+- Runtime: `ca-patchforge-runtime-prod--0000023`
+- SRA: `ca-patchforge-sra-prod--0000022`
+- Worker: `ca-patchforge-worker-prod--0000022`
+- Scheduler: `ca-patchforge-scheduler-prod--0000022`
+
+Validated for PF-AZ11:
+
+- UI HTTP 200: PASS
+- API health HTTP 200: PASS
+- Protected Security Action Center route unauthenticated HTTP 401: PASS
+- Live browser signed-out shell: PASS
+- Frontend tests for current UI commit: PASS, 10 tests
+- Frontend production build for current UI commit: PASS, Vite chunk-size advisory only
+
+Not yet claimed for PF-AZ11:
+
+- signed-in browser/MSAL UAT through the full seven-area workflow
+- fresh PF-AZ11 signed-pack generation
+- fresh PF-AZ11 Customer/Board/CAB DOCX/PDF export and review
+- PF-AZ11 production validation-record cleanup after signed-in UAT
+
+Known access blocker:
+
+- Azure CLI API token acquisition for the PatchForge API is blocked by Entra consent for the Azure CLI application. Browser/MSAL is the required protected UI validation path until that consent is resolved.
+
+PF-AZ11 evidence paths:
+
+- `docs/release/evidence/2026-06-01-patchforge-rebuild-live-deploy/`
+
+PF-AZ11-CUSTOMER-DEMO-MATURITY does not add vulnerability scanning, exploit generation, procedural exploit steps, patch deployment, production mutation, autonomous evidence-gate closure, autonomous CAB approval, or autonomous risk acceptance.
+
 ## DIIaC PatchForge PF-AZ10-SIMPLIFIED-EXPERIENCE
 
 Release state: deployed to Azure and live validated through the production UI/API as a signed-in PatchForge Admin user.

@@ -9,11 +9,12 @@ DIIaC™ PatchForge
 | Document | Owner | Status | Version | Date |
 | --- | --- | --- | --- | --- |
 | README.md | DIIaC | Active | 0.3.0 | 2026-05-30 |
-| CURRENT_RELEASE.md | DIIaC | Active | 1.9.0 | 2026-05-30 |
-| RELEASE_BASELINE_MANIFEST.json | DIIaC | Active | 1.9.0 | 2026-05-30 |
-| QUALITY_GATES_REPORT.json | DIIaC | Active | 1.3.0 | 2026-05-30 |
-| VALIDATION_OUTPUTS.md | DIIaC | Active | 1.4.0 | 2026-05-30 |
-| PATCHFORGE_OPEN_GAPS_REGISTER.md | DIIaC | Active | 1.3.0 | 2026-05-30 |
+| CURRENT_RELEASE.md | DIIaC | Active | 2.0.0 | 2026-06-04 |
+| RELEASE_BASELINE_MANIFEST.json | DIIaC | Active | 2.0.0 | 2026-06-04 |
+| QUALITY_GATES_REPORT.json | DIIaC | Active | 1.4.0 | 2026-06-04 |
+| VALIDATION_OUTPUTS.md | DIIaC | Active | 1.5.0 | 2026-06-04 |
+| PATCHFORGE_OPEN_GAPS_REGISTER.md | DIIaC | Active | 1.4.0 | 2026-06-04 |
+| governance/adr/ADR-PF-AZ12-001-operational-intelligence-value.md | DIIaC | Approved | 0.1.0 | 2026-06-04 |
 | docs/features/VENDORLENS_NETWORK_VENDOR_INTELLIGENCE.md | DIIaC | Active | 0.1.0 | 2026-05-27 |
 | docs/product/VENDORLENS_PRODUCT_BOUNDARY.md | DIIaC | Active | 0.1.0 | 2026-05-27 |
 | docs/operations/VENDORLENS_OPERATOR_GUIDE.md | DIIaC | Active | 0.1.0 | 2026-05-27 |
@@ -90,7 +91,7 @@ DIIaC™ PatchForge
 | docs/demos/PATCHFORGE_CUSTOMER_DEMONSTRATION_RUNBOOK.md | DIIaC | Updated | 0.2.0 | 2026-05-26 |
 | docs/release/evidence/patchforge-customer-demonstration/README.md | DIIaC | Updated | 0.2.0 | 2026-05-26 |
 | docs/validation/PATCHFORGE_VALIDATION_PLAN.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
-| docs/validation/PATCHFORGE_READINESS_SUMMARY.md | DIIaC | Active | 0.3.0 | 2026-05-27 |
+| docs/validation/PATCHFORGE_READINESS_SUMMARY.md | DIIaC | Active | 0.4.0 | 2026-06-04 |
 | .github/workflows/ci.yml | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | .dockerignore | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | requirements-dev.txt | DIIaC | Updated | 0.2.0 | 2026-05-26 |
