@@ -1,6 +1,6 @@
 # PatchForge Open Gaps Register
 
-Date: 2026-05-30
+Date: 2026-06-10
 
 | Gap | Status | Notes |
 | --- | --- | --- |
@@ -25,3 +25,16 @@ Date: 2026-05-30
 | Scheduled live public-source refresh | Closed for PF-AZ7 | Scheduler Container App is running one replica and completed CISA KEV/FIRST EPSS refresh as `patchforge-scheduler@diiac.io`. |
 | Customer production validation | Not claimed | Evidence covers DIIaC live platform validation, not third-party customer signoff. |
 | Azure CLI custom API token consent | Open | Azure CLI token acquisition for the PatchForge API returned AADSTS65001; browser/MSAL validation succeeded and was used for the live user workflow. |
+| Ed25519 pack signature verification | Closed for PF-AZ12 | Verification stub replaced with real Ed25519 verification; public key is embedded in signature metadata at signing time; tamper-detection tests added. |
+| Runtime pack re-verification before storage | Closed for PF-AZ12 | The bridge calls `POST /api/runtime/decision-packs/verify` after generation; `verified:false` fails closed with 502 and nothing is stored; pack records carry `signature_verified`/`signature_algorithm`. |
+| Risk acceptance expiry enforcement | Closed for PF-AZ12 | Expired acceptances are rejected at event-recording time, excluded from posture derivation, and derived as `expired` in API responses regardless of stored state. |
+| Risk acceptance and compensating control workflows | Closed for PF-AZ12 | Governed APIs and full UI pages (create, list, review, extend) implemented with role gating, audit events, and boundary statements. |
+| Named multi-party approval chain | Closed for PF-AZ12 | Decision packs record named approval events; `final_approval_recorded` derives from a configurable approval policy (default SecurityLead + CABApprover, distinct approvers). Human approval records only; no autonomous approval. |
+| Risk model honesty and uncertainty | Closed for PF-AZ12 | Outputs self-describe as `weighted_heuristic_risk_model` with `is_bayesian_inference: false`; posterior uncertainty bands widen with missing inputs; patch-outcome observations feed dry-run prior proposals only (governance lock unchanged). |
+| CPE and version-range matching | Controlled for PF-AZ12 | Shared `versionUtils` module adds CPE 2.3 parsing and version-range comparison to global matching with `match_basis` confidence labels; full NVD CPE dictionary sync remains open. |
+| API pagination, rate limiting, webhooks | Closed for PF-AZ12 | Opt-in pagination envelope on collection endpoints; per-tenant token-bucket rate limiting (429 + Retry-After); admin-governed https-only webhooks with HMAC signatures, retries, and delivery records. |
+| Automated Azure deployment | Controlled for PF-AZ12 | `deploy.yml` workflow (OIDC, environment-gated, smoke tests, rollback echo) added; requires repo secrets and `production` environment configuration before first use. Manual PowerShell path remains. |
+| Database DR and HA | Open (documented) | Geo-redundant backup and HA are parameterized in IaC but remain Disabled (in-place enablement forces server replacement; HA needs a non-Burstable SKU). Migration path and quarterly restore tests documented in BACKUP_RECOVERY_RUNBOOK.md. |
+| Operator runbooks | Closed for PF-AZ12 | OPERATOR_RUNBOOK.md, BACKUP_RECOVERY_RUNBOOK.md, and MULTI_TENANT_ONBOARDING.md added under docs/operations/. |
+| Per-tenant Entra role scoping and Postgres RLS | Open | App roles remain global and tenant isolation remains application-layer; documented in MULTI_TENANT_ONBOARDING.md as prerequisites for co-hosting unrelated customers. |
+| Scanner/ITSM connectors | Open | Estate input remains manual/API ingestion; scanner-export import and ITSM integration are the next major capability items. |

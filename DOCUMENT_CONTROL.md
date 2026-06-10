@@ -169,6 +169,11 @@ DIIaC™ PatchForge
 | compose.yaml | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | scripts/start_local_dev.ps1 | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | scripts/build_push_images.ps1 | DIIaC | Updated | 0.2.0 | 2026-05-26 |
+| docs/architecture/PATCHFORGE_PFAZ12_IMPROVEMENT_CONTRACT.md | DIIaC | Baseline | 0.1.0 | 2026-06-10 |
+| docs/operations/OPERATOR_RUNBOOK.md | DIIaC | Baseline | 0.1.0 | 2026-06-10 |
+| docs/operations/BACKUP_RECOVERY_RUNBOOK.md | DIIaC | Baseline | 0.1.0 | 2026-06-10 |
+| docs/operations/MULTI_TENANT_ONBOARDING.md | DIIaC | Baseline | 0.1.0 | 2026-06-10 |
+| .github/workflows/deploy.yml | DIIaC | Baseline | 0.1.0 | 2026-06-10 |
 
 ## Change Control
 

@@ -46,6 +46,43 @@ param postgresPasswordSecretName string = 'patchforge-postgres-admin-password'
 @description('Whether to add the PostgreSQL firewall rule that allows Azure services to reach the server.')
 param allowAzureServicesToPostgres bool = true
 
+@description('Explicit client IP ranges allowed through the PostgreSQL firewall. Each entry: { name: string, startIpAddress: string, endIpAddress: string }. Populate these and set allowAzureServicesToPostgres=false to remove the broad 0.0.0.0 rule.')
+param postgresAllowedClientIpRanges array = []
+
+@minValue(7)
+@maxValue(35)
+@description('PostgreSQL automated backup retention in days. Default preserves the current 7-day posture.')
+param postgresBackupRetentionDays int = 7
+
+@allowed([
+  'Disabled'
+  'Enabled'
+])
+@description('Geo-redundant backup for PostgreSQL. Default Disabled preserves the current posture. Changing this on an existing server forces server replacement; see docs/operations/BACKUP_RECOVERY_RUNBOOK.md.')
+param postgresGeoRedundantBackup string = 'Disabled'
+
+@allowed([
+  'Disabled'
+  'SameZone'
+  'ZoneRedundant'
+])
+@description('PostgreSQL high availability mode. Default Disabled preserves the current posture. HA requires a General Purpose or Memory Optimized SKU.')
+param postgresHighAvailabilityMode string = 'Disabled'
+
+@minValue(30)
+@maxValue(730)
+@description('Log Analytics workspace retention in days. Default 30 preserves the current posture.')
+param logAnalyticsRetentionInDays int = 30
+
+@description('Whether to deploy the PatchForge action group and metric alert rules (monitoring-alerts.bicep).')
+param enableAlerts bool = false
+
+@description('Email address that receives PatchForge operational alerts. Required when enableAlerts is true.')
+param alertEmail string = ''
+
+@description('Whether to create the optional Application Insights availability test against the public API health endpoint. Only used when enableAlerts is true.')
+param enableAvailabilityTest bool = false
+
 @allowed([
   'Basic'
   'Standard'
@@ -103,6 +140,7 @@ module monitoring 'monitoring.bicep' = {
     location: location
     tags: tags
     logAnalyticsWorkspaceName: names.logAnalytics
+    retentionInDays: logAnalyticsRetentionInDays
   }
 }
 
@@ -170,6 +208,10 @@ module database 'postgres-or-sql.bicep' = {
     administratorLogin: postgresAdministratorLogin
     administratorPassword: postgresAdministratorPassword
     allowAzureServicesFirewallRule: allowAzureServicesToPostgres
+    allowedClientIpRanges: postgresAllowedClientIpRanges
+    backupRetentionDays: postgresBackupRetentionDays
+    geoRedundantBackup: postgresGeoRedundantBackup
+    highAvailabilityMode: postgresHighAvailabilityMode
   }
 }
 
@@ -201,6 +243,20 @@ module containerApps 'container-apps.bicep' = if (deployContainerApps) {
       ? '${keyVault.outputs.vaultUri}keys/${keyVaultSigningKeyName}'
       : '${keyVault.outputs.vaultUri}keys/${keyVaultSigningKeyName}/${keyVaultSigningKeyVersion}'
     environmentLabel: environmentName
+  }
+}
+
+module monitoringAlerts 'monitoring-alerts.bicep' = if (enableAlerts) {
+  name: 'patchforge-monitoring-alerts'
+  scope: patchForgeResourceGroup
+  params: {
+    location: location
+    tags: tags
+    alertEmail: alertEmail
+    containerAppNames: deployContainerApps ? containerApps!.outputs.containerAppNames : []
+    postgresServerName: createPostgres ? names.postgres : ''
+    logAnalyticsWorkspaceId: monitoring.outputs.workspaceId
+    enableAvailabilityTest: enableAvailabilityTest
   }
 }
 

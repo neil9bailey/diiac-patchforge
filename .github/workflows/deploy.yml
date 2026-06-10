@@ -1,0 +1,309 @@
+name: PatchForge Deploy
+
+# Production deployment for PatchForge (rg-diiac-patchforge-prod, uksouth, tenant diiac.io).
+#
+# Required configuration before this workflow can deploy:
+# 1. GitHub Environment named `production` with required reviewers (manual approval gate).
+# 2. Repository or environment secrets:
+#      AZURE_CLIENT_ID       - app registration / user-assigned identity client id for OIDC login
+#      AZURE_TENANT_ID       - 67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da (diiac.io)
+#      AZURE_SUBSCRIPTION_ID - 9ae9da49-de67-443b-af55-ce9db33ed8f4
+# 3. A federated credential on the Entra app registration with subject
+#      repo:neil9bailey/diiac-patchforge:environment:production
+#    (issuer https://token.actions.githubusercontent.com, audience api://AzureADTokenExchange).
+# 4. The OIDC principal needs AcrPush on acrdiiacpatchforgeprod and Contributor (or
+#    Microsoft.App/containerApps/update) on rg-diiac-patchforge-prod.
+#
+# Without the three AZURE_* secrets the workflow skips build/deploy jobs with a warning
+# instead of failing, so CI on main is not blocked while secrets are unconfigured.
+#
+# Image/app names mirror scripts/build_push_images.ps1 and infra/bicep/container-apps.bicep.
+# Three distinct images are built; the bridge image is re-tagged for the sra-agent,
+# ingest-worker, and scheduler repositories (same Dockerfile and context, as in the script).
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "deploy = build new images and roll out; rollback = re-point apps at an existing ACR tag"
+        type: choice
+        options:
+          - deploy
+          - rollback
+        default: deploy
+      image_tag:
+        description: "Image tag. deploy mode: leave blank to generate pf-<utc-timestamp>-<short-sha>. rollback mode: required, must be an existing ACR tag."
+        required: false
+        default: ""
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: patchforge-production-deploy
+  cancel-in-progress: false
+
+env:
+  AZURE_RESOURCE_GROUP: rg-diiac-patchforge-prod
+  ACR_NAME: acrdiiacpatchforgeprod
+  ACR_LOGIN_SERVER: acrdiiacpatchforgeprod.azurecr.io
+  API_BASE_URL: https://api.patchforge.diiac.io
+
+jobs:
+  preflight:
+    name: Preflight
+    runs-on: ubuntu-latest
+    outputs:
+      azure_configured: ${{ steps.check.outputs.azure_configured }}
+      mode: ${{ steps.resolve.outputs.mode }}
+      image_tag: ${{ steps.resolve.outputs.image_tag }}
+    steps:
+      - name: Check Azure OIDC secrets
+        id: check
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          if [ -n "$AZURE_CLIENT_ID" ] && [ -n "$AZURE_TENANT_ID" ] && [ -n "$AZURE_SUBSCRIPTION_ID" ]; then
+            echo "azure_configured=true" >> "$GITHUB_OUTPUT"
+            echo "Azure OIDC secrets are configured."
+          else
+            echo "azure_configured=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::AZURE_CLIENT_ID / AZURE_TENANT_ID / AZURE_SUBSCRIPTION_ID are not configured. Build, deploy, and rollback jobs will be skipped. Configure the secrets and the production environment to enable automated deployment."
+          fi
+
+      - name: Resolve mode and image tag
+        id: resolve
+        env:
+          INPUT_MODE: ${{ github.event.inputs.mode }}
+          INPUT_IMAGE_TAG: ${{ github.event.inputs.image_tag }}
+        run: |
+          mode="${INPUT_MODE:-deploy}"
+          tag="$INPUT_IMAGE_TAG"
+          if [ "$mode" = "rollback" ] && [ -z "$tag" ]; then
+            echo "::error::rollback mode requires an explicit image_tag input (an existing ACR tag)."
+            exit 1
+          fi
+          if [ -z "$tag" ]; then
+            tag="pf-$(date -u +%Y%m%d-%H%M%S)-${GITHUB_SHA::7}"
+          fi
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+          echo "image_tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Mode: $mode"
+          echo "Image tag: $tag"
+
+  build-push:
+    name: Build and push images
+    runs-on: ubuntu-latest
+    needs: preflight
+    if: needs.preflight.outputs.azure_configured == 'true' && needs.preflight.outputs.mode == 'deploy'
+    environment: production
+    env:
+      IMAGE_TAG: ${{ needs.preflight.outputs.image_tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: ACR login
+        run: az acr login --name "$ACR_NAME"
+
+      - name: Build images
+        run: |
+          set -euo pipefail
+          docker build -f Frontend/Dockerfile -t "$ACR_LOGIN_SERVER/diiac/patchforge-frontend:$IMAGE_TAG" Frontend
+          docker build -f backend-api/Dockerfile -t "$ACR_LOGIN_SERVER/diiac/patchforge-bridge:$IMAGE_TAG" backend-api
+          docker build -f runtime/Dockerfile -t "$ACR_LOGIN_SERVER/diiac/patchforge-runtime:$IMAGE_TAG" .
+          # The sra-agent, ingest-worker, and scheduler apps run the bridge image
+          # under separate repositories (see scripts/build_push_images.ps1).
+          docker tag "$ACR_LOGIN_SERVER/diiac/patchforge-bridge:$IMAGE_TAG" "$ACR_LOGIN_SERVER/diiac/patchforge-sra-agent:$IMAGE_TAG"
+          docker tag "$ACR_LOGIN_SERVER/diiac/patchforge-bridge:$IMAGE_TAG" "$ACR_LOGIN_SERVER/diiac/patchforge-ingest-worker:$IMAGE_TAG"
+          docker tag "$ACR_LOGIN_SERVER/diiac/patchforge-bridge:$IMAGE_TAG" "$ACR_LOGIN_SERVER/diiac/patchforge-scheduler:$IMAGE_TAG"
+
+      - name: Push images
+        run: |
+          set -euo pipefail
+          for repo in patchforge-frontend patchforge-bridge patchforge-runtime patchforge-sra-agent patchforge-ingest-worker patchforge-scheduler; do
+            docker push "$ACR_LOGIN_SERVER/diiac/$repo:$IMAGE_TAG"
+          done
+
+  deploy:
+    name: Deploy Container Apps
+    runs-on: ubuntu-latest
+    needs:
+      - preflight
+      - build-push
+    if: needs.preflight.outputs.azure_configured == 'true' && needs.preflight.outputs.mode == 'deploy'
+    environment: production
+    env:
+      IMAGE_TAG: ${{ needs.preflight.outputs.image_tag }}
+    steps:
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Record previous image tags (manual rollback reference)
+        run: |
+          set -euo pipefail
+          echo "Previous images per Container App. To roll back manually, run the printed az commands,"
+          echo "or re-run this workflow with mode=rollback and image_tag=<previous tag>."
+          echo "----------------------------------------------------------------------"
+          for app in ca-patchforge-ui-prod ca-patchforge-bridge-prod ca-patchforge-runtime-prod ca-patchforge-sra-prod ca-patchforge-worker-prod ca-patchforge-scheduler-prod; do
+            previous=$(az containerapp show --name "$app" --resource-group "$AZURE_RESOURCE_GROUP" --query "properties.template.containers[0].image" -o tsv)
+            echo "$app previous image: $previous"
+            echo "  rollback: az containerapp update --name $app --resource-group $AZURE_RESOURCE_GROUP --image $previous"
+          done
+          echo "----------------------------------------------------------------------"
+
+      - name: Update Container Apps to new tag
+        run: |
+          set -euo pipefail
+          declare -A apps=(
+            [ca-patchforge-ui-prod]="diiac/patchforge-frontend"
+            [ca-patchforge-bridge-prod]="diiac/patchforge-bridge"
+            [ca-patchforge-runtime-prod]="diiac/patchforge-runtime"
+            [ca-patchforge-sra-prod]="diiac/patchforge-sra-agent"
+            [ca-patchforge-worker-prod]="diiac/patchforge-ingest-worker"
+            [ca-patchforge-scheduler-prod]="diiac/patchforge-scheduler"
+          )
+          for app in "${!apps[@]}"; do
+            image="$ACR_LOGIN_SERVER/${apps[$app]}:$IMAGE_TAG"
+            echo "Updating $app -> $image"
+            az containerapp update --name "$app" --resource-group "$AZURE_RESOURCE_GROUP" --image "$image" --output none
+          done
+
+      - name: Runtime readiness check (internal ingress)
+        run: |
+          set -euo pipefail
+          # The runtime Container App has internal-only ingress, so /readiness is not
+          # reachable from this runner. First require the active revision to report
+          # Healthy, then probe /readiness from inside the container.
+          health="Unknown"
+          for attempt in $(seq 1 18); do
+            health=$(az containerapp revision list --name ca-patchforge-runtime-prod --resource-group "$AZURE_RESOURCE_GROUP" --query "[?properties.active] | [0].properties.healthState" -o tsv 2>/dev/null || echo "Unknown")
+            echo "Attempt $attempt: runtime active revision healthState=$health"
+            if [ "$health" = "Healthy" ]; then
+              break
+            fi
+            sleep 10
+          done
+          if [ "$health" != "Healthy" ]; then
+            echo "::error::Runtime active revision did not become Healthy."
+            exit 1
+          fi
+
+          probe="python -c \"import urllib.request; resp = urllib.request.urlopen('http://127.0.0.1:8080/readiness', timeout=10); print('RUNTIME_READINESS_HTTP_' + str(resp.status))\""
+          output=$(az containerapp exec --name ca-patchforge-runtime-prod --resource-group "$AZURE_RESOURCE_GROUP" --command "$probe" 2>&1 || true)
+          echo "$output"
+          if echo "$output" | grep -q "RUNTIME_READINESS_HTTP_200"; then
+            echo "Runtime /readiness returned HTTP 200."
+          elif echo "$output" | grep -q "RUNTIME_READINESS_HTTP_"; then
+            echo "::error::Runtime /readiness returned a non-200 status."
+            exit 1
+          else
+            echo "::warning::az containerapp exec could not run the /readiness probe; relying on the Healthy revision state above."
+          fi
+
+  smoke-test:
+    name: Post-deploy smoke test
+    runs-on: ubuntu-latest
+    needs:
+      - preflight
+      - deploy
+    if: needs.preflight.outputs.azure_configured == 'true' && needs.preflight.outputs.mode == 'deploy'
+    steps:
+      - name: API health and readiness
+        run: |
+          set -euo pipefail
+          for path in /health /readiness; do
+            url="$API_BASE_URL$path"
+            status=$(curl -sS -o /tmp/body.json -w "%{http_code}" --retry 5 --retry-delay 10 --retry-all-errors --max-time 30 "$url")
+            echo "$url -> HTTP $status"
+            cat /tmp/body.json
+            echo ""
+            if [ "$status" != "200" ]; then
+              echo "::error::Smoke test failed: $url returned HTTP $status."
+              exit 1
+            fi
+          done
+          echo "Smoke test passed."
+
+  rollback:
+    name: Rollback Container Apps
+    runs-on: ubuntu-latest
+    needs: preflight
+    if: needs.preflight.outputs.azure_configured == 'true' && needs.preflight.outputs.mode == 'rollback'
+    environment: production
+    env:
+      IMAGE_TAG: ${{ needs.preflight.outputs.image_tag }}
+    steps:
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Verify rollback tag exists in ACR
+        run: |
+          set -euo pipefail
+          for repo in diiac/patchforge-frontend diiac/patchforge-bridge diiac/patchforge-runtime diiac/patchforge-sra-agent diiac/patchforge-ingest-worker diiac/patchforge-scheduler; do
+            if ! az acr repository show-tags --name "$ACR_NAME" --repository "$repo" -o tsv | grep -qx "$IMAGE_TAG"; then
+              echo "::error::Tag $IMAGE_TAG not found in $repo. Refusing to roll back."
+              exit 1
+            fi
+          done
+          echo "Tag $IMAGE_TAG exists in all six repositories."
+
+      - name: Record current image tags before rollback
+        run: |
+          set -euo pipefail
+          for app in ca-patchforge-ui-prod ca-patchforge-bridge-prod ca-patchforge-runtime-prod ca-patchforge-sra-prod ca-patchforge-worker-prod ca-patchforge-scheduler-prod; do
+            current=$(az containerapp show --name "$app" --resource-group "$AZURE_RESOURCE_GROUP" --query "properties.template.containers[0].image" -o tsv)
+            echo "$app current image: $current"
+          done
+
+      - name: Roll back Container Apps
+        run: |
+          set -euo pipefail
+          declare -A apps=(
+            [ca-patchforge-ui-prod]="diiac/patchforge-frontend"
+            [ca-patchforge-bridge-prod]="diiac/patchforge-bridge"
+            [ca-patchforge-runtime-prod]="diiac/patchforge-runtime"
+            [ca-patchforge-sra-prod]="diiac/patchforge-sra-agent"
+            [ca-patchforge-worker-prod]="diiac/patchforge-ingest-worker"
+            [ca-patchforge-scheduler-prod]="diiac/patchforge-scheduler"
+          )
+          for app in "${!apps[@]}"; do
+            image="$ACR_LOGIN_SERVER/${apps[$app]}:$IMAGE_TAG"
+            echo "Rolling back $app -> $image"
+            az containerapp update --name "$app" --resource-group "$AZURE_RESOURCE_GROUP" --image "$image" --output none
+          done
+
+      - name: Post-rollback smoke test
+        run: |
+          set -euo pipefail
+          for path in /health /readiness; do
+            url="$API_BASE_URL$path"
+            status=$(curl -sS -o /dev/null -w "%{http_code}" --retry 5 --retry-delay 10 --retry-all-errors --max-time 30 "$url")
+            echo "$url -> HTTP $status"
+            if [ "$status" != "200" ]; then
+              echo "::error::Post-rollback smoke test failed: $url returned HTTP $status."
+              exit 1
+            fi
+          done
+          echo "Rollback smoke test passed."
