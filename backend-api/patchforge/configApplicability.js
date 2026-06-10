@@ -1,3 +1,11 @@
+import {
+  MATCH_BASIS,
+  cpeEntriesMatchVendorProduct,
+  extractCpes,
+  versionCompare,
+  versionSatisfiesAny
+} from "./versionUtils.js";
+
 const REVIEWED_STATES = new Set(["reviewed", "accepted", "approved"]);
 const POSITIVE_EVIDENCE_STATES = new Set(["accepted_positive_evidence", "reviewed", "attached"]);
 
@@ -106,6 +114,7 @@ export function assessConfigApplicability(input = {}) {
     exposure_status: exposureStatus,
     applicability_posture: applicabilityPosture,
     urgency_posture: urgencyPosture,
+    match_basis: deriveMatchBasis({ advisory, asset, versionStatus }),
     evidence_required: Array.from(evidenceRequired),
     evidence_gaps: evidenceGaps,
     evidence_used: evidenceUsed(advisory, asset),
@@ -124,6 +133,31 @@ export function assessConfigApplicability(input = {}) {
       no_autonomous_risk_acceptance: true
     }
   };
+}
+
+// PF-AZ12 section 9: expose match confidence so users can see whether an
+// applicability assessment rests on CPE data, version ranges, identifiers, or
+// plain string matching. Advisory-only metadata; it closes no gates.
+function deriveMatchBasis({ advisory = {}, asset = {}, versionStatus = "unknown" }) {
+  const advisoryCpes = extractCpes(advisory);
+  const version = String(asset.firmware_version || asset.software_version || "").trim();
+  if (advisoryCpes.length && cpeEntriesMatchVendorProduct(advisoryCpes, {
+    vendor: asset.vendor_id || asset.vendor_name,
+    product: asset.product_family || asset.model || asset.product_id,
+    version: version || null
+  })) {
+    return MATCH_BASIS.CPE_VERSION_RANGE;
+  }
+  const hasVersionEvidence = Boolean(version)
+    && (list(advisory.affected_versions).length || list(advisory.fixed_versions).length)
+    && versionStatus !== "unknown";
+  if (hasVersionEvidence) {
+    return MATCH_BASIS.VERSION_RANGE;
+  }
+  if (advisory.cve || advisory.advisory_id) {
+    return MATCH_BASIS.IDENTIFIER;
+  }
+  return MATCH_BASIS.STRING_FALLBACK;
 }
 
 function deriveApplicabilityPosture({ advisory, asset, versionStatus, productStatus, featureState, reviewedAssetEvidence, reviewedConfigEvidence, evidenceGaps }) {
@@ -394,62 +428,5 @@ function expandAliasTerms(values, groups) {
   return Array.from(terms);
 }
 
-function versionSatisfiesAny(version, constraints) {
-  return constraints.some((constraint) => versionSatisfies(version, constraint));
-}
-
-function versionSatisfies(version, constraint) {
-  const raw = String(constraint || "").trim();
-  if (!raw || raw === "*") {
-    return true;
-  }
-  const compact = raw.replace(/\s+/g, "");
-  const comparator = compact.match(/^(<=|>=|<|>)(.+)$/);
-  if (comparator) {
-    const direction = comparator[1];
-    const compare = versionCompare(version, comparator[2]);
-    if (direction === "<") return compare < 0;
-    if (direction === "<=") return compare <= 0;
-    if (direction === ">") return compare > 0;
-    if (direction === ">=") return compare >= 0;
-  }
-  const range = compact.match(/^(.+)-(.+)$/);
-  if (range && hasVersionNumbers(range[1]) && hasVersionNumbers(range[2])) {
-    return versionCompare(version, range[1]) >= 0 && versionCompare(version, range[2]) <= 0;
-  }
-  if (/x$/i.test(compact)) {
-    const prefix = compact.replace(/\.?x$/i, "");
-    return normalizedVersion(version).startsWith(`${prefix}.`) || normalizedVersion(version) === prefix;
-  }
-  return versionCompare(version, compact) === 0;
-}
-
-function versionCompare(left, right) {
-  const leftParts = versionParts(left);
-  const rightParts = versionParts(right);
-  const length = Math.max(leftParts.length, rightParts.length);
-  for (let index = 0; index < length; index += 1) {
-    const lval = leftParts[index] || 0;
-    const rval = rightParts[index] || 0;
-    if (lval > rval) return 1;
-    if (lval < rval) return -1;
-  }
-  return 0;
-}
-
-function versionParts(value) {
-  return normalizedVersion(value)
-    .split(".")
-    .filter((part) => part !== "")
-    .map((part) => Number.parseInt(part, 10))
-    .filter((part) => Number.isFinite(part));
-}
-
-function normalizedVersion(value) {
-  const match = String(value || "").toLowerCase().match(/\d+(?:\.\d+)*/);
-  return match ? match[0] : "";
-}
-
-function hasVersionNumbers(value) {
-  return /\d/.test(String(value || ""));
-}
+// Version comparator helpers moved to ./versionUtils.js (PF-AZ12 contract
+// section 9) and re-imported above with zero behaviour change.

@@ -628,6 +628,7 @@ function exposureMatchFromAssessment(assessment, advisory, asset) {
     affected_feature: assessment.affected_feature || firstValue(advisory.affected_features),
     applicability_posture: assessment.applicability_posture || "unknown",
     urgency_posture: assessment.urgency_posture || "unknown",
+    match_basis: assessment.match_basis || "string_fallback",
     evidence_state: asset.evidence_state || assessment.evidence_state || "referenced",
     review_state: asset.review_state || assessment.review_state || "pending_review",
     evidence_gaps: assessment.evidence_gaps || [],

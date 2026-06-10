@@ -17,9 +17,10 @@ async function withApi(run, options = {}) {
   const server = createServer({
     storage,
     auth: { required: false },
-    runtimeClient: fakeRuntimeClient(),
+    runtimeClient: options.runtimeClient || fakeRuntimeClient(),
     sourceFeedClient: options.sourceFeedClient,
-    vendorLensFetchImpl: options.vendorLensFetchImpl
+    vendorLensFetchImpl: options.vendorLensFetchImpl,
+    rateLimit: options.rateLimit
   });
   const baseUrl = await listenOnFetchSafePort(server);
   try {
@@ -1867,4 +1868,338 @@ test("oversized request bodies are rejected with 413 before processing", async (
     assert.equal(response.status, 413);
     assert.equal(body.error, "request_body_too_large");
   });
+});
+
+function ingestBody(id) {
+  return JSON.stringify({
+    vulnerability_id: id,
+    title: "Governed test exposure",
+    severity: "high",
+    sources: [{ source_record_id: `src-${id}`, source_class: "vendor_advisory", source_name: "vendor advisory" }]
+  });
+}
+
+test("risk acceptances are governed records with derived expiry", async () => {
+  await withApi(async (baseUrl) => {
+    const headers = { "x-tenant-id": "tenant-ra" };
+    const invalid = await request(baseUrl, "/api/patchforge/risk-acceptances", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ vulnerability_id: "CVE-2026-0001" })
+    });
+    assert.equal(invalid.response.status, 400);
+    assert.equal(invalid.body.error, "validation_failed");
+
+    const future = new Date(Date.now() + 30 * 86400000).toISOString();
+    const created = await request(baseUrl, "/api/patchforge/risk-acceptances", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        vulnerability_id: "CVE-2026-0001",
+        scope_description: "Single internal service",
+        justification: "Compensating segmentation in place",
+        owner_upn: "owner@diiac.io",
+        expires_at: future
+      })
+    });
+    assert.equal(created.response.status, 201);
+    assert.equal(created.body.risk_acceptance.status, "proposed");
+    assert.equal(created.body.boundary.no_autonomous_risk_acceptance, true);
+    const raId = created.body.risk_acceptance.risk_acceptance_id;
+
+    const reviewed = await request(baseUrl, `/api/patchforge/risk-acceptances/${raId}/review`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ action: "accept", notes: "CAB reviewed" })
+    });
+    assert.equal(reviewed.response.status, 200);
+    assert.equal(reviewed.body.risk_acceptance.status, "accepted");
+    assert.equal(reviewed.body.risk_acceptance.review_events.length, 1);
+
+    const past = new Date(Date.now() - 86400000).toISOString();
+    const expired = await request(baseUrl, "/api/patchforge/risk-acceptances", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        vulnerability_id: "CVE-2026-0002",
+        scope_description: "Legacy host",
+        justification: "Already lapsed",
+        owner_upn: "owner@diiac.io",
+        expires_at: past
+      })
+    });
+    assert.equal(expired.response.status, 201);
+    assert.equal(expired.body.risk_acceptance.status, "expired");
+
+    const listed = await request(baseUrl, "/api/patchforge/risk-acceptances", { headers });
+    assert.equal(listed.response.status, 200);
+    assert.equal(listed.body.risk_acceptances.length, 2);
+    const statuses = listed.body.risk_acceptances.map((record) => record.status).sort();
+    assert.deepEqual(statuses, ["accepted", "expired"]);
+
+    const extendMissingDate = await request(baseUrl, `/api/patchforge/risk-acceptances/${raId}/review`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ action: "extend" })
+    });
+    assert.equal(extendMissingDate.response.status, 400);
+  });
+});
+
+test("compensating controls are recorded and reviewed with human accountability", async () => {
+  await withApi(async (baseUrl) => {
+    const headers = { "x-tenant-id": "tenant-cc" };
+    const created = await request(baseUrl, "/api/patchforge/compensating-controls", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        name: "Network segmentation",
+        description: "VLAN isolation for affected hosts",
+        mitigates_vulnerability_ids: ["CVE-2026-0001"],
+        owner_upn: "netops@diiac.io"
+      })
+    });
+    assert.equal(created.response.status, 201);
+    assert.equal(created.body.compensating_control.review_state, "pending_review");
+    const controlId = created.body.compensating_control.control_id;
+
+    const reviewed = await request(baseUrl, `/api/patchforge/compensating-controls/${controlId}/review`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ action: "accept", notes: "Verified by security lead" })
+    });
+    assert.equal(reviewed.response.status, 200);
+    assert.equal(reviewed.body.compensating_control.review_state, "accepted");
+
+    const listed = await request(baseUrl, "/api/patchforge/compensating-controls", { headers });
+    assert.equal(listed.body.compensating_controls.length, 1);
+  });
+});
+
+test("decision pack approval chain enforces multi-party separation of duties", async () => {
+  const verifier = async (token) => {
+    if (token === "lead") {
+      return { roles: ["PatchForge.SecurityLead"], tid: "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da", oid: "user-lead", upn: "lead@diiac.io" };
+    }
+    if (token === "cab") {
+      return { roles: ["PatchForge.CABApprover"], tid: "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da", oid: "user-cab", upn: "cab@diiac.io" };
+    }
+    return { roles: [], tid: "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da", oid: "user-empty" };
+  };
+  await withAuthenticatedApi(async (baseUrl) => {
+    const leadHeaders = { authorization: "Bearer lead" };
+    await request(baseUrl, "/api/patchforge/vulnerabilities/ingest", {
+      method: "POST",
+      headers: leadHeaders,
+      body: ingestBody("CVE-2026-APPROVAL-1")
+    });
+    const generated = await request(baseUrl, "/api/patchforge/decision-packs/generate", {
+      method: "POST",
+      headers: leadHeaders,
+      body: JSON.stringify({ vulnerability_id: "CVE-2026-APPROVAL-1" })
+    });
+    assert.equal(generated.response.status, 201);
+    const packId = generated.body.decision_pack?.pack_id || generated.body.pack_id || "PF-TEST-0001";
+
+    const first = await request(baseUrl, `/api/patchforge/decision-packs/${packId}/approvals`, {
+      method: "POST",
+      headers: leadHeaders,
+      body: JSON.stringify({ decision_posture: "patch_required", notes: "Lead signoff" })
+    });
+    assert.equal(first.response.status, 200);
+    assert.equal(first.body.decision_pack.final_approval_recorded, false);
+
+    const duplicate = await request(baseUrl, `/api/patchforge/decision-packs/${packId}/approvals`, {
+      method: "POST",
+      headers: leadHeaders,
+      body: JSON.stringify({ decision_posture: "patch_required", notes: "Same person again" })
+    });
+    assert.equal(duplicate.body.decision_pack.final_approval_recorded, false);
+
+    const second = await request(baseUrl, `/api/patchforge/decision-packs/${packId}/approvals`, {
+      method: "POST",
+      headers: { authorization: "Bearer cab" },
+      body: JSON.stringify({ decision_posture: "patch_required", notes: "CAB signoff" })
+    });
+    assert.equal(second.response.status, 200);
+    assert.equal(second.body.decision_pack.final_approval_recorded, true);
+
+    const history = await request(baseUrl, `/api/patchforge/decision-packs/${packId}/approvals`, {
+      headers: { authorization: "Bearer lead" }
+    });
+    assert.equal(history.response.status, 200);
+    assert.equal(history.body.approval_events.length, 3);
+    assert.equal(history.body.final_approval_recorded, true);
+    assert.deepEqual(history.body.approval_policy.required_roles, ["PatchForge.SecurityLead", "PatchForge.CABApprover"]);
+  }, verifier);
+});
+
+test("webhook subscriptions are admin-governed and https-only", async () => {
+  await withApi(async (baseUrl) => {
+    const headers = { "x-tenant-id": "tenant-wh" };
+    const insecure = await request(baseUrl, "/api/patchforge/webhooks", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ url: "http://example.com/hook", event_types: ["vulnerability.ingested"] })
+    });
+    assert.equal(insecure.response.status, 400);
+
+    const badEvent = await request(baseUrl, "/api/patchforge/webhooks", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ url: "https://example.com/hook", event_types: ["patch.deploy"] })
+    });
+    assert.equal(badEvent.response.status, 400);
+
+    const created = await request(baseUrl, "/api/patchforge/webhooks", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ url: "https://example.com/hook", event_types: ["vulnerability.ingested"], secret: "shh" })
+    });
+    assert.equal(created.response.status, 201);
+    assert.ok(created.body.webhook.subscription_id);
+    assert.ok(!JSON.stringify(created.body).includes("shh"));
+
+    const listed = await request(baseUrl, "/api/patchforge/webhooks", { headers });
+    assert.equal(listed.body.webhooks.length, 1);
+
+    const removed = await fetch(`${baseUrl}/api/patchforge/webhooks/${created.body.webhook.subscription_id}`, {
+      method: "DELETE",
+      headers
+    });
+    assert.equal(removed.status, 200);
+    const afterDelete = await request(baseUrl, "/api/patchforge/webhooks", { headers });
+    assert.equal(afterDelete.body.webhooks.length, 0);
+  });
+});
+
+test("pagination envelope is opt-in and validated", async () => {
+  await withApi(async (baseUrl) => {
+    const headers = { "x-tenant-id": "tenant-page" };
+    for (const id of ["CVE-PAGE-1", "CVE-PAGE-2", "CVE-PAGE-3"]) {
+      await request(baseUrl, "/api/patchforge/vulnerabilities/ingest", { method: "POST", headers, body: ingestBody(id) });
+    }
+    const legacy = await request(baseUrl, "/api/patchforge/vulnerabilities", { headers });
+    assert.ok(Array.isArray(legacy.body.vulnerabilities));
+
+    const page = await request(baseUrl, "/api/patchforge/vulnerabilities?limit=2", { headers });
+    assert.equal(page.body.items.length, 2);
+    assert.equal(page.body.total, 3);
+    assert.equal(page.body.limit, 2);
+
+    const offsetPage = await request(baseUrl, "/api/patchforge/vulnerabilities?limit=2&offset=2", { headers });
+    assert.equal(offsetPage.body.items.length, 1);
+
+    const invalid = await request(baseUrl, "/api/patchforge/vulnerabilities?limit=9999", { headers });
+    assert.equal(invalid.response.status, 400);
+    assert.equal(invalid.body.error, "invalid_pagination");
+  });
+});
+
+test("tenant rate limiting returns 429 with Retry-After", async () => {
+  await withApi(async (baseUrl) => {
+    const headers = { "x-tenant-id": "tenant-rate" };
+    let lastStatus = 200;
+    for (let i = 0; i < 4; i += 1) {
+      const { response } = await request(baseUrl, "/api/patchforge/vulnerabilities", { headers });
+      lastStatus = response.status;
+    }
+    assert.equal(lastStatus, 429);
+    const limited = await fetch(`${baseUrl}/api/patchforge/vulnerabilities`, { headers });
+    assert.equal(limited.status, 429);
+    assert.ok(Number(limited.headers.get("retry-after")) >= 1);
+
+    const health = await fetch(`${baseUrl}/health`);
+    assert.equal(health.status, 200);
+
+    const otherTenant = await request(baseUrl, "/api/patchforge/vulnerabilities", { headers: { "x-tenant-id": "tenant-other" } });
+    assert.equal(otherTenant.response.status, 200);
+  }, { rateLimit: { perMinute: 3 } });
+});
+
+test("decision packs fail closed when runtime verification rejects the signature", async () => {
+  const rejectingRuntime = {
+    ...fakeRuntimeClient(),
+    async verifyDecisionPack() {
+      return { verified: false, algorithm: "ES256", signature_check: false };
+    }
+  };
+  await withApi(async (baseUrl) => {
+    const headers = { "x-tenant-id": "tenant-verify" };
+    await request(baseUrl, "/api/patchforge/vulnerabilities/ingest", { method: "POST", headers, body: ingestBody("CVE-VERIFY-1") });
+    const generated = await request(baseUrl, "/api/patchforge/decision-packs/generate", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ vulnerability_id: "CVE-VERIFY-1" })
+    });
+    assert.equal(generated.response.status, 502);
+    assert.equal(generated.body.error, "pack_verification_failed");
+
+    const packs = await request(baseUrl, "/api/patchforge/decision-packs", { headers });
+    assert.equal(packs.body.decision_packs.length, 0);
+  }, { runtimeClient: rejectingRuntime });
+});
+
+test("decision packs record verified signature state when runtime verification passes", async () => {
+  const verifyingRuntime = {
+    ...fakeRuntimeClient(),
+    async verifyDecisionPack() {
+      return { verified: true, algorithm: "ES256", signature_check: true, artefact_hash_check: true, manifest_hash_check: true };
+    }
+  };
+  await withApi(async (baseUrl) => {
+    const headers = { "x-tenant-id": "tenant-verify-ok" };
+    await request(baseUrl, "/api/patchforge/vulnerabilities/ingest", { method: "POST", headers, body: ingestBody("CVE-VERIFY-2") });
+    const generated = await request(baseUrl, "/api/patchforge/decision-packs/generate", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ vulnerability_id: "CVE-VERIFY-2" })
+    });
+    assert.equal(generated.response.status, 201);
+
+    const packs = await request(baseUrl, "/api/patchforge/decision-packs", { headers });
+    assert.equal(packs.body.decision_packs.length, 1);
+    assert.equal(packs.body.decision_packs[0].signature_verified, true);
+    assert.equal(packs.body.decision_packs[0].signature_algorithm, "ES256");
+  }, { runtimeClient: verifyingRuntime });
+});
+
+test("role map restricts risk acceptance creation and webhook administration", async () => {
+  const verifier = async (token) => {
+    if (token === "riskowner") {
+      return { roles: ["PatchForge.RiskOwner"], tid: "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da", oid: "user-risk", upn: "risk@diiac.io" };
+    }
+    if (token === "reader") {
+      return { roles: ["PatchForge.Reader"], tid: "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da", oid: "user-reader" };
+    }
+    return { roles: [], tid: "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da", oid: "user-empty" };
+  };
+  await withAuthenticatedApi(async (baseUrl) => {
+    const future = new Date(Date.now() + 86400000).toISOString();
+    const raBody = JSON.stringify({
+      vulnerability_id: "CVE-2026-RBAC-1",
+      scope_description: "scope",
+      justification: "reason",
+      owner_upn: "owner@diiac.io",
+      expires_at: future
+    });
+    const allowed = await request(baseUrl, "/api/patchforge/risk-acceptances", {
+      method: "POST",
+      headers: { authorization: "Bearer riskowner" },
+      body: raBody
+    });
+    assert.equal(allowed.response.status, 201);
+
+    const denied = await request(baseUrl, "/api/patchforge/risk-acceptances", {
+      method: "POST",
+      headers: { authorization: "Bearer reader" },
+      body: raBody
+    });
+    assert.equal(denied.response.status, 403);
+
+    const webhookDenied = await request(baseUrl, "/api/patchforge/webhooks", {
+      headers: { authorization: "Bearer reader" }
+    });
+    assert.equal(webhookDenied.response.status, 403);
+  }, verifier);
 });

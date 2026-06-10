@@ -1,3 +1,11 @@
+import {
+  MATCH_BASIS,
+  cpeEntriesMatchVendorProduct,
+  cpeEntriesOverlap,
+  extractCpes,
+  versionSatisfiesAny
+} from "./versionUtils.js";
+
 const BOUNDARY = {
   advisory_only: true,
   source_bound: true,
@@ -131,6 +139,10 @@ export function buildFindingIntelligence({
       source_count: (vulnerability.sources || []).length,
       reviewed_source_count: (vulnerability.usable_evidence_sources || []).length,
       vendor_advisory_count: matchingAdvisories.length,
+      advisory_matches: matchingAdvisories.map((item) => ({
+        advisory_id: item.advisory_id || item.cve || null,
+        match_basis: item.match_basis || "string_fallback"
+      })),
       threat_signal_count: matchingSignals.length,
       latest_source_feed_run_at: sourceFeedRuns.sort((a, b) => String(b.completed_at || "").localeCompare(String(a.completed_at || "")))[0]?.completed_at || null
     },
@@ -138,23 +150,106 @@ export function buildFindingIntelligence({
   };
 }
 
+// PF-AZ12 contract section 9 matching ladder: CPE vendor+product+version-range
+// awareness first, then version-range comparison via versionUtils, then exact
+// CVE/advisory identifier matching, then the historical string fallback.
+// Matched advisories carry `match_basis` so users can see match confidence.
 function matchAdvisories(vulnerability, advisories) {
   const ids = new Set([
     vulnerability.vulnerability_id,
     vulnerability.canonical_id,
     ...(vulnerability.tags || [])
   ].filter(Boolean).map((value) => String(value).toLowerCase()));
-  return advisories.filter((item) => {
-    const candidates = [
-      item.cve,
-      item.vulnerability_id,
-      item.advisory_id,
-      item.title,
-      item.vendor_id,
-      item.product_id
-    ].filter(Boolean).map((value) => String(value).toLowerCase());
-    return candidates.some((candidate) => ids.has(candidate) || candidate.includes(String(vulnerability.vulnerability_id).toLowerCase()));
-  });
+  const vulnerabilityCpes = extractCpes(vulnerability);
+  const matches = [];
+  for (const item of advisories) {
+    const basis = advisoryMatchBasis(vulnerability, item, ids, vulnerabilityCpes);
+    if (basis) {
+      matches.push({ ...item, match_basis: basis });
+    }
+  }
+  return matches;
+}
+
+function advisoryMatchBasis(vulnerability, advisory, ids, vulnerabilityCpes) {
+  const candidates = [
+    advisory.cve,
+    advisory.vulnerability_id,
+    advisory.advisory_id,
+    advisory.title,
+    advisory.vendor_id,
+    advisory.product_id
+  ].filter(Boolean).map((value) => String(value).toLowerCase());
+  if (candidates.some((candidate) => ids.has(candidate))) {
+    return MATCH_BASIS.IDENTIFIER;
+  }
+
+  const advisoryCpes = extractCpes(advisory);
+  if (advisoryCpes.length) {
+    if (vulnerabilityCpes.length && cpeEntriesOverlap(vulnerabilityCpes, advisoryCpes)) {
+      return MATCH_BASIS.CPE_VERSION_RANGE;
+    }
+    const vendor = vulnerability.vendor_id || vulnerability.vendor_name;
+    const product = vulnerability.product_family || vulnerability.model;
+    if ((vendor || product) && cpeEntriesMatchVendorProduct(advisoryCpes, {
+      vendor,
+      product,
+      version: firstListed(vulnerability.affected_versions)
+    })) {
+      return MATCH_BASIS.CPE_VERSION_RANGE;
+    }
+  }
+
+  if (vendorProductAligned(vulnerability, advisory) && versionRangesOverlap(vulnerability, advisory)) {
+    return MATCH_BASIS.VERSION_RANGE;
+  }
+
+  const vulnerabilityIdLower = String(vulnerability.vulnerability_id).toLowerCase();
+  if (candidates.some((candidate) => candidate.includes(vulnerabilityIdLower))) {
+    return MATCH_BASIS.STRING_FALLBACK;
+  }
+  return null;
+}
+
+function vendorProductAligned(vulnerability, advisory) {
+  const vulnerabilityVendor = matchToken(vulnerability.vendor_id || vulnerability.vendor_name);
+  const advisoryVendor = matchToken(advisory.vendor_id || advisory.vendor_name);
+  if (!vulnerabilityVendor || !advisoryVendor || !tokensRelate(vulnerabilityVendor, advisoryVendor)) {
+    return false;
+  }
+  const vulnerabilityProducts = [vulnerability.product_family, vulnerability.model, ...(vulnerability.product_aliases || [])]
+    .map(matchToken).filter(Boolean);
+  const advisoryProducts = [advisory.product_id, advisory.product_family, ...(advisory.affected_products || [])]
+    .map(matchToken).filter(Boolean);
+  if (!vulnerabilityProducts.length || !advisoryProducts.length) {
+    return false;
+  }
+  return vulnerabilityProducts.some((left) => advisoryProducts.some((right) => tokensRelate(left, right)));
+}
+
+function versionRangesOverlap(vulnerability, advisory) {
+  const advisoryAffected = listed(advisory.affected_versions);
+  const vulnerabilityVersions = [...listed(vulnerability.affected_versions), ...listed(vulnerability.fixed_versions)];
+  if (!advisoryAffected.length || !vulnerabilityVersions.length) {
+    return false;
+  }
+  return vulnerabilityVersions.some((version) => /\d/.test(version) && versionSatisfiesAny(version, advisoryAffected));
+}
+
+function matchToken(value) {
+  return String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+}
+
+function tokensRelate(a, b) {
+  return Boolean(a && b && (a === b || a.includes(b) || b.includes(a)));
+}
+
+function listed(value) {
+  return (Array.isArray(value) ? value : value ? [value] : []).map((item) => String(item).trim()).filter(Boolean);
+}
+
+function firstListed(value) {
+  return listed(value)[0] || null;
 }
 
 function matchThreatSignals(vulnerability, signals) {
@@ -174,6 +269,19 @@ function matchAssets(vulnerability, assets) {
 
 function inferVendorProduct(vulnerability, advisories) {
   const advisory = advisories[0] || {};
+  // Prefer structured CPE 2.3 vendor/product fields when present on the
+  // vulnerability or matched advisory records (PF-AZ12 section 9).
+  const cpeEntry = [...extractCpes(vulnerability), ...extractCpes(advisory)]
+    .find((entry) => entry.cpe.vendor && entry.cpe.vendor !== "*" && entry.cpe.vendor !== "-");
+  if (cpeEntry) {
+    const cpeProduct = cpeEntry.cpe.product && !["*", "-"].includes(cpeEntry.cpe.product) ? cpeEntry.cpe.product : null;
+    return {
+      vendor: humanize(cpeEntry.cpe.vendor),
+      product: humanize(cpeProduct || advisory.product_id || vulnerability.product_family || "Unknown product"),
+      component: advisory.component || "Not recorded",
+      identification_basis: "cpe"
+    };
+  }
   const tags = vulnerability.tags || [];
   const title = vulnerability.title || "";
   const vendorTag = tags.find((tag) => !["live_source_feed", "cisa_kev"].includes(tag));
@@ -181,7 +289,8 @@ function inferVendorProduct(vulnerability, advisories) {
   return {
     vendor: humanize(advisory.vendor_id || vendorTag || titleParts[0] || "Unknown vendor"),
     product: humanize(advisory.product_id || tags[tags.indexOf(vendorTag) + 1] || titleParts.slice(1, 3).join(" ") || "Unknown product"),
-    component: advisory.component || "Not recorded"
+    component: advisory.component || "Not recorded",
+    identification_basis: "string_fallback"
   };
 }
 

@@ -34,6 +34,33 @@ import {
   upsertNetworkVendor
 } from "./patchforge/vendorLens.js";
 import { runSraTool } from "./sra/securityResearchAgent.js";
+import {
+  createRiskAcceptance,
+  listRiskAcceptances,
+  reviewRiskAcceptance,
+  riskAcceptanceBoundary
+} from "./patchforge/riskAcceptances.js";
+import {
+  compensatingControlBoundary,
+  createCompensatingControl,
+  listCompensatingControls,
+  reviewCompensatingControl
+} from "./patchforge/compensatingControls.js";
+import {
+  approvalBoundary,
+  listDecisionPackApprovals,
+  recordDecisionPackApproval
+} from "./patchforge/approvals.js";
+import {
+  createWebhookSubscription,
+  deleteWebhookSubscription,
+  dispatchWebhookEvent,
+  listWebhookDeliveries,
+  listWebhookSubscriptions,
+  WEBHOOK_EVENT_TYPES
+} from "./patchforge/webhooks.js";
+import { createRateLimiter } from "./patchforge/rateLimit.js";
+import { validationError } from "./patchforge/validate.js";
 
 const DEFAULT_PORT = Number(process.env.PORT || 8080);
 const MAX_REQUEST_BODY_BYTES = Number(process.env.PATCHFORGE_MAX_REQUEST_BODY_BYTES || 2 * 1024 * 1024);
@@ -86,6 +113,7 @@ export function createServer(options = {}) {
   const vendorLensFetchImpl = options.vendorLensFetchImpl || globalThis.fetch;
   const openAiAgentFetchImpl = options.openAiAgentFetchImpl || globalThis.fetch;
   const corsConfig = options.cors || createCorsConfigFromEnv();
+  const rateLimiter = options.rateLimiter || createRateLimiter(options.rateLimit || {});
 
   return http.createServer(async (req, res) => {
     try {
@@ -111,6 +139,18 @@ export function createServer(options = {}) {
       const baseTenantContext = resolveTenantContext(req, url, {}, authConfig, authorization.principal);
       const tenantId = baseTenantContext.effective_tenant_id;
 
+      if (url.pathname !== "/health" && url.pathname !== "/readiness") {
+        const rate = rateLimiter.take(tenantId);
+        if (!rate.allowed) {
+          res.setHeader("retry-after", String(rate.retryAfterSeconds));
+          return sendJson(res, 429, {
+            error: "rate_limit_exceeded",
+            message: "Tenant request rate limit exceeded. Retry after the indicated delay.",
+            retry_after_seconds: rate.retryAfterSeconds
+          });
+        }
+      }
+
       if (req.method === "GET" && url.pathname === "/health") {
         return sendJson(res, 200, {
           status: "ok",
@@ -129,10 +169,15 @@ export function createServer(options = {}) {
       }
 
       if (route === "GET /api/patchforge/vulnerabilities") {
+        const records = await storage.list("vulnerabilities", tenantId);
+        const paged = paginateIfRequested(url, records);
+        if (paged) {
+          return sendJson(res, paged.statusCode, paged.payload);
+        }
         return sendJson(res, 200, {
           tenant_id: tenantId,
           tenant_context: baseTenantContext,
-          vulnerabilities: await storage.list("vulnerabilities", tenantId)
+          vulnerabilities: records
         });
       }
 
@@ -140,6 +185,16 @@ export function createServer(options = {}) {
         const body = await readJson(req);
         const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
         const record = await storage.ingestVulnerability(tenantContext.effective_tenant_id, withLineage(body, tenantContext, authorization));
+        void dispatchWebhookEvent({
+          storage,
+          tenantId: tenantContext.effective_tenant_id,
+          eventType: "vulnerability.ingested",
+          data: {
+            vulnerability_id: record.vulnerability_id,
+            severity: record.severity || null,
+            known_exploited: Boolean(record.known_exploited)
+          }
+        });
         return sendJson(res, 201, { vulnerability: record });
       }
 
@@ -439,6 +494,12 @@ export function createServer(options = {}) {
             tenantId: tenantContext.effective_tenant_id,
             body: withLineage(body, tenantContext, authorization)
           });
+          void dispatchWebhookEvent({
+            storage,
+            tenantId: tenantContext.effective_tenant_id,
+            eventType: "source_feed.completed",
+            data: { feed_id: run?.feed_id || body.feed_id || null, state: run?.state || null }
+          });
           return sendJson(res, 202, {
             tenant_id: tenantContext.effective_tenant_id,
             tenant_context: tenantContext,
@@ -610,11 +671,179 @@ export function createServer(options = {}) {
       }
 
       if (route === "GET /api/patchforge/decision-packs") {
+        const records = await storage.list("decision_packs", tenantId);
+        const paged = paginateIfRequested(url, records);
+        if (paged) {
+          return sendJson(res, paged.statusCode, paged.payload);
+        }
         return sendJson(res, 200, {
           tenant_id: tenantId,
           tenant_context: baseTenantContext,
-          decision_packs: await storage.list("decision_packs", tenantId)
+          decision_packs: records
         });
+      }
+
+      if (route === "GET /api/patchforge/risk-acceptances") {
+        const records = await listRiskAcceptances(storage, tenantId, { webhookFetchImpl: vendorLensFetchImpl });
+        const paged = paginateIfRequested(url, records);
+        if (paged) {
+          return sendJson(res, paged.statusCode, paged.payload);
+        }
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          risk_acceptances: records,
+          boundary: riskAcceptanceBoundary()
+        });
+      }
+
+      if (route === "POST /api/patchforge/risk-acceptances") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        try {
+          const record = await createRiskAcceptance(
+            storage,
+            tenantContext.effective_tenant_id,
+            withActor(body, authorization)
+          );
+          return sendJson(res, 201, { risk_acceptance: record, boundary: riskAcceptanceBoundary() });
+        } catch (error) {
+          return sendValidationError(res, error);
+        }
+      }
+
+      const riskAcceptanceReviewMatch = url.pathname.match(/^\/api\/patchforge\/risk-acceptances\/([^/]+)\/review$/);
+      if (req.method === "POST" && riskAcceptanceReviewMatch) {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        try {
+          const record = await reviewRiskAcceptance(
+            storage,
+            tenantContext.effective_tenant_id,
+            decodeURIComponent(riskAcceptanceReviewMatch[1]),
+            withActor(body, authorization)
+          );
+          if (!record) {
+            return sendJson(res, 404, { error: "risk_acceptance_not_found" });
+          }
+          return sendJson(res, 200, { risk_acceptance: record, boundary: riskAcceptanceBoundary() });
+        } catch (error) {
+          return sendValidationError(res, error);
+        }
+      }
+
+      if (route === "GET /api/patchforge/compensating-controls") {
+        const records = await listCompensatingControls(storage, tenantId);
+        const paged = paginateIfRequested(url, records);
+        if (paged) {
+          return sendJson(res, paged.statusCode, paged.payload);
+        }
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          compensating_controls: records,
+          boundary: compensatingControlBoundary()
+        });
+      }
+
+      if (route === "POST /api/patchforge/compensating-controls") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        try {
+          const record = await createCompensatingControl(
+            storage,
+            tenantContext.effective_tenant_id,
+            withActor(body, authorization)
+          );
+          return sendJson(res, 201, { compensating_control: record, boundary: compensatingControlBoundary() });
+        } catch (error) {
+          return sendValidationError(res, error);
+        }
+      }
+
+      const compensatingControlReviewMatch = url.pathname.match(/^\/api\/patchforge\/compensating-controls\/([^/]+)\/review$/);
+      if (req.method === "POST" && compensatingControlReviewMatch) {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        try {
+          const record = await reviewCompensatingControl(
+            storage,
+            tenantContext.effective_tenant_id,
+            decodeURIComponent(compensatingControlReviewMatch[1]),
+            withActor(body, authorization)
+          );
+          if (!record) {
+            return sendJson(res, 404, { error: "compensating_control_not_found" });
+          }
+          return sendJson(res, 200, { compensating_control: record, boundary: compensatingControlBoundary() });
+        } catch (error) {
+          return sendValidationError(res, error);
+        }
+      }
+
+      const decisionPackApprovalsMatch = url.pathname.match(/^\/api\/patchforge\/decision-packs\/([^/]+)\/approvals$/);
+      if (req.method === "GET" && decisionPackApprovalsMatch) {
+        const result = await listDecisionPackApprovals(storage, tenantId, decodeURIComponent(decisionPackApprovalsMatch[1]));
+        if (!result) {
+          return sendJson(res, 404, { error: "decision_pack_not_found" });
+        }
+        return sendJson(res, 200, { ...result, boundary: approvalBoundary() });
+      }
+
+      if (req.method === "POST" && decisionPackApprovalsMatch) {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        try {
+          const result = await recordDecisionPackApproval(
+            storage,
+            tenantContext.effective_tenant_id,
+            decodeURIComponent(decisionPackApprovalsMatch[1]),
+            { principal: authorization.principal, body }
+          );
+          if (!result) {
+            return sendJson(res, 404, { error: "decision_pack_not_found" });
+          }
+          return sendJson(res, 200, {
+            decision_pack: result.pack,
+            approval_policy: result.policy,
+            boundary: approvalBoundary()
+          });
+        } catch (error) {
+          return sendValidationError(res, error);
+        }
+      }
+
+      if (route === "GET /api/patchforge/webhooks") {
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          webhooks: await listWebhookSubscriptions(storage, tenantId),
+          deliveries: await listWebhookDeliveries(storage, tenantId),
+          allowed_event_types: WEBHOOK_EVENT_TYPES
+        });
+      }
+
+      if (route === "POST /api/patchforge/webhooks") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        try {
+          const record = await createWebhookSubscription(
+            storage,
+            tenantContext.effective_tenant_id,
+            withActor(body, authorization)
+          );
+          return sendJson(res, 201, { webhook: record, allowed_event_types: WEBHOOK_EVENT_TYPES });
+        } catch (error) {
+          return sendValidationError(res, error);
+        }
+      }
+
+      const webhookDeleteMatch = url.pathname.match(/^\/api\/patchforge\/webhooks\/([^/]+)$/);
+      if (req.method === "DELETE" && webhookDeleteMatch) {
+        const removed = await deleteWebhookSubscription(storage, tenantId, decodeURIComponent(webhookDeleteMatch[1]));
+        if (!removed) {
+          return sendJson(res, 404, { error: "webhook_not_found" });
+        }
+        return sendJson(res, 200, { deleted: true, subscription_id: decodeURIComponent(webhookDeleteMatch[1]) });
       }
 
       if (route === "GET /api/patchforge/reports/catalog") {
@@ -923,6 +1152,54 @@ function withLineage(payload, tenantContext, authorization) {
   };
 }
 
+function withActor(payload, authorization) {
+  const principal = authorization?.principal || {};
+  return {
+    ...payload,
+    actor_oid: principal.oid || payload.actor_oid || null,
+    actor_upn: principal.upn || payload.actor_upn || null
+  };
+}
+
+function sendValidationError(res, error) {
+  if (error && error.statusCode && error.publicError) {
+    return sendJson(res, error.statusCode, { error: error.publicError, message: error.publicMessage || error.message });
+  }
+  throw error;
+}
+
+// PF-AZ12 contract section 7: opt-in pagination envelope. Returns null when
+// the caller did not request pagination so legacy response shapes survive.
+function paginateIfRequested(url, records) {
+  const limitRaw = url.searchParams.get("limit");
+  if (limitRaw === null) {
+    return null;
+  }
+  const limit = Number(limitRaw);
+  const offset = Number(url.searchParams.get("offset") || 0);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 500) {
+    return {
+      statusCode: 400,
+      payload: { error: "invalid_pagination", message: "limit must be an integer between 1 and 500." }
+    };
+  }
+  if (!Number.isInteger(offset) || offset < 0) {
+    return {
+      statusCode: 400,
+      payload: { error: "invalid_pagination", message: "offset must be a non-negative integer." }
+    };
+  }
+  return {
+    statusCode: 200,
+    payload: {
+      items: records.slice(offset, offset + limit),
+      total: records.length,
+      limit,
+      offset
+    }
+  };
+}
+
 function lineageFields(tenantContext, authorization) {
   const principal = authorization?.principal || {};
   return {
@@ -1123,6 +1400,37 @@ async function generateDecisionPackForRequest({ storage, runtimeClient, tenantCo
     approval_events: body.approval_events || []
   });
 
+  // PF-AZ12 contract section 2: re-verify the signed pack with the runtime
+  // before persisting anything. verified:false fails closed with 502; an
+  // unreachable/older runtime degrades to signature_verified:null + warning.
+  let signatureVerified = null;
+  let signatureAlgorithm = null;
+  let verificationWarning = null;
+  if (typeof runtimeClient.verifyDecisionPack === "function") {
+    try {
+      const verifyResult = await runtimeClient.verifyDecisionPack(runtimeResult);
+      if (verifyResult && verifyResult.unsupported) {
+        verificationWarning = "Runtime does not expose a pack verification endpoint; signature not re-verified.";
+      } else if (verifyResult && verifyResult.verified === true) {
+        signatureVerified = true;
+        signatureAlgorithm = verifyResult.algorithm || null;
+      } else {
+        return {
+          statusCode: 502,
+          payload: {
+            error: "pack_verification_failed",
+            message: "The runtime-signed decision pack failed signature verification and was not stored.",
+            verification: verifyResult || null
+          }
+        };
+      }
+    } catch (error) {
+      verificationWarning = `Pack verification unavailable: ${error.message}`;
+    }
+  } else {
+    verificationWarning = "Runtime client does not support pack verification.";
+  }
+
   const decisionContext = runtimeResult.decision_context || {};
   const packRecord = {
     tenant_id: resolvedTenant,
@@ -1136,6 +1444,11 @@ async function generateDecisionPackForRequest({ storage, runtimeClient, tenantCo
     final_approval_issued: Boolean(decisionContext.final_approval_issued),
     source_pack_immutable: true,
     verification: runtimeResult.verification || null,
+    signature_verified: signatureVerified,
+    signature_algorithm: signatureAlgorithm,
+    verification_warning: verificationWarning,
+    approval_events: [],
+    final_approval_recorded: false,
     signing_provider: runtimeResult.signing_provider || null,
     artefacts: runtimeResult.artefacts || null,
     runtime_component: runtimeResult.runtime_component || "patchforge-runtime",
@@ -1153,6 +1466,17 @@ async function generateDecisionPackForRequest({ storage, runtimeClient, tenantCo
     pack_id: packRecord.pack_id,
     vulnerability_id: packRecord.vulnerability_id,
     decision_posture: packRecord.decision_posture
+  });
+  void dispatchWebhookEvent({
+    storage,
+    tenantId: resolvedTenant,
+    eventType: "decision_pack.generated",
+    data: {
+      pack_id: packRecord.pack_id,
+      vulnerability_id: packRecord.vulnerability_id,
+      decision_posture: packRecord.decision_posture,
+      signature_verified: packRecord.signature_verified
+    }
   });
 
   return {
@@ -1599,6 +1923,28 @@ export function createRuntimeClientFromEnv() {
       } finally {
         clearTimeout(timer);
       }
+    },
+    async verifyDecisionPack(pack) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), Number(process.env.PATCHFORGE_RUNTIME_TIMEOUT_MS || 45000));
+      try {
+        const response = await fetch(`${baseUrl}/api/runtime/decision-packs/verify`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ pack }),
+          signal: controller.signal
+        });
+        if (response.status === 404) {
+          return { unsupported: true };
+        }
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(body.message || body.error || `Runtime verify returned HTTP ${response.status}`);
+        }
+        return body;
+      } finally {
+        clearTimeout(timer);
+      }
     }
   };
 }
@@ -1617,7 +1963,7 @@ function applyCors(req, res, corsConfig) {
     res.setHeader("access-control-allow-origin", origin);
     res.setHeader("vary", "Origin");
   }
-  res.setHeader("access-control-allow-methods", "GET,POST,PUT,OPTIONS");
+  res.setHeader("access-control-allow-methods", "GET,POST,PUT,DELETE,OPTIONS");
   res.setHeader("access-control-allow-headers", "authorization,content-type,x-tenant-id");
   res.setHeader("access-control-max-age", "600");
 }

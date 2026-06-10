@@ -26,6 +26,10 @@ const COLLECTIONS = [
   "agent_guidance_snapshots",
   "report_quality_reviews",
   "source_feed_runs",
+  "risk_acceptances",
+  "compensating_controls",
+  "webhook_subscriptions",
+  "webhook_deliveries",
   "audit_events"
 ];
 
@@ -53,6 +57,10 @@ const COLLECTION_ID_FIELDS = {
   agent_guidance_snapshots: "snapshot_id",
   report_quality_reviews: "review_id",
   source_feed_runs: "run_id",
+  risk_acceptances: "risk_acceptance_id",
+  compensating_controls: "control_id",
+  webhook_subscriptions: "subscription_id",
+  webhook_deliveries: "delivery_id",
   audit_events: "audit_id"
 };
 
@@ -180,6 +188,10 @@ const DEFAULT_ADMIN_CONFIG = {
   retention: {
     evidence_days: 2555,
     audit_days: 2555
+  },
+  approval_policy: {
+    required_roles: ["PatchForge.SecurityLead", "PatchForge.CABApprover"],
+    distinct_approvers: true
   },
   feature_flags: {
     sra_enabled: false,
