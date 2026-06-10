@@ -6,7 +6,7 @@ from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from uuid import uuid4
 
-from runtime.governance_runtime import GovernanceRuntimeError, create_signed_decision_pack
+from runtime.governance_runtime import GovernanceRuntimeError, create_signed_decision_pack, verify_pack_payload
 
 
 class PatchForgeRuntimeHandler(BaseHTTPRequestHandler):
@@ -37,6 +37,18 @@ class PatchForgeRuntimeHandler(BaseHTTPRequestHandler):
                 self._send_json(201, pack)
             except GovernanceRuntimeError as exc:
                 self._send_json(400, {"error": "governance_boundary_violation", "message": str(exc)})
+            except Exception as exc:  # pragma: no cover - defensive runtime boundary
+                self._send_json(500, {"error": "runtime_error", "message": str(exc)})
+            return
+        if self.path == "/api/runtime/decision-packs/verify":
+            try:
+                payload = self._read_json_body()
+                pack = payload.get("pack")
+                if not isinstance(pack, dict):
+                    raise GovernanceRuntimeError("A pack object is required for verification.")
+                self._send_json(200, verify_pack_payload(pack))
+            except (GovernanceRuntimeError, json.JSONDecodeError, AttributeError):
+                self._send_json(400, {"error": "malformed_pack_payload", "message": "Request body must be {\"pack\": {...}} with signed pack artefacts."})
             except Exception as exc:  # pragma: no cover - defensive runtime boundary
                 self._send_json(500, {"error": "runtime_error", "message": str(exc)})
             return

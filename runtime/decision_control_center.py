@@ -106,18 +106,30 @@ def record_human_approval(current_state: CurrentState, event: dict[str, Any]) ->
 
 
 def record_risk_acceptance(current_state: CurrentState, event: dict[str, Any]) -> None:
-    required = ["owner", "expiry_date", "rationale"]
-    missing = [field for field in required if not event.get(field)]
+    """Record a risk acceptance event.
+
+    Raises DecisionControlError when the expiry (``expiry_date`` or the
+    ``expires_at`` alias) is already in the past: expired acceptances are
+    excluded from posture/readiness/state derivation at event-recording time,
+    not just at report time.
+    """
+    expiry = event.get("expiry_date") or event.get("expires_at")
+    required = {"owner": event.get("owner"), "expiry_date": expiry, "rationale": event.get("rationale")}
+    missing = [field for field, value in required.items() if not value]
     if missing:
         raise DecisionControlError(f"Risk acceptance missing required fields: {', '.join(missing)}")
+    if risk_acceptance_expired(expiry):
+        raise DecisionControlError(
+            f"Risk acceptance expiry {expiry} is already in the past; expired acceptances cannot be recorded."
+        )
     current_state.risk_acceptance = {
         "owner": event["owner"],
-        "expiry_date": event["expiry_date"],
+        "expiry_date": expiry,
         "rationale": event["rationale"],
-        "expired": risk_acceptance_expired(event["expiry_date"]),
+        "expired": False,
         "compensating_control_refs": event.get("compensating_control_refs", []),
     }
-    if "risk_acceptance" in current_state.blockers and not current_state.risk_acceptance["expired"]:
+    if "risk_acceptance" in current_state.blockers:
         current_state.blockers.remove("risk_acceptance")
 
 
@@ -135,6 +147,11 @@ def record_post_patch_validation(source_pack: SourcePack, current_state: Current
 
 
 def risk_acceptance_expired(expiry_date: str, today: date | None = None) -> bool:
+    """Return True when the supplied expiry (date or ISO-8601 timestamp) is in the past."""
     check_date = today or date.today()
-    return date.fromisoformat(expiry_date) < check_date
+    try:
+        parsed = datetime.fromisoformat(str(expiry_date).replace("Z", "+00:00")).date()
+    except ValueError as exc:
+        raise DecisionControlError(f"Invalid risk acceptance expiry date: {expiry_date}") from exc
+    return parsed < check_date
 

@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pytest
@@ -10,8 +11,19 @@ from runtime.governance_runtime import (
     canonical_json,
     create_signed_decision_pack,
     verify_pack_locally,
+    verify_pack_payload,
 )
+from runtime.health_server import _read_pack_artefacts
 from runtime.bayesian_patch_risk import assess_patch_risk, propose_prior_update
+
+VERIFY_RESPONSE_KEYS = {
+    "verified",
+    "algorithm",
+    "artefact_hash_check",
+    "manifest_hash_check",
+    "signature_check",
+    "failed_artefacts",
+}
 
 
 def sample_vulnerability(**overrides):
@@ -255,6 +267,60 @@ def test_generate_and_verify_signed_decision_pack(tmp_path: Path):
 def test_generate_and_verify_es256_signed_decision_pack(tmp_path: Path):
     cryptography = pytest.importorskip("cryptography")
     assert cryptography
+
+    result = create_signed_decision_pack(
+        output_dir=tmp_path / "pack-es256",
+        vulnerability=sample_vulnerability(),
+        evidence_items=[
+            accepted("human-vuln-id", "vulnerability_identity"),
+            accepted("human-asset", "affected_asset_scope"),
+            accepted("vendor-patch", "patch_availability"),
+            accepted("human-review", "human_review_signoff"),
+        ],
+        approval_events=[
+            {"approval_type": "final", "approval_state": "approved", "approver": "cab-chair"}
+        ],
+        key_vault_key_id="https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod/test",
+        signing_provider=make_es256_signer(),
+        dev_mode=False,
+    )
+
+    assert result["verification"]["verified"] is True
+    sigmeta = (Path(result["pack_dir"]) / "signed_export.sigmeta.json").read_text(encoding="utf-8")
+    assert "azure_key_vault" in sigmeta
+
+
+def baseline_evidence():
+    return [
+        accepted("human-vuln-id", "vulnerability_identity"),
+        accepted("human-asset", "affected_asset_scope"),
+        accepted("vendor-patch", "patch_availability"),
+        accepted("human-review", "human_review_signoff"),
+    ]
+
+
+def pack_payload_from_result(result) -> dict:
+    """Mirror the pack object shape returned by POST /api/runtime/decision-packs."""
+    return {
+        "pack_id": result["pack_id"],
+        "decision_context": result["decision_context"],
+        "verification": result["verification"],
+        "artefacts": _read_pack_artefacts(Path(result["pack_dir"])),
+    }
+
+
+def ed25519_private_key_pem() -> bytes:
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+    return Ed25519PrivateKey.generate().private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    )
+
+
+def make_es256_signer():
     from cryptography.hazmat.primitives import hashes
     from cryptography.hazmat.primitives.asymmetric import ec, utils
 
@@ -285,26 +351,168 @@ def test_generate_and_verify_es256_signed_decision_pack(tmp_path: Path):
                 },
             )
 
+    return FakeKeyVaultSigner()
+
+
+def test_ed25519_sign_and_verify_roundtrip(tmp_path: Path, monkeypatch):
+    pytest.importorskip("cryptography")
+    monkeypatch.delenv("PATCHFORGE_KEYVAULT_SIGNING_KEY_ID", raising=False)
+
     result = create_signed_decision_pack(
-        output_dir=tmp_path / "pack-es256",
+        output_dir=tmp_path / "pack-ed25519",
         vulnerability=sample_vulnerability(),
-        evidence_items=[
-            accepted("human-vuln-id", "vulnerability_identity"),
-            accepted("human-asset", "affected_asset_scope"),
-            accepted("vendor-patch", "patch_availability"),
-            accepted("human-review", "human_review_signoff"),
-        ],
-        approval_events=[
-            {"approval_type": "final", "approval_state": "approved", "approver": "cab-chair"}
-        ],
-        key_vault_key_id="https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod/test",
-        signing_provider=FakeKeyVaultSigner(),
+        evidence_items=baseline_evidence(),
+        signing_key=ed25519_private_key_pem(),
         dev_mode=False,
     )
 
+    sigmeta = json.loads((Path(result["pack_dir"]) / "signed_export.sigmeta.json").read_text(encoding="utf-8"))
+    assert sigmeta["algorithm"] == "Ed25519"
+    assert sigmeta["public_key"]
+
     assert result["verification"]["verified"] is True
-    sigmeta = (Path(result["pack_dir"]) / "signed_export.sigmeta.json").read_text(encoding="utf-8")
-    assert "azure_key_vault" in sigmeta
+    assert result["verification"]["signature_ok"] is True
+    assert verify_pack_locally(result["pack_dir"])["verified"] is True
+
+    payload_verification = verify_pack_payload(pack_payload_from_result(result))
+    assert set(payload_verification) == VERIFY_RESPONSE_KEYS
+    assert payload_verification["verified"] is True
+    assert payload_verification["algorithm"] == "Ed25519"
+    assert payload_verification["failed_artefacts"] == []
+
+
+def test_ed25519_verification_detects_tampered_artefact(tmp_path: Path, monkeypatch):
+    pytest.importorskip("cryptography")
+    monkeypatch.delenv("PATCHFORGE_KEYVAULT_SIGNING_KEY_ID", raising=False)
+
+    result = create_signed_decision_pack(
+        output_dir=tmp_path / "pack-ed25519-tamper",
+        vulnerability=sample_vulnerability(),
+        evidence_items=baseline_evidence(),
+        signing_key=ed25519_private_key_pem(),
+        dev_mode=False,
+    )
+    pack_dir = Path(result["pack_dir"])
+
+    artefact_path = pack_dir / "patch_feasibility_assessment.json"
+    tampered = json.loads(artefact_path.read_text(encoding="utf-8"))
+    tampered["tampered"] = True
+    artefact_path.write_text(json.dumps(tampered, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    assert verify_pack_locally(pack_dir)["verified"] is False
+
+    # Tampering with the signed payload must break the Ed25519 signature itself.
+    sigmeta_path = pack_dir / "signed_export.sigmeta.json"
+    sigmeta = json.loads(sigmeta_path.read_text(encoding="utf-8"))
+    sigmeta["signed_payload"]["pack_id"] = "PF-FORGED-PACK"
+    sigmeta_path.write_text(json.dumps(sigmeta, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    verification = verify_pack_locally(pack_dir)
+    assert verification["signature_ok"] is False
+    assert verification["verified"] is False
+
+
+def test_ed25519_verification_handles_missing_or_invalid_public_key(tmp_path: Path, monkeypatch):
+    pytest.importorskip("cryptography")
+    monkeypatch.delenv("PATCHFORGE_KEYVAULT_SIGNING_KEY_ID", raising=False)
+
+    result = create_signed_decision_pack(
+        output_dir=tmp_path / "pack-ed25519-nokey",
+        vulnerability=sample_vulnerability(),
+        evidence_items=baseline_evidence(),
+        signing_key=ed25519_private_key_pem(),
+        dev_mode=False,
+    )
+    pack = pack_payload_from_result(result)
+
+    pack["artefacts"]["signed_export.sigmeta.json"]["public_key"] = None
+    assert verify_pack_payload(pack)["signature_check"] is False
+
+    pack["artefacts"]["signed_export.sigmeta.json"]["public_key"] = "not-valid-base64!!"
+    assert verify_pack_payload(pack)["signature_check"] is False
+
+
+def test_verify_pack_payload_dev_hmac_success_and_failure(tmp_path: Path):
+    result = create_signed_decision_pack(
+        output_dir=tmp_path / "pack-dev",
+        vulnerability=sample_vulnerability(),
+        evidence_items=baseline_evidence(),
+    )
+    pack = pack_payload_from_result(result)
+    # _read_pack_artefacts nulls dev_key_hint, so this exercises stateless dev verification.
+    assert pack["artefacts"]["signed_export.sigmeta.json"]["dev_key_hint"] is None
+
+    verification = verify_pack_payload(pack)
+    assert set(verification) == VERIFY_RESPONSE_KEYS
+    assert verification == {
+        "verified": True,
+        "algorithm": "dev_hmac_sha256",
+        "artefact_hash_check": True,
+        "manifest_hash_check": True,
+        "signature_check": True,
+        "failed_artefacts": [],
+    }
+
+    pack["artefacts"]["patch_decision_context.json"]["decision_posture"] = "close_verified"
+    failed = verify_pack_payload(pack)
+    assert failed["verified"] is False
+    assert failed["artefact_hash_check"] is False
+    assert failed["failed_artefacts"] == ["patch_decision_context.json"]
+    assert failed["signature_check"] is True
+
+
+def test_verify_pack_payload_es256_success_and_failure(tmp_path: Path):
+    pytest.importorskip("cryptography")
+    result = create_signed_decision_pack(
+        output_dir=tmp_path / "pack-es256-payload",
+        vulnerability=sample_vulnerability(),
+        evidence_items=baseline_evidence(),
+        key_vault_key_id="https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod/test",
+        signing_provider=make_es256_signer(),
+        dev_mode=False,
+    )
+    pack = pack_payload_from_result(result)
+
+    verification = verify_pack_payload(pack)
+    assert set(verification) == VERIFY_RESPONSE_KEYS
+    assert verification["verified"] is True
+    assert verification["algorithm"] == "ES256"
+    assert verification["failed_artefacts"] == []
+
+    # Tampering with the governance manifest breaks the manifest hash chain.
+    pack["artefacts"]["governance_manifest.json"]["final_approval_issued"] = True
+    failed = verify_pack_payload(pack)
+    assert failed["verified"] is False
+    assert failed["manifest_hash_check"] is False
+
+    # Tampering with the signature value breaks the signature check.
+    fresh = pack_payload_from_result(result)
+    fresh["artefacts"]["signed_export.sig"] = base64url(b"\x00" * 64)
+    assert verify_pack_payload(fresh)["signature_check"] is False
+    assert verify_pack_payload(fresh)["verified"] is False
+
+
+def test_verify_pack_payload_rejects_malformed_payloads():
+    with pytest.raises(GovernanceRuntimeError):
+        verify_pack_payload({"artefacts": "not-an-object"})
+    with pytest.raises(GovernanceRuntimeError):
+        verify_pack_payload({"artefacts": {}})
+
+
+def test_expired_risk_acceptance_blocks_posture_derivation():
+    context = build_patch_decision_context(
+        vulnerability=sample_vulnerability(),
+        evidence_items=baseline_evidence(),
+        requested_posture="risk_accept_temporarily",
+        risk_acceptance={
+            "owner": "risk-owner",
+            "expiry_date": "2020-01-01",
+            "rationale": "Expired acceptance must not satisfy governance posture.",
+        },
+        approval_events=[
+            {"approval_type": "final", "approval_state": "approved", "approver": "cab-chair"}
+        ],
+    )
+    assert "risk_acceptance_expired" in context["blockers"]
+    assert context["readiness"]["readiness_state"] == "blocked"
 
 
 def test_forbidden_boundary_keys_are_rejected(tmp_path: Path):

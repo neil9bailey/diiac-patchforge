@@ -77,6 +77,58 @@ def test_risk_acceptance_requires_owner_expiry_and_rationale():
 def test_risk_acceptance_expiry_works():
     assert risk_acceptance_expired("2026-05-25", today=date(2026, 5, 26)) is True
     assert risk_acceptance_expired("2026-05-27", today=date(2026, 5, 26)) is False
+    assert risk_acceptance_expired("2026-05-25T10:00:00Z", today=date(2026, 5, 26)) is True
+    with pytest.raises(DecisionControlError):
+        risk_acceptance_expired("not-a-date")
+
+
+def test_expired_risk_acceptance_is_rejected_at_recording_time():
+    source_pack, current_state = compile_source_pack(
+        decision_id="decision-expired",
+        decision_posture="risk_accept_temporarily",
+        evidence_refs=["ev-risk"],
+        required_blockers=["risk_acceptance"],
+    )
+
+    with pytest.raises(DecisionControlError):
+        record_event(source_pack, current_state, {
+            "event_type": "risk_acceptance_recorded",
+            "owner": "risk-owner",
+            "expiry_date": "2020-01-01",
+            "rationale": "Expired acceptance must not enter governed state.",
+        })
+
+    # Expired acceptances never reach posture/readiness/state derivation.
+    assert current_state.risk_acceptance is None
+    assert "risk_acceptance" in current_state.blockers
+    assert current_state.event_ledger == []
+
+
+def test_risk_acceptance_accepts_expires_at_alias():
+    source_pack, current_state = compile_source_pack(
+        decision_id="decision-alias",
+        decision_posture="risk_accept_temporarily",
+        evidence_refs=["ev-risk"],
+        required_blockers=["risk_acceptance"],
+    )
+
+    next_state = record_event(source_pack, current_state, {
+        "event_type": "risk_acceptance_recorded",
+        "owner": "risk-owner",
+        "expires_at": "2099-12-31T00:00:00Z",
+        "rationale": "Future-dated acceptance recorded via expires_at alias.",
+    })
+    assert next_state.risk_acceptance["expired"] is False
+    assert next_state.risk_acceptance["expiry_date"] == "2099-12-31T00:00:00Z"
+    assert "risk_acceptance" not in next_state.blockers
+
+    with pytest.raises(DecisionControlError):
+        record_event(source_pack, current_state, {
+            "event_type": "risk_acceptance_recorded",
+            "owner": "risk-owner",
+            "expires_at": "2020-01-01T00:00:00Z",
+            "rationale": "Past expires_at must raise.",
+        })
 
 
 def test_current_state_is_separate_from_signed_source_state():

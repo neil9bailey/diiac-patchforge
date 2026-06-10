@@ -58,6 +58,8 @@ PACK_ARTEFACTS = [
     "replay_certificate.json",
 ]
 
+DEV_SIGNING_KEY = "patchforge-dev-test-key"
+
 FORBIDDEN_ACTION_KEYS = {
     "exploit_code",
     "exploit_steps",
@@ -250,9 +252,14 @@ def apply_policy_pack(
         blockers.append("emergency_human_approval")
 
     if decision_posture == "risk_accept_temporarily":
+        acceptance = dict(risk_acceptance or {})
+        if "expiry_date" not in acceptance and acceptance.get("expires_at"):
+            acceptance["expiry_date"] = acceptance["expires_at"]
         required = ["owner", "expiry_date", "rationale"]
-        missing = [field for field in required if not (risk_acceptance or {}).get(field)]
+        missing = [field for field in required if not acceptance.get(field)]
         blockers.extend([f"risk_acceptance_{field}" for field in missing])
+        if acceptance.get("expiry_date") and _risk_acceptance_expired(acceptance["expiry_date"]):
+            blockers.append("risk_acceptance_expired")
         if not final_approval_issued:
             blockers.append("risk_acceptance_human_approval")
 
@@ -268,6 +275,16 @@ def apply_policy_pack(
         "rejected_refs": evaluation.rejected_refs,
         "advisory_only_refs": evaluation.advisory_only_refs,
     }
+
+
+def _risk_acceptance_expired(expiry: Any) -> bool:
+    """Expired (or unparseable) risk acceptance expiries never satisfy governance posture."""
+    from runtime.decision_control_center import risk_acceptance_expired
+
+    try:
+        return risk_acceptance_expired(str(expiry))
+    except ValueError:
+        return True
 
 
 def calculate_readiness(policy_result: dict[str, Any]) -> dict[str, Any]:
@@ -563,12 +580,79 @@ def verify_pack_locally(pack_dir: str | Path, dev_key: str | None = None) -> dic
     }
 
 
+def verify_pack_payload(pack: dict[str, Any]) -> dict[str, Any]:
+    """Statelessly verify a full pack object as returned by POST /api/runtime/decision-packs.
+
+    Re-checks per-artefact SHA256 hashes, the governance manifest hash, and the
+    pack signature purely from the supplied payload (no filesystem or key plumbing).
+    Raises GovernanceRuntimeError when the payload is malformed.
+    """
+    if not isinstance(pack, dict):
+        raise GovernanceRuntimeError("Pack payload must be an object.")
+    artefacts = pack.get("artefacts")
+    if not isinstance(artefacts, dict):
+        raise GovernanceRuntimeError("Pack payload must include an artefacts object.")
+
+    governance_manifest = artefacts.get("governance_manifest.json")
+    verification_manifest = artefacts.get("verification_manifest.json")
+    sigmeta = artefacts.get("signed_export.sigmeta.json")
+    signature = artefacts.get("signed_export.sig")
+    if (
+        not isinstance(governance_manifest, dict)
+        or not isinstance(verification_manifest, dict)
+        or not isinstance(sigmeta, dict)
+        or not isinstance(signature, str)
+    ):
+        raise GovernanceRuntimeError("Pack payload is missing signed governance artefacts.")
+    manifest_artefacts = governance_manifest.get("artefacts")
+    if not isinstance(manifest_artefacts, list):
+        raise GovernanceRuntimeError("Governance manifest must list artefact hashes.")
+
+    failed_artefacts: list[str] = []
+    for entry in manifest_artefacts:
+        name = entry.get("name") if isinstance(entry, dict) else None
+        expected = entry.get("sha256") if isinstance(entry, dict) else None
+        if not name or not expected:
+            raise GovernanceRuntimeError("Governance manifest artefact entries require name and sha256.")
+        if name not in artefacts or sha256_bytes(_artefact_bytes(artefacts[name])) != expected:
+            failed_artefacts.append(name)
+    artefact_hash_check = not failed_artefacts
+
+    governance_manifest_sha256 = sha256_bytes(_artefact_bytes(governance_manifest))
+    verification_manifest_sha256 = sha256_bytes(_artefact_bytes(verification_manifest))
+    signed_payload = sigmeta.get("signed_payload") if isinstance(sigmeta.get("signed_payload"), dict) else {}
+    manifest_hash_check = (
+        governance_manifest_sha256 == verification_manifest.get("governance_manifest_sha256")
+        and governance_manifest_sha256 == signed_payload.get("governance_manifest_sha256")
+        and verification_manifest_sha256 == signed_payload.get("verification_manifest_sha256")
+    )
+
+    try:
+        signature_check = _verify_signature(sigmeta, signature, dev_key=None)
+    except (KeyError, TypeError, ValueError):
+        signature_check = False
+
+    return {
+        "verified": bool(artefact_hash_check and manifest_hash_check and signature_check),
+        "algorithm": sigmeta.get("algorithm", "unknown"),
+        "artefact_hash_check": artefact_hash_check,
+        "manifest_hash_check": manifest_hash_check,
+        "signature_check": signature_check,
+        "failed_artefacts": failed_artefacts,
+    }
+
+
 def _items_by_class(evidence_items: list[dict[str, Any]], evidence_class: str) -> list[dict[str, Any]]:
     return [item for item in evidence_items if item.get("evidence_class") == evidence_class]
 
 
+def _artefact_bytes(payload: Any) -> bytes:
+    """Serialize an artefact payload exactly as it is written to a pack on disk."""
+    return (json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False) + "\n").encode("utf-8")
+
+
 def _write_json(path: Path, payload: Any) -> None:
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
+    path.write_bytes(_artefact_bytes(payload))
 
 
 def _read_json(path: Path) -> Any:
@@ -611,10 +695,16 @@ def _sign_payload(
         if not isinstance(private_key, Ed25519PrivateKey):
             raise GovernanceRuntimeError("Production signing key must be Ed25519.")
         signature = private_key.sign(payload).hex()
+        public_key_raw = private_key.public_key().public_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PublicFormat.Raw,
+        )
         sigmeta = {
             "algorithm": "Ed25519",
             "key_id": "external-ed25519",
             "signed_payload": signed_payload,
+            "signature_encoding": "hex",
+            "public_key": _base64_encode(public_key_raw),
             "dev_key_hint": None
         }
         return signature, sigmeta
@@ -622,7 +712,7 @@ def _sign_payload(
     if not dev_mode:
         raise GovernanceRuntimeError("Production signing requires a Key Vault key ID or an Ed25519 signing key.")
 
-    dev_key = "patchforge-dev-test-key"
+    dev_key = DEV_SIGNING_KEY
     signature = hmac.new(dev_key.encode("utf-8"), payload, hashlib.sha256).hexdigest()
     sigmeta = {
         "algorithm": "dev_hmac_sha256",
@@ -637,19 +727,58 @@ def _sign_payload(
 def _verify_signature(sigmeta: dict[str, Any], signature: str, dev_key: str | None) -> bool:
     payload = canonical_json(sigmeta["signed_payload"])
     if sigmeta["algorithm"] == "dev_hmac_sha256":
-        key = dev_key or sigmeta.get("dev_key_hint")
-        if not key:
-            return False
+        key = dev_key or sigmeta.get("dev_key_hint") or DEV_SIGNING_KEY
         expected = hmac.new(key.encode("utf-8"), payload, hashlib.sha256).hexdigest()
         return hmac.compare_digest(expected, signature)
 
-    if sigmeta["algorithm"] == "Ed25519":  # pragma: no cover - verification needs public key plumbing later
-        return False
+    if sigmeta["algorithm"] == "Ed25519":
+        return _verify_ed25519_signature(sigmeta, signature, payload)
 
     if sigmeta["algorithm"] == "ES256":
         return _verify_es256_signature(sigmeta, signature, payload)
 
     return False
+
+
+def _verify_ed25519_signature(sigmeta: dict[str, Any], signature: str, payload: bytes) -> bool:
+    """Verify an Ed25519 pack signature using the raw public key embedded in sigmeta.
+
+    Returns False (never raises) when the public key is missing or invalid, the
+    signature encoding is invalid, or the signature does not verify.
+    """
+    public_key_b64 = sigmeta.get("public_key")
+    if not public_key_b64 or not isinstance(public_key_b64, str):
+        return False
+    try:
+        from cryptography.exceptions import InvalidSignature
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+    except ImportError:  # pragma: no cover - optional production path
+        return False
+
+    import base64
+    import binascii
+
+    try:
+        public_key_raw = base64.b64decode(public_key_b64.encode("ascii"), validate=True)
+        public_key = Ed25519PublicKey.from_public_bytes(public_key_raw)
+    except (ValueError, binascii.Error):
+        return False
+
+    # Ed25519 signing in _sign_payload encodes the signature as hex; accept
+    # base64 as a fallback so externally produced sigmeta stays verifiable.
+    try:
+        raw_signature = bytes.fromhex(signature)
+    except ValueError:
+        try:
+            raw_signature = base64.b64decode(signature.encode("ascii"), validate=True)
+        except (ValueError, binascii.Error):
+            return False
+
+    try:
+        public_key.verify(raw_signature, payload)
+        return True
+    except InvalidSignature:
+        return False
 
 
 def _sign_payload_with_key_vault(
@@ -754,6 +883,12 @@ def _bytes_from_key_material(value: Any) -> bytes:
     if isinstance(value, int):
         return value.to_bytes(32, "big")
     return bytes(value)
+
+
+def _base64_encode(value: bytes) -> str:
+    import base64
+
+    return base64.b64encode(value).decode("ascii")
 
 
 def _base64url_encode(value: bytes) -> str:
