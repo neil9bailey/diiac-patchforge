@@ -145,6 +145,7 @@ export type ConfigApplicabilityAssessment = {
   decision_not_allowed_yet?: string;
   human_review_required: boolean;
   final_approval_issued: boolean;
+  match_basis?: string | null;
 };
 
 export type VendorLensPatchComparison = {
@@ -350,6 +351,65 @@ export type SourceFeedState = {
   recent_runs: SourceFeedRun[];
 };
 
+export type GovernanceReviewEvent = {
+  action: string;
+  actor_upn?: string;
+  notes?: string;
+  recorded_at?: string;
+  expires_at?: string | null;
+};
+
+export type RiskAcceptanceRecord = {
+  risk_acceptance_id: string;
+  tenant_id?: string;
+  vulnerability_id: string;
+  scope_description?: string;
+  justification?: string;
+  owner_upn?: string;
+  requested_by?: string;
+  expires_at?: string | null;
+  status?: string;
+  compensating_control_ids?: string[];
+  review_events?: GovernanceReviewEvent[];
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type CompensatingControlRecord = {
+  control_id: string;
+  tenant_id?: string;
+  name: string;
+  description?: string;
+  mitigates_vulnerability_ids?: string[];
+  owner_upn?: string;
+  evidence_refs?: string[];
+  review_state?: string;
+  expires_at?: string | null;
+  review_events?: GovernanceReviewEvent[];
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type DecisionPackApprovalEvent = {
+  approver_oid?: string;
+  approver_upn?: string;
+  approver_roles?: string[];
+  decision_posture?: string;
+  notes?: string;
+  recorded_at?: string;
+};
+
+export type DecisionPackApprovalPolicy = {
+  required_roles?: string[];
+  distinct_approvers?: boolean;
+};
+
+export type DecisionPackApprovalsState = {
+  approval_events: DecisionPackApprovalEvent[];
+  final_approval_recorded: boolean;
+  approval_policy?: DecisionPackApprovalPolicy | null;
+};
+
 export type SecurityActionCenterRow = {
   id: string;
   record_type: string;
@@ -379,6 +439,8 @@ export type SecurityActionCenterRow = {
   applicability_posture?: string;
   final_approval_issued?: boolean;
   last_refreshed?: string | null;
+  match_basis?: string | null;
+  sla_due_at?: string | null;
 };
 
 export type SecurityActionCenterGroup = {
@@ -586,6 +648,10 @@ export type DecisionPackRecord = {
   report_context_version?: string;
   artefacts?: Record<string, unknown>;
   created_at?: string;
+  signature_verified?: boolean | null;
+  signature_algorithm?: string | null;
+  approval_events?: DecisionPackApprovalEvent[] | null;
+  final_approval_recorded?: boolean | null;
 };
 
 export type ReportCatalogItem = {
@@ -649,6 +715,14 @@ export type PatchForgeApi = {
   findingIntelligence(tenantId: string, vulnerabilityId: string): Promise<FindingIntelligence>;
   analyseFinding(tenantId: string, vulnerabilityId: string, payload?: Record<string, unknown>): Promise<{ intelligence: FindingIntelligence; bayesian?: BayesianAssessment }>;
   sraResearch(tenantId: string, path: string, payload: Record<string, unknown>): Promise<Record<string, unknown>>;
+  listRiskAcceptances(tenantId: string): Promise<RiskAcceptanceRecord[]>;
+  createRiskAcceptance(tenantId: string, payload: Record<string, unknown>): Promise<RiskAcceptanceRecord>;
+  reviewRiskAcceptance(tenantId: string, riskAcceptanceId: string, payload: Record<string, unknown>): Promise<RiskAcceptanceRecord>;
+  listCompensatingControls(tenantId: string): Promise<CompensatingControlRecord[]>;
+  createCompensatingControl(tenantId: string, payload: Record<string, unknown>): Promise<CompensatingControlRecord>;
+  reviewCompensatingControl(tenantId: string, controlId: string, payload: Record<string, unknown>): Promise<CompensatingControlRecord>;
+  listDecisionPackApprovals(tenantId: string, packId: string): Promise<DecisionPackApprovalsState>;
+  recordDecisionPackApproval(tenantId: string, packId: string, payload: Record<string, unknown>): Promise<DecisionPackRecord>;
   adminHealth(tenantId: string): Promise<AdminHealth>;
   adminConfig(tenantId: string): Promise<AdminConfig>;
   saveAdminConfig(tenantId: string, payload: AdminConfig): Promise<AdminConfig>;
@@ -957,6 +1031,57 @@ export function createPatchForgeApi(getAccessToken: () => Promise<string>, confi
         method: "POST",
         body: JSON.stringify(payload)
       });
+    },
+    async listRiskAcceptances(tenantId) {
+      const body = await request<{ risk_acceptances: RiskAcceptanceRecord[] }>("/api/patchforge/risk-acceptances", tenantId);
+      return body.risk_acceptances || [];
+    },
+    async createRiskAcceptance(tenantId, payload) {
+      const body = await request<{ risk_acceptance: RiskAcceptanceRecord }>("/api/patchforge/risk-acceptances", tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return body.risk_acceptance;
+    },
+    async reviewRiskAcceptance(tenantId, riskAcceptanceId, payload) {
+      const body = await request<{ risk_acceptance: RiskAcceptanceRecord }>(`/api/patchforge/risk-acceptances/${encodeURIComponent(riskAcceptanceId)}/review`, tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return body.risk_acceptance;
+    },
+    async listCompensatingControls(tenantId) {
+      const body = await request<{ compensating_controls: CompensatingControlRecord[] }>("/api/patchforge/compensating-controls", tenantId);
+      return body.compensating_controls || [];
+    },
+    async createCompensatingControl(tenantId, payload) {
+      const body = await request<{ compensating_control: CompensatingControlRecord }>("/api/patchforge/compensating-controls", tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return body.compensating_control;
+    },
+    async reviewCompensatingControl(tenantId, controlId, payload) {
+      const body = await request<{ compensating_control: CompensatingControlRecord }>(`/api/patchforge/compensating-controls/${encodeURIComponent(controlId)}/review`, tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return body.compensating_control;
+    },
+    async listDecisionPackApprovals(tenantId, packId) {
+      const body = await request<DecisionPackApprovalsState>(`/api/patchforge/decision-packs/${encodeURIComponent(packId)}/approvals`, tenantId);
+      return {
+        approval_events: body.approval_events || [],
+        final_approval_recorded: Boolean(body.final_approval_recorded),
+        approval_policy: body.approval_policy || null
+      };
+    },
+    async recordDecisionPackApproval(tenantId, packId, payload) {
+      const body = await request<{ decision_pack: DecisionPackRecord }>(`/api/patchforge/decision-packs/${encodeURIComponent(packId)}/approvals`, tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return body.decision_pack;
     },
     async adminHealth(tenantId) {
       return request<AdminHealth>("/api/patchforge/admin/health", tenantId);

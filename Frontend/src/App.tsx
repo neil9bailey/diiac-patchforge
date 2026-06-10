@@ -13,6 +13,7 @@ import {
   FileCheck2,
   FileText,
   Gauge,
+  Keyboard,
   KeyRound,
   Layers3,
   ListFilter,
@@ -24,10 +25,12 @@ import {
   Radar,
   RefreshCw,
   MessageSquareText,
+  Save,
   Search,
   ServerCog,
   ShieldAlert,
   SlidersHorizontal,
+  Trash2,
   TriangleAlert,
   Upload,
   Wrench
@@ -38,11 +41,13 @@ import {
   AssetRecord,
   AgentGuidanceSnapshot,
   BayesianAssessment,
+  CompensatingControlRecord,
   ConfigApplicabilityAssessment,
   CustomerAssetExtraction,
   CustomerEstateMatch,
   CustomerEstateState,
   CustomerNetworkAsset,
+  DecisionPackApprovalsState,
   DecisionPackRecord,
   FindingIntelligence,
   NetworkVendorProfile,
@@ -52,6 +57,7 @@ import {
   AskPatchForgeAnswer,
   ReportCatalogItem,
   ReportsPacksState,
+  RiskAcceptanceRecord,
   SecurityActionCenterRow,
   SecurityActionCenterState,
   ServiceRecord,
@@ -126,6 +132,8 @@ type LiveState = {
   sourceFeedState: SourceFeedState;
   adminHealth: AdminHealth | null;
   adminConfig: AdminConfig;
+  riskAcceptances: RiskAcceptanceRecord[];
+  compensatingControls: CompensatingControlRecord[];
 };
 
 const PRODUCT_MARK = "DIIaC\u2122";
@@ -139,8 +147,88 @@ const navItems: NavItem[] = [
   { label: "Customer Estate", icon: ServerCog },
   { label: "Ask PatchForge", icon: MessageSquareText },
   { label: "Reports & Packs", icon: FileText },
+  { label: "Risk Acceptances", icon: Clock3 },
+  { label: "Compensating Controls", icon: Wrench },
   { label: "Admin", icon: SlidersHorizontal }
 ];
+
+const topLevelShortcutPages: PageKey[] = [
+  "Global Security Action Center",
+  "Customer Estate",
+  "Ask PatchForge",
+  "Reports & Packs",
+  "Admin"
+];
+
+const allPageKeys: PageKey[] = [
+  "Global Security Action Center",
+  "Customer Estate",
+  "Ask PatchForge",
+  "Action Center",
+  "Finding Detail",
+  "Review & Approve",
+  "Reports & Packs",
+  "Command Center",
+  "Guide",
+  "Vulnerability Queue",
+  "Asset & Service Exposure",
+  "Decision Workbench",
+  "Emergency Patch",
+  "Risk Acceptances",
+  "Compensating Controls",
+  "SRA Research",
+  "Evidence Catalogue",
+  "Decision Packs",
+  "Reports",
+  "Source Feeds",
+  "Vendor & Threat Landscape",
+  "VendorLens",
+  "Admin"
+];
+
+type UrlSelectionState = {
+  page: PageKey;
+  vulnerabilityId: string;
+  advisoryId: string;
+  packId: string;
+};
+
+function readUrlSelectionState(): UrlSelectionState {
+  const fallback: UrlSelectionState = { page: "Global Security Action Center", vulnerabilityId: "", advisoryId: "", packId: "" };
+  if (typeof window === "undefined") {
+    return fallback;
+  }
+  const params = new URLSearchParams(window.location.search);
+  const page = params.get("page") || "";
+  return {
+    page: allPageKeys.includes(page as PageKey) ? (page as PageKey) : fallback.page,
+    vulnerabilityId: params.get("vulnerability") || "",
+    advisoryId: params.get("advisory") || "",
+    packId: params.get("pack") || ""
+  };
+}
+
+function writeUrlSelectionState(selection: UrlSelectionState) {
+  if (typeof window === "undefined") {
+    return;
+  }
+  const params = new URLSearchParams(window.location.search);
+  const entries: Array<[string, string]> = [
+    ["page", selection.page === "Global Security Action Center" ? "" : selection.page],
+    ["vulnerability", selection.vulnerabilityId],
+    ["advisory", selection.advisoryId],
+    ["pack", selection.packId]
+  ];
+  entries.forEach(([key, value]) => {
+    if (value) {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+  });
+  const query = params.toString();
+  window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`);
+}
 
 const postures = [
   "patch_required",
@@ -215,6 +303,29 @@ const emptyNetworkAssetForm = {
   evidence_state: "referenced"
 };
 
+const emptyRiskAcceptanceForm = {
+  vulnerability_id: "",
+  scope_description: "",
+  justification: "",
+  owner_upn: "",
+  expires_at: "",
+  compensating_control_ids: ""
+};
+
+const emptyCompensatingControlForm = {
+  name: "",
+  description: "",
+  mitigates_vulnerability_ids: "",
+  owner_upn: "",
+  evidence_refs: "",
+  expires_at: ""
+};
+
+const emptyApprovalForm = {
+  decision_posture: "patch_required",
+  notes: ""
+};
+
 const emptyVendorAdvisoryForm = {
   vendor_id: "fortinet",
   cve: "",
@@ -233,15 +344,21 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
   const contextAuth = usePatchForgeAuth();
   const session = auth || contextAuth;
   const liveApi = useMemo(() => api || createPatchForgeApi(session.getAccessToken), [api, session.getAccessToken]);
-  const [activePage, setActivePage] = useState<PageKey>("Global Security Action Center");
+  const [activePage, setActivePage] = useState<PageKey>(() => readUrlSelectionState().page);
   const [tenantId, setTenantId] = useState(initialTenantId || config.tenantHeader);
   const [state, setState] = useState<LiveState>(() => emptyLiveState(tenantId));
   const [refreshing, setRefreshing] = useState(false);
   const [operationMessage, setOperationMessage] = useState<string | null>(null);
   const [operationError, setOperationError] = useState<string | null>(null);
   const [vulnerabilityForm, setVulnerabilityForm] = useState(emptyForm);
-  const [selectedVulnerabilityId, setSelectedVulnerabilityId] = useState("");
+  const [selectedVulnerabilityId, setSelectedVulnerabilityId] = useState(() => readUrlSelectionState().vulnerabilityId);
+  const [selectedPackId, setSelectedPackId] = useState(() => readUrlSelectionState().packId);
   const [selectedPosture, setSelectedPosture] = useState("defer_pending_evidence");
+  const [riskAcceptanceForm, setRiskAcceptanceForm] = useState(emptyRiskAcceptanceForm);
+  const [compensatingControlForm, setCompensatingControlForm] = useState(emptyCompensatingControlForm);
+  const [approvalForm, setApprovalForm] = useState(emptyApprovalForm);
+  const [packApprovals, setPackApprovals] = useState<DecisionPackApprovalsState | null>(null);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const [adminEnvironment, setAdminEnvironment] = useState(config.environmentLabel);
   const [adminTier, setAdminTier] = useState("Enterprise Strict");
   const [sraResult, setSraResult] = useState<Record<string, unknown> | null>(null);
@@ -253,12 +370,15 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
   const [customerDeviceText, setCustomerDeviceText] = useState("FortiGate 100F running FortiOS 7.2.7. SSL-VPN disabled. IPsec enabled. Management internal only.");
   const [extractedCustomerAsset, setExtractedCustomerAsset] = useState<CustomerAssetExtraction | null>(null);
   const [selectedCustomerAssetId, setSelectedCustomerAssetId] = useState("");
-  const [selectedAdvisoryId, setSelectedAdvisoryId] = useState("");
+  const [selectedAdvisoryId, setSelectedAdvisoryId] = useState(() => readUrlSelectionState().advisoryId);
   const [patchCompareForm, setPatchCompareForm] = useState({ current_version: "7.2.7", proposed_version: "7.2.8" });
   const [askQuestion, setAskQuestion] = useState("We use FortiGate 100F FortiOS 7.2.7 with SSL-VPN disabled. Does this CVE require urgent patching?");
   const canWrite = hasAnyRole(session.roles, ["PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.Admin"]);
   const isAdmin = hasAnyRole(session.roles, ["PatchForge.Admin"]);
   const canReadAdmin = hasAnyRole(session.roles, ["PatchForge.Admin", "PatchForge.Auditor"]);
+  const canCreateRiskAcceptance = hasAnyRole(session.roles, ["PatchForge.RiskOwner", "PatchForge.SecurityLead", "PatchForge.Admin"]);
+  const canReviewGovernance = hasAnyRole(session.roles, ["PatchForge.SecurityLead", "PatchForge.Admin"]);
+  const canRecordApproval = hasAnyRole(session.roles, ["PatchForge.SecurityLead", "PatchForge.CABApprover", "PatchForge.Admin"]);
   const selectedFinding = useMemo(
     () => state.findings.find((item) => item.vulnerability_id === selectedVulnerabilityId) || state.findings[0] || null,
     [selectedVulnerabilityId, state.findings]
@@ -286,7 +406,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
     setRefreshing(true);
     setOperationError(null);
     try {
-      const [metrics, securityActionCenter, customerEstate, reportsPacks, vulnerabilities, findings, assets, services, decisionPacks, reports, threatSummary, vendors, sourceFeedState, vendorLensDashboard, networkVendors, customerNetworkAssets, vendorSecurityAdvisories, openAiAgentStatus, adminHealth, adminConfig] = await Promise.all([
+      const [metrics, securityActionCenter, customerEstate, reportsPacks, vulnerabilities, findings, assets, services, decisionPacks, reports, threatSummary, vendors, sourceFeedState, vendorLensDashboard, networkVendors, customerNetworkAssets, vendorSecurityAdvisories, openAiAgentStatus, riskAcceptances, compensatingControls, adminHealth, adminConfig] = await Promise.all([
         liveApi.metrics(tenantId),
         liveApi.securityActionCenter(tenantId),
         liveApi.customerEstate(tenantId),
@@ -305,6 +425,8 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         liveApi.listCustomerNetworkAssets(tenantId),
         liveApi.listVendorSecurityAdvisories(tenantId),
         liveApi.openAiAgentStatus(tenantId),
+        liveApi.listRiskAcceptances(tenantId),
+        liveApi.listCompensatingControls(tenantId),
         canReadAdmin ? liveApi.adminHealth(tenantId) : Promise.resolve(null),
         canReadAdmin ? liveApi.adminConfig(tenantId) : Promise.resolve({} as AdminConfig)
       ]);
@@ -337,7 +459,9 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         latestAgentGuidance: current.latestAgentGuidance,
         bayesian: null,
         adminHealth,
-        adminConfig
+        adminConfig,
+        riskAcceptances,
+        compensatingControls
       }));
       setSelectedVulnerabilityId((current) => current || vulnerabilities[0]?.vulnerability_id || "");
       setSelectedCustomerAssetId((current) => current || customerEstate.assets[0]?.asset_id || customerNetworkAssets[0]?.asset_id || "");
@@ -354,6 +478,186 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
   useEffect(() => {
     void loadLiveState();
   }, [loadLiveState]);
+
+  useEffect(() => {
+    writeUrlSelectionState({
+      page: activePage,
+      vulnerabilityId: selectedVulnerabilityId,
+      advisoryId: selectedAdvisoryId,
+      packId: selectedPackId
+    });
+  }, [activePage, selectedAdvisoryId, selectedPackId, selectedVulnerabilityId]);
+
+  const approvalsPackId = selectedPackId || newestDecisionPacks(state.decisionPacks)[0]?.pack_id || "";
+
+  const loadPackApprovals = useCallback(async (packId: string) => {
+    try {
+      const approvals = await liveApi.listDecisionPackApprovals(tenantId, packId);
+      setPackApprovals(approvals);
+    } catch {
+      setPackApprovals(null);
+    }
+  }, [liveApi, tenantId]);
+
+  useEffect(() => {
+    if (session.status !== "authenticated" || !approvalsPackId) {
+      setPackApprovals(null);
+      return;
+    }
+    void loadPackApprovals(approvalsPackId);
+  }, [approvalsPackId, loadPackApprovals, session.status]);
+
+  useEffect(() => {
+    if (activePage === "Risk Acceptances" && !riskAcceptanceForm.vulnerability_id && selectedVulnerabilityId) {
+      setRiskAcceptanceForm((current) => ({ ...current, vulnerability_id: selectedVulnerabilityId }));
+    }
+  }, [activePage, riskAcceptanceForm.vulnerability_id, selectedVulnerabilityId]);
+
+  useEffect(() => {
+    function handleShortcutKeys(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      const inEditableField = Boolean(target && (["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName) || target.isContentEditable));
+      if (event.altKey && !event.ctrlKey && !event.metaKey) {
+        const pageIndex = ["1", "2", "3", "4", "5"].indexOf(event.key);
+        if (pageIndex >= 0) {
+          const page = topLevelShortcutPages[pageIndex];
+          if (page === "Admin" && !isAdmin) {
+            return;
+          }
+          event.preventDefault();
+          setActivePage(page);
+          return;
+        }
+        if (event.key.toLowerCase() === "r") {
+          event.preventDefault();
+          void loadLiveState();
+          return;
+        }
+      }
+      if (event.key === "?" && !inEditableField && !event.altKey && !event.ctrlKey && !event.metaKey) {
+        event.preventDefault();
+        setShowShortcuts((current) => !current);
+        return;
+      }
+      if (event.key === "Escape") {
+        setShowShortcuts(false);
+      }
+    }
+    window.addEventListener("keydown", handleShortcutKeys);
+    return () => window.removeEventListener("keydown", handleShortcutKeys);
+  }, [isAdmin, loadLiveState]);
+
+  async function handleCreateRiskAcceptance(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setOperationMessage(null);
+    setOperationError(null);
+    const vulnerabilityId = riskAcceptanceForm.vulnerability_id.trim() || selectedVulnerabilityId;
+    if (!vulnerabilityId) {
+      setOperationError("A vulnerability identifier is required for a risk acceptance.");
+      return;
+    }
+    if (!riskAcceptanceForm.expires_at) {
+      setOperationError("A risk acceptance requires an explicit expiry date.");
+      return;
+    }
+    try {
+      const acceptance = await liveApi.createRiskAcceptance(tenantId, {
+        vulnerability_id: vulnerabilityId,
+        scope_description: riskAcceptanceForm.scope_description.trim(),
+        justification: riskAcceptanceForm.justification.trim(),
+        owner_upn: riskAcceptanceForm.owner_upn.trim(),
+        expires_at: riskAcceptanceForm.expires_at,
+        compensating_control_ids: parseList(riskAcceptanceForm.compensating_control_ids)
+      });
+      setOperationMessage(`Risk acceptance ${acceptance.risk_acceptance_id} recorded for ${acceptance.vulnerability_id}. Human review remains required.`);
+      setRiskAcceptanceForm(emptyRiskAcceptanceForm);
+      await loadLiveState();
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : "Risk acceptance creation failed.");
+    }
+  }
+
+  async function handleReviewRiskAcceptance(riskAcceptanceId: string, action: "accept" | "reject" | "extend", notes: string, expiresAt?: string) {
+    setOperationMessage(null);
+    setOperationError(null);
+    if (action === "extend" && !expiresAt) {
+      setOperationError("Provide a new expiry date before extending a risk acceptance.");
+      return;
+    }
+    try {
+      const payload: Record<string, unknown> = { action, notes };
+      if (action === "extend") {
+        payload.expires_at = expiresAt;
+      }
+      const acceptance = await liveApi.reviewRiskAcceptance(tenantId, riskAcceptanceId, payload);
+      setOperationMessage(`Risk acceptance ${acceptance.risk_acceptance_id} ${action} review recorded.`);
+      await loadLiveState();
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : "Risk acceptance review failed.");
+    }
+  }
+
+  async function handleCreateCompensatingControl(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setOperationMessage(null);
+    setOperationError(null);
+    if (!compensatingControlForm.name.trim()) {
+      setOperationError("A compensating control requires a name.");
+      return;
+    }
+    try {
+      const control = await liveApi.createCompensatingControl(tenantId, {
+        name: compensatingControlForm.name.trim(),
+        description: compensatingControlForm.description.trim(),
+        mitigates_vulnerability_ids: parseList(compensatingControlForm.mitigates_vulnerability_ids),
+        owner_upn: compensatingControlForm.owner_upn.trim(),
+        evidence_refs: parseList(compensatingControlForm.evidence_refs),
+        expires_at: compensatingControlForm.expires_at || null
+      });
+      setOperationMessage(`Compensating control ${control.control_id} recorded as pending review.`);
+      setCompensatingControlForm(emptyCompensatingControlForm);
+      await loadLiveState();
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : "Compensating control creation failed.");
+    }
+  }
+
+  async function handleReviewCompensatingControl(controlId: string, action: "accept" | "reject", notes: string) {
+    setOperationMessage(null);
+    setOperationError(null);
+    try {
+      const control = await liveApi.reviewCompensatingControl(tenantId, controlId, { action, notes });
+      setOperationMessage(`Compensating control ${control.control_id} ${action} review recorded.`);
+      await loadLiveState();
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : "Compensating control review failed.");
+    }
+  }
+
+  async function handleRecordPackApproval() {
+    setOperationMessage(null);
+    setOperationError(null);
+    const packId = approvalsPackId;
+    if (!packId) {
+      setOperationError("Generate a signed decision pack before recording an approval.");
+      return;
+    }
+    try {
+      const pack = await liveApi.recordDecisionPackApproval(tenantId, packId, {
+        decision_posture: approvalForm.decision_posture,
+        notes: approvalForm.notes
+      });
+      setState((current) => ({
+        ...current,
+        decisionPacks: current.decisionPacks.map((item) => item.pack_id === pack.pack_id ? { ...item, ...pack } : item)
+      }));
+      setApprovalForm(emptyApprovalForm);
+      setOperationMessage(`Approval recorded for ${pack.pack_id}. Final approval ${pack.final_approval_recorded ? "recorded" : "not yet complete"}.`);
+      await loadPackApprovals(packId);
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : "Decision pack approval recording failed.");
+    }
+  }
 
   async function handleIngest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -859,11 +1163,32 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
             <button type="button" className="pill-button" onClick={loadLiveState} disabled={refreshing}>
               <RefreshCw size={15} aria-hidden /> {refreshing ? "Refreshing" : "Refresh"}
             </button>
+            <button type="button" className="pill-button" onClick={() => setShowShortcuts((current) => !current)} title="Keyboard shortcuts: Alt+1..5 pages, Alt+R refresh, ? help">
+              <Keyboard size={15} aria-hidden /> Alt+1..5 | Alt+R | ?
+            </button>
             <button type="button" className="pill-button" onClick={() => void session.signOut()}>
               <LogOut size={15} aria-hidden /> Sign out
             </button>
           </div>
         </header>
+
+        {showShortcuts && (
+          <div className="shortcut-overlay" role="dialog" aria-label="Keyboard shortcuts">
+            <div className="section-title compact-title">
+              <h4>Keyboard Shortcuts</h4>
+              <button type="button" className="pill-button" onClick={() => setShowShortcuts(false)}>Close</button>
+            </div>
+            <ul>
+              <li><strong>Alt+1</strong> Global Security Action Center</li>
+              <li><strong>Alt+2</strong> Customer Estate</li>
+              <li><strong>Alt+3</strong> Ask PatchForge</li>
+              <li><strong>Alt+4</strong> Reports &amp; Packs</li>
+              <li><strong>Alt+5</strong> Admin</li>
+              <li><strong>Alt+R</strong> Refresh live state</li>
+              <li><strong>?</strong> Toggle this help</li>
+            </ul>
+          </div>
+        )}
 
         <div className="content-grid">
           <section className="primary-panel" aria-label={activePage}>
@@ -976,6 +1301,13 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 onExportPack={handleExportPack}
                 onDownloadReport={handleDownloadReport}
                 canWrite={canWrite}
+                packApprovals={packApprovals}
+                selectedPackId={selectedPackId}
+                setSelectedPackId={setSelectedPackId}
+                approvalForm={approvalForm}
+                setApprovalForm={setApprovalForm}
+                onRecordApproval={handleRecordPackApproval}
+                canRecordApproval={canRecordApproval}
               />
             )}
             {activePage === "Command Center" && (
@@ -1014,8 +1346,29 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
               />
             )}
             {activePage === "Emergency Patch" && <EmergencyPatch vulnerabilities={state.vulnerabilities} />}
-            {activePage === "Risk Acceptances" && <RiskAcceptances decisionPacks={state.decisionPacks} />}
-            {activePage === "Compensating Controls" && <CompensatingControls />}
+            {activePage === "Risk Acceptances" && (
+              <RiskAcceptances
+                riskAcceptances={state.riskAcceptances}
+                compensatingControls={state.compensatingControls}
+                form={riskAcceptanceForm}
+                setForm={setRiskAcceptanceForm}
+                onCreate={handleCreateRiskAcceptance}
+                onReview={handleReviewRiskAcceptance}
+                canCreate={canCreateRiskAcceptance}
+                canReview={canReviewGovernance}
+              />
+            )}
+            {activePage === "Compensating Controls" && (
+              <CompensatingControls
+                compensatingControls={state.compensatingControls}
+                form={compensatingControlForm}
+                setForm={setCompensatingControlForm}
+                onCreate={handleCreateCompensatingControl}
+                onReview={handleReviewCompensatingControl}
+                canCreate={canWrite}
+                canReview={canReviewGovernance}
+              />
+            )}
             {activePage === "SRA Research" && <SraResearch onRun={handleSraResearch} result={sraResult} canWrite={canWrite} />}
             {activePage === "Evidence Catalogue" && <EvidenceCatalogue vulnerabilities={state.vulnerabilities} />}
             {activePage === "Decision Packs" && <DecisionPacks decisionPacks={state.decisionPacks} reports={state.reports} onExportPack={handleExportPack} onDownloadReport={handleDownloadReport} />}
@@ -1974,7 +2327,14 @@ function ReportsPacks({
   onGenerate,
   onExportPack,
   onDownloadReport,
-  canWrite
+  canWrite,
+  packApprovals,
+  selectedPackId,
+  setSelectedPackId,
+  approvalForm,
+  setApprovalForm,
+  onRecordApproval,
+  canRecordApproval
 }: {
   findings: FindingIntelligence[];
   decisionPacks: DecisionPackRecord[];
@@ -1984,11 +2344,22 @@ function ReportsPacks({
   onExportPack: (packId: string) => void;
   onDownloadReport: (packId: string, reportType: string, format: "docx" | "pdf") => void;
   canWrite: boolean;
+  packApprovals: DecisionPackApprovalsState | null;
+  selectedPackId: string;
+  setSelectedPackId: (value: string) => void;
+  approvalForm: typeof emptyApprovalForm;
+  setApprovalForm: (value: typeof emptyApprovalForm) => void;
+  onRecordApproval: () => void;
+  canRecordApproval: boolean;
 }) {
   const preExport = reportsPacks.pre_export_state || {};
   const qualityReviews = preExport.report_quality_reviews || [];
   const sortedPacks = newestDecisionPacks(decisionPacks);
   const latestPack = sortedPacks[0];
+  const approvalPack = sortedPacks.find((pack) => pack.pack_id === selectedPackId) || latestPack;
+  const approvalEvents = packApprovals?.approval_events || approvalPack?.approval_events || [];
+  const approvalPolicy = packApprovals?.approval_policy || null;
+  const finalApprovalRecorded = Boolean(packApprovals?.final_approval_recorded ?? approvalPack?.final_approval_recorded);
   return (
     <>
       <section className="wide-band report-brief">
@@ -2019,8 +2390,81 @@ function ReportsPacks({
           <StatusLine label="VendorLens context" value={preExport.vendorlens_context_included ? "Included" : "Not attached"} tone={preExport.vendorlens_context_included ? "teal" : "amber"} />
           <StatusLine label="Customer context" value={preExport.customer_context_included ? "Included" : "Not attached"} tone={preExport.customer_context_included ? "teal" : "amber"} />
           <StatusLine label="Verification" value={humanize(String(preExport.verification_state || (latestPack?.verification?.verified ? "verified" : "pending_or_not_recorded")))} tone={latestPack?.verification?.verified ? "trust" : "amber"} />
+          <StatusLine label="Signature" value={latestPack?.signature_verified ? "Signature verified" : "Verification unavailable"} tone={latestPack?.signature_verified ? "trust" : "amber"} />
         </div>
         <p className="boundary-copy">{String(preExport.report_current_stale_warning || "Reports are generated from the selected signed pack state and current evidence still requires review.")}</p>
+      </section>
+      <section className="data-band approval-chain-panel">
+        <div className="section-title">
+          <h3>Approval Chain</h3>
+          <span className="pill amber">Governed record — human accountability required</span>
+        </div>
+        <div className="form-grid compact-form">
+          <label>
+            Decision pack
+            <select value={approvalPack?.pack_id || ""} onChange={(event) => setSelectedPackId(event.target.value)} aria-label="Approval pack">
+              {sortedPacks.map((pack) => <option key={pack.pack_id} value={pack.pack_id}>{pack.pack_id} | {pack.vulnerability_id}</option>)}
+            </select>
+          </label>
+        </div>
+        <div className="split-grid">
+          <StatusLine label="Final approval recorded" value={finalApprovalRecorded ? "Recorded" : "Not recorded"} tone={finalApprovalRecorded ? "trust" : "amber"} />
+          <StatusLine
+            label="Approval policy"
+            value={approvalPolicy?.required_roles?.length
+              ? `${approvalPolicy.required_roles.map((role) => role.replace("PatchForge.", "")).join(" + ")}${approvalPolicy.distinct_approvers ? " | distinct approvers" : ""}`
+              : "SecurityLead + CABApprover | distinct approvers"}
+            tone="steel"
+          />
+          <StatusLine label="Signature" value={approvalPack?.signature_verified ? "Signature verified" : "Verification unavailable"} tone={approvalPack?.signature_verified ? "trust" : "amber"} />
+        </div>
+        <div className="table-scroll">
+          <table className="data-table approval-history-table">
+            <thead>
+              <tr>
+                <th>Approver</th>
+                <th>Roles</th>
+                <th>Posture</th>
+                <th>Notes</th>
+                <th>Recorded</th>
+              </tr>
+            </thead>
+            <tbody>
+              {approvalEvents.map((event, index) => (
+                <tr key={`${event.approver_oid || event.approver_upn || "approver"}-${event.recorded_at || index}`}>
+                  <td>{event.approver_upn || event.approver_oid || "Approver pending"}</td>
+                  <td>{(event.approver_roles || []).map((role) => role.replace("PatchForge.", "")).join(", ") || "Not recorded"}</td>
+                  <td>{humanize(event.decision_posture || "unknown")}</td>
+                  <td>{event.notes || "No notes"}</td>
+                  <td>{event.recorded_at ? new Date(event.recorded_at).toLocaleString() : "Not recorded"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {!approvalEvents.length && <EmptyState title="No approvals recorded" detail="Named approval events appear after SecurityLead, CABApprover, or Admin reviewers record their approval on the selected pack." />}
+        {canRecordApproval ? (
+          <div className="approval-record-form">
+            <div className="form-grid compact-form">
+              <label>
+                Approval posture
+                <select value={approvalForm.decision_posture} onChange={(event) => setApprovalForm({ ...approvalForm, decision_posture: event.target.value })} aria-label="Approval posture">
+                  {postures.map((posture) => <option key={posture} value={posture}>{humanize(posture)}</option>)}
+                </select>
+              </label>
+            </div>
+            <label className="stacked-input">
+              <span>Approval notes</span>
+              <textarea rows={2} value={approvalForm.notes} onChange={(event) => setApprovalForm({ ...approvalForm, notes: event.target.value })} placeholder="Named approval rationale for the audit trail" />
+            </label>
+            <button type="button" className="action-button" onClick={onRecordApproval} disabled={!approvalPack}>
+              <BadgeCheck size={16} aria-hidden /> Record Approval
+            </button>
+            <p className="boundary-copy">Recording an approval stores a named human approval event. PatchForge never issues final approval autonomously.</p>
+          </div>
+        ) : (
+          <p className="boundary-copy">Recording approvals requires a PatchForge SecurityLead, CABApprover, or Admin role.</p>
+        )}
       </section>
       <section className="data-band">
         <div className="section-title">
@@ -2466,13 +2910,239 @@ function EmergencyPatch({ vulnerabilities }: { vulnerabilities: VulnerabilityRec
   );
 }
 
-function RiskAcceptances({ decisionPacks }: { decisionPacks: DecisionPackRecord[] }) {
-  const riskPacks = decisionPacks.filter((pack) => pack.decision_posture === "risk_accept_temporarily");
-  return <PageBand icon={Clock3} title="Risk Acceptances" lines={[`${riskPacks.length} signed risk-acceptance packs`, "Owner, rationale, expiry and controls required", "Final approval remains explicit"]} />;
+function RiskAcceptances({
+  riskAcceptances,
+  compensatingControls,
+  form,
+  setForm,
+  onCreate,
+  onReview,
+  canCreate,
+  canReview
+}: {
+  riskAcceptances: RiskAcceptanceRecord[];
+  compensatingControls: CompensatingControlRecord[];
+  form: typeof emptyRiskAcceptanceForm;
+  setForm: (value: typeof emptyRiskAcceptanceForm) => void;
+  onCreate: (event: FormEvent<HTMLFormElement>) => void;
+  onReview: (riskAcceptanceId: string, action: "accept" | "reject" | "extend", notes: string, expiresAt?: string) => void;
+  canCreate: boolean;
+  canReview: boolean;
+}) {
+  const [reviewNotes, setReviewNotes] = useState("");
+  const [extendDate, setExtendDate] = useState("");
+  const acceptancePage = usePagination(riskAcceptances, 8, "risk-acceptances");
+  const expiredCount = riskAcceptances.filter(isRiskAcceptanceExpired).length;
+
+  return (
+    <>
+      <div className="metric-grid">
+        <MetricCard icon={Clock3} label="Risk acceptances" value={riskAcceptances.length} tone="steel" />
+        <MetricCard icon={ClipboardCheck} label="Accepted" value={riskAcceptances.filter((item) => !isRiskAcceptanceExpired(item) && item.status === "accepted").length} tone="trust" />
+        <MetricCard icon={ListFilter} label="Proposed" value={riskAcceptances.filter((item) => !isRiskAcceptanceExpired(item) && (item.status || "proposed") === "proposed").length} tone="amber" />
+        <MetricCard icon={TriangleAlert} label="Expired" value={expiredCount} tone="danger" />
+      </div>
+
+      <section className="data-band table-band">
+        <div className="section-title">
+          <h3>Governed Risk Acceptances</h3>
+          <span className="pill amber">Governed record — human accountability required</span>
+        </div>
+        <p className="boundary-copy">Risk acceptances are time-bound governed records. Expired acceptances can never satisfy governance posture and renewal requires a named human review event.</p>
+        <div className="table-scroll">
+          <table className="data-table risk-acceptance-table">
+            <thead>
+              <tr>
+                <th>Vulnerability</th>
+                <th>Scope</th>
+                <th>Owner</th>
+                <th>Status</th>
+                <th>Expires</th>
+                <th>Compensating controls</th>
+                <th>Review</th>
+              </tr>
+            </thead>
+            <tbody>
+              {acceptancePage.items.map((item) => {
+                const expired = isRiskAcceptanceExpired(item);
+                const effectiveStatus = expired ? "expired" : (item.status || "proposed");
+                return (
+                  <tr key={item.risk_acceptance_id} className={expired ? "expired-row" : undefined}>
+                    <td>
+                      <strong>{item.vulnerability_id}</strong>
+                      <small>{item.risk_acceptance_id}</small>
+                    </td>
+                    <td>{item.scope_description || "Scope pending"}</td>
+                    <td>{item.owner_upn || "Owner pending"}</td>
+                    <td><span className={`pill ${riskAcceptanceTone(effectiveStatus)}`}>{humanize(effectiveStatus)}</span></td>
+                    <td>{item.expires_at ? new Date(item.expires_at).toLocaleDateString() : "Not set"}</td>
+                    <td>{(item.compensating_control_ids || []).join(", ") || "None linked"}</td>
+                    <td>
+                      <div className="export-actions">
+                        <button type="button" className="action-button" onClick={() => onReview(item.risk_acceptance_id, "accept", reviewNotes)} disabled={!canReview} aria-label={`Accept ${item.risk_acceptance_id}`}>Accept</button>
+                        <button type="button" className="action-button secondary-action" onClick={() => onReview(item.risk_acceptance_id, "reject", reviewNotes)} disabled={!canReview} aria-label={`Reject ${item.risk_acceptance_id}`}>Reject</button>
+                        <button type="button" className="action-button secondary-action" onClick={() => onReview(item.risk_acceptance_id, "extend", reviewNotes, extendDate)} disabled={!canReview} aria-label={`Extend ${item.risk_acceptance_id}`}>Extend</button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <PaginationControls {...acceptancePage} label="risk acceptances" />
+        {!riskAcceptances.length && <EmptyState title="No risk acceptances recorded" detail="Propose a governed risk acceptance below. Owner, justification, and an explicit expiry remain required." />}
+        <div className="form-grid compact-form review-console">
+          <label>Review notes<input value={reviewNotes} onChange={(event) => setReviewNotes(event.target.value)} placeholder="Named reviewer notes for accept / reject / extend" /></label>
+          <label>Extend expiry to<input type="date" value={extendDate} onChange={(event) => setExtendDate(event.target.value)} aria-label="Extend expiry to" /></label>
+        </div>
+        {!canReview && <p className="boundary-copy">Accept, reject, and extend reviews require a PatchForge SecurityLead or Admin role.</p>}
+      </section>
+
+      {canCreate ? (
+        <section className="wide-band">
+          <div className="section-title">
+            <h3>Propose Risk Acceptance</h3>
+            <span className="pill amber">Expiry required | review required</span>
+          </div>
+          <form className="ingest-form" onSubmit={onCreate}>
+            <div className="form-grid compact-form">
+              <label>Vulnerability<input value={form.vulnerability_id} onChange={(event) => setForm({ ...form, vulnerability_id: event.target.value })} placeholder="CVE-2026-..." required /></label>
+              <label>Owner UPN<input value={form.owner_upn} onChange={(event) => setForm({ ...form, owner_upn: event.target.value })} placeholder="owner@diiac.io" required /></label>
+              <label>Expires at<input type="date" value={form.expires_at} onChange={(event) => setForm({ ...form, expires_at: event.target.value })} required /></label>
+              <label>Compensating control IDs<input value={form.compensating_control_ids} onChange={(event) => setForm({ ...form, compensating_control_ids: event.target.value })} placeholder="cc-001, cc-002" /></label>
+            </div>
+            <label className="stacked-input">
+              <span>Scope description</span>
+              <input value={form.scope_description} onChange={(event) => setForm({ ...form, scope_description: event.target.value })} required />
+            </label>
+            <label className="stacked-input">
+              <span>Justification</span>
+              <textarea rows={3} value={form.justification} onChange={(event) => setForm({ ...form, justification: event.target.value })} required />
+            </label>
+            <button type="submit" className="action-button">
+              <ClipboardCheck size={16} aria-hidden /> Propose Risk Acceptance
+            </button>
+          </form>
+          <div className="insight-list">
+            {compensatingControls.slice(0, 4).map((control) => (
+              <StatusLine key={control.control_id} label={`${control.control_id} | ${control.name}`} value={humanize(control.review_state || "pending_review")} tone={control.review_state === "accepted" ? "trust" : "amber"} />
+            ))}
+            {!compensatingControls.length && <p className="muted-copy">No compensating controls are recorded yet. Link controls by ID after they are reviewed.</p>}
+          </div>
+        </section>
+      ) : (
+        <EmptyState title="Read-only role" detail="Risk acceptance proposals require a PatchForge RiskOwner, SecurityLead, or Admin role." />
+      )}
+    </>
+  );
 }
 
-function CompensatingControls() {
-  return <PageBand icon={Wrench} title="Compensating Controls" lines={["Controls are evidence records", "Accepted controls require human review", "Controls do not mutate production systems"]} />;
+function CompensatingControls({
+  compensatingControls,
+  form,
+  setForm,
+  onCreate,
+  onReview,
+  canCreate,
+  canReview
+}: {
+  compensatingControls: CompensatingControlRecord[];
+  form: typeof emptyCompensatingControlForm;
+  setForm: (value: typeof emptyCompensatingControlForm) => void;
+  onCreate: (event: FormEvent<HTMLFormElement>) => void;
+  onReview: (controlId: string, action: "accept" | "reject", notes: string) => void;
+  canCreate: boolean;
+  canReview: boolean;
+}) {
+  const [reviewNotes, setReviewNotes] = useState("");
+  const controlPage = usePagination(compensatingControls, 8, "compensating-controls");
+
+  return (
+    <>
+      <div className="metric-grid">
+        <MetricCard icon={Wrench} label="Controls recorded" value={compensatingControls.length} tone="steel" />
+        <MetricCard icon={ClipboardCheck} label="Accepted" value={compensatingControls.filter((item) => item.review_state === "accepted").length} tone="trust" />
+        <MetricCard icon={ListFilter} label="Pending review" value={compensatingControls.filter((item) => (item.review_state || "pending_review") === "pending_review").length} tone="amber" />
+        <MetricCard icon={TriangleAlert} label="Rejected" value={compensatingControls.filter((item) => item.review_state === "rejected").length} tone="danger" />
+      </div>
+
+      <section className="data-band table-band">
+        <div className="section-title">
+          <h3>Compensating Controls</h3>
+          <span className="pill amber">Governed record — human accountability required</span>
+        </div>
+        <p className="boundary-copy">Compensating controls are evidence records. They never mutate production systems and only reviewed, accepted controls can support a governed risk acceptance.</p>
+        <div className="table-scroll">
+          <table className="data-table compensating-controls-table">
+            <thead>
+              <tr>
+                <th>Control</th>
+                <th>Mitigates CVEs</th>
+                <th>Owner</th>
+                <th>Review state</th>
+                <th>Expiry</th>
+                <th>Review</th>
+              </tr>
+            </thead>
+            <tbody>
+              {controlPage.items.map((item) => (
+                <tr key={item.control_id}>
+                  <td>
+                    <strong>{item.name}</strong>
+                    <small>{item.control_id}</small>
+                  </td>
+                  <td>{(item.mitigates_vulnerability_ids || []).join(", ") || "None recorded"}</td>
+                  <td>{item.owner_upn || "Owner pending"}</td>
+                  <td><span className={`pill ${controlReviewTone(item.review_state)}`}>{humanize(item.review_state || "pending_review")}</span></td>
+                  <td>{item.expires_at ? new Date(item.expires_at).toLocaleDateString() : "No expiry"}</td>
+                  <td>
+                    <div className="export-actions">
+                      <button type="button" className="action-button" onClick={() => onReview(item.control_id, "accept", reviewNotes)} disabled={!canReview} aria-label={`Accept ${item.control_id}`}>Accept</button>
+                      <button type="button" className="action-button secondary-action" onClick={() => onReview(item.control_id, "reject", reviewNotes)} disabled={!canReview} aria-label={`Reject ${item.control_id}`}>Reject</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <PaginationControls {...controlPage} label="compensating controls" />
+        {!compensatingControls.length && <EmptyState title="No compensating controls recorded" detail="Record a compensating control below. Controls remain pending review until a named reviewer accepts them." />}
+        <div className="form-grid compact-form review-console">
+          <label>Review notes<input value={reviewNotes} onChange={(event) => setReviewNotes(event.target.value)} placeholder="Named reviewer notes for accept / reject" /></label>
+        </div>
+        {!canReview && <p className="boundary-copy">Accept and reject reviews require a PatchForge SecurityLead or Admin role.</p>}
+      </section>
+
+      {canCreate ? (
+        <section className="wide-band">
+          <div className="section-title">
+            <h3>Record Compensating Control</h3>
+            <span className="pill amber">Evidence record only</span>
+          </div>
+          <form className="ingest-form" onSubmit={onCreate}>
+            <div className="form-grid compact-form">
+              <label>Name<input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required /></label>
+              <label>Owner UPN<input value={form.owner_upn} onChange={(event) => setForm({ ...form, owner_upn: event.target.value })} placeholder="owner@diiac.io" required /></label>
+              <label>Mitigates CVEs<input value={form.mitigates_vulnerability_ids} onChange={(event) => setForm({ ...form, mitigates_vulnerability_ids: event.target.value })} placeholder="CVE-2026-..., CVE-2026-..." /></label>
+              <label>Evidence refs<input value={form.evidence_refs} onChange={(event) => setForm({ ...form, evidence_refs: event.target.value })} placeholder="change-1234, config-export-1" /></label>
+              <label>Expires at<input type="date" value={form.expires_at} onChange={(event) => setForm({ ...form, expires_at: event.target.value })} /></label>
+            </div>
+            <label className="stacked-input">
+              <span>Description</span>
+              <textarea rows={3} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} required />
+            </label>
+            <button type="submit" className="action-button">
+              <Wrench size={16} aria-hidden /> Record Compensating Control
+            </button>
+          </form>
+        </section>
+      ) : (
+        <EmptyState title="Read-only role" detail="Compensating control records require a PatchForge TriageAnalyst, SecurityLead, or Admin role." />
+      )}
+    </>
+  );
 }
 
 function SraResearch({ onRun, result, canWrite }: { onRun: () => void; result: Record<string, unknown> | null; canWrite: boolean }) {
@@ -3516,9 +4186,39 @@ function emptyLiveState(tenantId: string): LiveState {
     openAiAgentStatus: null,
     latestAgentGuidance: null,
     sourceFeedState: { feeds: [], recent_runs: [] },
+    riskAcceptances: [],
+    compensatingControls: [],
     adminHealth: null,
     adminConfig: {}
   };
+}
+
+function isRiskAcceptanceExpired(record: RiskAcceptanceRecord, now = Date.now()): boolean {
+  if (record.status === "expired") {
+    return true;
+  }
+  const expiresAt = Date.parse(record.expires_at || "");
+  return Number.isFinite(expiresAt) && expiresAt < now;
+}
+
+function riskAcceptanceTone(status = "") {
+  if (status === "accepted") {
+    return "trust";
+  }
+  if (status === "expired" || status === "rejected") {
+    return "danger";
+  }
+  return "amber";
+}
+
+function controlReviewTone(reviewState = "") {
+  if (reviewState === "accepted") {
+    return "trust";
+  }
+  if (reviewState === "rejected") {
+    return "danger";
+  }
+  return "amber";
 }
 
 function parseList(value: string): string[] {

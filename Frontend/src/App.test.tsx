@@ -1,5 +1,12 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+// App persists page/selection state to URL search params; reset between tests
+// so navigation in one test cannot leak into the next via shared jsdom.
+beforeEach(() => {
+  window.history.replaceState(null, "", "/");
+  window.localStorage.clear();
+});
 import App from "./App";
 import { FindingIntelligence, PatchForgeApi, PatchForgeMetrics } from "./api";
 import { PatchForgeAuthSession } from "./auth";
@@ -585,7 +592,77 @@ function createApi(overrides: Partial<PatchForgeApi> = {}): PatchForgeApi {
     adminConfig: vi.fn(async () => ({
       general: { environment: "Production", governance_tier: "Enterprise Strict" }
     })),
-    saveAdminConfig: vi.fn(async (_tenantId, payload) => payload)
+    saveAdminConfig: vi.fn(async (_tenantId, payload) => payload),
+    listRiskAcceptances: vi.fn(async () => [
+      {
+        risk_acceptance_id: "ra-demo-1",
+        vulnerability_id: "CVE-2026-1111",
+        scope_description: "Single internal service",
+        justification: "Segmentation in place",
+        owner_upn: "owner@diiac.io",
+        expires_at: new Date(Date.now() + 30 * 86400000).toISOString(),
+        status: "accepted",
+        compensating_control_ids: ["cc-demo-1"],
+        review_events: []
+      }
+    ]),
+    createRiskAcceptance: vi.fn(async (_tenantId, payload) => ({
+      risk_acceptance_id: "ra-demo-2",
+      vulnerability_id: String((payload as Record<string, unknown>).vulnerability_id || "CVE-2026-2222"),
+      status: "proposed",
+      expires_at: String((payload as Record<string, unknown>).expires_at || ""),
+      review_events: []
+    })),
+    reviewRiskAcceptance: vi.fn(async (_tenantId, riskAcceptanceId, payload) => ({
+      risk_acceptance_id: riskAcceptanceId,
+      vulnerability_id: "CVE-2026-1111",
+      status: (payload as Record<string, unknown>).action === "reject" ? "rejected" : "accepted",
+      review_events: [{ action: String((payload as Record<string, unknown>).action || "accept"), recorded_at: new Date().toISOString() }]
+    })),
+    listCompensatingControls: vi.fn(async () => [
+      {
+        control_id: "cc-demo-1",
+        name: "Network segmentation",
+        description: "VLAN isolation",
+        mitigates_vulnerability_ids: ["CVE-2026-1111"],
+        owner_upn: "netops@diiac.io",
+        review_state: "pending_review",
+        review_events: []
+      }
+    ]),
+    createCompensatingControl: vi.fn(async (_tenantId, payload) => ({
+      control_id: "cc-demo-2",
+      name: String((payload as Record<string, unknown>).name || "Control"),
+      review_state: "pending_review",
+      review_events: []
+    })),
+    reviewCompensatingControl: vi.fn(async (_tenantId, controlId, payload) => ({
+      control_id: controlId,
+      name: "Network segmentation",
+      review_state: (payload as Record<string, unknown>).action === "reject" ? "rejected" : "accepted",
+      review_events: []
+    })),
+    listDecisionPackApprovals: vi.fn(async () => ({
+      approval_events: [],
+      final_approval_recorded: false,
+      approval_policy: { required_roles: ["PatchForge.SecurityLead", "PatchForge.CABApprover"], distinct_approvers: true }
+    })),
+    recordDecisionPackApproval: vi.fn(async (_tenantId, packId, payload) => ({
+      pack_id: packId,
+      decision_pack_id: packId,
+      vulnerability_id: "CVE-2026-1111",
+      decision_posture: String((payload as Record<string, unknown>).decision_posture || "patch_required"),
+      final_approval_recorded: false,
+      approval_events: [
+        {
+          approver_upn: "lead@diiac.io",
+          approver_roles: ["PatchForge.SecurityLead"],
+          decision_posture: String((payload as Record<string, unknown>).decision_posture || "patch_required"),
+          notes: String((payload as Record<string, unknown>).notes || ""),
+          recorded_at: new Date().toISOString()
+        }
+      ]
+    }))
   };
   return { ...base, ...overrides };
 }

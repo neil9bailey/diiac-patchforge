@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { PublicClientApplication } from "@azure/msal-browser";
 import { MsalProvider } from "@azure/msal-react";
 import App from "./App";
+import ErrorBoundary from "./ErrorBoundary";
 import { getPatchForgeConfig } from "./api";
 import { MsalPatchForgeAuthProvider } from "./auth";
 import "./styles.css";
@@ -26,7 +27,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <MsalProvider instance={msalInstance}>
       <MsalPatchForgeAuthProvider>
-        <App />
+        <ErrorBoundary>
+          <App />
+        </ErrorBoundary>
       </MsalPatchForgeAuthProvider>
     </MsalProvider>
   </React.StrictMode>
