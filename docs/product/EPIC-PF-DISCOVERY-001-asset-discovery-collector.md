@@ -10,7 +10,7 @@ PatchForge remains advisory and governance-only. The collector is an asset-evide
 
 - Users can register customer-side collectors.
 - Users can define discovery policies by asset category.
-- Users can run a Windows/Linux PatchForge collector that imports discovered asset snapshots into PatchForge.
+- Users can run a Windows PatchForge collector EXE that imports discovered asset snapshots into PatchForge.
 - Imported assets appear in the existing customer estate and VendorLens workflows.
 - CVE/advisory applicability checks can use reviewed collector-imported assets.
 - Reports and decision packs can include collector provenance once reviewed.
@@ -19,8 +19,8 @@ PatchForge remains advisory and governance-only. The collector is an asset-evide
 
 - Collector registry in PatchForge Core.
 - Discovery policy registry.
-- Runnable Windows/Linux collector CLI.
-- Collector local JSON configuration with environment-backed token reference.
+- Runnable Windows collector EXE generated from the source collector CLI.
+- PowerShell-driven collector configuration that writes local JSON with environment-backed token references.
 - Day-1 adapters for local host inventory, Hyper-V inventory where available, Azure CLI read-only inventory where configured, and HTTP JSON CMDB/NMS pull where configured.
 - Collector import run ledger.
 - Normalisation into `customer_network_assets`.
@@ -29,8 +29,8 @@ PatchForge remains advisory and governance-only. The collector is an asset-evide
 
 ## Future Increments
 
-1. Signed Windows collector package.
-2. Signed Linux collector package.
+1. Authenticode-signed Windows collector package.
+2. Linux collector package.
 3. SNMPv3 read-only network device discovery with secure credential handling.
 4. SSH read-only network/firewall discovery with secure credential handling.
 5. Windows Server inventory via WMI/WinRM.
@@ -46,6 +46,7 @@ PatchForge remains advisory and governance-only. The collector is an asset-evide
 - Imported assets are source-bound and pending review by default.
 - No raw credentials are accepted or stored.
 - Collector configuration must reference tokens/secrets through environment variable names or external vault references, not literal values.
+- Windows EXE packaging must not embed tokens, tenant secrets, or customer configuration.
 - No exploit, patch deployment, or production mutation capability is introduced.
 - Asset category, source method, collector ID, policy ID, run ID, and import timestamp are preserved.
 - PatchForge can show which CVEs/advisories have candidate customer asset matches once the asset catalogue is populated.

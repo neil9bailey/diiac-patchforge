@@ -3,6 +3,8 @@ import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import os from "node:os";
+import path from "node:path";
+import { isSea } from "node:sea";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
@@ -83,8 +85,8 @@ export async function runCollector(options = {}) {
     };
   }
 
-  await postJson(normalized, "/api/patchforge/discovery/collectors", normalized.collector, fetchImpl, env);
-  await postJson(normalized, "/api/patchforge/discovery/policies", normalized.policy, fetchImpl, env);
+  await postJson(normalized, "/api/patchforge/discovery/collectors", normalized.collector, fetchImpl, env, commandRunner);
+  await postJson(normalized, "/api/patchforge/discovery/policies", normalized.policy, fetchImpl, env, commandRunner);
   if (!discovery.assets.length) {
     return {
       mode: "push",
@@ -96,7 +98,7 @@ export async function runCollector(options = {}) {
       boundary: collectorBoundary()
     };
   }
-  const imported = await postJson(normalized, "/api/patchforge/discovery/import", importPayload, fetchImpl, env);
+  const imported = await postJson(normalized, "/api/patchforge/discovery/import", importPayload, fetchImpl, env, commandRunner);
   return {
     mode: "push",
     status: imported.run?.status || "submitted",
@@ -142,7 +144,9 @@ export function normalizeConfig(input = {}, env = process.env) {
     tenantId,
     dryRun: Boolean(input.dryRun),
     auth: {
-      bearerTokenEnv: input.auth?.bearerTokenEnv || input.auth?.bearer_token_env || env.PATCHFORGE_COLLECTOR_TOKEN_ENV || "PATCHFORGE_COLLECTOR_TOKEN"
+      bearerTokenEnv: input.auth?.bearerTokenEnv || input.auth?.bearer_token_env || env.PATCHFORGE_COLLECTOR_TOKEN_ENV || "PATCHFORGE_COLLECTOR_TOKEN",
+      azureCliScope: input.auth?.azureCliScope || input.auth?.azure_cli_scope || env.PATCHFORGE_COLLECTOR_AZURE_SCOPE || "",
+      azureTenantId: input.auth?.azureTenantId || input.auth?.azure_tenant_id || env.PATCHFORGE_COLLECTOR_AZURE_TENANT_ID || ""
     },
     collector: {
       collector_id: collectorId,
@@ -151,7 +155,10 @@ export function normalizeConfig(input = {}, env = process.env) {
       site: input.collector?.site || env.PATCHFORGE_COLLECTOR_SITE || null,
       environment: input.collector?.environment || env.PATCHFORGE_COLLECTOR_ENVIRONMENT || "production",
       categories,
-      package_channel: "node_cli_day1"
+      package_channel: input.collector?.package_channel
+        || input.collector?.packageChannel
+        || env.PATCHFORGE_COLLECTOR_PACKAGE_CHANNEL
+        || "node_cli_day1"
     },
     policy: {
       policy_id: policyId,
@@ -390,13 +397,13 @@ export function collectorBoundary() {
   };
 }
 
-async function postJson(config, path, payload, fetchImpl, env) {
+async function postJson(config, path, payload, fetchImpl, env, commandRunner) {
   const response = await fetchImpl(apiUrl(config, path), {
     method: "POST",
     headers: {
       "content-type": "application/json",
       "x-tenant-id": config.tenantId,
-      ...authHeader(config, env)
+      ...await authHeader(config, env, commandRunner)
     },
     body: JSON.stringify(payload)
   });
@@ -407,9 +414,42 @@ async function postJson(config, path, payload, fetchImpl, env) {
   return body;
 }
 
-function authHeader(config, env) {
+async function authHeader(config, env, commandRunner = runCommand) {
   const token = env[config.auth.bearerTokenEnv];
-  return token ? { authorization: `Bearer ${token}` } : {};
+  if (token) {
+    return { authorization: `Bearer ${token}` };
+  }
+  const azureCliToken = await azureCliAccessToken(config, commandRunner);
+  return azureCliToken ? { authorization: `Bearer ${azureCliToken}` } : {};
+}
+
+async function azureCliAccessToken(config, commandRunner) {
+  if (!config.auth.azureCliScope) {
+    return null;
+  }
+  const args = [
+    "account",
+    "get-access-token",
+    "--scope",
+    config.auth.azureCliScope,
+    "--query",
+    "accessToken",
+    "-o",
+    "tsv"
+  ];
+  if (config.auth.azureTenantId) {
+    args.splice(2, 0, "--tenant", config.auth.azureTenantId);
+  }
+  try {
+    const output = await commandRunner("az", args, { timeout: 20000 });
+    const token = String(output.stdout || "").trim();
+    if (!token) {
+      throw new Error("Azure CLI returned an empty access token.");
+    }
+    return token;
+  } catch (error) {
+    throw new Error(`PatchForge collector token unavailable. Set ${config.auth.bearerTokenEnv} or sign in with Azure CLI for scope ${config.auth.azureCliScope}. ${error.message}`);
+  }
 }
 
 function apiUrl(config, path) {
@@ -596,7 +636,19 @@ async function main() {
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+function isDirectExecution() {
+  if (isSea()) {
+    return true;
+  }
+
+  if (!process.argv[1] || !import.meta.url) {
+    return false;
+  }
+
+  return path.resolve(fileURLToPath(import.meta.url)) === path.resolve(process.argv[1]);
+}
+
+if (isDirectExecution()) {
   main().catch((error) => {
     process.stderr.write(`${error.message}\n`);
     process.exitCode = 1;

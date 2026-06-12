@@ -53,7 +53,7 @@ test("collector dry-run gathers local host evidence without pushing to API", asy
   const config = normalizeConfig({
     apiBaseUrl: "http://127.0.0.1:3000",
     tenantId: "tenant-a",
-    collector: { collector_id: "collector-local", site: "Lab" },
+    collector: { collector_id: "collector-local", site: "Lab", package_channel: "windows_exe_day1" },
     adapters: [{ type: "local_host" }]
   });
   const asset = await collectLocalHost({
@@ -66,6 +66,7 @@ test("collector dry-run gathers local host evidence without pushing to API", asy
   assert.ok(["physical_server", "virtual_server"].includes(asset.category));
   assert.equal(asset.site, "Lab");
   assert.equal(asset.environment, "production");
+  assert.equal(config.collector.package_channel, "windows_exe_day1");
 });
 
 test("collector registers, upserts policy, and imports JSON-source assets", async () => {
@@ -160,6 +161,82 @@ test("collector registers, upserts policy, and imports JSON-source assets", asyn
     assert.equal(calls[2].body.assets[0].vendor_name, "Juniper");
     assert.equal(calls[2].body.assets[0].firmware_version, "22.4R3");
     assert.equal(calls[2].body.assets[0].confidence, 0.65);
+  } finally {
+    await close(server);
+  }
+});
+
+test("collector can acquire PatchForge bearer token through Azure CLI", async () => {
+  const calls = [];
+  const commandCalls = [];
+  const server = http.createServer(async (req, res) => {
+    const body = await readJson(req);
+    calls.push({ method: req.method, url: req.url, headers: req.headers, body });
+    if (req.method === "POST" && req.url === "/api/patchforge/discovery/collectors") {
+      assert.equal(req.headers.authorization, "Bearer azure-cli-token");
+      return sendJson(res, 201, { collector: body });
+    }
+    if (req.method === "POST" && req.url === "/api/patchforge/discovery/policies") {
+      assert.equal(req.headers.authorization, "Bearer azure-cli-token");
+      return sendJson(res, 201, { policy: body });
+    }
+    if (req.method === "POST" && req.url === "/api/patchforge/discovery/import") {
+      assert.equal(req.headers.authorization, "Bearer azure-cli-token");
+      return sendJson(res, 202, {
+        run: {
+          run_id: body.run_id,
+          status: "completed",
+          imported_asset_count: body.assets.length,
+          rejected_asset_count: 0,
+          final_approval_issued: false
+        },
+        imported_assets: body.assets,
+        rejected_assets: [],
+        boundary: { advisory_only: true, final_approval_issued: false }
+      });
+    }
+    return sendJson(res, 404, { error: "not_found" });
+  });
+
+  await listen(server);
+  try {
+    const baseUrl = `http://127.0.0.1:${server.address().port}`;
+    const result = await runCollector({
+      config: {
+        apiBaseUrl: baseUrl,
+        tenantId: "tenant-a",
+        auth: {
+          azureCliScope: "api://patchforge-test/PatchForge.Access",
+          azureTenantId: "tenant-guid"
+        },
+        collector: { collector_id: "collector-azure-cli", site: "Lab" },
+        adapters: [{ type: "local_host" }]
+      },
+      env: {},
+      commandRunner: async (command, args) => {
+        commandCalls.push({ command, args });
+        if (command === "az") {
+          assert.deepEqual(args, [
+            "account",
+            "get-access-token",
+            "--tenant",
+            "tenant-guid",
+            "--scope",
+            "api://patchforge-test/PatchForge.Access",
+            "--query",
+            "accessToken",
+            "-o",
+            "tsv"
+          ]);
+          return { stdout: "azure-cli-token\n", stderr: "" };
+        }
+        return { stdout: "none\n", stderr: "" };
+      }
+    });
+
+    assert.equal(result.status, "completed");
+    assert.equal(calls.length, 3);
+    assert.equal(commandCalls.filter((call) => call.command === "az").length, 3);
   } finally {
     await close(server);
   }

@@ -1,5 +1,5 @@
 {
-  "apiBaseUrl": "https://patchforge.diiac.io",
+  "apiBaseUrl": "https://api.patchforge.diiac.io",
   "tenantId": "diiac.io",
   "collector": {
     "collector_id": "collector-customer-site-01",
@@ -12,8 +12,12 @@
       "physical_server",
       "virtual_server",
       "hypervisor",
-      "cloud_resource"
-    ]
+      "cloud_resource",
+      "endpoint",
+      "storage",
+      "application_platform"
+    ],
+    "package_channel": "windows_exe_day1"
   },
   "policy": {
     "policy_id": "policy-customer-site-01",
@@ -24,7 +28,10 @@
       "physical_server",
       "virtual_server",
       "hypervisor",
-      "cloud_resource"
+      "cloud_resource",
+      "endpoint",
+      "storage",
+      "application_platform"
     ],
     "credential_reference": "customer-vault:patchforge/read-only-discovery",
     "scope": {
@@ -33,7 +40,9 @@
     }
   },
   "auth": {
-    "bearerTokenEnv": "PATCHFORGE_COLLECTOR_TOKEN"
+    "bearerTokenEnv": "PATCHFORGE_COLLECTOR_TOKEN",
+    "azureCliScope": "api://ec30b0eb-cfc4-48cc-a5f2-2a1345d96736/PatchForge.Access",
+    "azureTenantId": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da"
   },
   "adapters": [
     {
