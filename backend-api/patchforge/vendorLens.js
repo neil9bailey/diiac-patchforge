@@ -2,10 +2,10 @@ import { createHash, randomUUID } from "node:crypto";
 import { assessConfigApplicability } from "./configApplicability.js";
 
 export const NETWORK_VENDOR_CATALOG = [
-  vendor("cisco", "Cisco", "infrastructure_networking", "https://developer.cisco.com/psirt/", ["ASA", "Firepower", "IOS XE", "Catalyst", "AnyConnect"]),
-  vendor("fortinet", "Fortinet", "infrastructure_networking", "https://www.fortiguard.com/psirt", ["FortiGate", "FortiOS", "FortiProxy", "FortiManager"]),
+  vendor("cisco", "Cisco", "infrastructure_networking", "https://developer.cisco.com/psirt/", ["ASA", "Firepower", "IOS XE", "IOS XR", "NX-OS", "Catalyst", "AnyConnect", "Secure Client"]),
+  vendor("fortinet", "Fortinet", "infrastructure_networking", "https://www.fortiguard.com/psirt", ["FortiGate", "FortiOS", "FortiProxy", "FortiManager", "FortiAnalyzer", "FortiClient"]),
   vendor("palo-alto-networks", "Palo Alto Networks", "infrastructure_networking", "https://security.paloaltonetworks.com/", ["PAN-OS", "Prisma Access", "GlobalProtect"]),
-  vendor("juniper", "Juniper", "infrastructure_networking", "https://supportportal.juniper.net/s/global-search/%40uri", ["Junos OS", "SRX", "MX", "EX"]),
+  vendor("juniper", "Juniper", "infrastructure_networking", "https://supportportal.juniper.net/s/global-search/%40uri", ["Junos OS", "SRX", "vSRX", "MX", "EX", "QFX", "Mist"]),
   vendor("f5", "F5", "infrastructure_networking", "https://my.f5.com/manage/s/solutions", ["BIG-IP", "BIG-IQ", "NGINX"]),
   vendor("citrix-netscaler", "Citrix / NetScaler", "infrastructure_networking", "https://support.citrix.com/securitybulletins", ["NetScaler ADC", "NetScaler Gateway", "Citrix ADC"]),
   vendor("check-point", "Check Point", "infrastructure_networking", "https://support.checkpoint.com/results/sk/sk178280", ["Quantum Security Gateway", "Gaia", "Harmony"]),
@@ -16,6 +16,16 @@ export const NETWORK_VENDOR_CATALOG = [
   vendor("ubiquiti", "Ubiquiti", "infrastructure_networking", "https://community.ui.com/releases", ["UniFi Network", "UniFi OS", "EdgeRouter"]),
   vendor("mikrotik", "MikroTik", "infrastructure_networking", "https://mikrotik.com/supportsec", ["RouterOS", "CHR", "Cloud Router Switch"]),
   vendor("barracuda", "Barracuda", "infrastructure_networking", "https://status.barracuda.com/security", ["CloudGen Firewall", "WAF", "Email Security Gateway"]),
+  vendor("ivanti", "Ivanti", "identity_endpoint_cloud", "https://forums.ivanti.com/s/security-advisories", ["Connect Secure", "Policy Secure", "Neurons", "Endpoint Manager"]),
+  vendor("vmware-broadcom", "VMware / Broadcom", "virtualization_platform", "https://support.broadcom.com/web/ecx/security-advisory", ["vCenter Server", "ESXi", "NSX", "Aria Operations", "Workspace ONE"]),
+  vendor("microsoft", "Microsoft", "identity_endpoint_cloud", "https://msrc.microsoft.com/update-guide", ["Windows Server", "Exchange Server", "SharePoint Server", "Azure", "Entra ID", "Defender"]),
+  vendor("atlassian", "Atlassian", "enterprise_apps", "https://confluence.atlassian.com/security", ["Confluence", "Jira", "Bitbucket", "Bamboo"]),
+  vendor("oracle", "Oracle", "enterprise_apps", "https://www.oracle.com/security-alerts/", ["Oracle Database", "WebLogic Server", "Java", "E-Business Suite"]),
+  vendor("red-hat", "Red Hat", "enterprise_apps", "https://access.redhat.com/security/security-updates/security-advisories", ["Red Hat Enterprise Linux", "OpenShift", "Ansible Automation Platform"]),
+  vendor("canonical", "Canonical", "enterprise_apps", "https://ubuntu.com/security/notices", ["Ubuntu", "Ubuntu Server", "Landscape"]),
+  vendor("dell", "Dell", "infrastructure_networking", "https://www.dell.com/support/security", ["PowerEdge", "iDRAC", "PowerScale", "Dell Networking"]),
+  vendor("hp-enterprise", "HPE", "infrastructure_networking", "https://support.hpe.com/connect/s/securitybulletinlibrary", ["ProLiant", "Aruba", "NonStop", "OneView"]),
+  vendor("lenovo", "Lenovo", "infrastructure_networking", "https://support.lenovo.com/product_security/home", ["ThinkSystem", "XClarity", "ThinkAgile"]),
   vendor("zscaler", "Zscaler", "identity_endpoint_cloud", "https://trust.zscaler.com/", ["ZIA", "ZPA", "ZDX"]),
   vendor("cloudflare", "Cloudflare", "identity_endpoint_cloud", "https://www.cloudflarestatus.com/", ["WAF", "Zero Trust", "Magic Transit"]),
   vendor("akamai", "Akamai", "identity_endpoint_cloud", "https://www.akamai.com/legal/compliance/security-advisories", ["App & API Protector", "Guardicore", "Edge DNS"])
@@ -74,9 +84,25 @@ export async function upsertCustomerNetworkAsset(storage, tenantId, body = {}) {
     enabled_features: list(body.enabled_features),
     disabled_features: list(body.disabled_features),
     config_evidence_refs: list(body.config_evidence_refs),
+    asset_category: body.asset_category || body.category || "network_device",
+    discovery_source: body.discovery_source || "user_supplied",
+    discovery_method: body.discovery_method || null,
+    collector_id: body.collector_id || null,
+    collector_policy_id: body.collector_policy_id || null,
+    collector_run_id: body.collector_run_id || null,
+    collector_imported_at: body.collector_imported_at || null,
+    collector_confidence: body.collector_confidence ?? null,
+    hostname: body.hostname || null,
+    ip_addresses: list(body.ip_addresses || body.ip_address),
+    mac_addresses: list(body.mac_addresses || body.mac_address),
+    cloud_resource_id: body.cloud_resource_id || null,
+    virtualization_host: body.virtualization_host || null,
     review_state: body.review_state || "pending_review",
     evidence_state: body.evidence_state || "referenced",
     source_state: "source_bound",
+    advisory_only: body.advisory_only !== false,
+    review_required: body.review_required !== false,
+    final_approval_issued: false,
     created_at: body.created_at || new Date().toISOString(),
     updated_at: new Date().toISOString(),
     ...lineageFromBody(body)
@@ -346,60 +372,68 @@ async function refreshNvdCatalogue({ storage, tenantId, body, fetchImpl, started
   const queries = selectedVendors.length ? selectedVendors : vendors.slice(0, 1);
   const resultsPerPage = boundedLimit(body.results_per_page || body.limit_per_query, 100, 1, 500);
   const maxPages = boundedLimit(body.max_pages, 1, 1, 5);
+  const maxKeywords = boundedLimit(body.max_keywords || body.keyword_limit, body.keyword_search ? 1 : 4, 1, 8);
   const sourceUrls = [];
   const sourceFailures = [];
+  const sourceKeywords = [];
+  const seenAdvisories = new Set();
   let recordsSeen = 0;
   let recordsMatched = 0;
   let recordsIngested = 0;
   let rateLimited = false;
   catalogueLoop:
   for (const vendorItem of queries) {
-    const keyword = body.keyword_search || vendorItem.vendor_name;
-    for (let page = 0; page < maxPages; page += 1) {
-      const startIndex = page * resultsPerPage;
-      const url = nvdUrl({
-        keywordSearch: keyword,
-        resultsPerPage,
-        startIndex,
-        pubStartDate: body.pub_start_date || body.pubStartDate || null,
-        pubEndDate: body.pub_end_date || body.pubEndDate || null,
-        lastModStartDate: body.last_mod_start_date || body.lastModStartDate || null,
-        lastModEndDate: body.last_mod_end_date || body.lastModEndDate || null
-      });
-      sourceUrls.push(url);
-      let payload;
-      try {
-        payload = await fetchJson(url, fetchImpl);
-      } catch (error) {
-        sourceFailures.push({
-          vendor_id: vendorItem.vendor_id,
-          source_url: url,
-          status: error.status || null,
-          message: error.message
+    const keywords = nvdCatalogueKeywords(vendorItem, body).slice(0, maxKeywords);
+    sourceKeywords.push(...keywords.map((keyword) => ({ vendor_id: vendorItem.vendor_id, keyword })));
+    for (const keyword of keywords) {
+      for (let page = 0; page < maxPages; page += 1) {
+        const startIndex = page * resultsPerPage;
+        const url = nvdUrl({
+          keywordSearch: keyword,
+          resultsPerPage,
+          startIndex,
+          pubStartDate: body.pub_start_date || body.pubStartDate || null,
+          pubEndDate: body.pub_end_date || body.pubEndDate || null,
+          lastModStartDate: body.last_mod_start_date || body.lastModStartDate || null,
+          lastModEndDate: body.last_mod_end_date || body.lastModEndDate || null
         });
-        if (error.status === 429) {
-          rateLimited = true;
-          break catalogueLoop;
+        sourceUrls.push(url);
+        let payload;
+        try {
+          payload = await fetchJson(url, fetchImpl);
+        } catch (error) {
+          sourceFailures.push({
+            vendor_id: vendorItem.vendor_id,
+            keyword,
+            source_url: url,
+            status: error.status || null,
+            message: error.message
+          });
+          if (error.status === 429) {
+            rateLimited = true;
+            break catalogueLoop;
+          }
+          break;
         }
-        break;
-      }
-      const records = Array.isArray(payload.vulnerabilities) ? payload.vulnerabilities : [];
-      recordsSeen += Number(payload.totalResults || records.length || 0);
-      recordsMatched += records.length;
-      for (const item of records) {
-        const advisory = advisoryFromNvd(item, url, {
-          ...body,
-          vendor_id: vendorItem.vendor_id,
-          vendor_name: vendorItem.vendor_name
-        });
-        if (!advisory.cve) {
-          continue;
+        const records = Array.isArray(payload.vulnerabilities) ? payload.vulnerabilities : [];
+        recordsSeen += Number(payload.totalResults || records.length || 0);
+        recordsMatched += records.length;
+        for (const item of records) {
+          const advisory = advisoryFromNvd(item, url, {
+            ...body,
+            vendor_id: vendorItem.vendor_id,
+            vendor_name: vendorItem.vendor_name
+          });
+          if (!advisory.cve || seenAdvisories.has(advisory.advisory_id)) {
+            continue;
+          }
+          seenAdvisories.add(advisory.advisory_id);
+          await ingestVendorSecurityAdvisory(storage, tenantId, advisory);
+          recordsIngested += 1;
         }
-        await ingestVendorSecurityAdvisory(storage, tenantId, advisory);
-        recordsIngested += 1;
-      }
-      if (records.length < resultsPerPage) {
-        break;
+        if (records.length < resultsPerPage) {
+          break;
+        }
       }
     }
     await upsertNetworkVendor(storage, tenantId, {
@@ -422,11 +456,25 @@ async function refreshNvdCatalogue({ storage, tenantId, body, fetchImpl, started
       sourceUrls[0] || null
     ),
     source_urls: sourceUrls,
+    source_keywords: sourceKeywords,
     source_failures: sourceFailures,
     records_seen: recordsSeen,
     records_matched: recordsMatched,
     records_ingested: recordsIngested
   });
+}
+
+function nvdCatalogueKeywords(vendorItem, body = {}) {
+  if (body.keyword_search) {
+    return [String(body.keyword_search)];
+  }
+  const vendorName = vendorItem.vendor_name || humanize(vendorItem.vendor_id);
+  const productFamilies = list(vendorItem.product_families);
+  return unique([
+    vendorName,
+    ...productFamilies.map((family) => String(family).toLowerCase().startsWith(String(vendorName).toLowerCase()) ? family : `${vendorName} ${family}`),
+    humanize(vendorItem.vendor_id)
+  ]).filter(Boolean);
 }
 
 async function refreshCiscoPsirt({ storage, tenantId, body, fetchImpl }) {
@@ -934,6 +982,10 @@ function list(value) {
     return [];
   }
   return String(value).split(",").map((item) => item.trim()).filter(Boolean);
+}
+
+function unique(values) {
+  return Array.from(new Set(list(values))).filter(Boolean);
 }
 
 function normalizeVendorId(value) {

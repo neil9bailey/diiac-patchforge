@@ -36,6 +36,7 @@ import {
   AdminConfig,
   AdminHealth,
   AdminPurgePlan,
+  AssetDiscoveryOverview,
   AssetRecord,
   AgentGuidanceSnapshot,
   BayesianAssessment,
@@ -70,10 +71,9 @@ import {
 import { PatchForgeAuthSession, usePatchForgeAuth } from "./auth";
 
 type PageKey =
-  | "Security Action Center"
-  | "Vendors & Exploits Register"
-  | "Customer Operational Assets"
-  | "Patch / Hotfix Compare"
+  | "Patch & CVE Catalogue"
+  | "Vendor Catalogue"
+  | "Customer Estate"
   | "Ask PatchForge"
   | "Reports"
   | "Admin"
@@ -93,8 +93,7 @@ type PageKey =
   | "Decision Packs"
   | "Source Feeds"
   | "Vendor & Threat Landscape"
-  | "VendorLens"
-  | "Admin";
+  | "VendorLens";
 
 type NavItem = {
   label: PageKey;
@@ -129,6 +128,7 @@ type LiveState = {
   sourceFeedState: SourceFeedState;
   adminHealth: AdminHealth | null;
   adminConfig: AdminConfig;
+  discovery: AssetDiscoveryOverview | null;
 };
 
 const PRODUCT_MARK = "PatchForge Intelligence by DIIaC\u2122";
@@ -136,12 +136,19 @@ const ACTIVE_BASELINE = "PF-AZ11-CUSTOMER-DEMO-MATURITY";
 const REPORT_TEMPLATE_VERSION = "patchforge-report-template.v2026-05-31.1";
 const REPORT_CONTEXT_VERSION = "patchforge-report-context.v4";
 const config = getPatchForgeConfig();
+const discoveryCollectorCategories = [
+  "network_device",
+  "security_appliance",
+  "physical_server",
+  "virtual_server",
+  "hypervisor",
+  "cloud_resource"
+];
 
 const navItems: NavItem[] = [
-  { label: "Security Action Center", icon: Gauge },
-  { label: "Vendors & Exploits Register", icon: Radar },
-  { label: "Customer Operational Assets", icon: ServerCog },
-  { label: "Patch / Hotfix Compare", icon: Layers3 },
+  { label: "Patch & CVE Catalogue", icon: Gauge },
+  { label: "Vendor Catalogue", icon: Radar },
+  { label: "Customer Estate", icon: ServerCog },
   { label: "Ask PatchForge", icon: MessageSquareText },
   { label: "Reports", icon: FileText },
   { label: "Admin", icon: SlidersHorizontal }
@@ -158,34 +165,41 @@ const postures = [
   "close_verified"
 ];
 
-const adminSections = [
-  "General Settings",
-  "Tenant Configuration",
-  "Entra ID / RBAC",
-  "SRA Configuration",
-  "MCP Agent Connectors",
-  "Mythos / AGI Findings",
-  "Agent Finding Rules",
-  "KRA / DIIaC IT Integration",
-  "Scanner Integrations",
-  "Source Feeds",
-  "VendorLens Sources",
-  "Evidence Models",
-  "Policy Packs",
-  "Decision State Rules",
-  "Risk Acceptance Rules",
-  "SLA / Ageing Rules",
-  "Signing & Trust",
-  "Key Vault",
-  "Storage",
-  "Database",
-  "Telemetry",
-  "Health Checks",
-  "Audit Logs",
-  "Export Settings",
-  "Backup / Restore",
-  "Data Retention",
-  "Feature Flags"
+type AdminCapability = {
+  label: string;
+  status: string;
+  detail: string;
+  tone: "amber" | "steel" | "teal" | "trust";
+};
+
+const adminSections: AdminCapability[] = [
+  { label: "General Settings", status: "Config-backed", tone: "trust", detail: "Environment and governance tier save through the protected Admin API." },
+  { label: "Tenant Configuration", status: "Config-backed", tone: "trust", detail: "Tenant context is explicit and carried into every protected API call." },
+  { label: "Entra ID / RBAC", status: "Runtime checked", tone: "trust", detail: "App roles are enforced server-side for reader, analyst, lead, auditor, and admin paths." },
+  { label: "SRA Configuration", status: "Advisory locked", tone: "teal", detail: "Security Research Agent output remains advisory-only and human-review required." },
+  { label: "MCP Agent Connectors", status: "Governed intake", tone: "teal", detail: "Agent findings can enter as source-bound records pending review." },
+  { label: "OpenAI Assistance", status: "Runtime gated", tone: "amber", detail: "Optional Ask PatchForge assistance depends on environment configuration and verifier pass." },
+  { label: "DIIaC IT Service / Enterprise Build", status: "Harness-ready", tone: "teal", detail: "PatchForge can sit beside IT Service workflows as a signed governance module." },
+  { label: "Scanner Integrations", status: "Out of scope", tone: "amber", detail: "PatchForge remains governance-only and does not scan customer environments." },
+  { label: "Patch Deployment", status: "Blocked", tone: "amber", detail: "PatchForge does not deploy patches or mutate production systems." },
+  { label: "Source Feeds", status: "Runtime-backed", tone: "trust", detail: "Public advisory refresh and run history are exposed in the live source feed surfaces." },
+  { label: "VendorLens Sources", status: "Runtime-backed", tone: "trust", detail: "Vendor, product, advisory, and customer-estate intelligence feed the advisory workflow." },
+  { label: "Evidence Models", status: "Runtime-backed", tone: "trust", detail: "Reviewed evidence, rejected evidence, and gaps stay visible before report export." },
+  { label: "Policy Packs", status: "Baseline-bound", tone: "steel", detail: "Current policy behavior follows the approved PF-AZ12 governance baseline." },
+  { label: "Decision State Rules", status: "Human-gated", tone: "amber", detail: "Final approval, closure, and assurance claims require reviewed evidence and a named human." },
+  { label: "Risk Acceptance Rules", status: "Human-only", tone: "amber", detail: "PatchForge records posture guidance but does not autonomously accept risk." },
+  { label: "SLA / Ageing Rules", status: "Visible", tone: "steel", detail: "Ageing and priority signals are surfaced in queue and reporting contexts." },
+  { label: "Signing & Trust", status: "Runtime checked", tone: "trust", detail: "Signed packs and report metadata preserve verification state and final approval flags." },
+  { label: "Key Vault", status: "Runtime checked", tone: "trust", detail: "Signing trust is included in Admin health when available from the bridge." },
+  { label: "Storage", status: "Runtime checked", tone: "trust", detail: "Storage readiness is surfaced through protected Admin health checks." },
+  { label: "Database", status: "Runtime checked", tone: "trust", detail: "Readiness reports the database storage mode returned by the protected API." },
+  { label: "Telemetry", status: "Health-only", tone: "steel", detail: "Operational health is visible without exposing raw sensitive request payloads." },
+  { label: "Health Checks", status: "Runtime checked", tone: "trust", detail: "Protected bridge health checks show readiness, signing, storage, and integration state." },
+  { label: "Audit Logs", status: "Governed", tone: "teal", detail: "Write paths preserve actor, tenant, and lineage context for review." },
+  { label: "Export Settings", status: "Report-bound", tone: "teal", detail: "DOCX/PDF output remains tied to signed packs and report QA metadata." },
+  { label: "Backup / Restore", status: "Planned", tone: "steel", detail: "No self-service restore action is exposed in this production-demo surface." },
+  { label: "Data Retention", status: "Guarded", tone: "amber", detail: "Cleanup is available only through typed purge confirmation and preview." },
+  { label: "Feature Flags", status: "Runtime-only", tone: "steel", detail: "Unsafe or unavailable flags are not exposed as inert toggles." }
 ];
 
 const purgeScopeOptions = [
@@ -247,7 +261,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
   const contextAuth = usePatchForgeAuth();
   const session = auth || contextAuth;
   const liveApi = useMemo(() => api || createPatchForgeApi(session.getAccessToken), [api, session.getAccessToken]);
-  const [activePage, setActivePage] = useState<PageKey>("Security Action Center");
+  const [activePage, setActivePage] = useState<PageKey>("Patch & CVE Catalogue");
   const [tenantId, setTenantId] = useState(initialTenantId || config.tenantHeader);
   const [state, setState] = useState<LiveState>(() => emptyLiveState(tenantId));
   const [refreshing, setRefreshing] = useState(false);
@@ -307,7 +321,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
     setRefreshing(true);
     setOperationError(null);
     try {
-      const [metrics, securityActionCenter, customerEstate, reportsPacks, vulnerabilities, findings, assets, services, decisionPacks, reports, threatSummary, vendors, sourceFeedState, vendorLensDashboard, networkVendors, customerNetworkAssets, vendorSecurityAdvisories, openAiAgentStatus, adminHealth, adminConfig] = await Promise.all([
+      const [metrics, securityActionCenter, customerEstate, reportsPacks, vulnerabilities, findings, assets, services, decisionPacks, reports, threatSummary, vendors, sourceFeedState, vendorLensDashboard, networkVendors, customerNetworkAssets, vendorSecurityAdvisories, discovery, openAiAgentStatus, adminHealth, adminConfig] = await Promise.all([
         liveApi.metrics(tenantId),
         liveApi.securityActionCenter(tenantId),
         liveApi.customerEstate(tenantId),
@@ -325,6 +339,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         liveApi.listNetworkVendors(tenantId),
         liveApi.listCustomerNetworkAssets(tenantId),
         liveApi.listVendorSecurityAdvisories(tenantId),
+        liveApi.assetDiscoveryOverview(tenantId),
         liveApi.openAiAgentStatus(tenantId),
         canReadAdmin ? liveApi.adminHealth(tenantId) : Promise.resolve(null),
         canReadAdmin ? liveApi.adminConfig(tenantId) : Promise.resolve({} as AdminConfig)
@@ -355,10 +370,11 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         latestCustomerMatch: current.latestCustomerMatch,
         latestAskPatchForge: current.latestAskPatchForge,
         openAiAgentStatus,
-        latestAgentGuidance: current.latestAgentGuidance,
+        latestAgentGuidance: openAiAgentStatus.enabled && openAiAgentStatus.configured ? current.latestAgentGuidance : null,
         bayesian: null,
         adminHealth,
-        adminConfig
+        adminConfig,
+        discovery
       }));
       setSelectedVulnerabilityId((current) => current || vulnerabilities[0]?.vulnerability_id || "");
       setSelectedCustomerAssetId((current) => current || customerEstate.assets[0]?.asset_id || customerNetworkAssets[0]?.asset_id || "");
@@ -636,6 +652,64 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
     }
   }
 
+  async function handleRegisterDiscoveryCollector() {
+    setOperationMessage(null);
+    setOperationError(null);
+    try {
+      const collector = await liveApi.registerAssetCollector(tenantId, {
+        collector_id: "collector-customer-estate-mvp",
+        name: "Customer estate collector MVP",
+        platform: "windows",
+        site: "Primary site",
+        categories: discoveryCollectorCategories
+      });
+      setOperationMessage(`Collector ${collector.collector_id} registered as outbound-only.`);
+      await loadLiveState();
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : "Collector registration failed.");
+    }
+  }
+
+  async function handleCreateDiscoveryPolicy() {
+    setOperationMessage(null);
+    setOperationError(null);
+    try {
+      const collectorId = state.discovery?.collectors[0]?.collector_id || "collector-customer-estate-mvp";
+      const policy = await liveApi.upsertAssetDiscoveryPolicy(tenantId, {
+        policy_id: "policy-customer-estate-mvp",
+        collector_id: collectorId,
+        name: "Read-only customer estate snapshot",
+        categories: discoveryCollectorCategories,
+        discovery_methods: ["manual_snapshot", "hyperv_inventory", "cloud_inventory", "cmdb_api"],
+        credential_reference: "customer-vault:patchforge/read-only-discovery",
+        scope: {
+          sites: ["Primary site"],
+          source_systems: ["local_host", "hyperv", "azure_cli", "http_json"]
+        }
+      });
+      setOperationMessage(`Discovery policy ${policy.policy_id} saved as read-only and reference-only.`);
+      await loadLiveState();
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : "Discovery policy save failed.");
+    }
+  }
+
+  function handleDownloadDiscoveryCollectorConfig() {
+    setOperationMessage(null);
+    setOperationError(null);
+    try {
+      const payload = buildDiscoveryCollectorConfig({
+        apiBaseUrl: config.apiBaseUrl || window.location.origin,
+        tenantId,
+        discovery: state.discovery
+      });
+      downloadJson(`patchforge-collector-${safeFileStem(tenantId)}.config.json`, payload);
+      setOperationMessage("Collector config downloaded. Set PATCHFORGE_COLLECTOR_TOKEN and run collector/patchforge-collector.mjs with this config.");
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : "Collector config download failed.");
+    }
+  }
+
   async function handleAskPatchForge() {
     setOperationMessage(null);
     setOperationError(null);
@@ -648,18 +722,24 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
       });
       let agentGuidance: AgentGuidanceSnapshot | null = null;
       if (state.openAiAgentStatus?.enabled && state.openAiAgentStatus.configured) {
-        agentGuidance = await liveApi.askOpenAiAgent(tenantId, {
-          question: askQuestion,
-          deterministic_answer: answer.response,
-          evidence: {
-            asset_id: selectedCustomerAssetId || undefined,
-            advisory_id: selectedAdvisoryId || undefined,
-            patch_compare: activePatchComparison || undefined
-          }
-        });
+        try {
+          agentGuidance = await liveApi.askOpenAiAgent(tenantId, {
+            question: askQuestion,
+            deterministic_answer: answer.response,
+            evidence: {
+              asset_id: selectedCustomerAssetId || undefined,
+              advisory_id: selectedAdvisoryId || undefined,
+              patch_compare: activePatchComparison || undefined
+            }
+          });
+        } catch {
+          agentGuidance = null;
+        }
       }
-      setState((current) => ({ ...current, latestAskPatchForge: answer, latestAgentGuidance: agentGuidance || current.latestAgentGuidance }));
-      setOperationMessage(`Ask PatchForge answered: ${answer.response.short_answer}`);
+      setState((current) => ({ ...current, latestAskPatchForge: answer, latestAgentGuidance: agentGuidance }));
+      setOperationMessage(agentGuidance?.status === "verified"
+        ? `Ask PatchForge answered with verified AI assistance: ${answer.response.short_answer}`
+        : `Ask PatchForge answered deterministically: ${answer.response.short_answer}`);
     } catch (error) {
       setOperationError(error instanceof Error ? error.message : "Ask PatchForge failed.");
     }
@@ -761,9 +841,10 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         adapter: "nvd_cve_api",
         mode: "catalogue",
         vendor_id: vendorIdOverride || vendorAdvisoryForm.vendor_id || "all-vendors",
-        max_vendors: 17,
+        max_vendors: 30,
         results_per_page: 100,
-        max_pages: 1
+        max_pages: 1,
+        max_keywords: 4
       });
       setOperationMessage(`${run.feed_name} ${run.status}: ${run.message || "VendorLens source refresh recorded."}`);
       await loadLiveState();
@@ -914,10 +995,10 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         <div className="content-grid">
           <section className="primary-panel" aria-label={activePage}>
             <OperationMessages message={operationMessage} error={operationError} />
-            {selectedFinding && ["Security Action Center", "Action Center", "Finding Detail", "Review & Approve", "Reports"].includes(activePage) && (
+            {selectedFinding && ["Patch & CVE Catalogue", "Action Center", "Finding Detail", "Review & Approve", "Reports"].includes(activePage) && (
               <FindingContextBanner finding={selectedFinding} />
             )}
-            {activePage === "Security Action Center" && (
+            {activePage === "Patch & CVE Catalogue" && (
               <GlobalSecurityActionCenter
                 state={state.securityActionCenter}
                 query={globalSearch}
@@ -934,23 +1015,28 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 onRefreshSourceFeed={handleRefreshSourceFeed}
               />
             )}
-            {activePage === "Vendors & Exploits Register" && (
-              <VendorsExploitsRegister
-                state={state.securityActionCenter}
-                query={globalSearch}
-                setQuery={setGlobalSearch}
-                filters={globalFilters}
-                setFilters={setGlobalFilters}
-                onSearch={handleSearchSecurityActionCenter}
-                onSelectCve={(row) => {
-                  setSelectedVulnerabilityId(row.vulnerability_id || row.cve_id || row.advisory_id || "");
-                  setSelectedAdvisoryId(row.advisory_id || row.cve_id || row.id || "");
-                }}
+            {activePage === "Vendor Catalogue" && (
+              <VendorLens
+                vendorLens={state.vendorLens}
+                assetForm={networkAssetForm}
+                setAssetForm={setNetworkAssetForm}
+                advisoryForm={vendorAdvisoryForm}
+                setAdvisoryForm={setVendorAdvisoryForm}
+                question={vendorLensQuestion}
+                setQuestion={setVendorLensQuestion}
+                onSaveAsset={handleSaveNetworkAsset}
+                onIngestAdvisory={handleIngestVendorLensAdvisory}
+                onAssess={handleAssessVendorLens}
+                onAsk={handleAskVendorLens}
+                onRefreshSource={handleRefreshVendorLensSource}
+                onComparePatch={handleCompareVendorLensPatch}
+                canWrite={canWrite}
               />
             )}
-            {activePage === "Customer Operational Assets" && (
+            {activePage === "Customer Estate" && (
               <CustomerEstate
                 state={state.customerEstate}
+                discovery={state.discovery}
                 vendorLens={state.vendorLens}
                 deviceText={customerDeviceText}
                 setDeviceText={setCustomerDeviceText}
@@ -969,20 +1055,9 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 onConfirmAsset={handleConfirmCustomerAsset}
                 onMatch={handleMatchCustomerEstate}
                 onPatchCompare={handleCustomerPatchCompare}
-                canWrite={canWrite}
-              />
-            )}
-            {activePage === "Patch / Hotfix Compare" && (
-              <PatchHotfixCompare
-                vendorLens={state.vendorLens}
-                selectedAssetId={selectedCustomerAssetId}
-                setSelectedAssetId={setSelectedCustomerAssetId}
-                selectedAdvisoryId={selectedAdvisoryId}
-                setSelectedAdvisoryId={setSelectedAdvisoryId}
-                patchCompareForm={patchCompareForm}
-                setPatchCompareForm={setPatchCompareForm}
-                latestComparison={activePatchComparison}
-                onPatchCompare={handleCustomerPatchCompare}
+                onRegisterCollector={handleRegisterDiscoveryCollector}
+                onCreateDiscoveryPolicy={handleCreateDiscoveryPolicy}
+                onDownloadCollectorConfig={handleDownloadDiscoveryCollectorConfig}
                 canWrite={canWrite}
               />
             )}
@@ -996,8 +1071,27 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 latestComparison={activePatchComparison}
                 agentStatus={state.openAiAgentStatus}
                 agentGuidance={state.latestAgentGuidance}
+                selectedVulnerabilityId={selectedVulnerabilityId}
                 onAsk={handleAskPatchForge}
                 onPatchCompare={handleCustomerPatchCompare}
+                onGenerateReportPack={handleGeneratePack}
+                onOpenReports={() => setActivePage("Reports")}
+                onOpenCustomerEstate={() => setActivePage("Customer Estate")}
+                onOpenVendorCatalogue={() => setActivePage("Vendor Catalogue")}
+                onSelectCandidate={(candidate) => {
+                  const advisoryId = candidateValue(candidate, "advisory_id", "cve", "cve_id", "id");
+                  const vulnerabilityId = candidateValue(candidate, "cve", "cve_id", "vulnerability_id", "advisory_id", "id");
+                  if (advisoryId) {
+                    setSelectedAdvisoryId(advisoryId);
+                  }
+                  if (vulnerabilityId) {
+                    setSelectedVulnerabilityId(vulnerabilityId);
+                  }
+                  setOperationMessage(advisoryId
+                    ? `Selected ${advisoryId} for Ask PatchForge and Patch Compare.`
+                    : "Candidate selection did not include an advisory ID.");
+                }}
+                onRefreshCandidateCatalogue={(candidate) => handleRefreshVendorLensSource(candidateValue(candidate, "vendor_id") || undefined)}
                 canWrite={canWrite}
               />
             )}
@@ -1122,6 +1216,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 adminTier={adminTier}
                 setAdminTier={setAdminTier}
                 adminHealth={state.adminHealth}
+                agentStatus={state.openAiAgentStatus}
                 onSave={handleSaveAdmin}
                 purgeScopes={purgeScopes}
                 setPurgeScopes={setPurgeScopes}
@@ -1283,7 +1378,7 @@ function GlobalSecurityActionCenter({
         <div className="section-title">
           <div>
             <p className="eyebrow">Global CVE/advisory catalogue</p>
-            <h3>Security Action Center</h3>
+            <h3>Patch & CVE Catalogue</h3>
           </div>
           <div className="hero-actions">
             <button type="button" className="action-button" onClick={() => onRefreshSourceFeed("cisa-kev")} disabled={!canWrite}>
@@ -1380,7 +1475,7 @@ function GlobalSecurityActionCenter({
             </tbody>
           </table>
         </div>
-        <PaginationControls {...rowsPage} label="security action center rows" />
+        <PaginationControls {...rowsPage} label="patch and CVE catalogue rows" />
         {!rowsPage.items.length && <EmptyState title="No catalogue records" detail="Refresh source feeds or ingest vendor advisories to populate the global catalogue." />}
       </section>
 
@@ -1621,6 +1716,7 @@ function PatchHotfixCompare({
 
 function CustomerEstate({
   state,
+  discovery,
   vendorLens,
   deviceText,
   setDeviceText,
@@ -1639,9 +1735,13 @@ function CustomerEstate({
   onConfirmAsset,
   onMatch,
   onPatchCompare,
+  onRegisterCollector,
+  onCreateDiscoveryPolicy,
+  onDownloadCollectorConfig,
   canWrite
 }: {
   state: CustomerEstateState;
+  discovery: AssetDiscoveryOverview | null;
   vendorLens: VendorLensState;
   deviceText: string;
   setDeviceText: (value: string) => void;
@@ -1660,6 +1760,9 @@ function CustomerEstate({
   onConfirmAsset: () => void;
   onMatch: () => void;
   onPatchCompare: () => void;
+  onRegisterCollector: () => void;
+  onCreateDiscoveryPolicy: () => void;
+  onDownloadCollectorConfig: () => void;
   canWrite: boolean;
 }) {
   const assetsPage = usePagination(state.assets.length ? state.assets : vendorLens.assets, 6, "customer-estate-assets");
@@ -1670,6 +1773,49 @@ function CustomerEstate({
 
   return (
     <>
+      <section className="wide-band">
+        <div className="section-title">
+          <div>
+            <p className="eyebrow">Asset discovery</p>
+            <h3>Collector Intake</h3>
+          </div>
+          <span className="pill teal">Outbound-only | review required</span>
+        </div>
+        <div className="split-grid">
+          <StatusLine label="Collectors" value={String(discovery?.metrics.collector_count || 0)} tone={discovery?.metrics.collector_count ? "trust" : "amber"} />
+          <StatusLine label="Enabled policies" value={String(discovery?.metrics.enabled_policy_count || 0)} tone={discovery?.metrics.enabled_policy_count ? "trust" : "steel"} />
+          <StatusLine label="Imported assets" value={String(discovery?.metrics.collector_imported_asset_count || 0)} tone="teal" />
+          <StatusLine label="Pending review" value={String(discovery?.metrics.pending_review_asset_count || 0)} tone="amber" />
+        </div>
+        <div className="report-actions">
+          <button type="button" className="action-button" onClick={onRegisterCollector} disabled={!canWrite}>
+            <ServerCog size={16} aria-hidden /> Register Collector
+          </button>
+          <button type="button" className="action-button secondary-action" onClick={onCreateDiscoveryPolicy} disabled={!canWrite}>
+            <ListFilter size={16} aria-hidden /> Create Policy
+          </button>
+          <button type="button" className="action-button" onClick={onDownloadCollectorConfig} disabled={!canWrite}>
+            <Download size={16} aria-hidden /> Download Collector Config
+          </button>
+        </div>
+        <div className="split-grid">
+          <section>
+            <h4>Supported categories</h4>
+            <p className="muted-copy">{(discovery?.categories || discoveryCollectorCategories).map(humanize).join(", ")}</p>
+          </section>
+          <section>
+            <h4>Collector boundary</h4>
+            <p className="muted-copy">Collector imports are source-bound evidence. PatchForge does not scan for exploits, deploy patches, mutate production systems, approve CAB, or accept risk.</p>
+          </section>
+        </div>
+        {discovery?.recent_runs?.[0] && (
+          <div className="insight-list">
+            <StatusLine label="Latest import" value={`${discovery.recent_runs[0].imported_asset_count} imported / ${discovery.recent_runs[0].rejected_asset_count} rejected`} tone={discovery.recent_runs[0].rejected_asset_count ? "amber" : "trust"} />
+            <StatusLine label="Run status" value={humanize(discovery.recent_runs[0].status)} tone="teal" />
+          </div>
+        )}
+      </section>
+
       <section className="wide-band">
         <div className="section-title">
           <div>
@@ -1815,8 +1961,15 @@ function AskPatchForge({
   latestComparison,
   agentStatus,
   agentGuidance,
+  selectedVulnerabilityId,
   onAsk,
   onPatchCompare,
+  onGenerateReportPack,
+  onOpenReports,
+  onOpenCustomerEstate,
+  onOpenVendorCatalogue,
+  onSelectCandidate,
+  onRefreshCandidateCatalogue,
   canWrite
 }: {
   question: string;
@@ -1827,11 +1980,23 @@ function AskPatchForge({
   latestComparison: VendorLensPatchComparison | null;
   agentStatus: OpenAiAgentStatus | null;
   agentGuidance: AgentGuidanceSnapshot | null;
+  selectedVulnerabilityId: string;
   onAsk: () => void;
   onPatchCompare: () => void;
+  onGenerateReportPack: () => void;
+  onOpenReports: () => void;
+  onOpenCustomerEstate: () => void;
+  onOpenVendorCatalogue: () => void;
+  onSelectCandidate: (candidate: Record<string, unknown>) => void;
+  onRefreshCandidateCatalogue: (candidate: Record<string, unknown>) => void;
   canWrite: boolean;
 }) {
   const response = answer?.response;
+  const candidateMatches = (answer?.candidate_matches || []).slice(0, 5);
+  const agentReady = Boolean(agentStatus?.enabled && agentStatus.configured);
+  const agentLabel = agentStatus?.enabled ? (agentStatus.configured ? "Ready" : "Unavailable") : "Runtime disabled";
+  const agentTone = agentReady ? "teal" : agentStatus?.enabled ? "amber" : "steel";
+  const answerMode = agentGuidance?.status === "verified" ? "Deterministic + verified AI" : "Deterministic";
   return (
     <>
       <section className="wide-band ask-panel">
@@ -1849,7 +2014,7 @@ function AskPatchForge({
         <p className="boundary-copy">
           {selectedAdvisoryId
             ? `Using selected advisory context ${selectedAdvisoryId}${selectedAssetId ? ` and asset ${selectedAssetId}` : ""}.`
-            : "No CVE/advisory is selected. Include a CVE/advisory ID, select one in Security Action Center or Vendors & Exploits Register, or run Customer Operational Assets matching first."}
+            : "No CVE/advisory is selected. Include a CVE/advisory ID, select one in Patch & CVE Catalogue or Vendor Catalogue, or run Customer Estate matching first."}
         </p>
         <p className="boundary-copy">Defensive-use only: PatchForge can explain impact, exposure, patch, hotfix, mitigation, evidence, and reporting choices. It refuses exploit code, payloads, bypass steps, and attacker playbooks.</p>
         <div className="report-actions">
@@ -1861,8 +2026,23 @@ function AskPatchForge({
           </button>
         </div>
         {latestComparison && <p className="boundary-copy">Patch Compare attached: current {humanize(latestComparison.current_version_affected || latestComparison.current_version_status)}, proposed {humanize(latestComparison.proposed_version_remediates || latestComparison.target_version_status)}. Final approval false.</p>}
+        <AskRunPlan
+          selectedAssetId={selectedAssetId}
+          selectedAdvisoryId={selectedAdvisoryId}
+          selectedVulnerabilityId={selectedVulnerabilityId}
+          hasAnswer={Boolean(response)}
+          hasPatchComparison={Boolean(latestComparison)}
+          candidateCount={candidateMatches.length}
+          canWrite={canWrite}
+          onOpenCustomerEstate={onOpenCustomerEstate}
+          onOpenVendorCatalogue={onOpenVendorCatalogue}
+          onPatchCompare={onPatchCompare}
+          onGenerateReportPack={onGenerateReportPack}
+          onOpenReports={onOpenReports}
+        />
         <div className="agent-status-strip">
-          <StatusLine label="OpenAI agent" value={agentStatus?.enabled ? (agentStatus.configured ? "Enabled and verified" : "Enabled, key missing") : "Disabled by default"} tone={agentStatus?.enabled && agentStatus.configured ? "teal" : "steel"} />
+          <StatusLine label="Displayed answer" value={answerMode} tone={agentGuidance?.status === "verified" ? "teal" : "trust"} />
+          <StatusLine label="OpenAI agent" value={agentLabel} tone={agentTone} detail={agentStatus?.model || "Status loads from protected API"} />
           <StatusLine label="Verifier" value={agentStatus?.verifier_required ? "Required" : "Required"} tone="amber" />
           <StatusLine label="Agent authority" value="Advisory only" tone="amber" />
         </div>
@@ -1875,6 +2055,7 @@ function AskPatchForge({
             <span className="pill amber">Final approval false</span>
           </div>
           <AdvisorBlock title="Short Answer" content={response.short_answer} />
+          <CandidateMatchList candidates={candidateMatches} onSelectCandidate={onSelectCandidate} onRefreshCandidateCatalogue={onRefreshCandidateCatalogue} canWrite={canWrite} />
           <AdvisorBlock title="Current Governed Posture" content={humanize(response.current_governed_posture)} />
           <AdvisorBlock title="Why" content={response.why} />
           <AdvisorList title="What We Know" items={response.what_we_know} />
@@ -1898,7 +2079,11 @@ function AskPatchForge({
                 <AdvisorBlock title="Decision Not Allowed Yet" content={agentGuidance.output.decision_not_allowed_yet || response.decision_not_allowed_yet} />
               </>
             ) : (
-              <p className="boundary-copy">{agentStatus?.enabled ? agentGuidance?.fallback?.message || "AI-assisted output will appear only after passing deterministic governance verification." : "Optional OpenAI-native agents are disabled. The deterministic PatchForge answer is active."}</p>
+              <div className="agent-readiness-grid">
+                <StatusLine label="Customer-facing answer" value="Deterministic answer active" tone="trust" />
+                <StatusLine label="AI assistance" value={agentLabel} tone={agentTone} />
+                <StatusLine label="Fallback" value={agentGuidance?.fallback?.message ? "Recorded" : "Deterministic"} tone="steel" detail={agentGuidance?.fallback?.message || "Verified AI guidance appears only after runtime enablement and verifier pass."} />
+              </div>
             )}
           </section>
         </section>
@@ -1906,6 +2091,163 @@ function AskPatchForge({
         <EmptyState title="No advisor response yet" detail="Ask a governed PatchForge question. The response will stay advisory-only and will not approve, deploy, or accept risk." />
       )}
     </>
+  );
+}
+
+function AskRunPlan({
+  selectedAssetId,
+  selectedAdvisoryId,
+  selectedVulnerabilityId,
+  hasAnswer,
+  hasPatchComparison,
+  candidateCount,
+  canWrite,
+  onOpenCustomerEstate,
+  onOpenVendorCatalogue,
+  onPatchCompare,
+  onGenerateReportPack,
+  onOpenReports
+}: {
+  selectedAssetId: string;
+  selectedAdvisoryId: string;
+  selectedVulnerabilityId: string;
+  hasAnswer: boolean;
+  hasPatchComparison: boolean;
+  candidateCount: number;
+  canWrite: boolean;
+  onOpenCustomerEstate: () => void;
+  onOpenVendorCatalogue: () => void;
+  onPatchCompare: () => void;
+  onGenerateReportPack: () => void;
+  onOpenReports: () => void;
+}) {
+  const selectedContext = selectedAdvisoryId || selectedVulnerabilityId;
+  const runPlanItems: Array<{ title: string; detail: string; icon: typeof Search; actionLabel: string; onClick: () => void; disabled?: boolean }> = [
+    {
+      title: "Find the right CVE or patch",
+      detail: selectedContext
+        ? `Selected ${selectedContext}. PatchForge can now explain impact, urgency, evidence gaps, and next actions against that item.`
+        : candidateCount
+          ? `${candidateCount} candidate CVE, advisory, or patch scope matches are available below. Select one before comparing or reporting.`
+          : "Use the catalogue or ask a vendor/product question. PatchForge will offer candidate CVEs, advisories, or patch scopes when it can match them.",
+      icon: Search,
+      actionLabel: "Open Catalogue",
+      onClick: onOpenVendorCatalogue
+    },
+    {
+      title: "Confirm customer impact",
+      detail: selectedAssetId
+        ? `Using estate asset ${selectedAssetId}. Feature, exposure, firmware, and management-plane evidence still need review.`
+        : "Capture the customer device, firmware, enabled features, exposure, and evidence references so urgency is understandable.",
+      icon: ServerCog,
+      actionLabel: "Customer Estate",
+      onClick: onOpenCustomerEstate
+    },
+    {
+      title: "Compare the patch or mitigation",
+      detail: hasPatchComparison
+        ? "Patch Compare is attached, including current version, proposed version, security delta, operational delta, and evidence still needed."
+        : "Run Patch Compare after selecting an advisory and asset to see fixed-version evidence, operational risk, rollback needs, and must-do posture.",
+      icon: Layers3,
+      actionLabel: "Run Patch Compare",
+      onClick: onPatchCompare,
+      disabled: !canWrite || !selectedAssetId || !selectedAdvisoryId
+    },
+    {
+      title: "Create the decision pack",
+      detail: hasAnswer
+        ? "Generate the signed governance pack for customer, CAB, board, or steering group reporting. Final approval remains false until named human approval."
+        : "Ask PatchForge first so the pack includes the latest governed explanation, impact, risks, evidence needs, and recommended next action.",
+      icon: FileCheck2,
+      actionLabel: "Generate Signed Pack",
+      onClick: onGenerateReportPack,
+      disabled: !canWrite || !selectedVulnerabilityId
+    },
+    {
+      title: "Run stakeholder reports",
+      detail: "Use Reports for customer packs, board vulnerability summaries, CAB decision reports, evidence appendices, and signed ZIP exports.",
+      icon: FileText,
+      actionLabel: "Reports",
+      onClick: onOpenReports
+    }
+  ];
+
+  return (
+    <section className="wide-band next-actions ask-run-plan" aria-label="Ask PatchForge run plan">
+      <div className="section-title compact-title">
+        <div>
+          <p className="eyebrow">End-to-end governed flow</p>
+          <h3>Run Plan</h3>
+        </div>
+        <span className="pill amber">advisory-only</span>
+      </div>
+      <div className="next-action-grid vendorlens-next-grid">
+        {runPlanItems.map(({ title, detail, icon: Icon, actionLabel, onClick, disabled }) => (
+          <button key={title} type="button" className="next-action-card clickable-card" onClick={onClick} disabled={disabled}>
+            <Icon size={18} aria-hidden />
+            <span>
+              <h4>{title}</h4>
+              <p>{detail}</p>
+              <small>{actionLabel}</small>
+            </span>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function CandidateMatchList({
+  candidates,
+  onSelectCandidate,
+  onRefreshCandidateCatalogue,
+  canWrite
+}: {
+  candidates: Array<Record<string, unknown>>;
+  onSelectCandidate: (candidate: Record<string, unknown>) => void;
+  onRefreshCandidateCatalogue: (candidate: Record<string, unknown>) => void;
+  canWrite: boolean;
+}) {
+  if (!candidates.length) {
+    return null;
+  }
+  return (
+    <div className="advisor-block candidate-match-panel">
+      <h4>Candidate CVEs / Patches / Catalogue Scopes</h4>
+      <div className="candidate-match-list">
+        {candidates.map((candidate) => {
+          const id = candidateValue(candidate, "advisory_id", "cve", "cve_id", "id") || "candidate advisory";
+          const cve = candidateValue(candidate, "cve", "cve_id");
+          const candidateType = candidateValue(candidate, "candidate_type");
+          const selectable = candidate.selectable !== false && candidateType !== "vendor_catalogue" && Boolean(cve || candidateValue(candidate, "advisory_id"));
+          const product = [candidateValue(candidate, "vendor_name"), candidateValue(candidate, "product_family"), candidateValue(candidate, "model")].filter(Boolean).join(" ");
+          const fixedVersions = candidateList(candidate.fixed_versions);
+          const patchAvailable = Boolean(candidate.patch_available);
+          const patchText = patchAvailable
+            ? `Patch evidence available${fixedVersions.length ? `: ${fixedVersions.join(", ")}` : ""}`
+            : candidateType === "vendor_catalogue" ? "Refresh source-bound catalogue before selection" : "Patch evidence not confirmed";
+          return (
+            <article className="candidate-match-item" key={id}>
+              <div>
+                <strong>{cve || id}</strong>
+                <span>{product || "Product pending"}{candidateValue(candidate, "affected_feature") ? ` | ${candidateValue(candidate, "affected_feature")}` : ""}</span>
+                <small>{humanize(candidateValue(candidate, "severity") || "unknown")} severity | {humanize(candidateValue(candidate, "urgency_posture") || "unknown")} | {patchText}</small>
+                {candidateValue(candidate, "selection_prompt") && <small>{candidateValue(candidate, "selection_prompt")}</small>}
+              </div>
+              {selectable ? (
+                <button type="button" className="action-button secondary-action" onClick={() => onSelectCandidate(candidate)} disabled={!canWrite} aria-label={`Use advisory ${id}`}>
+                  <CheckCircle2 size={16} aria-hidden /> Use
+                </button>
+              ) : (
+                <button type="button" className="action-button secondary-action" onClick={() => onRefreshCandidateCatalogue(candidate)} disabled={!canWrite || !candidateValue(candidate, "vendor_id")} aria-label={`Refresh catalogue ${candidateValue(candidate, "vendor_name") || id}`}>
+                  <RefreshCw size={16} aria-hidden /> Refresh
+                </button>
+              )}
+            </article>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -2274,7 +2616,7 @@ function ReportsPacks({
       <section className="wide-band report-brief">
         <div>
           <p className="eyebrow">Reports</p>
-          <h3>CISO, operations, vendor, customer, emergency, monthly, and CAB packs in one place.</h3>
+          <h3>Board, CAB, customer, and technical evidence outputs generated from signed packs.</h3>
           <p className="muted-copy">Exports show pack ID, baseline, renderer commit, image tag, evidence state, customer context, VendorLens context, report currency, and final approval state before download.</p>
         </div>
         <div className="report-pack-selector">
@@ -3018,7 +3360,7 @@ function VendorLens({
   return (
     <>
       <div className="section-title">
-        <h3>VendorLens</h3>
+        <h3>Vendor Catalogue</h3>
         <span className="pill amber">Source-bound advisory intelligence</span>
       </div>
 
@@ -3449,20 +3791,20 @@ function Reports({
   return (
     <>
       <div className="section-title">
-        <h3>Board Packs & Reports</h3>
+        <h3>Decision Reports</h3>
         <span className="pill trust">DOCX / PDF only</span>
       </div>
       <section className="wide-band report-brief">
         <div>
-          <p className="eyebrow">Customer demo operating pack</p>
-          <h3>Professional outputs generated from live signed packs</h3>
+          <p className="eyebrow">Signed governance outputs</p>
+          <h3>Four practical reports for customer, board, CAB, and audit review</h3>
           <p className="muted-copy">
             Reports are generated from the signed decision-pack record, preserving the source-pack/current-state distinction, evidence readiness, advisory status, and no-autonomous-action boundary.
           </p>
         </div>
         <div className="report-pack-selector">
           <span className="pill steel">{verifiedPacks.length} verified packs</span>
-          <span className="pill teal">{reports.length} report templates</span>
+          <span className="pill teal">{reports.length} active reports</span>
         </div>
       </section>
 
@@ -3505,7 +3847,7 @@ function Reports({
         ))}
       </div>
       <PaginationControls {...reportPage} label="reports" />
-      {!reports.length && <EmptyState title="No report catalogue" detail="Report templates load from the protected PatchForge API." />}
+      {!reports.length && <EmptyState title="No report catalogue" detail="Active report outputs load from the protected PatchForge API." />}
       {!decisionPacks.length && <EmptyState title="No signed pack available" detail="Generate a signed decision pack before producing board packs or customer reports." />}
     </>
   );
@@ -3519,6 +3861,7 @@ function Admin({
   adminTier,
   setAdminTier,
   adminHealth,
+  agentStatus,
   onSave,
   purgeScopes,
   setPurgeScopes,
@@ -3535,6 +3878,7 @@ function Admin({
   adminTier: string;
   setAdminTier: (value: string) => void;
   adminHealth: AdminHealth | null;
+  agentStatus: OpenAiAgentStatus | null;
   onSave: () => void;
   purgeScopes: Record<string, boolean>;
   setPurgeScopes: (value: Record<string, boolean>) => void;
@@ -3547,6 +3891,9 @@ function Admin({
   const healthPage = usePagination(adminHealth?.checks || [], 8, "admin-health");
   const sectionPage = usePagination(adminSections, 12, "admin-sections");
   const selectedPurgeScopeCount = Object.values(purgeScopes).filter(Boolean).length;
+  const agentReady = Boolean(agentStatus?.enabled && agentStatus.configured);
+  const agentLabel = agentStatus?.enabled ? (agentStatus.configured ? "Ready" : "Unavailable") : "Runtime disabled";
+  const agentTone = agentReady ? "teal" : agentStatus?.enabled ? "amber" : "steel";
 
   return (
     <>
@@ -3586,6 +3933,9 @@ function Admin({
             <span>Live Azure mutation</span>
             <strong className="pill amber">Blocked</strong>
           </div>
+          <StatusLine label="Ask PatchForge deterministic" value="Active" tone="trust" />
+          <StatusLine label="AI assistance" value={agentLabel} tone={agentTone} detail={agentStatus?.model || "Runtime status unavailable"} />
+          <StatusLine label="AI verifier" value="Required" tone="amber" />
           <button type="button" className="action-button" onClick={onSave}>
             <CheckCircle2 size={16} aria-hidden /> Save Admin Configuration
           </button>
@@ -3647,10 +3997,14 @@ function Admin({
 
       <div className="admin-grid admin-section-grid">
         {sectionPage.items.map((section) => (
-          <button className="admin-tile" type="button" key={section}>
+          <article className="admin-tile admin-status-tile" key={section.label}>
             <KeyRound size={17} aria-hidden />
-            <span>{section}</span>
-          </button>
+            <div>
+              <strong>{section.label}</strong>
+              <span className={`pill ${section.tone}`}>{section.status}</span>
+              <p>{section.detail}</p>
+            </div>
+          </article>
         ))}
       </div>
       <PaginationControls {...sectionPage} label="admin sections" />
@@ -3862,12 +4216,33 @@ function emptyLiveState(tenantId: string): LiveState {
     latestAgentGuidance: null,
     sourceFeedState: { feeds: [], recent_runs: [] },
     adminHealth: null,
-    adminConfig: {}
+    adminConfig: {},
+    discovery: null
   };
 }
 
 function parseList(value: string): string[] {
   return value.split(",").map((item) => item.trim()).filter(Boolean);
+}
+
+function candidateValue(candidate: Record<string, unknown>, ...keys: string[]): string {
+  for (const key of keys) {
+    const value = candidate[key];
+    if (value !== undefined && value !== null && value !== "") {
+      return String(value);
+    }
+  }
+  return "";
+}
+
+function candidateList(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item)).filter(Boolean);
+  }
+  if (value === undefined || value === null || value === "") {
+    return [];
+  }
+  return [String(value)];
 }
 
 function humanize(value: string): string {
@@ -3942,6 +4317,90 @@ function signalLabel(item: VulnerabilityRecord) {
 function shortValue(value = "") {
   const text = String(value || "Not recorded");
   return text.length > 42 ? `${text.slice(0, 39)}...` : text;
+}
+
+function buildDiscoveryCollectorConfig({
+  apiBaseUrl,
+  tenantId,
+  discovery
+}: {
+  apiBaseUrl: string;
+  tenantId: string;
+  discovery: AssetDiscoveryOverview | null;
+}) {
+  const collector = discovery?.collectors?.[0];
+  const policy = discovery?.policies?.[0];
+  const collectorId = collector?.collector_id || "collector-customer-estate-mvp";
+  const categories = collector?.enabled_categories?.length
+    ? collector.enabled_categories
+    : policy?.categories?.length
+      ? policy.categories
+      : discoveryCollectorCategories;
+  const site = collector?.site || "Primary site";
+
+  return {
+    apiBaseUrl: apiBaseUrl.replace(/\/+$/, ""),
+    tenantId,
+    collector: {
+      collector_id: collectorId,
+      name: collector?.name || "Customer estate collector MVP",
+      site,
+      environment: collector?.environment || "production",
+      categories
+    },
+    policy: {
+      policy_id: policy?.policy_id || "policy-customer-estate-mvp",
+      collector_id: collectorId,
+      name: policy?.name || "Read-only customer estate snapshot",
+      categories: policy?.categories?.length ? policy.categories : categories,
+      credential_reference: policy?.credential_reference || "customer-vault:patchforge/read-only-discovery",
+      scope: {
+        sites: [site],
+        source_systems: ["local_host", "hyperv", "azure_cli", "http_json"]
+      }
+    },
+    auth: {
+      bearerTokenEnv: "PATCHFORGE_COLLECTOR_TOKEN"
+    },
+    adapters: [
+      {
+        type: "local_host",
+        enabled: true
+      },
+      {
+        type: "hyperv",
+        enabled: true
+      },
+      {
+        type: "azure_cli",
+        enabled: false,
+        subscription: "00000000-0000-0000-0000-000000000000"
+      },
+      {
+        type: "http_json",
+        enabled: false,
+        url: "https://nms.example.test/api/assets",
+        headers: {
+          Authorization: "Bearer env:NMS_READONLY_TOKEN"
+        },
+        assetPath: "items",
+        fieldMap: {
+          asset_id: "id",
+          category: "category",
+          hostname: "hostname",
+          vendor_name: "vendor",
+          product_family: "product",
+          model: "model",
+          firmware_version: "version",
+          ip_addresses: "ip"
+        }
+      }
+    ]
+  };
+}
+
+function safeFileStem(value: string) {
+  return String(value || "tenant").toLowerCase().replace(/[^a-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "tenant";
 }
 
 function downloadJson(fileName: string, payload: unknown) {

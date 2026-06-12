@@ -9,7 +9,7 @@ import { PatchForgeJsonStorage } from "./patchforge/storage.js";
 import { createSourceFeedClient } from "./patchforge/sourceFeeds.js";
 import { runSchedulerOnce } from "./patchforge/scheduler.js";
 import { createAuthConfigFromEnv } from "./auth.js";
-import { buildReportContext } from "./patchforge/reports.js";
+import { REPORT_CATALOG, buildReportContext } from "./patchforge/reports.js";
 
 async function withApi(run, options = {}) {
   const storageRoot = await mkdtemp(path.join(os.tmpdir(), "patchforge-api-"));
@@ -802,12 +802,114 @@ test("VendorLens catalogue, assets, advisories, config applicability, chat, and 
     assert.ok(generated.body.decision_pack.artefacts["vendorlens_decision_context.json"]);
 
     const context = buildReportContext({
-      reportType: "ciso_patch_version_comparison_report",
+      reportType: "technical_evidence_appendix",
       pack: generated.body.decision_pack
     });
     assert.equal(context.configApplicability.final_approval_issued, false);
     assert.equal(context.configApplicability.urgency_posture, "urgent_scope_confirmation_required");
     assert.equal(context.vendorLensPatchComparison.final_approval_issued, false);
+  });
+});
+
+test("decision pack generation excludes mismatched VendorLens context instead of mixing reports", async () => {
+  await withApi(async (baseUrl) => {
+    await request(baseUrl, "/api/patchforge/vulnerabilities/ingest", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        vulnerability_id: "CVE-2026-GOOGLE-001",
+        title: "Google Chromium source-bound CVE",
+        severity: "high",
+        known_exploited: true,
+        patch_status: "unknown",
+        sources: [{ source_record_id: "src-google-1", source_class: "kev_record", source_name: "CISA KEV" }]
+      })
+    });
+
+    await request(baseUrl, "/api/patchforge/vendorlens/assets", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        asset_id: "net-juniper-stale",
+        vendor_id: "juniper",
+        vendor_name: "Juniper",
+        product_family: "SRX",
+        model: "4200",
+        firmware_version: "21.3",
+        internet_facing: true,
+        enabled_features: ["ipsec_vpn", "ssl_vpn"],
+        review_state: "pending_review",
+        evidence_state: "referenced"
+      })
+    });
+
+    await request(baseUrl, "/api/patchforge/vendorlens/advisories/ingest", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        advisory_id: "nvd-CVE-2007-1891",
+        vendor_id: "akamai",
+        vendor_name: "Akamai",
+        cve: "CVE-2007-1891",
+        title: "Akamai Download Manager stale advisory",
+        severity: "high",
+        product_family: "Download Manager",
+        patch_available: false,
+        source_url: "https://example.invalid/akamai"
+      })
+    });
+
+    const staleAssessment = await request(baseUrl, "/api/patchforge/vendorlens/applicability/assess", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        asset_id: "net-juniper-stale",
+        advisory_id: "nvd-CVE-2007-1891"
+      })
+    });
+
+    const staleComparison = await request(baseUrl, "/api/patchforge/vendorlens/patch-compare", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        asset_id: "net-juniper-stale",
+        advisory_id: "nvd-CVE-2007-1891",
+        target_version: "7.2.8"
+      })
+    });
+
+    const generated = await request(baseUrl, "/api/patchforge/decision-packs/generate", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        vulnerability_id: "CVE-2026-GOOGLE-001",
+        advisory_id: "nvd-CVE-2007-1891",
+        asset_id: "net-juniper-stale",
+        config_applicability_assessment: staleAssessment.body.assessment,
+        vendorlens_patch_comparison: staleComparison.body.comparison,
+        network_vendor_profile_snapshot: { vendor_id: "akamai", vendor_name: "Akamai" },
+        customer_network_asset_snapshot: { asset_id: "net-juniper-stale", vendor_id: "juniper", product_family: "SRX" },
+        vendor_security_advisory_snapshot: { advisory_id: "nvd-CVE-2007-1891", vendor_id: "akamai", cve: "CVE-2007-1891" }
+      })
+    });
+
+    assert.equal(generated.response.status, 201);
+    const artefacts = generated.body.decision_pack.artefacts;
+    assert.equal(artefacts["config_applicability_assessment.json"].available, false);
+    assert.equal(artefacts["vendorlens_patch_comparison.json"].available, false);
+    assert.equal(artefacts["network_vendor_profile_snapshot.json"].available, false);
+    assert.equal(artefacts["customer_network_asset_snapshot.json"].available, false);
+    assert.equal(artefacts["vendor_security_advisory_snapshot.json"].available, false);
+
+    const packedContext = JSON.stringify({
+      network_vendor_profile_snapshot: artefacts["network_vendor_profile_snapshot.json"],
+      customer_network_asset_snapshot: artefacts["customer_network_asset_snapshot.json"],
+      vendor_security_advisory_snapshot: artefacts["vendor_security_advisory_snapshot.json"],
+      config_applicability_assessment: artefacts["config_applicability_assessment.json"],
+      vendorlens_patch_comparison: artefacts["vendorlens_patch_comparison.json"],
+      vendorlens_decision_context: artefacts["vendorlens_decision_context.json"]
+    });
+    assert.doesNotMatch(packedContext, /CVE-2007-1891|Akamai|net-juniper-stale|SRX/i);
   });
 });
 
@@ -845,16 +947,19 @@ test("VendorLens NVD source refresh is source-bound and pending review", async (
 });
 
 test("VendorLens NVD catalogue refresh pages vendor CVEs without requiring a single CVE", async () => {
+  const requestedKeywords = [];
   await withApi(async (baseUrl) => {
     const refresh = await request(baseUrl, "/api/patchforge/vendorlens/sources/refresh", {
       method: "POST",
       headers: { "x-tenant-id": "tenant-a" },
-      body: JSON.stringify({ adapter: "nvd_cve_api", mode: "catalogue", vendor_id: "fortinet", results_per_page: 2, max_pages: 2 })
+      body: JSON.stringify({ adapter: "nvd_cve_api", mode: "catalogue", vendor_id: "fortinet", results_per_page: 2, max_pages: 2, max_keywords: 3 })
     });
     assert.equal(refresh.response.status, 202);
     assert.equal(refresh.body.source_feed_run.status, "completed");
     assert.equal(refresh.body.source_feed_run.records_ingested, 3);
     assert.equal(refresh.body.source_feed_run.feed_id, "nvd-cve-2-catalogue");
+    assert.ok(refresh.body.source_feed_run.source_keywords.some((item) => item.keyword === "Fortinet FortiGate"));
+    assert.ok(new Set(requestedKeywords).has("Fortinet FortiGate"));
 
     const advisories = await request(baseUrl, "/api/patchforge/vendorlens/advisories", {
       headers: { "x-tenant-id": "tenant-a" }
@@ -863,8 +968,11 @@ test("VendorLens NVD catalogue refresh pages vendor CVEs without requiring a sin
     assert.ok(advisories.body.advisories.every((item) => item.review_state === "pending_review"));
   }, {
     vendorLensFetchImpl: async (url) => {
-      assert.match(String(url), /keywordSearch=Fortinet/);
-      const start = new URL(String(url)).searchParams.get("startIndex");
+      const parsed = new URL(String(url));
+      const keyword = parsed.searchParams.get("keywordSearch");
+      requestedKeywords.push(keyword);
+      assert.ok(["Fortinet", "Fortinet FortiGate", "Fortinet FortiOS"].includes(keyword));
+      const start = parsed.searchParams.get("startIndex");
       const ids = start === "2"
         ? ["CVE-2026-NVD-CAT-003"]
         : ["CVE-2026-NVD-CAT-001", "CVE-2026-NVD-CAT-002"];
@@ -1058,6 +1166,9 @@ test("PatchForge catalogue, customer operational assets, ask, and reports APIs w
     });
     assert.equal(agentStatus.response.status, 200);
     assert.equal(agentStatus.body.openai_agent.enabled, false);
+    assert.equal(agentStatus.body.openai_agent.model, "gpt-5.4");
+    assert.equal(agentStatus.body.openai_agent.key_configured, false);
+    assert.equal(agentStatus.body.openai_agent.key_value_exposed, false);
     assert.equal(agentStatus.body.openai_agent.final_approval_issued, false);
 
     const disabledAgent = await request(baseUrl, "/api/patchforge/agents/ask", {
@@ -1179,6 +1290,170 @@ test("customer asset CSV import is tenant scoped", async () => {
   });
 });
 
+test("asset discovery collectors import categorized assets as source-bound pending-review evidence", async () => {
+  await withApi(async (baseUrl) => {
+    const overview = await request(baseUrl, "/api/patchforge/discovery/overview", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(overview.response.status, 200);
+    assert.ok(overview.body.discovery.categories.includes("network_device"));
+    assert.equal(overview.body.discovery.boundary.no_vulnerability_scanning, true);
+    assert.equal(overview.body.discovery.boundary.no_patch_deployment, true);
+
+    const collector = await request(baseUrl, "/api/patchforge/discovery/collectors", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        collector_id: "collector-london-1",
+        name: "London discovery collector",
+        platform: "windows",
+        site: "London",
+        categories: ["network_device", "security_appliance", "physical_server"]
+      })
+    });
+    assert.equal(collector.response.status, 201);
+    assert.equal(collector.body.collector.connection_mode, "outbound_only");
+    assert.equal(collector.body.collector.final_approval_issued, false);
+
+    const policy = await request(baseUrl, "/api/patchforge/discovery/policies", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        policy_id: "policy-london-network",
+        collector_id: "collector-london-1",
+        name: "London network and server inventory",
+        categories: ["network_device", "security_appliance", "physical_server"],
+        discovery_methods: ["manual_snapshot", "snmpv3_read_only"],
+        credential_reference: "customer-vault:patchforge/snmpv3-readonly",
+        scope: {
+          sites: ["London"],
+          ip_ranges: ["10.10.0.0/24"]
+        }
+      })
+    });
+    assert.equal(policy.response.status, 201);
+    assert.equal(policy.body.policy.credential_mode, "reference_only");
+    assert.equal(policy.body.policy.read_only, true);
+
+    const imported = await request(baseUrl, "/api/patchforge/discovery/import", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        run_id: "run-london-1",
+        collector_id: "collector-london-1",
+        policy_id: "policy-london-network",
+        discovery_method: "manual_snapshot",
+        assets: [{
+          asset_id: "disc-fw-juniper-1",
+          category: "security_appliance",
+          hostname: "srx4100-edge-1",
+          vendor_name: "Juniper",
+          product_family: "SRX",
+          model: "SRX4100",
+          firmware_version: "22.4R3",
+          internet_facing: true,
+          management_exposure: "internal_management",
+          enabled_features: ["ipsec_vpn", "ssl_vpn"],
+          ip_addresses: ["10.10.0.10"],
+          confidence: 0.91
+        }, {
+          asset_id: "disc-win-phys-1",
+          category: "physical_server",
+          hostname: "win-hv-01",
+          vendor_name: "Microsoft",
+          product_family: "Windows Server",
+          os_version: "2022",
+          enabled_features: ["hyper-v"],
+          confidence: 0.8
+        }]
+      })
+    });
+    assert.equal(imported.response.status, 202);
+    assert.equal(imported.body.run.status, "completed");
+    assert.equal(imported.body.run.imported_asset_count, 2);
+    assert.equal(imported.body.run.final_approval_issued, false);
+    assert.equal(imported.body.boundary.no_exploit_execution, true);
+    assert.equal(imported.body.imported_assets[0].review_state, "pending_review");
+    assert.equal(imported.body.imported_assets[0].evidence_state, "collector_imported_unreviewed");
+    assert.equal(imported.body.imported_assets[0].asset_category, "security_appliance");
+    assert.equal(imported.body.imported_assets[0].collector_id, "collector-london-1");
+    assert.equal(imported.body.imported_assets[0].collector_policy_id, "policy-london-network");
+    assert.equal(imported.body.imported_assets[0].collector_run_id, "run-london-1");
+    assert.equal(imported.body.imported_assets[0].final_approval_issued, false);
+
+    const assets = await request(baseUrl, "/api/patchforge/vendorlens/assets", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(assets.response.status, 200);
+    const discoveredFirewall = assets.body.assets.find((asset) => asset.asset_id === "disc-fw-juniper-1");
+    assert.equal(discoveredFirewall.discovery_source, "patchforge_collector");
+    assert.equal(discoveredFirewall.review_required, true);
+    assert.deepEqual(discoveredFirewall.ip_addresses, ["10.10.0.10"]);
+
+    const updatedOverview = await request(baseUrl, "/api/patchforge/discovery/overview", {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(updatedOverview.body.discovery.metrics.collector_count, 1);
+    assert.equal(updatedOverview.body.discovery.metrics.collector_imported_asset_count, 2);
+    assert.equal(updatedOverview.body.discovery.metrics.pending_review_asset_count, 2);
+
+    const rawSecret = await request(baseUrl, "/api/patchforge/discovery/policies", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        collector_id: "collector-london-1",
+        name: "Bad policy",
+        password: "do-not-store"
+      })
+    });
+    assert.equal(rawSecret.response.status, 400);
+    assert.equal(rawSecret.body.error, "raw_secret_rejected");
+
+    await request(baseUrl, "/api/patchforge/discovery/collectors", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        collector_id: "collector-manchester-1",
+        name: "Manchester discovery collector",
+        platform: "linux",
+        site: "Manchester",
+        categories: ["network_device"]
+      })
+    });
+    await request(baseUrl, "/api/patchforge/discovery/policies", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        policy_id: "policy-manchester-network",
+        collector_id: "collector-manchester-1",
+        name: "Manchester network inventory",
+        categories: ["network_device"]
+      })
+    });
+    const mismatchedPolicy = await request(baseUrl, "/api/patchforge/discovery/import", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        collector_id: "collector-london-1",
+        policy_id: "policy-manchester-network",
+        assets: [{
+          category: "network_device",
+          hostname: "edge-switch-1",
+          vendor_name: "Cisco"
+        }]
+      })
+    });
+    assert.equal(mismatchedPolicy.response.status, 400);
+    assert.equal(mismatchedPolicy.body.error, "policy_collector_mismatch");
+
+    const tenantBAssets = await request(baseUrl, "/api/patchforge/vendorlens/assets", {
+      headers: { "x-tenant-id": "tenant-b" }
+    });
+    assert.equal(tenantBAssets.response.status, 200);
+    assert.equal(tenantBAssets.body.assets.some((asset) => asset.asset_id === "disc-fw-juniper-1"), false);
+  });
+});
+
 test("priority, patch compare, workflow, and action packs remain human approved", async () => {
   await withApi(async (baseUrl) => {
     const priority = await request(baseUrl, "/api/patchforge/priority/index", {
@@ -1240,7 +1515,7 @@ test("priority, patch compare, workflow, and action packs remain human approved"
     const pack = await request(baseUrl, "/api/patchforge/action-packs", {
       method: "POST",
       headers: { "x-tenant-id": "tenant-a" },
-      body: JSON.stringify({ customer_id: "cust-a", report_type: "Emergency Advisory Report", evidence_refs: ["src-nvd-fixture"], source_hashes: ["abc123"] })
+      body: JSON.stringify({ customer_id: "cust-a", report_type: "CAB Patch Decision Report", evidence_refs: ["src-nvd-fixture"], source_hashes: ["abc123"] })
     });
     assert.equal(pack.response.status, 201);
     assert.equal(pack.body.signed_action_pack.verifier_result.verified, true);
@@ -1248,6 +1523,14 @@ test("priority, patch compare, workflow, and action packs remain human approved"
       headers: { "x-tenant-id": "tenant-a" }
     });
     assert.equal(verified.body.verifier_result.verified, true);
+
+    const legacyReportsEndpoint = await request(baseUrl, "/api/patchforge/reports", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({ report_type: "Security Operations Action Plan" })
+    });
+    assert.equal(legacyReportsEndpoint.response.status, 404);
+    assert.equal(legacyReportsEndpoint.body.error, "not_found");
   });
 });
 
@@ -1632,7 +1915,21 @@ test("professional decision pack reports export as specific DOCX and PDF decisio
       headers: { "x-tenant-id": "tenant-a" }
     });
     assert.equal(catalog.response.status, 200);
-    assert.ok(catalog.body.reports.some((report) => report.report_type === "board_vulnerability_remediation_summary"));
+    const activeReportTypes = REPORT_CATALOG.map((report) => report.report_type);
+    assert.deepEqual(catalog.body.reports.map((report) => report.report_type), activeReportTypes);
+    for (const removedReportType of [
+      "ciso_executive_risk_brief",
+      "security_operations_action_plan",
+      "vendor_exposure_report",
+      "customer_estate_vulnerability_report",
+      "patch_hotfix_decision_pack",
+      "emergency_advisory_report",
+      "monthly_vulnerability_governance_pack",
+      "ciso_patch_version_comparison_report",
+      "board_vulnerability_summary"
+    ]) {
+      assert.ok(!catalog.body.reports.some((report) => report.report_type === removedReportType));
+    }
 
     const docx = await fetch(`${baseUrl}/api/patchforge/decision-packs/PF-TEST-0001/reports/board_vulnerability_remediation_summary.docx`, {
       headers: { "x-tenant-id": "tenant-a" }
@@ -1725,11 +2022,56 @@ test("professional decision pack reports export as specific DOCX and PDF decisio
     assert.match(cabDocxText, /Approval Conditions/);
     assert.match(cabDocxText, /Report Version Metadata/);
 
+    const cabPdf = await fetch(`${baseUrl}/api/patchforge/decision-packs/PF-TEST-0001/reports/cab_patch_decision_report.pdf`, {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(cabPdf.status, 200);
+    assert.equal(Buffer.from(await cabPdf.arrayBuffer()).subarray(0, 4).toString("utf8"), "%PDF");
+
+    const technicalDocx = await fetch(`${baseUrl}/api/patchforge/decision-packs/PF-TEST-0001/reports/technical_evidence_appendix.docx`, {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(technicalDocx.status, 200);
+    const technicalDocxText = await extractDocxText(Buffer.from(await technicalDocx.arrayBuffer()));
+    assert.match(technicalDocxText, /Technical Evidence Appendix/);
+    assert.match(technicalDocxText, /Customer Device \/ Service Context/);
+    assert.match(technicalDocxText, /Matching CVEs \/ Advisories/);
+    assert.match(technicalDocxText, /Applicability Assessment/);
+    assert.match(technicalDocxText, /Patch Compare Result/);
+    assert.match(technicalDocxText, /Signed Pack Metadata/);
+
+    const technicalPdf = await fetch(`${baseUrl}/api/patchforge/decision-packs/PF-TEST-0001/reports/technical_evidence_appendix.pdf`, {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(technicalPdf.status, 200);
+    const technicalPdfBytes = Buffer.from(await technicalPdf.arrayBuffer());
+    assert.equal(technicalPdfBytes.subarray(0, 4).toString("utf8"), "%PDF");
+    assert.match(extractPdfText(technicalPdfBytes), /Technical Evidence Appendix/);
+
     const unknown = await request(baseUrl, "/api/patchforge/decision-packs/PF-TEST-0001/reports/not-a-report.pdf", {
       headers: { "x-tenant-id": "tenant-a" }
     });
     assert.equal(unknown.response.status, 400);
     assert.equal(unknown.body.error, "unknown_report_type");
+    assert.deepEqual(unknown.body.allowed_reports, activeReportTypes);
+    for (const removedReportType of [
+      "ciso_executive_risk_brief",
+      "security_operations_action_plan",
+      "vendor_exposure_report",
+      "customer_estate_vulnerability_report",
+      "patch_hotfix_decision_pack",
+      "emergency_advisory_report",
+      "monthly_vulnerability_governance_pack",
+      "ciso_patch_version_comparison_report",
+      "board_vulnerability_summary"
+    ]) {
+      const removed = await request(baseUrl, `/api/patchforge/decision-packs/PF-TEST-0001/reports/${removedReportType}.pdf`, {
+        headers: { "x-tenant-id": "tenant-a" }
+      });
+      assert.equal(removed.response.status, 400, removedReportType);
+      assert.equal(removed.body.error, "unknown_report_type");
+      assert.deepEqual(removed.body.allowed_reports, activeReportTypes);
+    }
   }, { sourceFeedClient });
 });
 

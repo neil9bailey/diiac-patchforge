@@ -19,48 +19,6 @@ import PDFDocument from "pdfkit";
 
 export const REPORT_CATALOG = [
   {
-    report_type: "ciso_executive_risk_brief",
-    title: "CISO Executive Risk Brief",
-    audience: "CISO and executive risk owners",
-    formats: ["docx", "pdf"]
-  },
-  {
-    report_type: "security_operations_action_plan",
-    title: "Security Operations Action Plan",
-    audience: "Security operations",
-    formats: ["docx", "pdf"]
-  },
-  {
-    report_type: "vendor_exposure_report",
-    title: "Vendor Exposure Report",
-    audience: "Vendor and platform owners",
-    formats: ["docx", "pdf"]
-  },
-  {
-    report_type: "customer_estate_vulnerability_report",
-    title: "Customer Estate Vulnerability Report",
-    audience: "Customer assurance and MSP operations",
-    formats: ["docx", "pdf"]
-  },
-  {
-    report_type: "patch_hotfix_decision_pack",
-    title: "Patch / Hotfix Decision Pack",
-    audience: "CAB and change owners",
-    formats: ["docx", "pdf"]
-  },
-  {
-    report_type: "emergency_advisory_report",
-    title: "Emergency Advisory Report",
-    audience: "Incident and crisis response leads",
-    formats: ["docx", "pdf"]
-  },
-  {
-    report_type: "monthly_vulnerability_governance_pack",
-    title: "Monthly Vulnerability Governance Pack",
-    audience: "Board, CISO, and governance forums",
-    formats: ["docx", "pdf"]
-  },
-  {
     report_type: "customer_patch_governance_pack",
     title: "Customer Patch Governance Pack",
     audience: "Customer assurance",
@@ -83,12 +41,6 @@ export const REPORT_CATALOG = [
     title: "Technical Evidence Appendix",
     audience: "Security engineering and audit",
     formats: ["docx", "pdf"]
-  },
-  {
-    report_type: "ciso_patch_version_comparison_report",
-    title: "Patch Compare Appendix",
-    audience: "CISO and security leadership",
-    formats: ["docx", "pdf"]
   }
 ];
 
@@ -101,15 +53,7 @@ const REPORT_CONTEXT_VERSION = "patchforge-report-context.v4";
 const DEFAULT_PRODUCT_BASELINE = process.env.PATCHFORGE_PRODUCT_BASELINE || "PF-AZ11-CUSTOMER-DEMO-MATURITY";
 const DEFAULT_RENDERER_COMMIT = process.env.PATCHFORGE_RENDERER_COMMIT || process.env.PATCHFORGE_COMMIT_SHA || process.env.GIT_COMMIT || "local";
 const DEFAULT_IMAGE_TAG = process.env.PATCHFORGE_IMAGE_TAG || process.env.CONTAINER_IMAGE_TAG || "local";
-const REPORT_TYPE_MAP = new Map([
-  ...REPORT_CATALOG.map((item) => [item.report_type, item]),
-  ["board_vulnerability_summary", {
-    report_type: "board_vulnerability_summary",
-    title: "Board Vulnerability Summary",
-    audience: "Board and senior leadership",
-    formats: ["docx", "pdf"]
-  }]
-]);
+const REPORT_TYPE_MAP = new Map(REPORT_CATALOG.map((item) => [item.report_type, item]));
 const COLORS = {
   ink: "17212B",
   muted: "5E6B76",
@@ -226,7 +170,7 @@ function reportReviewText(context) {
   if (context.reportType === "customer_patch_governance_pack") {
     sections.push("Customer Assurance Position", "What Can Be Shared With Customer", "What Cannot Yet Be Claimed");
   }
-  if (["board_vulnerability_remediation_summary", "board_vulnerability_summary"].includes(context.reportType)) {
+  if (context.reportType === "board_vulnerability_remediation_summary") {
     sections.push("Executive Decision Summary", "Top Risks", "Residual Risk / Governance Position");
   }
   if (context.reportType === "cab_patch_decision_report") {
@@ -249,7 +193,7 @@ function audienceSpecificCheck(context, text) {
   if (context.reportType === "customer_patch_governance_pack") {
     return /Customer Assurance Position/.test(text) && /What Cannot Yet Be Claimed/.test(text);
   }
-  if (["board_vulnerability_remediation_summary", "board_vulnerability_summary"].includes(context.reportType)) {
+  if (context.reportType === "board_vulnerability_remediation_summary") {
     return /Executive Decision Summary/.test(text) && /Residual Risk \/ Governance Position/.test(text);
   }
   if (context.reportType === "cab_patch_decision_report") {
@@ -661,7 +605,7 @@ function reportTypeRequiredDocxSections(context) {
       ])
     ];
   }
-  if (["board_vulnerability_remediation_summary", "board_vulnerability_summary"].includes(context.reportType)) {
+  if (context.reportType === "board_vulnerability_remediation_summary") {
     return [
       heading("Executive Decision Summary", HeadingLevel.HEADING_1),
       para(context.executiveReadout || `${context.vulnerabilityId} is governed as ${customerPosturePhrase(context)}. ${finalApprovalSentence(context)} ${context.humanApprovalNotice}`),
@@ -1354,7 +1298,7 @@ function pdfReportTypeRequiredSections(doc, context) {
     ]);
     return;
   }
-  if (["board_vulnerability_remediation_summary", "board_vulnerability_summary"].includes(context.reportType)) {
+  if (context.reportType === "board_vulnerability_remediation_summary") {
     pdfSection(doc, "Executive Decision Summary");
     pdfParagraph(doc, context.executiveReadout || `${context.vulnerabilityId} is governed as ${customerPosturePhrase(context)}. ${finalApprovalSentence(context)} ${context.humanApprovalNotice}`);
     pdfSection(doc, "Top Risks");

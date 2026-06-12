@@ -6,8 +6,8 @@
   "scripts": {
     "test": "node --test backend-api/**/*.test.mjs",
     "test:contracts": "python -m pytest -q --basetemp .pytest_tmp",
+    "collector:test": "node --test collector/*.test.mjs",
     "api:check": "node --check backend-api/server.js",
     "api:start": "node backend-api/server.js"
   }
 }
-

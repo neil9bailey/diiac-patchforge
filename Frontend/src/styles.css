@@ -664,6 +664,48 @@ td small {
   border-top: 1px solid var(--line);
 }
 
+.agent-readiness-grid {
+  display: grid;
+  gap: 4px;
+}
+
+.candidate-match-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.candidate-match-list {
+  display: grid;
+  gap: 8px;
+}
+
+.candidate-match-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--surface);
+}
+
+.candidate-match-item > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.candidate-match-item strong,
+.candidate-match-item span,
+.candidate-match-item small {
+  overflow-wrap: anywhere;
+}
+
+.candidate-match-item small {
+  color: var(--muted);
+}
+
 .compact-title {
   margin-bottom: 8px;
 }
@@ -1063,6 +1105,37 @@ textarea {
   align-items: center;
   gap: 10px;
   text-align: left;
+}
+
+.admin-status-tile {
+  align-items: flex-start;
+  cursor: default;
+}
+
+.admin-status-tile:hover {
+  border-color: var(--line);
+}
+
+.admin-status-tile > div {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.admin-status-tile strong {
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.admin-status-tile .pill {
+  width: fit-content;
+}
+
+.admin-status-tile p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
 }
 
 .config-panel {

@@ -24,6 +24,12 @@ param defaultTenant string = 'diiac.io'
 param entraTenantId string = '67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da'
 param entraAudience string = 'api://ec30b0eb-cfc4-48cc-a5f2-2a1345d96736'
 param authRequired bool = true
+param openAiAgentEnabled bool = false
+param openAiModel string = 'gpt-5.4'
+param openAiApiKeySecretName string = ''
+param openAiApiKeyVaultUri string = ''
+param openAiTimeoutMs int = 15000
+param openAiMaxOutputTokens int = 1000
 param keyVaultSigningKeyId string = ''
 param runtimeInternalUrl string = 'http://ca-patchforge-runtime-prod'
 param allowedOrigins string = 'https://patchforge.diiac.io'
@@ -32,6 +38,9 @@ param apiCustomDomain string = 'api.patchforge.diiac.io'
 param uiManagedCertificateName string = 'mc-acae-diiac-pat-patchforge-diiac-9158'
 param apiManagedCertificateName string = 'mc-acae-diiac-pat-api-patchforge-d-1628'
 param environmentLabel string = 'prod'
+
+var openAiApiKeyVaultBaseUri = empty(openAiApiKeyVaultUri) ? keyVaultUri : openAiApiKeyVaultUri
+var normalizedOpenAiApiKeyVaultUri = endsWith(openAiApiKeyVaultBaseUri, '/') ? openAiApiKeyVaultBaseUri : '${openAiApiKeyVaultBaseUri}/'
 
 var commonEnv = [
   {
@@ -286,6 +295,13 @@ resource containerApps 'Microsoft.App/containerApps@2024-03-01' = [for app in ap
           identity: app.identityId
         }
       ]
+      secrets: (app.role == 'bridge-api' && !empty(openAiApiKeySecretName)) ? [
+        {
+          name: 'openai-api-key'
+          keyVaultUrl: '${normalizedOpenAiApiKeyVaultUri}secrets/${openAiApiKeySecretName}'
+          identity: app.identityId
+        }
+      ] : []
     }
     template: {
       containers: [
@@ -301,7 +317,29 @@ resource containerApps 'Microsoft.App/containerApps@2024-03-01' = [for app in ap
               name: 'PATCHFORGE_COMPONENT'
               value: app.role
             }
-          ])
+          ], app.role == 'bridge-api' ? [
+            {
+              name: 'PATCHFORGE_OPENAI_AGENT_ENABLED'
+              value: string(openAiAgentEnabled)
+            }
+            {
+              name: 'PATCHFORGE_OPENAI_MODEL'
+              value: openAiModel
+            }
+            {
+              name: 'PATCHFORGE_OPENAI_TIMEOUT_MS'
+              value: string(openAiTimeoutMs)
+            }
+            {
+              name: 'PATCHFORGE_OPENAI_MAX_OUTPUT_TOKENS'
+              value: string(openAiMaxOutputTokens)
+            }
+          ] : [], app.role == 'bridge-api' && !empty(openAiApiKeySecretName) ? [
+            {
+              name: 'OPENAI_API_KEY'
+              secretRef: 'openai-api-key'
+            }
+          ] : [])
           resources: {
             cpu: app.cpu
             memory: app.memory

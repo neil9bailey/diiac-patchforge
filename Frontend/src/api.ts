@@ -93,7 +93,86 @@ export type CustomerNetworkAsset = {
   config_evidence_refs?: string[];
   review_state?: string;
   evidence_state?: string;
+  asset_category?: string;
+  discovery_source?: string;
+  discovery_method?: string | null;
+  collector_id?: string | null;
+  collector_policy_id?: string | null;
+  collector_run_id?: string | null;
+  collector_imported_at?: string | null;
+  collector_confidence?: number | null;
+  hostname?: string | null;
+  ip_addresses?: string[];
+  mac_addresses?: string[];
+  cloud_resource_id?: string | null;
+  virtualization_host?: string | null;
+  review_required?: boolean;
+  final_approval_issued?: boolean;
   updated_at?: string;
+};
+
+export type AssetCollectorRecord = {
+  collector_id: string;
+  name: string;
+  platform: string;
+  site?: string | null;
+  environment?: string;
+  enabled_categories: string[];
+  connection_mode: string;
+  status: string;
+  last_seen_at?: string | null;
+  advisory_only: boolean;
+  review_required: boolean;
+  no_vulnerability_scanning: boolean;
+  no_patch_deployment: boolean;
+  final_approval_issued: boolean;
+};
+
+export type AssetDiscoveryPolicy = {
+  policy_id: string;
+  collector_id?: string | null;
+  name: string;
+  enabled: boolean;
+  categories: string[];
+  discovery_methods: string[];
+  schedule: string;
+  credential_reference?: string | null;
+  read_only: boolean;
+  outbound_only: boolean;
+  advisory_only: boolean;
+  review_required: boolean;
+  final_approval_issued: boolean;
+};
+
+export type AssetDiscoveryRun = {
+  run_id: string;
+  collector_id: string;
+  policy_id?: string | null;
+  status: string;
+  completed_at?: string | null;
+  received_asset_count: number;
+  imported_asset_count: number;
+  rejected_asset_count: number;
+  categories: string[];
+  discovery_method: string;
+  final_approval_issued: boolean;
+};
+
+export type AssetDiscoveryOverview = {
+  tenant_id: string;
+  generated_at: string;
+  categories: string[];
+  collectors: AssetCollectorRecord[];
+  policies: AssetDiscoveryPolicy[];
+  recent_runs: AssetDiscoveryRun[];
+  metrics: {
+    collector_count: number;
+    enabled_policy_count: number;
+    collector_imported_asset_count: number;
+    pending_review_asset_count: number;
+    last_import_at?: string | null;
+  };
+  boundary: Record<string, boolean>;
 };
 
 export type VendorSecurityAdvisory = {
@@ -468,6 +547,9 @@ export type OpenAiAgentStatus = {
   can_approve: boolean;
   can_patch: boolean;
   can_accept_risk: boolean;
+  key_configured?: boolean;
+  key_value_exposed?: boolean;
+  agent_names?: Record<string, string>;
 };
 
 export type AgentGuidanceSnapshot = {
@@ -652,6 +734,10 @@ export type PatchForgeApi = {
   listNetworkVendors(tenantId: string): Promise<NetworkVendorProfile[]>;
   listCustomerNetworkAssets(tenantId: string): Promise<CustomerNetworkAsset[]>;
   upsertCustomerNetworkAsset(tenantId: string, payload: Record<string, unknown>): Promise<CustomerNetworkAsset>;
+  assetDiscoveryOverview(tenantId: string): Promise<AssetDiscoveryOverview>;
+  registerAssetCollector(tenantId: string, payload: Record<string, unknown>): Promise<AssetCollectorRecord>;
+  upsertAssetDiscoveryPolicy(tenantId: string, payload: Record<string, unknown>): Promise<AssetDiscoveryPolicy>;
+  importDiscoveredAssets(tenantId: string, payload: Record<string, unknown>): Promise<{ run: AssetDiscoveryRun; imported_assets: CustomerNetworkAsset[]; rejected_assets: Array<Record<string, unknown>>; boundary: Record<string, boolean> }>;
   listVendorSecurityAdvisories(tenantId: string): Promise<VendorSecurityAdvisory[]>;
   ingestVendorSecurityAdvisory(tenantId: string, payload: Record<string, unknown>): Promise<VendorSecurityAdvisory>;
   refreshVendorLensSource(tenantId: string, payload: Record<string, unknown>): Promise<SourceFeedRun>;
@@ -906,6 +992,30 @@ export function createPatchForgeApi(getAccessToken: () => Promise<string>, confi
         body: JSON.stringify(payload)
       });
       return body.asset;
+    },
+    async assetDiscoveryOverview(tenantId) {
+      const body = await request<{ discovery: AssetDiscoveryOverview }>("/api/patchforge/discovery/overview", tenantId);
+      return body.discovery;
+    },
+    async registerAssetCollector(tenantId, payload) {
+      const body = await request<{ collector: AssetCollectorRecord }>("/api/patchforge/discovery/collectors", tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return body.collector;
+    },
+    async upsertAssetDiscoveryPolicy(tenantId, payload) {
+      const body = await request<{ policy: AssetDiscoveryPolicy }>("/api/patchforge/discovery/policies", tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return body.policy;
+    },
+    async importDiscoveredAssets(tenantId, payload) {
+      return request<{ run: AssetDiscoveryRun; imported_assets: CustomerNetworkAsset[]; rejected_assets: Array<Record<string, unknown>>; boundary: Record<string, boolean> }>("/api/patchforge/discovery/import", tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
     },
     async listVendorSecurityAdvisories(tenantId) {
       const body = await request<{ advisories: VendorSecurityAdvisory[] }>("/api/patchforge/vendorlens/advisories", tenantId);

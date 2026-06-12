@@ -11,9 +11,21 @@ export const OPENAI_AGENT_NAMES = {
   "vendorlens": "VendorLens Agent"
 };
 
-const DEFAULT_MODEL = "gpt-4o-mini";
+const DEFAULT_MODEL = "gpt-5.4";
 const DEFAULT_TIMEOUT_MS = 15000;
 const DEFAULT_MAX_OUTPUT_TOKENS = 1000;
+
+const EVIDENCE_RECORD_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["evidence_type", "reference", "state", "summary"],
+  properties: {
+    evidence_type: { type: "string" },
+    reference: { type: "string" },
+    state: { type: "string" },
+    summary: { type: "string" }
+  }
+};
 
 export const AGENT_OUTPUT_SCHEMA = {
   type: "object",
@@ -42,8 +54,8 @@ export const AGENT_OUTPUT_SCHEMA = {
     can_accept_risk: { type: "boolean" },
     final_approval_issued: { type: "boolean" },
     human_review_required: { type: "boolean" },
-    evidence_used: { type: "array", items: { type: "object", additionalProperties: true } },
-    evidence_missing: { type: "array", items: { type: "object", additionalProperties: true } },
+    evidence_used: { type: "array", items: EVIDENCE_RECORD_SCHEMA },
+    evidence_missing: { type: "array", items: EVIDENCE_RECORD_SCHEMA },
     source_bound_warnings: { type: "array", items: { type: "string" } },
     recommended_next_action: { type: "string" },
     decision_not_allowed_yet: { type: "string" }
@@ -253,6 +265,7 @@ function agentSystemPrompt(agentName) {
     "Return JSON only.",
     "PatchForge is governance-only, source-bound, and human-review-required.",
     "Do not provide exploit instructions, procedural exploit steps, patch deployment instructions, production mutation, CAB approval, risk acceptance, evidence-gate closure, or customer assurance without reviewed evidence.",
+    "Use evidence_used and evidence_missing objects with evidence_type, reference, state, and summary string fields. Use an empty string when a field is unknown.",
     "Set advisory_only true, can_close_hard_gates false, can_approve false, can_patch false, can_accept_risk false, final_approval_issued false, and human_review_required true."
   ].join(" ");
 }

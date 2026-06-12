@@ -1,0 +1,72 @@
+{
+  "apiBaseUrl": "https://patchforge.diiac.io",
+  "tenantId": "diiac.io",
+  "collector": {
+    "collector_id": "collector-customer-site-01",
+    "name": "Customer Site 01 Collector",
+    "site": "Primary site",
+    "environment": "production",
+    "categories": [
+      "network_device",
+      "security_appliance",
+      "physical_server",
+      "virtual_server",
+      "hypervisor",
+      "cloud_resource"
+    ]
+  },
+  "policy": {
+    "policy_id": "policy-customer-site-01",
+    "name": "Customer Site 01 read-only discovery",
+    "categories": [
+      "network_device",
+      "security_appliance",
+      "physical_server",
+      "virtual_server",
+      "hypervisor",
+      "cloud_resource"
+    ],
+    "credential_reference": "customer-vault:patchforge/read-only-discovery",
+    "scope": {
+      "sites": ["Primary site"],
+      "source_systems": ["local_host", "hyperv", "azure_cli", "http_json"]
+    }
+  },
+  "auth": {
+    "bearerTokenEnv": "PATCHFORGE_COLLECTOR_TOKEN"
+  },
+  "adapters": [
+    {
+      "type": "local_host",
+      "enabled": true
+    },
+    {
+      "type": "hyperv",
+      "enabled": true
+    },
+    {
+      "type": "azure_cli",
+      "enabled": false,
+      "subscription": "00000000-0000-0000-0000-000000000000"
+    },
+    {
+      "type": "http_json",
+      "enabled": false,
+      "url": "https://nms.example.test/api/assets",
+      "headers": {
+        "Authorization": "Bearer env:NMS_READONLY_TOKEN"
+      },
+      "assetPath": "items",
+      "fieldMap": {
+        "asset_id": "id",
+        "category": "category",
+        "hostname": "hostname",
+        "vendor_name": "vendor",
+        "product_family": "product",
+        "model": "model",
+        "firmware_version": "version",
+        "ip_addresses": "ip"
+      }
+    }
+  ]
+}

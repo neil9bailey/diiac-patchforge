@@ -255,17 +255,14 @@ Ask PatchForge must not provide exploit steps, provide payloads, approve product
 
 Reports must be user-driven. Users choose report type, customer, vendor, product, CVE set, asset group, severity, KEV only, EPSS threshold, patch status, time period, and audience.
 
-Report types:
+Active report types:
 
-- CISO Executive Risk Brief
-- Security Operations Action Plan
-- Customer Exposure Report
-- Vendor Exposure Report
-- Patch / Hotfix Decision Pack
-- Emergency Vulnerability Advisory
-- Monthly Vulnerability Governance Pack
-- Exception / Risk Acceptance Pack
-- Customer Remediation Progress Report
+- Customer Patch Governance Pack
+- Board Vulnerability Summary
+- CAB Patch Decision Report
+- Technical Evidence Appendix
+
+Future stakeholder, monthly, vendor, exception, or remediation-progress reports require their own scoped template, audience-specific sections, and verification coverage before being added to the active catalogue.
 
 Every report includes user-selected scope, evidence sources, affected assets, relevant CVEs, patch options, confidence levels, risks, evidence gaps, recommended next actions, human approval requirements, and signed/verifiable export.
 

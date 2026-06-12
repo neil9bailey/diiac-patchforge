@@ -43,6 +43,24 @@ param keyVaultSigningKeyVersion string = ''
 @description('Key Vault secret name containing the PostgreSQL administrator password for the bridge storage adapter.')
 param postgresPasswordSecretName string = 'patchforge-postgres-admin-password'
 
+@description('Whether the Bridge/API should enable the optional OpenAI-native advisory agent layer.')
+param openAiAgentEnabled bool = false
+
+@description('OpenAI model used by the optional Bridge/API advisory agent layer when enabled.')
+param openAiModel string = 'gpt-5.4'
+
+@description('Optional Key Vault secret name containing the OpenAI API key for the Bridge/API. Leave blank to keep OPENAI_API_KEY unset.')
+param openAiApiKeySecretName string = ''
+
+@description('Optional Key Vault URI containing the OpenAI API key secret. Leave blank to use the dedicated PatchForge Key Vault.')
+param openAiApiKeyVaultUri string = ''
+
+@description('OpenAI advisory agent request timeout in milliseconds.')
+param openAiTimeoutMs int = 15000
+
+@description('Maximum output tokens allowed for optional OpenAI advisory agent responses.')
+param openAiMaxOutputTokens int = 1000
+
 @description('Whether to add the PostgreSQL firewall rule that allows Azure services to reach the server.')
 param allowAzureServicesToPostgres bool = true
 
@@ -197,6 +215,12 @@ module containerApps 'container-apps.bicep' = if (deployContainerApps) {
     entraTenantId: subscription().tenantId
     entraAudience: entraAudience
     authRequired: authRequired
+    openAiAgentEnabled: openAiAgentEnabled
+    openAiModel: openAiModel
+    openAiApiKeySecretName: openAiApiKeySecretName
+    openAiApiKeyVaultUri: openAiApiKeyVaultUri
+    openAiTimeoutMs: openAiTimeoutMs
+    openAiMaxOutputTokens: openAiMaxOutputTokens
     keyVaultSigningKeyId: empty(keyVaultSigningKeyVersion)
       ? '${keyVault.outputs.vaultUri}keys/${keyVaultSigningKeyName}'
       : '${keyVault.outputs.vaultUri}keys/${keyVaultSigningKeyName}/${keyVaultSigningKeyVersion}'

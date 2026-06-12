@@ -1,4 +1,5 @@
 import { assessConfigApplicability } from "./configApplicability.js";
+import { NETWORK_VENDOR_CATALOG } from "./vendorLens.js";
 
 const SEVERITY_RANK = {
   critical: 5,
@@ -132,7 +133,7 @@ function buildIndexFromCollections({ tenantId, collections, generatedAt = null, 
   const vendorSecurityAdvisories = collections.vendor_security_advisories || [];
   const vendorAdvisories = collections.vendor_advisories || [];
   const vendorProfiles = collections.vendors || [];
-  const networkVendors = collections.network_vendors || [];
+  const networkVendors = mergeNetworkVendorCatalogue(collections.network_vendors || [], tenantId);
   const customerAssets = collections.customer_network_assets || [];
   const configAssessments = collections.config_applicability_assessments || [];
   const sourceFeedRuns = collections.source_feed_runs || [];
@@ -165,6 +166,7 @@ function buildIndexFromCollections({ tenantId, collections, generatedAt = null, 
       kev_records: sortedRows.filter((row) => row.kev).length,
       patch_available_records: sortedRows.filter((row) => row.patch_available).length,
       customer_match_records: sortedRows.filter((row) => row.customer_match_count > 0).length,
+      vendor_catalogue_records: networkVendors.length,
       final_approval_issued: sortedRows.filter((row) => row.final_approval_issued).length
     },
     boundary: governanceBoundary()
@@ -380,31 +382,44 @@ export async function buildAskPatchForgeResponse({ storage, tenantId, body = {} 
   }
   const extracted = body.asset || extractCustomerAssetDescription(question, body);
   const matchResult = await matchCustomerEstate({ storage, tenantId, body: { ...body, asset: extracted }, persist: body.persist_matches === true });
+  const namedAdvisoryContext = hasNamedAdvisoryContext(question, body);
   const unnamedSpecificReference = requiresNamedCveContext(question, body);
-  const match = unnamedSpecificReference ? null : findRelevantMatch(matchResult.matches, body, question);
+  const assetCandidateSelection = !namedAdvisoryContext && hasAssetContext(extracted);
+  const match = unnamedSpecificReference || assetCandidateSelection ? null : findRelevantMatch(matchResult.matches, body, question);
+  const candidateMatches = unnamedSpecificReference || assetCandidateSelection
+    ? await candidateMatchesForAsk({ storage, tenantId, matches: matchResult.matches, asset: extracted, question })
+    : matchResult.matches.slice(0, 5);
   const gaps = match?.evidence_gaps || [];
-  const posture = unnamedSpecificReference ? "cve_or_advisory_required" : match?.urgency_posture || "urgent_scope_confirmation_required";
+  const candidateSelectionRequired = unnamedSpecificReference || (assetCandidateSelection && candidateMatches.length > 0);
+  const posture = candidateSelectionRequired ? "cve_or_advisory_required" : match?.urgency_posture || "urgent_scope_confirmation_required";
   const known = whatWeKnow(extracted, match, body);
+  if (candidateSelectionRequired && candidateMatches.length) {
+    known.push(...candidateMatches.map((candidate) => `Candidate option: ${candidateSummary(candidate)}`));
+  }
   const unknown = gaps.length
     ? gaps.map((gap) => gap.plain_english_gap || gap.gap_id || "Reviewed evidence is missing.")
     : ["Reviewed source, asset, feature, exposure, and patch evidence must be attached before final approval."];
-  if (unnamedSpecificReference) {
-    unknown.unshift("The question refers to this CVE/advisory, but no CVE/advisory identifier or explicit selected advisory context was provided.");
+  if (candidateSelectionRequired) {
+    unknown.unshift(candidateMatches.length
+      ? "PatchForge found candidate CVE/advisory records for this asset context, but the user must select the specific record before urgent patch governance can be assessed."
+      : "The question refers to this CVE/advisory, but no CVE/advisory identifier or explicit selected advisory context was provided.");
   }
   const evidenceNeeded = evidenceNeededFromGaps(gaps);
-  if (unnamedSpecificReference) {
-    evidenceNeeded.unshift("Specific CVE/advisory ID or an explicitly selected advisory from the catalogue.");
+  if (candidateSelectionRequired) {
+    evidenceNeeded.unshift(candidateMatches.length
+      ? "User-selected candidate CVE/advisory from the list returned by PatchForge."
+      : "Specific CVE/advisory ID or an explicitly selected advisory from the catalogue.");
   }
 
   return {
     response: {
-      short_answer: shortAnswerFor(posture, match),
+      short_answer: shortAnswerFor(posture, match, candidateMatches),
       current_governed_posture: posture,
-      why: whyForAdvisor(posture, match),
+      why: whyForAdvisor(posture, match, candidateMatches),
       what_we_know: known,
       what_we_do_not_know: unknown,
       evidence_needed: unique(evidenceNeeded),
-      recommended_next_action: nextActionForPosture(posture),
+      recommended_next_action: nextActionForPosture(posture, candidateMatches),
       decision_not_allowed_yet: "PatchForge cannot issue final approval, risk acceptance, closure, or not-applicable status without reviewed evidence and named human approval.",
       human_approval_required: true,
       final_approval_issued: false,
@@ -413,7 +428,7 @@ export async function buildAskPatchForgeResponse({ storage, tenantId, body = {} 
     },
     asset: extracted,
     matched_assessment: match || null,
-    candidate_matches: matchResult.matches.slice(0, 5),
+    candidate_matches: candidateMatches,
     final_approval_issued: false
   };
 }
@@ -916,12 +931,19 @@ function assetMatchesAdvisory(asset, advisory) {
   const assetVendor = normalizeVendorId(asset.vendor_id || asset.vendor_name);
   const advisoryVendor = normalizeVendorId(advisory.vendor_id || advisory.vendor_name);
   const vendorMatches = assetVendor && advisoryVendor && (assetVendor === advisoryVendor || assetVendor.includes(advisoryVendor) || advisoryVendor.includes(assetVendor));
-  const assetTerms = expandProductTerms(list(asset.product_family, asset.model, asset.product_id));
-  const advisoryTerms = expandProductTerms(list(advisory.product_family, advisory.affected_products, advisory.affected_models, advisory.product_aliases));
-  const productMatches = assetTerms.some((assetTerm) =>
-    advisoryTerms.some((term) => term === assetTerm || term.includes(assetTerm) || assetTerm.includes(term))
+  const productMatches = productTermsOverlap(
+    list(asset.product_family, asset.model, asset.product_id),
+    list(advisory.product_family, advisory.affected_products, advisory.affected_models, advisory.product_aliases)
   );
   return Boolean(vendorMatches || productMatches);
+}
+
+function productTermsOverlap(leftValues, rightValues) {
+  const leftTerms = expandProductTerms(list(leftValues));
+  const rightTerms = expandProductTerms(list(rightValues));
+  return leftTerms.some((leftTerm) =>
+    rightTerms.some((term) => term === leftTerm || term.includes(leftTerm) || leftTerm.includes(term))
+  );
 }
 
 function findRelevantMatch(matches, body, question) {
@@ -945,11 +967,205 @@ function findRelevantMatch(matches, body, question) {
   return [...matches].sort((a, b) => urgencyValue(b.urgency_posture) - urgencyValue(a.urgency_posture))[0] || null;
 }
 
+function hasNamedAdvisoryContext(question, body) {
+  return Boolean(body.advisory_id || body.cve || cveFrom(question));
+}
+
 function requiresNamedCveContext(question, body) {
-  if (body.advisory_id || body.cve || cveFrom(question)) {
+  if (hasNamedAdvisoryContext(question, body)) {
     return false;
   }
   return /\b(this|that|the)\s+(cve|advisory|vendor advisory|finding)\b/i.test(String(question || ""));
+}
+
+async function candidateMatchesForAsk({ storage, tenantId, matches = [], asset = {}, question = "" }) {
+  const index = await buildSecurityActionCenterIndex({ storage, tenantId });
+  const rows = [];
+  const matchByKey = new Map();
+  for (const match of matches) {
+    for (const key of candidateKeys(match)) {
+      if (!matchByKey.has(key)) {
+        matchByKey.set(key, match);
+      }
+    }
+    const row = findRowForCandidate(index.catalogue_rows, match);
+    if (row) {
+      rows.push(row);
+    }
+  }
+  if (!rows.length && hasAssetContext(asset)) {
+    rows.push(...index.catalogue_rows.filter((row) => assetMatchesRow(asset, row)));
+  }
+  if (!rows.length) {
+    rows.push(...searchSecurityActionCenterIndex(index, { query: question, sort: "urgency" }).catalogue_rows);
+  }
+  const sourceCandidates = uniqueRows(rows)
+    .sort(defaultRowSort)
+    .slice(0, 5)
+    .map((row) => candidateFromRow(row, matchForRow(row, matchByKey)));
+  if (sourceCandidates.length) {
+    return sourceCandidates;
+  }
+  return vendorCatalogueCandidates({ index, asset, question }).slice(0, 5);
+}
+
+function candidateFromRow(row, match = null) {
+  return {
+    candidate_type: "source_advisory",
+    selectable: true,
+    id: row.advisory_id || row.cve_id || row.id,
+    advisory_id: row.advisory_id || row.cve_id || row.id,
+    cve: row.cve_id || null,
+    cve_id: row.cve_id || null,
+    title: row.title,
+    vendor_id: row.vendor_id,
+    vendor_name: row.vendor_name,
+    product_family: row.product_family,
+    model: row.model || match?.model || null,
+    affected_feature: row.affected_feature || match?.affected_feature || null,
+    severity: row.severity || "unknown",
+    urgency_posture: match?.urgency_posture || row.urgency_posture || "unknown",
+    applicability_posture: match?.applicability_posture || row.applicability_posture || "unknown",
+    patch_available: Boolean(row.patch_available),
+    fixed_versions: list(row.fixed_versions),
+    affected_versions: list(row.affected_versions),
+    source_name: row.source_name || null,
+    source_url: row.source_url || null,
+    review_state: row.review_state || "pending_review",
+    evidence_state: row.evidence_state || "referenced",
+    customer_match_count: row.customer_match_count || (match ? 1 : 0),
+    asset_id: match?.asset_id || null,
+    final_approval_issued: false,
+    human_review_required: true,
+    advisory_only: true,
+    no_patch_deployment: true,
+    selection_prompt: `Select ${row.advisory_id || row.cve_id || row.id} before asking whether urgent patch governance applies.`
+  };
+}
+
+function candidateFromVendor(vendor, asset = {}) {
+  const productFamilies = list(vendor.product_families);
+  const matchingProduct = productFamilies.find((family) => productTermsOverlap([family], [asset.product_family, asset.model]))
+    || productFamilies[0]
+    || asset.product_family
+    || "Product family pending";
+  const vendorName = vendor.vendor_name || humanize(vendor.vendor_id);
+  return {
+    candidate_type: "vendor_catalogue",
+    selectable: false,
+    id: `vendor-catalogue-${vendor.vendor_id}`,
+    advisory_id: null,
+    cve: null,
+    cve_id: null,
+    title: `${vendorName} ${matchingProduct} catalogue scope`,
+    vendor_id: vendor.vendor_id,
+    vendor_name: vendorName,
+    product_family: matchingProduct,
+    product_candidates: productFamilies,
+    model: asset.model || null,
+    affected_feature: firstValue(asset.enabled_features) || null,
+    severity: "unknown",
+    urgency_posture: "source_catalogue_refresh_required",
+    applicability_posture: "source_catalogue_refresh_required",
+    patch_available: false,
+    fixed_versions: [],
+    affected_versions: [],
+    source_name: "VendorLens reference catalogue",
+    source_url: vendor.advisory_source_url || null,
+    review_state: vendor.source_review_state || "reference_catalogue",
+    evidence_state: "reference_catalogue",
+    customer_match_count: 0,
+    asset_id: asset.asset_id || null,
+    final_approval_issued: false,
+    human_review_required: true,
+    advisory_only: true,
+    no_patch_deployment: true,
+    selection_prompt: `Refresh VendorLens NVD catalogue for ${vendorName}${matchingProduct ? ` / ${matchingProduct}` : ""}, then select a source-bound CVE/advisory before urgent patch governance is assessed.`
+  };
+}
+
+function candidateSummary(candidate) {
+  const id = candidate.cve || candidate.advisory_id || candidate.id;
+  const product = [candidate.vendor_name, candidate.product_family, candidate.model].filter(Boolean).join(" ");
+  if (candidate.candidate_type === "vendor_catalogue") {
+    return `${candidate.vendor_name || "Vendor"} ${candidate.product_family || "catalogue"} (reference catalogue scope; refresh source-bound CVE/advisory records before selection)`;
+  }
+  const feature = candidate.affected_feature ? `, feature ${candidate.affected_feature}` : "";
+  const fixed = list(candidate.fixed_versions).length ? `, fixed version ${list(candidate.fixed_versions).join(", ")}` : "";
+  const patch = candidate.patch_available ? `patch evidence available${fixed}` : "patch evidence not confirmed";
+  return `${id} (${product || "product pending"}${feature}; ${humanize(candidate.severity || "unknown")} severity; ${patch})`;
+}
+
+function findRowForCandidate(rows, candidate) {
+  const keys = candidateKeys(candidate);
+  return rows.find((row) => candidateKeys(row).some((key) => keys.includes(key))) || null;
+}
+
+function matchForRow(row, matchByKey) {
+  for (const key of candidateKeys(row)) {
+    if (matchByKey.has(key)) {
+      return matchByKey.get(key);
+    }
+  }
+  return null;
+}
+
+function candidateKeys(value = {}) {
+  return unique([
+    value.advisory_id,
+    value.cve,
+    value.cve_id,
+    value.vulnerability_id,
+    value.id
+  ].filter(Boolean).map((item) => String(item).toLowerCase()));
+}
+
+function uniqueRows(rows) {
+  const seen = new Set();
+  const values = [];
+  for (const row of rows) {
+    const key = candidateKeys(row)[0];
+    if (!key || seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    values.push(row);
+  }
+  return values;
+}
+
+function vendorCatalogueCandidates({ index, asset = {}, question = "" }) {
+  const vendors = index.vendors || [];
+  const matched = vendors.filter((vendor) => vendorMatchesAssetOrQuestion(vendor, asset, question));
+  const selected = matched.length ? matched : vendors.filter((vendor) => String(question || "").toLowerCase().includes(String(vendor.vendor_name || "").toLowerCase()));
+  return selected
+    .sort((a, b) => Number(Boolean(vendorMatchesAssetOrQuestion(b, asset, question))) - Number(Boolean(vendorMatchesAssetOrQuestion(a, asset, question))) || String(a.vendor_name).localeCompare(String(b.vendor_name)))
+    .map((vendor) => candidateFromVendor(vendor, asset));
+}
+
+function vendorMatchesAssetOrQuestion(vendor, asset = {}, question = "") {
+  const text = normalizeText([
+    question,
+    asset.vendor_id,
+    asset.vendor_name,
+    asset.product_family,
+    asset.model,
+    asset.enabled_features,
+    asset.disabled_features
+  ].flat().join(" "));
+  const vendorTerms = [
+    vendor.vendor_id,
+    vendor.vendor_name,
+    vendor.product_families
+  ].flat().filter(Boolean);
+  return vendorTerms.some((term) => {
+    const normalized = normalizeText(term);
+    return normalized && text.includes(normalized);
+  }) || normalizeVendorId(asset.vendor_id || asset.vendor_name) === normalizeVendorId(vendor.vendor_id || vendor.vendor_name);
+}
+
+function hasAssetContext(asset = {}) {
+  return Boolean(asset.vendor_id || asset.vendor_name || asset.product_family || asset.model || asset.firmware_version || list(asset.enabled_features, asset.disabled_features).length);
 }
 
 function whatWeKnow(asset, match, body) {
@@ -979,8 +1195,14 @@ function assetProductSummary(asset = {}) {
   return [productWithoutVendor, model].filter(Boolean).join(" ");
 }
 
-function shortAnswerFor(posture, match) {
+function shortAnswerFor(posture, match, candidateMatches = []) {
   if (posture === "cve_or_advisory_required") {
+    if (sourceAdvisoryCandidates(candidateMatches).length) {
+      return `PatchForge found ${candidateMatches.length} candidate CVE/advisory patch record${candidateMatches.length === 1 ? "" : "s"} for this context. Select the specific candidate before PatchForge can assess urgent patch governance.`;
+    }
+    if (candidateMatches.length) {
+      return `PatchForge found ${candidateMatches.length} vendor/product catalogue scope${candidateMatches.length === 1 ? "" : "s"} for this context, but source-bound CVE/advisory records are not loaded yet. Refresh the vendor catalogue, then select a specific CVE/advisory.`;
+    }
     return "PatchForge needs the specific CVE/advisory ID or an explicitly selected advisory before it can answer whether this CVE requires urgent patching.";
   }
   if (!match) {
@@ -998,8 +1220,14 @@ function shortAnswerFor(posture, match) {
   return "PatchForge cannot confirm the device is out of scope yet; complete source, asset, feature, version, and exposure evidence review first.";
 }
 
-function whyForAdvisor(posture, match) {
+function whyForAdvisor(posture, match, candidateMatches = []) {
   if (posture === "cve_or_advisory_required") {
+    if (sourceAdvisoryCandidates(candidateMatches).length) {
+      return "The question supplied asset or service context without a selected CVE/advisory. PatchForge can surface source-bound candidates, but the user must choose the exact advisory before urgency or patch governance is assessed.";
+    }
+    if (candidateMatches.length) {
+      return "The question supplied asset or service context that matches the vendor reference catalogue, but the source-bound CVE/advisory catalogue for that vendor/product scope is empty or incomplete.";
+    }
     return "The question refers to a specific CVE/advisory, but the governed advisor was not given a named CVE/advisory context to assess.";
   }
   if (!match) {
@@ -1025,8 +1253,14 @@ function evidenceNeededFromGaps(gaps) {
   ];
 }
 
-function nextActionForPosture(posture) {
+function nextActionForPosture(posture, candidateMatches = []) {
   if (posture === "cve_or_advisory_required") {
+    if (sourceAdvisoryCandidates(candidateMatches).length) {
+      return "Select one candidate CVE/advisory below, then ask again or run Patch Compare with that selected advisory and the relevant customer asset.";
+    }
+    if (candidateMatches.length) {
+      return "Refresh the suggested VendorLens/NVD vendor catalogue scope, review the returned source-bound CVE/advisory rows, then select the specific advisory before asking whether urgent patching is required.";
+    }
     return "Enter the CVE/advisory ID, select a row in the Global Security Action Center, or run Customer Estate matching before asking whether urgent patching is required.";
   }
   if (posture === "emergency_patch_required") {
@@ -1055,6 +1289,22 @@ function governanceBoundary() {
     final_approval_issued: false,
     human_approval_required: true
   };
+}
+
+function sourceAdvisoryCandidates(candidates = []) {
+  return candidates.filter((candidate) => candidate.candidate_type !== "vendor_catalogue" && candidate.selectable !== false);
+}
+
+function mergeNetworkVendorCatalogue(storedVendors, tenantId) {
+  const merged = new Map();
+  for (const vendor of NETWORK_VENDOR_CATALOG) {
+    merged.set(vendor.vendor_id, { ...vendor, tenant_id: tenantId });
+  }
+  for (const vendor of storedVendors || []) {
+    const vendorId = normalizeVendorId(vendor.vendor_id || vendor.vendor_name);
+    merged.set(vendorId, { ...merged.get(vendorId), ...vendor, vendor_id: vendorId, tenant_id: vendor.tenant_id || tenantId });
+  }
+  return Array.from(merged.values());
 }
 
 function buildVendorLookup(records) {

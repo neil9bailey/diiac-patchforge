@@ -5,10 +5,12 @@ PF-AZ11 adds an optional OpenAI-native agent layer for customer-demo maturity. I
 ## Configuration
 
 - `PATCHFORGE_OPENAI_AGENT_ENABLED=false` by default.
-- `PATCHFORGE_OPENAI_MODEL` selects the OpenAI model when enabled.
+- `PATCHFORGE_OPENAI_MODEL` selects the OpenAI model when enabled; the repository default is `gpt-5.4`.
 - `PATCHFORGE_OPENAI_TIMEOUT_MS` bounds agent latency.
 - `PATCHFORGE_OPENAI_MAX_OUTPUT_TOKENS` bounds response size.
 - `OPENAI_API_KEY` must come from Azure Key Vault or environment configuration. No key is stored in the repository.
+- In Azure Container Apps, set `openAiApiKeySecretName` to a Key Vault secret name and `openAiAgentEnabled=true` to wire `OPENAI_API_KEY` as a managed-identity Key Vault secret reference for the bridge app only.
+- `openAiApiKeyVaultUri` can point at an explicitly approved external Key Vault, such as the DIIaC ITservices vault; leave it blank to use the dedicated PatchForge Key Vault.
 
 ## Agent Types
 

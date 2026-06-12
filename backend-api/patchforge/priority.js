@@ -140,7 +140,7 @@ export function transitionWorkflowItem(item = {}, input = {}) {
 export function buildSignedActionPack(input = {}) {
   const payload = {
     customer_id: input.customer_id || null,
-    report_type: input.report_type || "Security Operations Action Plan",
+    report_type: input.report_type || "CAB Patch Decision Report",
     action: input.action || input.recommended_action || "human_review_required",
     evidence_refs: list(input.evidence_refs),
     generated_at: new Date().toISOString(),

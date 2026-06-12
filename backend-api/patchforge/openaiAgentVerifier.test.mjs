@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { getOpenAiAgentStatus, runOpenAiAgent } from "./openaiAgentService.js";
+import { AGENT_OUTPUT_SCHEMA, getOpenAiAgentStatus, runOpenAiAgent } from "./openaiAgentService.js";
 import { verifyAgentOutput } from "./openaiAgentVerifier.js";
 
 const validOutput = {
@@ -23,10 +23,16 @@ test("OpenAI agent layer is disabled by default and missing key is non-fatal", a
   const disabled = getOpenAiAgentStatus({});
   assert.equal(disabled.enabled, false);
   assert.equal(disabled.configured, false);
+  assert.equal(disabled.model, "gpt-5.4");
+  assert.equal(disabled.key_configured, false);
+  assert.equal(disabled.key_value_exposed, false);
 
   const missingKey = getOpenAiAgentStatus({ PATCHFORGE_OPENAI_AGENT_ENABLED: "true" });
   assert.equal(missingKey.enabled, true);
   assert.equal(missingKey.configured, false);
+  assert.equal(missingKey.model, "gpt-5.4");
+  assert.equal(missingKey.key_configured, false);
+  assert.equal(missingKey.key_value_exposed, false);
 
   const result = await runOpenAiAgent({
     prompt: "Do we need urgent patching?",
@@ -55,6 +61,16 @@ test("mocked valid agent output passes deterministic verification", async () => 
   assert.equal(result.output.can_close_hard_gates, false);
 });
 
+test("OpenAI agent structured output schema is strict at every object level", () => {
+  const objectSchemas = [];
+  collectObjectSchemas(AGENT_OUTPUT_SCHEMA, objectSchemas);
+  assert.ok(objectSchemas.length > 1);
+  for (const schema of objectSchemas) {
+    assert.equal(schema.additionalProperties, false);
+    assert.deepEqual(Object.keys(schema.properties || {}).sort(), [...(schema.required || [])].sort());
+  }
+});
+
 test("verifier blocks exploit, patch deployment, final approval, risk acceptance, and unsupported not-vulnerable claims", () => {
   const exploit = verifyAgentOutput({ ...validOutput, recommended_next_action: "Run metasploit and exploit steps to validate exposure." });
   assert.equal(exploit.ok, false);
@@ -77,3 +93,18 @@ test("verifier blocks exploit, patch deployment, final approval, risk acceptance
   assert.equal(notVulnerable.ok, false);
   assert.ok(notVulnerable.failures.some((failure) => failure.code === "not_vulnerable_without_reviewed_evidence"));
 });
+
+function collectObjectSchemas(schema, results) {
+  if (!schema || typeof schema !== "object") {
+    return;
+  }
+  if (schema.type === "object") {
+    results.push(schema);
+  }
+  for (const value of Object.values(schema.properties || {})) {
+    collectObjectSchemas(value, results);
+  }
+  if (schema.items) {
+    collectObjectSchemas(schema.items, results);
+  }
+}
