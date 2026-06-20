@@ -734,10 +734,9 @@ export function createServer(options = {}) {
       }
 
       if (route === "POST /api/patchforge/vendorlens/vendors/upsert") {
-        const body = await readJson(req);
-        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
-        const vendor = await upsertNetworkVendor(storage, tenantContext.effective_tenant_id, withLineage(body, tenantContext, authorization));
-        return sendJson(res, 200, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, vendor });
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        const vendor = await upsertNetworkVendor(storage, tenantRequest.tenantId, tenantRequest.withLineage());
+        return sendJson(res, 200, { tenant_id: tenantRequest.tenantId, tenant_context: tenantRequest.tenantContext, vendor });
       }
 
       if (route === "GET /api/patchforge/vendorlens/assets") {
@@ -749,10 +748,9 @@ export function createServer(options = {}) {
       }
 
       if (route === "POST /api/patchforge/vendorlens/assets") {
-        const body = await readJson(req);
-        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
-        const asset = await upsertCustomerNetworkAsset(storage, tenantContext.effective_tenant_id, withLineage(body, tenantContext, authorization));
-        return sendJson(res, 201, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, asset });
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        const asset = await upsertCustomerNetworkAsset(storage, tenantRequest.tenantId, tenantRequest.withLineage());
+        return sendJson(res, 201, { tenant_id: tenantRequest.tenantId, tenant_context: tenantRequest.tenantContext, asset });
       }
 
       if (route === "GET /api/patchforge/vendorlens/advisories") {
@@ -764,35 +762,32 @@ export function createServer(options = {}) {
       }
 
       if (route === "POST /api/patchforge/vendorlens/advisories/ingest") {
-        const body = await readJson(req);
-        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
-        const advisory = await ingestVendorSecurityAdvisory(storage, tenantContext.effective_tenant_id, withLineage(body, tenantContext, authorization));
-        return sendJson(res, 201, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, advisory });
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        const advisory = await ingestVendorSecurityAdvisory(storage, tenantRequest.tenantId, tenantRequest.withLineage());
+        return sendJson(res, 201, { tenant_id: tenantRequest.tenantId, tenant_context: tenantRequest.tenantContext, advisory });
       }
 
       if (route === "POST /api/patchforge/vendorlens/sources/refresh") {
-        const body = await readJson(req);
-        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
         const run = await refreshVendorLensSource({
           storage,
-          tenantId: tenantContext.effective_tenant_id,
-          body: withLineage(body, tenantContext, authorization),
+          tenantId: tenantRequest.tenantId,
+          body: tenantRequest.withLineage(),
           fetchImpl: vendorLensFetchImpl
         });
         return sendJson(res, 202, {
-          tenant_id: tenantContext.effective_tenant_id,
-          tenant_context: tenantContext,
+          tenant_id: tenantRequest.tenantId,
+          tenant_context: tenantRequest.tenantContext,
           source_feed_run: run
         });
       }
 
       if (route === "POST /api/patchforge/vendorlens/applicability/assess") {
-        const body = await readJson(req);
-        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
-        const assessment = await assessAndStoreConfigApplicability(storage, tenantContext.effective_tenant_id, withLineage(body, tenantContext, authorization));
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        const assessment = await assessAndStoreConfigApplicability(storage, tenantRequest.tenantId, tenantRequest.withLineage());
         return sendJson(res, 200, {
-          tenant_id: tenantContext.effective_tenant_id,
-          tenant_context: tenantContext,
+          tenant_id: tenantRequest.tenantId,
+          tenant_context: tenantRequest.tenantContext,
           assessment
         });
       }
@@ -806,23 +801,21 @@ export function createServer(options = {}) {
       }
 
       if (route === "POST /api/patchforge/vendorlens/patch-compare") {
-        const body = await readJson(req);
-        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
-        const comparison = await compareAndStorePatchVersion(storage, tenantContext.effective_tenant_id, withLineage(body, tenantContext, authorization));
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        const comparison = await compareAndStorePatchVersion(storage, tenantRequest.tenantId, tenantRequest.withLineage());
         return sendJson(res, 200, {
-          tenant_id: tenantContext.effective_tenant_id,
-          tenant_context: tenantContext,
+          tenant_id: tenantRequest.tenantId,
+          tenant_context: tenantRequest.tenantContext,
           comparison
         });
       }
 
       if (route === "POST /api/patchforge/vendorlens/chat") {
-        const body = await readJson(req);
-        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
-        const chat = await createVendorLensChatSession(storage, tenantContext.effective_tenant_id, withLineage(body, tenantContext, authorization));
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        const chat = await createVendorLensChatSession(storage, tenantRequest.tenantId, tenantRequest.withLineage());
         return sendJson(res, 201, {
-          tenant_id: tenantContext.effective_tenant_id,
-          tenant_context: tenantContext,
+          tenant_id: tenantRequest.tenantId,
+          tenant_context: tenantRequest.tenantContext,
           ...chat
         });
       }
@@ -834,10 +827,9 @@ export function createServer(options = {}) {
       }
 
       if (req.method === "POST" && vendorLensChatMatch) {
-        const body = await readJson(req);
-        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
-        const chat = await appendVendorLensChatMessage(storage, tenantContext.effective_tenant_id, decodeURIComponent(vendorLensChatMatch[1]), withLineage(body, tenantContext, authorization));
-        return chat ? sendJson(res, 200, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, ...chat }) : sendJson(res, 404, { error: "vendorlens_chat_not_found" });
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        const chat = await appendVendorLensChatMessage(storage, tenantRequest.tenantId, decodeURIComponent(vendorLensChatMatch[1]), tenantRequest.withLineage());
+        return chat ? sendJson(res, 200, { tenant_id: tenantRequest.tenantId, tenant_context: tenantRequest.tenantContext, ...chat }) : sendJson(res, 404, { error: "vendorlens_chat_not_found" });
       }
 
       if (route === "GET /api/patchforge/reports-packs" || route === "GET /api/patchforge/reports/overview") {
