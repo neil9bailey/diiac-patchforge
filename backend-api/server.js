@@ -1117,12 +1117,11 @@ export function createServer(options = {}) {
       }
 
       if (route === "POST /api/patchforge/discovery/collectors") {
-        const body = await readJson(req);
-        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
-        const collector = await registerAssetCollector(storage, tenantContext.effective_tenant_id, withLineage(body, tenantContext, authorization));
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        const collector = await registerAssetCollector(storage, tenantRequest.tenantId, tenantRequest.withLineage());
         return sendJson(res, 201, {
-          tenant_id: tenantContext.effective_tenant_id,
-          tenant_context: tenantContext,
+          tenant_id: tenantRequest.tenantId,
+          tenant_context: tenantRequest.tenantContext,
           collector
         });
       }
@@ -1136,40 +1135,37 @@ export function createServer(options = {}) {
       }
 
       if (route === "POST /api/patchforge/discovery/policies") {
-        const body = await readJson(req);
-        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
-        const policy = await upsertAssetDiscoveryPolicy(storage, tenantContext.effective_tenant_id, withLineage(body, tenantContext, authorization));
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        const policy = await upsertAssetDiscoveryPolicy(storage, tenantRequest.tenantId, tenantRequest.withLineage());
         return sendJson(res, 201, {
-          tenant_id: tenantContext.effective_tenant_id,
-          tenant_context: tenantContext,
+          tenant_id: tenantRequest.tenantId,
+          tenant_context: tenantRequest.tenantContext,
           policy
         });
       }
 
       if (route === "POST /api/patchforge/discovery/import") {
-        const body = await readJson(req);
-        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
-        const result = await importDiscoveredAssets(storage, tenantContext.effective_tenant_id, withLineage(body, tenantContext, authorization));
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        const result = await importDiscoveredAssets(storage, tenantRequest.tenantId, tenantRequest.withLineage());
         return sendJson(res, 202, {
-          tenant_id: tenantContext.effective_tenant_id,
-          tenant_context: tenantContext,
+          tenant_id: tenantRequest.tenantId,
+          tenant_context: tenantRequest.tenantContext,
           ...result
         });
       }
 
       if (route === "POST /api/patchforge/bayesian/assess") {
-        const body = await readJson(req);
-        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
-        const assessment = buildBayesianAssessment(withLineage(body, tenantContext, authorization));
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        const assessment = buildBayesianAssessment(tenantRequest.withLineage());
         await storage.append("bayesian_assessments", {
-          tenant_id: tenantContext.effective_tenant_id,
+          tenant_id: tenantRequest.tenantId,
           assessment_id: assessment.assessment_id,
           ...assessment,
-          ...lineageFields(tenantContext, authorization)
+          ...tenantRequest.lineageFields()
         });
         return sendJson(res, 200, {
-          tenant_id: tenantContext.effective_tenant_id,
-          tenant_context: tenantContext,
+          tenant_id: tenantRequest.tenantId,
+          tenant_context: tenantRequest.tenantContext,
           bayesian: assessment
         });
       }
@@ -1184,18 +1180,17 @@ export function createServer(options = {}) {
       }
 
       if (route === "POST /api/patchforge/bayesian/prior-update-dry-run") {
-        const body = await readJson(req);
-        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
-        if (body.live_update === true) {
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        if (tenantRequest.body.live_update === true) {
           return sendJson(res, 400, {
             error: "live_prior_update_locked",
             message: "PatchForge Bayesian prior updates are proposal-only unless explicitly approved in a later controlled release."
           });
         }
         return sendJson(res, 200, {
-          tenant_id: tenantContext.effective_tenant_id,
-          tenant_context: tenantContext,
-          proposal: buildPriorUpdateProposal(withLineage(body, tenantContext, authorization))
+          tenant_id: tenantRequest.tenantId,
+          tenant_context: tenantRequest.tenantContext,
+          proposal: buildPriorUpdateProposal(tenantRequest.withLineage())
         });
       }
 
@@ -1208,10 +1203,9 @@ export function createServer(options = {}) {
       }
 
       if (route === "POST /api/patchforge/vendors/upsert") {
-        const body = await readJson(req);
-        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
-        const vendor = await upsertVendor(storage, tenantContext.effective_tenant_id, withLineage(body, tenantContext, authorization));
-        return sendJson(res, 200, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, vendor });
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        const vendor = await upsertVendor(storage, tenantRequest.tenantId, tenantRequest.withLineage());
+        return sendJson(res, 200, { tenant_id: tenantRequest.tenantId, tenant_context: tenantRequest.tenantContext, vendor });
       }
 
       const vendorDetailMatch = url.pathname.match(/^\/api\/patchforge\/vendors\/([^/]+)$/);
@@ -1222,10 +1216,9 @@ export function createServer(options = {}) {
 
       const vendorAdvisoryMatch = url.pathname.match(/^\/api\/patchforge\/vendors\/([^/]+)\/advisories\/ingest$/);
       if (req.method === "POST" && vendorAdvisoryMatch) {
-        const body = await readJson(req);
-        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
-        const advisory = await ingestVendorAdvisory(storage, tenantContext.effective_tenant_id, decodeURIComponent(vendorAdvisoryMatch[1]), withLineage(body, tenantContext, authorization));
-        return sendJson(res, 201, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, advisory });
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        const advisory = await ingestVendorAdvisory(storage, tenantRequest.tenantId, decodeURIComponent(vendorAdvisoryMatch[1]), tenantRequest.withLineage());
+        return sendJson(res, 201, { tenant_id: tenantRequest.tenantId, tenant_context: tenantRequest.tenantContext, advisory });
       }
 
       const vendorLandscapeMatch = url.pathname.match(/^\/api\/patchforge\/vendors\/([^/]+)\/threat-landscape$/);
@@ -1249,28 +1242,27 @@ export function createServer(options = {}) {
 
       const analyseMatch = url.pathname.match(/^\/api\/patchforge\/vulnerabilities\/([^/]+)\/analyse$/);
       if (req.method === "POST" && analyseMatch) {
-        const body = await readJson(req);
-        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
         const vulnerabilityIdForAnalysis = decodeURIComponent(analyseMatch[1]);
-        const bayesianSnapshot = buildBayesianAssessment({ vulnerability: await storage.getVulnerability(tenantContext.effective_tenant_id, vulnerabilityIdForAnalysis) || {}, ...body });
+        const bayesianSnapshot = buildBayesianAssessment({ vulnerability: await storage.getVulnerability(tenantRequest.tenantId, vulnerabilityIdForAnalysis) || {}, ...tenantRequest.body });
         const intelligence = await buildIntelligenceForTenant({
           storage,
-          tenantId: tenantContext.effective_tenant_id,
+          tenantId: tenantRequest.tenantId,
           vulnerabilityId: vulnerabilityIdForAnalysis,
           bayesianSnapshot
         });
         if (!intelligence) {
           return sendJson(res, 404, { error: "vulnerability_not_found" });
         }
-        await storage.audit(tenantContext.effective_tenant_id, "finding_intelligence_generated", {
+        await storage.audit(tenantRequest.tenantId, "finding_intelligence_generated", {
           vulnerability_id: vulnerabilityIdForAnalysis,
           intelligence_id: intelligence.intelligence_id,
           recommendation: intelligence.recommendation?.posture,
-          ...lineageFields(tenantContext, authorization)
+          ...tenantRequest.lineageFields()
         });
         return sendJson(res, 200, {
-          tenant_id: tenantContext.effective_tenant_id,
-          tenant_context: tenantContext,
+          tenant_id: tenantRequest.tenantId,
+          tenant_context: tenantRequest.tenantContext,
           intelligence,
           bayesian: bayesianSnapshot,
           boundary: intelligence.boundary
@@ -1287,11 +1279,10 @@ export function createServer(options = {}) {
       };
 
       if (sraRoutes[route]) {
-        const body = await readJson(req);
-        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
         try {
-          const result = runSraTool(sraRoutes[route], withLineage({ ...body, tenant_id: tenantContext.effective_tenant_id }, tenantContext, authorization));
-          return sendJson(res, 200, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, sra: result });
+          const result = runSraTool(sraRoutes[route], tenantRequest.withLineage({ ...tenantRequest.body, tenant_id: tenantRequest.tenantId }));
+          return sendJson(res, 200, { tenant_id: tenantRequest.tenantId, tenant_context: tenantRequest.tenantContext, sra: result });
         } catch (error) {
           return sendJson(res, 400, { error: "sra_boundary_violation", message: error.message });
         }
@@ -1350,6 +1341,18 @@ function withLineage(payload, tenantContext, authorization) {
   return {
     ...payload,
     ...lineageFields(tenantContext, authorization)
+  };
+}
+
+async function readTenantJson(req, url, authConfig, authorization) {
+  const body = await readJson(req);
+  const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+  return {
+    body,
+    tenantContext,
+    tenantId: tenantContext.effective_tenant_id,
+    withLineage: (payload = body) => withLineage(payload, tenantContext, authorization),
+    lineageFields: () => lineageFields(tenantContext, authorization)
   };
 }
 

@@ -1161,28 +1161,34 @@ test("PatchForge catalogue, customer operational assets, ask, and reports APIs w
     assert.equal(ask.body.response.final_approval_issued, false);
     assert.equal(ask.body.response.human_approval_required, true);
 
-    const agentStatus = await request(baseUrl, "/api/patchforge/agents/status", {
-      headers: { "x-tenant-id": "tenant-a" }
-    });
-    assert.equal(agentStatus.response.status, 200);
-    assert.equal(agentStatus.body.openai_agent.enabled, false);
-    assert.equal(agentStatus.body.openai_agent.model, "gpt-5.4");
-    assert.equal(agentStatus.body.openai_agent.key_configured, false);
-    assert.equal(agentStatus.body.openai_agent.key_value_exposed, false);
-    assert.equal(agentStatus.body.openai_agent.final_approval_issued, false);
+    await withEnv({
+      OPENAI_API_KEY: undefined,
+      PATCHFORGE_OPENAI_AGENT_ENABLED: undefined,
+      PATCHFORGE_OPENAI_MODEL: undefined
+    }, async () => {
+      const agentStatus = await request(baseUrl, "/api/patchforge/agents/status", {
+        headers: { "x-tenant-id": "tenant-a" }
+      });
+      assert.equal(agentStatus.response.status, 200);
+      assert.equal(agentStatus.body.openai_agent.enabled, false);
+      assert.equal(agentStatus.body.openai_agent.model, "gpt-5.4");
+      assert.equal(agentStatus.body.openai_agent.key_configured, false);
+      assert.equal(agentStatus.body.openai_agent.key_value_exposed, false);
+      assert.equal(agentStatus.body.openai_agent.final_approval_issued, false);
 
-    const disabledAgent = await request(baseUrl, "/api/patchforge/agents/ask", {
-      method: "POST",
-      headers: { "x-tenant-id": "tenant-a" },
-      body: JSON.stringify({
-        question: "Does CVE-2026-PFAZ10-001 require urgent patching?",
-        deterministic_answer: ask.body.response
-      })
+      const disabledAgent = await request(baseUrl, "/api/patchforge/agents/ask", {
+        method: "POST",
+        headers: { "x-tenant-id": "tenant-a" },
+        body: JSON.stringify({
+          question: "Does CVE-2026-PFAZ10-001 require urgent patching?",
+          deterministic_answer: ask.body.response
+        })
+      });
+      assert.equal(disabledAgent.response.status, 202);
+      assert.equal(disabledAgent.body.agent_guidance.status, "disabled");
+      assert.equal(disabledAgent.body.agent_guidance.fallback.final_approval_issued, false);
+      assert.equal(disabledAgent.body.agent_guidance.can_close_hard_gates, false);
     });
-    assert.equal(disabledAgent.response.status, 202);
-    assert.equal(disabledAgent.body.agent_guidance.status, "disabled");
-    assert.equal(disabledAgent.body.agent_guidance.fallback.final_approval_issued, false);
-    assert.equal(disabledAgent.body.agent_guidance.can_close_hard_gates, false);
 
     const reports = await request(baseUrl, "/api/patchforge/reports-packs", {
       headers: { "x-tenant-id": "tenant-a" }
