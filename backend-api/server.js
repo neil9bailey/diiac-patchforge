@@ -18,6 +18,7 @@ import { buildFindingIntelligence, buildIntelligenceForTenant } from "./patchfor
 import { REPORT_CATALOG, buildReportContentReview, generateDecisionPackReport } from "./patchforge/reports.js";
 import { getOpenAiAgentStatus, OPENAI_AGENT_NAMES, runOpenAiAgent } from "./patchforge/openaiAgentService.js";
 import { startScheduler } from "./patchforge/scheduler.js";
+import { handlePlatformRoutes } from "./routes/platformRoutes.js";
 import {
   buildAssetDiscoveryOverview,
   importDiscoveredAssets,
@@ -144,21 +145,8 @@ export function createServer(options = {}) {
       const baseTenantContext = resolveTenantContext(req, url, {}, authConfig, authorization.principal);
       const tenantId = baseTenantContext.effective_tenant_id;
 
-      if (req.method === "GET" && url.pathname === "/health") {
-        return sendJson(res, 200, {
-          status: "ok",
-          product: "DIIaC PatchForge",
-          boundary: "governance-only"
-        });
-      }
-
-      if (req.method === "GET" && url.pathname === "/readiness") {
-        return sendJson(res, 200, {
-          status: "ready",
-          storage: storage.storageMode || "local-json",
-          auth_required: Boolean(authConfig.required),
-          tenant_required: true
-        });
+      if (await handlePlatformRoutes({ req, res, url, storage, authConfig, sendJson })) {
+        return;
       }
 
       if (route === "GET /api/patchforge/vulnerabilities") {
