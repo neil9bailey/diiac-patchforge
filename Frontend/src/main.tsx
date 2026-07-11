@@ -4,9 +4,10 @@ import { PublicClientApplication } from "@azure/msal-browser";
 import { MsalProvider } from "@azure/msal-react";
 import App from "./App";
 import { getPatchForgeConfig } from "./api";
-import { MsalPatchForgeAuthProvider } from "./auth";
+import { MsalPatchForgeAuthProvider, PatchForgeAuthSession } from "./auth";
 import "./styles.css";
 
+const localPreviewEnabled = import.meta.env.DEV && new URLSearchParams(window.location.search).get("preview") === "1";
 const config = getPatchForgeConfig();
 const msalInstance = new PublicClientApplication({
   auth: {
@@ -22,11 +23,22 @@ const msalInstance = new PublicClientApplication({
 
 await msalInstance.initialize();
 
+const localPreviewSession: PatchForgeAuthSession = {
+  status: "authenticated",
+  accountName: "preview.admin@diiac.io",
+  roles: ["PatchForge.Admin"],
+  signIn: async () => undefined,
+  signOut: async () => {
+    window.location.assign(window.location.pathname);
+  },
+  getAccessToken: async () => "local-preview"
+};
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <MsalProvider instance={msalInstance}>
       <MsalPatchForgeAuthProvider>
-        <App />
+        <App auth={localPreviewEnabled ? localPreviewSession : undefined} />
       </MsalPatchForgeAuthProvider>
     </MsalProvider>
   </React.StrictMode>

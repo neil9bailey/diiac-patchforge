@@ -2,10 +2,13 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
   Archive,
   BadgeCheck,
+  Bell,
   Binary,
   Blocks,
   BookOpenCheck,
   CheckCircle2,
+  ChevronRight,
+  CircleHelp,
   ClipboardCheck,
   Clock3,
   Database,
@@ -26,11 +29,14 @@ import {
   MessageSquareText,
   Search,
   ServerCog,
+  ShieldCheck,
   ShieldAlert,
   SlidersHorizontal,
   TriangleAlert,
   Upload,
-  Wrench
+  UserRound,
+  Wrench,
+  X
 } from "lucide-react";
 import {
   AdminConfig,
@@ -131,10 +137,8 @@ type LiveState = {
   discovery: AssetDiscoveryOverview | null;
 };
 
-const PRODUCT_MARK = "PatchForge Intelligence by DIIaC\u2122";
-const ACTIVE_BASELINE = "PF-AZ11-CUSTOMER-DEMO-MATURITY";
-const REPORT_TEMPLATE_VERSION = "patchforge-report-template.v2026-05-31.1";
-const REPORT_CONTEXT_VERSION = "patchforge-report-context.v4";
+const BRAND_MARK = "DIIaC\u2122";
+const PRODUCT_MARK = `PatchForge Intelligence by ${BRAND_MARK}`;
 const config = getPatchForgeConfig();
 const discoveryCollectorCategories = [
   "network_device",
@@ -262,6 +266,11 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
   const session = auth || contextAuth;
   const liveApi = useMemo(() => api || createPatchForgeApi(session.getAccessToken), [api, session.getAccessToken]);
   const [activePage, setActivePage] = useState<PageKey>("Patch & CVE Catalogue");
+  const [navigationCollapsed, setNavigationCollapsed] = useState(() => (
+    typeof window !== "undefined"
+    && typeof window.matchMedia === "function"
+    && window.matchMedia("(max-width: 820px)").matches
+  ));
   const [tenantId, setTenantId] = useState(initialTenantId || config.tenantHeader);
   const [state, setState] = useState<LiveState>(() => emptyLiveState(tenantId));
   const [refreshing, setRefreshing] = useState(false);
@@ -285,6 +294,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
   const [patchCompareForm, setPatchCompareForm] = useState({ current_version: "7.2.7", proposed_version: "7.2.8" });
   const [askQuestion, setAskQuestion] = useState("We use FortiGate 100F FortiOS 7.2.7 with SSL-VPN disabled. Does this CVE require urgent patching?");
   const canWrite = hasAnyRole(session.roles, ["PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.Admin"]);
+  const canGeneratePacks = hasAnyRole(session.roles, ["PatchForge.SecurityLead", "PatchForge.CABApprover", "PatchForge.Admin"]);
   const isAdmin = hasAnyRole(session.roles, ["PatchForge.Admin"]);
   const canReadAdmin = hasAnyRole(session.roles, ["PatchForge.Admin", "PatchForge.Auditor"]);
   const [purgeScopes, setPurgeScopes] = useState<Record<string, boolean>>({
@@ -302,10 +312,13 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
     [selectedVulnerabilityId, state.findings]
   );
   const selectedGlobalRecord = useMemo(
-    () => state.securityActionCenter.catalogue_rows.find((row) =>
-      [row.vulnerability_id, row.cve_id, row.advisory_id, row.id].filter(Boolean).includes(selectedVulnerabilityId)
-      || [row.advisory_id, row.cve_id, row.id].filter(Boolean).includes(selectedAdvisoryId)
-    ) || state.securityActionCenter.catalogue_rows[0] || null,
+    () => {
+      const catalogueRows = collapseCatalogueRows(state.securityActionCenter.catalogue_rows);
+      return catalogueRows.find((row) =>
+        [row.vulnerability_id, row.cve_id, row.advisory_id, row.id].filter(Boolean).includes(selectedVulnerabilityId)
+        || [row.advisory_id, row.cve_id, row.id].filter(Boolean).includes(selectedAdvisoryId)
+      ) || catalogueRows[0] || null;
+    },
     [selectedAdvisoryId, selectedVulnerabilityId, state.securityActionCenter.catalogue_rows]
   );
   const visibleNav = useMemo(() => navItems, []);
@@ -434,26 +447,48 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
     }
   }
 
-  async function handleGeneratePack() {
+  async function handleGeneratePack(context?: {
+    vulnerabilityId?: string;
+    assetId?: string;
+    advisoryId?: string;
+    strictContext?: boolean;
+  }) {
     setOperationMessage(null);
     setOperationError(null);
-    if (!selectedVulnerabilityId) {
+    const vulnerabilityId = context?.vulnerabilityId || selectedVulnerabilityId;
+    if (!vulnerabilityId) {
       setOperationError("Select a real ingested vulnerability before generating a decision pack.");
       return;
     }
     try {
+      const requestedAssetId = context?.strictContext ? context.assetId || "" : selectedCustomerAssetId;
+      const requestedAdvisoryId = context?.strictContext ? context.advisoryId || "" : selectedAdvisoryId;
+      const selectedAsset = state.vendorLens.assets.find((item) => item.asset_id === requestedAssetId)
+        || (!context?.strictContext ? state.vendorLens.assets[0] : null)
+        || null;
+      const selectedAdvisory = state.vendorLens.advisories.find((item) => item.advisory_id === requestedAdvisoryId)
+        || (!context?.strictContext ? state.vendorLens.advisories[0] : null)
+        || null;
+      const assetId = context?.strictContext ? requestedAssetId : selectedAsset?.asset_id || "";
+      const advisoryId = context?.strictContext ? requestedAdvisoryId : selectedAdvisory?.advisory_id || "";
+      const assessment = recordMatchesContext(state.vendorLens.latestAssessment, assetId, advisoryId)
+        ? state.vendorLens.latestAssessment
+        : null;
+      const comparison = recordMatchesContext(state.vendorLens.latestComparison, assetId, advisoryId)
+        ? state.vendorLens.latestComparison
+        : null;
+      const chat = recordMatchesContext(state.vendorLens.latestChat, assetId, advisoryId)
+        ? state.vendorLens.latestChat
+        : null;
       const pack = await liveApi.generateReportsPack(tenantId, {
-        vulnerability_id: selectedVulnerabilityId,
+        vulnerability_id: vulnerabilityId,
         requested_posture: selectedPosture,
         bayesian_snapshot: state.bayesian,
-        config_applicability_assessment: state.vendorLens.latestAssessment,
-        vendorlens_patch_comparison: state.vendorLens.latestComparison,
-        sra_config_chat_session: state.vendorLens.latestChat,
-        asset_id: state.vendorLens.latestAssessment?.asset_id || selectedCustomerAssetId || state.vendorLens.assets[0]?.asset_id,
-        advisory_id: state.vendorLens.latestAssessment?.advisory_id || selectedAdvisoryId || state.vendorLens.advisories[0]?.advisory_id,
-        product_baseline: ACTIVE_BASELINE,
-        report_template_version: REPORT_TEMPLATE_VERSION,
-        report_context_version: REPORT_CONTEXT_VERSION
+        config_applicability_assessment: assessment,
+        vendorlens_patch_comparison: comparison,
+        sra_config_chat_session: chat,
+        asset_id: assetId || undefined,
+        advisory_id: advisoryId || undefined
       });
       setOperationMessage(`Signed decision pack ${pack.pack_id} generated.`);
       await loadLiveState();
@@ -530,7 +565,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
     }
   }
 
-  async function handleRefreshSourceFeed(feedId: string) {
+  async function handleRefreshSourceFeed(feedId: string, remainInCurrentArea = false) {
     setOperationMessage(null);
     setOperationError(null);
     try {
@@ -540,7 +575,9 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
       const run = await liveApi.refreshSourceFeed(tenantId, payload);
       setOperationMessage(`${run.feed_name} ${run.status}: ${run.message || "source-bound refresh recorded."}`);
       await loadLiveState();
-      setActivePage("Source Feeds");
+      if (!remainInCurrentArea) {
+        setActivePage("Source Feeds");
+      }
     } catch (error) {
       setOperationError(error instanceof Error ? error.message : "Source feed refresh failed.");
     }
@@ -559,6 +596,12 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
     } catch (error) {
       setOperationError(error instanceof Error ? error.message : "Security Action Center search failed.");
     }
+  }
+
+  async function handleGlobalSearchSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setActivePage("Patch & CVE Catalogue");
+    await handleSearchSecurityActionCenter();
   }
 
   async function handleExtractCustomerAsset() {
@@ -783,16 +826,22 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
     }
   }
 
-  async function handleAssessVendorLens() {
+  async function handleAssessVendorLens(assetId?: string, advisoryId?: string) {
     setOperationMessage(null);
     setOperationError(null);
-    const asset = state.vendorLens.assets[0];
-    const advisory = state.vendorLens.advisories[0];
+    const asset = state.vendorLens.assets.find((item) => item.asset_id === assetId)
+      || state.vendorLens.assets.find((item) => item.asset_id === selectedCustomerAssetId)
+      || state.vendorLens.assets[0];
+    const advisory = state.vendorLens.advisories.find((item) => item.advisory_id === advisoryId)
+      || state.vendorLens.advisories.find((item) => item.advisory_id === selectedAdvisoryId)
+      || state.vendorLens.advisories[0];
     if (!asset || !advisory) {
       setOperationError("VendorLens needs at least one customer network asset and one vendor advisory before assessing applicability.");
       return;
     }
     try {
+      setSelectedCustomerAssetId(asset.asset_id);
+      setSelectedAdvisoryId(advisory.advisory_id);
       const assessment = await liveApi.assessConfigApplicability(tenantId, {
         asset_id: asset.asset_id,
         advisory_id: advisory.advisory_id
@@ -804,21 +853,30 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
     }
   }
 
-  async function handleAskVendorLens() {
+  async function handleAskVendorLens(assetId?: string, advisoryId?: string) {
     setOperationMessage(null);
     setOperationError(null);
-    const asset = state.vendorLens.assets[0];
-    const advisory = state.vendorLens.advisories[0];
+    const asset = state.vendorLens.assets.find((item) => item.asset_id === assetId)
+      || state.vendorLens.assets.find((item) => item.asset_id === selectedCustomerAssetId)
+      || state.vendorLens.assets[0];
+    const advisory = state.vendorLens.advisories.find((item) => item.advisory_id === advisoryId)
+      || state.vendorLens.advisories.find((item) => item.advisory_id === selectedAdvisoryId)
+      || state.vendorLens.advisories[0];
     if (!asset || !advisory) {
       setOperationError("Add or select a network asset and vendor advisory before asking PatchForge.");
       return;
     }
     try {
+      setSelectedCustomerAssetId(asset.asset_id);
+      setSelectedAdvisoryId(advisory.advisory_id);
+      const assessment = recordMatchesContext(state.vendorLens.latestAssessment, asset.asset_id, advisory.advisory_id)
+        ? state.vendorLens.latestAssessment
+        : state.vendorLens.dashboard?.recent_assessments?.find((item) => recordMatchesContext(item, asset.asset_id, advisory.advisory_id));
       const chat = await liveApi.startVendorLensChat(tenantId, {
         question: vendorLensQuestion,
         asset_id: asset.asset_id,
         advisory_id: advisory.advisory_id,
-        assessment: state.vendorLens.latestAssessment || undefined
+        assessment: assessment || undefined
       });
       setState((current) => ({
         ...current,
@@ -951,15 +1009,25 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
   }
 
   return (
-    <main className="app-shell">
-      <aside className="side-nav" aria-label="PatchForge navigation">
+    <main className={`app-shell${navigationCollapsed ? " nav-collapsed" : ""}`}>
+      <aside id="patchforge-primary-navigation" className="side-nav" aria-label="PatchForge navigation" aria-hidden={navigationCollapsed}>
+        <button type="button" className="icon-button nav-mobile-close" aria-label="Close navigation" tabIndex={navigationCollapsed ? -1 : 0} onClick={() => setNavigationCollapsed(true)}>
+          <X size={18} aria-hidden />
+        </button>
         <BrandLockup />
-        <nav>
+        <nav className="primary-navigation">
           {visibleNav.map(({ label, icon: Icon }) => (
             <button
               key={label}
               className={activePage === label ? "nav-button active" : "nav-button"}
-              onClick={() => setActivePage(label)}
+              aria-current={activePage === label ? "page" : undefined}
+              onClick={() => {
+                setActivePage(label);
+                if (typeof window.matchMedia === "function" && window.matchMedia("(max-width: 820px)").matches) {
+                  setNavigationCollapsed(true);
+                }
+              }}
+              tabIndex={navigationCollapsed ? -1 : 0}
               type="button"
             >
               <Icon size={18} aria-hidden />
@@ -967,40 +1035,76 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
             </button>
           ))}
         </nav>
-        <BoundaryPanel />
+        <div className="nav-footer">
+          <div className="nav-assurance">
+            <ShieldCheck size={17} aria-hidden />
+            <span><strong>Human-approved</strong><small>Automation prepares evidence; people decide.</small></span>
+          </div>
+          <div className="tenant-context" aria-label="Current tenant and environment">
+            <Database size={16} aria-hidden />
+            <span><strong>{tenantId}</strong><small>{config.environmentLabel}</small></span>
+          </div>
+        </div>
       </aside>
 
       <section className="workspace">
         <header className="top-rail">
-          <button className="icon-button" aria-label="Toggle navigation" type="button">
+          <button
+            className="icon-button"
+            aria-label="Toggle navigation"
+            aria-controls="patchforge-primary-navigation"
+            aria-expanded={!navigationCollapsed}
+            onClick={() => setNavigationCollapsed((current) => !current)}
+            type="button"
+          >
             <PanelLeft size={18} aria-hidden />
           </button>
-          <div>
-            <p className="eyebrow">{config.environmentLabel} | {tenantId} | Enterprise Strict</p>
-            <h2>{activePage}</h2>
-          </div>
-          <div className="status-strip" aria-label="Runtime trust status">
-            <span><BadgeCheck size={16} aria-hidden /> Entra protected</span>
-            <span><Radar size={16} aria-hidden /> Agent-led intake</span>
-            <span><FileCheck2 size={16} aria-hidden /> Signing trusted</span>
-            <button type="button" className="pill-button" onClick={loadLiveState} disabled={refreshing}>
-              <RefreshCw size={15} aria-hidden /> {refreshing ? "Refreshing" : "Refresh"}
+          <form className="global-command" onSubmit={handleGlobalSearchSubmit} role="search" aria-label="Global PatchForge search">
+            <Search size={17} aria-hidden />
+            <label className="sr-only" htmlFor="patchforge-global-search">Search PatchForge</label>
+            <input
+              id="patchforge-global-search"
+              value={globalSearch}
+              onChange={(event) => setGlobalSearch(event.target.value)}
+              placeholder="Search CVE, vendor, product or asset…"
+            />
+          </form>
+          <button type="button" className="header-command" aria-label="Open Ask PatchForge" onClick={() => setActivePage("Ask PatchForge")}>
+            <MessageSquareText size={17} aria-hidden /> Ask PatchForge
+          </button>
+          <div className="header-context" aria-label="Session and source context">
+            <span className={`source-recency ${sourceRunTone(state.sourceFeedState)}`}>
+              <span className="status-dot" aria-hidden /> {sourceRunLabel(state.sourceFeedState)}
+            </span>
+            <button type="button" className="icon-button header-icon" aria-label="Open help and guidance" onClick={() => setActivePage("Guide")}>
+              <CircleHelp size={18} aria-hidden />
             </button>
-            <button type="button" className="pill-button" onClick={() => void session.signOut()}>
-              <LogOut size={15} aria-hidden /> Sign out
+            <button type="button" className="icon-button header-icon notification-button" aria-label="Open review queue" onClick={() => setActivePage("Review & Approve")}>
+              <Bell size={18} aria-hidden />
+              {state.metrics.pending_review > 0 && <span className="notification-count">{Math.min(state.metrics.pending_review, 99)}</span>}
+            </button>
+            <div className="account-control" aria-label="Signed-in account">
+              <span className="account-avatar">{accountInitials(session.accountName)}</span>
+              <span><strong>{accountDisplayName(session.accountName)}</strong><small>{displayRole(session.roles)}</small></span>
+            </div>
+            <button type="button" className="icon-button header-icon" aria-label="Sign out" onClick={() => void session.signOut()}>
+              <LogOut size={17} aria-hidden />
             </button>
           </div>
         </header>
 
-        <div className="content-grid">
+        <div className={`content-grid${activePage === "Patch & CVE Catalogue" ? " catalogue-layout" : ""}`}>
           <section className="primary-panel" aria-label={activePage}>
+            {activePage !== "Patch & CVE Catalogue" && <h2 className="sr-only">{activePage}</h2>}
             <OperationMessages message={operationMessage} error={operationError} />
-            {selectedFinding && ["Patch & CVE Catalogue", "Action Center", "Finding Detail", "Review & Approve", "Reports"].includes(activePage) && (
+            {selectedFinding && ["Action Center", "Finding Detail", "Review & Approve", "Reports"].includes(activePage) && (
               <FindingContextBanner finding={selectedFinding} />
             )}
             {activePage === "Patch & CVE Catalogue" && (
               <GlobalSecurityActionCenter
                 state={state.securityActionCenter}
+                metrics={state.metrics}
+                finding={selectedFinding}
                 query={globalSearch}
                 setQuery={setGlobalSearch}
                 filters={globalFilters}
@@ -1009,10 +1113,21 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 onSearch={handleSearchSecurityActionCenter}
                 onSelectCve={(row) => {
                   setSelectedVulnerabilityId(row.vulnerability_id || row.cve_id || row.advisory_id || "");
-                  setSelectedAdvisoryId(row.advisory_id || row.cve_id || row.id || "");
+                  setSelectedAdvisoryId(row.advisory_id || "");
+                  setSelectedCustomerAssetId(catalogueMatchedAssetId(row));
                 }}
                 canWrite={canWrite}
-                onRefreshSourceFeed={handleRefreshSourceFeed}
+                canGeneratePacks={canGeneratePacks}
+                onRefreshSourceFeed={(feedId) => handleRefreshSourceFeed(feedId, true)}
+                onOpenAsk={() => setActivePage("Ask PatchForge")}
+                onOpenReview={() => setActivePage("Review & Approve")}
+                onOpenComparison={() => setActivePage("Customer Estate")}
+                onPreparePack={(row) => handleGeneratePack({
+                  vulnerabilityId: row.vulnerability_id || row.cve_id || row.advisory_id || row.id,
+                  advisoryId: row.advisory_id || "",
+                  assetId: catalogueMatchedAssetId(row),
+                  strictContext: true
+                })}
               />
             )}
             {activePage === "Vendor Catalogue" && (
@@ -1024,6 +1139,10 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 setAdvisoryForm={setVendorAdvisoryForm}
                 question={vendorLensQuestion}
                 setQuestion={setVendorLensQuestion}
+                selectedAssetId={selectedCustomerAssetId}
+                setSelectedAssetId={setSelectedCustomerAssetId}
+                selectedAdvisoryId={selectedAdvisoryId}
+                setSelectedAdvisoryId={setSelectedAdvisoryId}
                 onSaveAsset={handleSaveNetworkAsset}
                 onIngestAdvisory={handleIngestVendorLensAdvisory}
                 onAssess={handleAssessVendorLens}
@@ -1143,7 +1262,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 onGenerate={handleGeneratePack}
                 onExportPack={handleExportPack}
                 onDownloadReport={handleDownloadReport}
-                canWrite={canWrite}
+                canWrite={canGeneratePacks}
               />
             )}
             {activePage === "Command Center" && (
@@ -1198,6 +1317,10 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 setAdvisoryForm={setVendorAdvisoryForm}
                 question={vendorLensQuestion}
                 setQuestion={setVendorLensQuestion}
+                selectedAssetId={selectedCustomerAssetId}
+                setSelectedAssetId={setSelectedCustomerAssetId}
+                selectedAdvisoryId={selectedAdvisoryId}
+                setSelectedAdvisoryId={setSelectedAdvisoryId}
                 onSaveAsset={handleSaveNetworkAsset}
                 onIngestAdvisory={handleIngestVendorLensAdvisory}
                 onAssess={handleAssessVendorLens}
@@ -1229,9 +1352,11 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
             )}
           </section>
 
-          <aside className="utility-rail" aria-label="PatchForge utility rail">
-            <UtilityRail session={session} metrics={state.metrics} decisionPacks={state.decisionPacks} sourceFeedState={state.sourceFeedState} adminHealth={state.adminHealth} />
-          </aside>
+          {activePage !== "Patch & CVE Catalogue" && (
+            <aside className="utility-rail" aria-label="PatchForge utility rail">
+              <UtilityRail session={session} metrics={state.metrics} decisionPacks={state.decisionPacks} sourceFeedState={state.sourceFeedState} adminHealth={state.adminHealth} />
+            </aside>
+          )}
         </div>
       </section>
     </main>
@@ -1267,7 +1392,7 @@ function BrandLockup() {
         <Binary size={24} aria-hidden />
       </div>
       <div>
-        <p>DIIaC\u2122</p>
+        <p>{BRAND_MARK}</p>
         <h1>PatchForge Intelligence</h1>
       </div>
     </div>
@@ -1339,6 +1464,8 @@ function NextActionCards() {
 
 function GlobalSecurityActionCenter({
   state,
+  metrics,
+  finding,
   query,
   setQuery,
   filters,
@@ -1347,9 +1474,16 @@ function GlobalSecurityActionCenter({
   onSearch,
   onSelectCve,
   canWrite,
-  onRefreshSourceFeed
+  canGeneratePacks,
+  onRefreshSourceFeed,
+  onOpenAsk,
+  onOpenReview,
+  onOpenComparison,
+  onPreparePack
 }: {
   state: SecurityActionCenterState;
+  metrics: PatchForgeMetrics;
+  finding: FindingIntelligence | null;
   query: string;
   setQuery: (value: string) => void;
   filters: { vendor: string; severity: string; customer_match: string; patch_available: string };
@@ -1358,161 +1492,429 @@ function GlobalSecurityActionCenter({
   onSearch: () => void;
   onSelectCve: (row: SecurityActionCenterRow) => void;
   canWrite: boolean;
-  onRefreshSourceFeed: (feedId: string) => void;
+  canGeneratePacks: boolean;
+  onRefreshSourceFeed: (feedId: string) => void | Promise<void>;
+  onOpenAsk: () => void;
+  onOpenReview: () => void;
+  onOpenComparison: () => void;
+  onPreparePack: (row: SecurityActionCenterRow) => void;
 }) {
-  const rowsPage = usePagination(state.catalogue_rows || [], 8, "global-security-action-center");
+  const [quickFilter, setQuickFilter] = useState<"all" | "review" | "exploited" | "matched" | "patch">("all");
+  const rows = useMemo(() => collapseCatalogueRows(state.catalogue_rows || []), [state.catalogue_rows]);
+  const filteredRows = useMemo(() => rows.filter((row) => {
+    if (quickFilter === "review") {
+      return !catalogueEvidenceVerified(row);
+    }
+    if (quickFilter === "exploited") {
+      return Boolean(row.known_exploited || row.kev);
+    }
+    if (quickFilter === "matched") {
+      return row.customer_match_count > 0;
+    }
+    if (quickFilter === "patch") {
+      return Boolean(row.patch_available);
+    }
+    return true;
+  }), [quickFilter, rows]);
+  const rowsPage = usePagination(filteredRows, 8, `global-security-action-center-${quickFilter}`);
   const vendorOptions = state.filters?.vendors || [];
   const severityOptions = state.filters?.severities || [];
-  const summary = state.summary || {};
+  const urgentActions = rows.filter((row) => /urgent|critical/i.test(String(row.urgency_posture || ""))).length;
+  const matchedKev = rows.filter((row) => row.kev && row.customer_match_count > 0).length;
+  const customerMatchedRecords = rows.filter((row) => row.customer_match_count > 0).length;
+  const recordsNeedingEvidenceReview = Math.max(metrics.pending_review, rows.filter((row) => !catalogueEvidenceVerified(row)).length);
+  const selectedFinding = finding && selectedRow && finding.vulnerability_id === catalogueRecordId(selectedRow) ? finding : null;
 
   return (
-    <>
-      <div className="metric-grid">
-        <MetricCard icon={ListFilter} label="Catalogue records" value={summary.total_records ?? state.catalogue_rows.length} tone="steel" />
-        <MetricCard icon={ShieldAlert} label="Known exploited" value={summary.known_exploited_records ?? 0} tone="amber" />
-        <MetricCard icon={TriangleAlert} label="Critical" value={summary.critical_records ?? 0} tone="danger" />
-        <MetricCard icon={Network} label="Customer matches" value={summary.customer_match_records ?? 0} tone="trust" />
-      </div>
-
-      <section className="wide-band search-console">
-        <div className="section-title">
-          <div>
-            <p className="eyebrow">Global CVE/advisory catalogue</p>
-            <h3>Patch & CVE Catalogue</h3>
+    <div className="catalogue-workspace-grid">
+      <div className="catalogue-main">
+        <header className="catalogue-page-header">
+          <div className="catalogue-breadcrumb"><span>Security operations</span><ChevronRight size={14} aria-hidden /><span>Catalogue</span></div>
+          <div className="catalogue-headline">
+            <div>
+              <h2>What needs attention today?</h2>
+              <p>Prioritised from source evidence, active exploitation and your customer estate.</p>
+            </div>
+            <div className="catalogue-actions">
+              <button type="button" className="action-button" aria-label="Refresh KEV intelligence" onClick={() => onRefreshSourceFeed("cisa-kev")} disabled={!canWrite}>
+                <RefreshCw size={16} aria-hidden /> Refresh KEV
+              </button>
+              <button type="button" className="action-button secondary-action" onClick={() => onRefreshSourceFeed("first-epss")} disabled={!canWrite || !selectedRow}>
+                <Radar size={16} aria-hidden /> Update selected EPSS
+              </button>
+            </div>
           </div>
-          <div className="hero-actions">
-            <button type="button" className="action-button" onClick={() => onRefreshSourceFeed("cisa-kev")} disabled={!canWrite}>
-              <RefreshCw size={16} aria-hidden /> Refresh KEV
-            </button>
-            <button type="button" className="action-button secondary-action" onClick={() => onRefreshSourceFeed("first-epss")} disabled={!canWrite}>
-              <Radar size={16} aria-hidden /> Refresh EPSS
-            </button>
+          <p className="catalogue-recency">{catalogueGeneratedLabel(state.generated_at)}</p>
+        </header>
+
+        <CatalogueRunway row={selectedRow} />
+
+        <section className="summary-grid" aria-label="Catalogue summary">
+          <CatalogueSummaryCard icon={TriangleAlert} label="Urgent postures" value={urgentActions} detail="Source-derived urgency requiring review" tone="danger" />
+          <CatalogueSummaryCard icon={ShieldCheck} label="KEV matched" value={matchedKev} detail="Matched to customer context" tone="teal" />
+          <CatalogueSummaryCard icon={Network} label="Customer-matched records" value={customerMatchedRecords} detail="Scope still requires review" tone="steel" />
+          <CatalogueSummaryCard icon={ClipboardCheck} label="Records needing evidence review" value={recordsNeedingEvidenceReview} detail="Pending or incomplete review" tone="amber" />
+        </section>
+
+        <section className="priority-queue">
+          <div className="queue-heading">
+            <div>
+              <p className="eyebrow">Governed work queue</p>
+              <h3>Priority action queue</h3>
+            </div>
+            <span className="queue-count">{filteredRows.length} record{filteredRows.length === 1 ? "" : "s"}</span>
           </div>
-        </div>
-        <div className="search-row">
-          <label className="wide-input">
-            <span>Search</span>
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="CVE, advisory, vendor, product, feature, model, version, source" />
-          </label>
-          <button type="button" className="action-button" onClick={onSearch}>
-            <Search size={16} aria-hidden /> Search
-          </button>
-        </div>
-        <div className="filter-grid">
-          <label>Vendor<select value={filters.vendor} onChange={(event) => setFilters({ ...filters, vendor: event.target.value })}><option value="">All vendors</option>{vendorOptions.map((item) => <option key={item.value} value={item.value}>{item.value}</option>)}</select></label>
-          <label>Severity<select value={filters.severity} onChange={(event) => setFilters({ ...filters, severity: event.target.value })}><option value="">All severities</option>{severityOptions.map((item) => <option key={item.value} value={item.value}>{humanize(item.value)}</option>)}</select></label>
-          <label>Customer match<select value={filters.customer_match} onChange={(event) => setFilters({ ...filters, customer_match: event.target.value })}><option value="">All</option><option value="true">Matched</option><option value="false">No match</option></select></label>
-          <label>Patch available<select value={filters.patch_available} onChange={(event) => setFilters({ ...filters, patch_available: event.target.value })}><option value="">All</option><option value="true">Available</option><option value="false">Unknown / no</option></select></label>
-        </div>
-      </section>
 
-      <section className="data-band">
-        <div className="section-title">
-          <h3>Vendor Groups</h3>
-          <span className="pill teal">{state.groups.length} grouped vendor view(s)</span>
-        </div>
-        <div className="group-strip">
-          {state.groups.slice(0, 8).map((group) => (
-            <article className="mini-group" key={group.vendor_id}>
-              <strong>{group.vendor_name}</strong>
-              <span>{group.count} records</span>
-              <small>{group.customer_match_count} customer matches</small>
-            </article>
-          ))}
-        </div>
-      </section>
+          <div className="catalogue-toolbar">
+            <form className="queue-search" onSubmit={(event) => { event.preventDefault(); onSearch(); }} role="search" aria-label="Priority queue search">
+              <label>
+                <span className="sr-only">Search</span>
+                <Search size={16} aria-hidden />
+                <input aria-label="Search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search the priority queue…" />
+              </label>
+              <button type="submit" className="action-button secondary-action">Search</button>
+            </form>
+            <div className="catalogue-filter-grid">
+              <label>Vendor<select value={filters.vendor} onChange={(event) => setFilters({ ...filters, vendor: event.target.value })}><option value="">All vendors</option>{vendorOptions.map((item) => <option key={item.value} value={item.value}>{item.value}</option>)}</select></label>
+              <label>Severity<select value={filters.severity} onChange={(event) => setFilters({ ...filters, severity: event.target.value })}><option value="">All severities</option>{severityOptions.map((item) => <option key={item.value} value={item.value}>{humanize(item.value)}</option>)}</select></label>
+              <label>Customer match<select value={filters.customer_match} onChange={(event) => setFilters({ ...filters, customer_match: event.target.value })}><option value="">All records</option><option value="true">Matched</option><option value="false">Not matched</option></select></label>
+              <label>Patch available<select value={filters.patch_available} onChange={(event) => setFilters({ ...filters, patch_available: event.target.value })}><option value="">All states</option><option value="true">Available</option><option value="false">Unknown or unavailable</option></select></label>
+            </div>
+          </div>
 
-      <section className="data-band table-band">
-        <div className="section-title">
-          <h3>Grouped CVE / Advisory Catalogue</h3>
-          <span className="pill amber">Final approval false by default</span>
-        </div>
-        <div className="table-scroll">
-          <table className="data-table catalogue-table">
-            <thead>
-              <tr>
-                <th>CVE / Advisory ID</th>
-                <th>Title</th>
-                <th>Vendor</th>
-                <th>Product family</th>
-                <th>Affected feature</th>
-                <th>Severity</th>
-                <th>CVSS</th>
-                <th>EPSS</th>
-                <th>KEV</th>
-                <th>Patch</th>
-                <th>Known exploited</th>
-                <th>Source state</th>
-                <th>Review state</th>
-                <th>Customer matches</th>
-                <th>Urgency posture</th>
-                <th>Final approval</th>
-                <th>Last refreshed</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rowsPage.items.map((row) => (
-                <tr key={`${row.record_type}-${row.id}`}>
-                  <td><button type="button" className="link-button" onClick={() => onSelectCve(row)}>{row.cve_id || row.advisory_id || row.id}</button></td>
-                  <td>{row.title}</td>
-                  <td>{row.vendor_name}</td>
-                  <td>{row.product_family}</td>
-                  <td>{row.affected_feature || "Pending"}</td>
-                  <td><span className={`pill ${severityTone(row.severity)}`}>{humanize(row.severity)}</span></td>
-                  <td>{row.cvss_score ?? "n/a"}</td>
-                  <td>{row.epss_score ?? "n/a"}</td>
-                  <td>{row.kev ? "Yes" : "No"}</td>
-                  <td>{row.patch_available ? "Yes" : "Unknown"}</td>
-                  <td>{row.known_exploited ? "Yes" : "No"}</td>
-                  <td>{humanize(row.source_state || "source_bound")}</td>
-                  <td>{humanize(row.review_state || "pending_review")}</td>
-                  <td>{row.customer_match_count}</td>
-                  <td>{humanize(row.urgency_posture || "unknown")}</td>
-                  <td>{row.final_approval_issued ? "Issued" : "False"}</td>
-                  <td>{row.last_refreshed ? new Date(row.last_refreshed).toLocaleDateString() : "Pending"}</td>
+          <div className="quick-filter-row" role="group" aria-label="Quick filters">
+            {([
+              ["all", "All priority"],
+              ["review", "Needs review"],
+              ["exploited", "Known exploited"],
+              ["matched", "Customer matched"],
+              ["patch", "Patch available"]
+            ] as const).map(([key, label]) => (
+              <button key={key} type="button" className={`quick-filter${quickFilter === key ? " active" : ""}`} aria-pressed={quickFilter === key} onClick={() => setQuickFilter(key)}>
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="table-scroll priority-table-scroll">
+            <table className="data-table priority-table">
+              <thead>
+                <tr>
+                  <th>CVE</th>
+                  <th>Vendor / product</th>
+                  <th>Priority</th>
+                  <th>Exploit signal</th>
+                  <th>Customer exposure</th>
+                  <th>Remediation</th>
+                  <th>Evidence</th>
+                  <th>Next action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <PaginationControls {...rowsPage} label="patch and CVE catalogue rows" />
-        {!rowsPage.items.length && <EmptyState title="No catalogue records" detail="Refresh source feeds or ingest vendor advisories to populate the global catalogue." />}
-      </section>
-
-      <div className="split-grid">
-        <section className="data-band">
-          <h3>CVE Detail</h3>
-          {selectedRow ? (
-            <div className="insight-list">
-              <StatusLine label="CVE / Advisory" value={selectedRow.cve_id || selectedRow.advisory_id || selectedRow.id} tone="steel" />
-              <StatusLine label="Vendor / Product" value={`${selectedRow.vendor_name} / ${selectedRow.product_family}`} tone="teal" />
-              <StatusLine label="Affected feature" value={selectedRow.affected_feature || "Pending review"} tone="amber" />
-              <StatusLine label="Severity" value={humanize(selectedRow.severity)} tone={severityTone(selectedRow.severity)} />
-              <StatusLine label="Patch available" value={selectedRow.patch_available ? "Yes" : "Unknown"} tone={selectedRow.patch_available ? "trust" : "amber"} />
-              <StatusLine label="Final approval" value={selectedRow.final_approval_issued ? "Issued" : "False"} tone="amber" />
-            </div>
-          ) : (
-            <EmptyState title="No CVE selected" detail="Select a row from the grouped catalogue to review the governed detail." />
-          )}
-        </section>
-        <section className="data-band">
-          <h3>Evidence & Approval</h3>
-          {selectedRow ? (
-            <div className="insight-list">
-              <StatusLine label="Source state" value={humanize(selectedRow.source_state || "source_bound")} tone="steel" />
-              <StatusLine label="Review state" value={humanize(selectedRow.review_state || "pending_review")} tone="amber" />
-              <StatusLine label="Customer matches" value={String(selectedRow.customer_match_count || 0)} tone={selectedRow.customer_match_count ? "trust" : "steel"} />
-              <StatusLine label="Urgency posture" value={humanize(selectedRow.urgency_posture || "unknown")} tone="amber" />
-              <StatusLine label="Human accountability" value="Required" tone="amber" />
-              <StatusLine label="Evidence gate closure" value="Not autonomous" tone="steel" />
-            </div>
-          ) : (
-            <EmptyState title="Evidence pending" detail="Evidence catalogue and approval state appear after a CVE/advisory is selected." />
-          )}
+              </thead>
+              <tbody>
+                {rowsPage.items.map((row) => {
+                  const selected = selectedRow?.id === row.id;
+                  const priority = cataloguePriority(row);
+                  return (
+                    <tr className={`priority-row${selected ? " selected" : ""}`} aria-selected={selected} key={`${row.record_type}-${row.id}`}>
+                      <td><button type="button" className="link-button" onClick={() => onSelectCve(row)}>{catalogueRecordId(row)}</button></td>
+                      <td><span className="cell-stack"><strong>{row.vendor_name || "Unknown vendor"}</strong><small>{row.product_family || "Product pending"}</small></span></td>
+                      <td><span className={`queue-status ${priority.tone}`}>{priority.label}</span></td>
+                      <td><span className="cell-stack"><strong>{catalogueExploitSignal(row)}</strong><small>{catalogueEpssLabel(row.epss_score)}</small></span></td>
+                      <td><span className="cell-stack"><strong>{catalogueCustomerScope(row)}</strong><small>{row.customer_match_count ? "Review matched scope" : "Estate mapping required"}</small></span></td>
+                      <td><span className="cell-stack"><strong>{row.patch_available ? "Patch recorded" : "No fix confirmed"}</strong><small>{(row.fixed_versions || []).join(", ") || "Version evidence pending"}</small></span></td>
+                      <td><span className={`evidence-state ${catalogueEvidenceVerified(row) ? "verified" : "pending"}`}>{catalogueEvidenceVerified(row) ? <CheckCircle2 size={15} aria-hidden /> : <Clock3 size={15} aria-hidden />}{catalogueEvidenceLabel(row)}</span></td>
+                      <td><span className="cell-stack"><strong>{catalogueNextAction(row)}</strong><small>{row.final_approval_issued ? "Approval issued" : "Approval not issued"}</small></span></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <PaginationControls {...rowsPage} label="patch and CVE catalogue rows" />
+          {!rowsPage.items.length && <EmptyState title="No matching catalogue records" detail="Adjust the filters or refresh source intelligence to repopulate this view." />}
         </section>
       </div>
-    </>
+
+      <CatalogueIntelligencePanel
+        row={selectedRow}
+        finding={selectedFinding}
+        canGeneratePacks={canGeneratePacks}
+        onOpenAsk={() => { if (selectedRow) onSelectCve(selectedRow); onOpenAsk(); }}
+        onOpenReview={() => { if (selectedRow) onSelectCve(selectedRow); onOpenReview(); }}
+        onOpenComparison={() => { if (selectedRow) onSelectCve(selectedRow); onOpenComparison(); }}
+        onPreparePack={onPreparePack}
+      />
+    </div>
   );
+}
+
+function CatalogueSummaryCard({ icon: Icon, label, value, detail, tone }: { icon: typeof Gauge; label: string; value: number; detail: string; tone: string }) {
+  return (
+    <article className={`summary-card ${tone}`}>
+      <div className="summary-card-icon"><Icon size={21} aria-hidden /></div>
+      <div><strong className="summary-card-value">{value}</strong><span>{label}</span></div>
+      <small>{detail}</small>
+    </article>
+  );
+}
+
+function CatalogueRunway({ row }: { row: SecurityActionCenterRow | null }) {
+  const matched = Boolean(row?.customer_match_count);
+  const reviewed = Boolean(row && catalogueEvidenceVerified(row));
+  const approved = Boolean(row?.final_approval_issued);
+  const steps = [
+    { label: "Detect", detail: row ? "Complete" : "Awaiting record", state: row ? "complete" : "current" },
+    { label: "Match", detail: matched ? "Complete" : "Scope needed", state: matched ? "complete" : row ? "current" : "locked" },
+    { label: "Review", detail: reviewed ? "Complete" : "Human review", state: reviewed ? "complete" : matched ? "current" : "locked" },
+    { label: "Decide", detail: approved ? "Approved" : "Locked", state: approved ? "complete" : "locked" },
+    { label: "Report", detail: approved ? "Approved pack available" : row ? "Pack can be prepared" : "Record required", state: approved ? "complete" : row ? "current" : "locked" }
+  ];
+  return (
+    <ol className="catalogue-runway" aria-label="Decision workflow">
+      {steps.map((step, index) => (
+        <li className={`runway-step ${step.state}`} key={step.label}>
+          <span className="runway-marker">{step.state === "complete" ? <CheckCircle2 size={18} aria-hidden /> : step.state === "locked" ? <LockKeyhole size={16} aria-hidden /> : index + 1}</span>
+          <span><strong>{step.label}</strong><small>{step.detail}</small></span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function CatalogueIntelligencePanel({
+  row,
+  finding,
+  canGeneratePacks,
+  onOpenAsk,
+  onOpenReview,
+  onOpenComparison,
+  onPreparePack
+}: {
+  row: SecurityActionCenterRow | null;
+  finding: FindingIntelligence | null;
+  canGeneratePacks: boolean;
+  onOpenAsk: () => void;
+  onOpenReview: () => void;
+  onOpenComparison: () => void;
+  onPreparePack: (row: SecurityActionCenterRow) => void;
+}) {
+  if (!row) {
+    return <aside className="catalogue-intelligence-panel"><EmptyState title="Select a catalogue record" detail="Choose a CVE or advisory to see its decision context, evidence gaps, and next permitted action." /></aside>;
+  }
+  const reviewed = catalogueEvidenceVerified(row);
+  const matched = row.customer_match_count > 0;
+  const approved = Boolean(row.final_approval_issued);
+  const reason = finding?.summary.why_now || catalogueWhyPrioritised(row);
+  const customerContext = finding?.summary.what_it_affects || (matched ? `${row.customer_match_count} customer-matched record${row.customer_match_count === 1 ? "" : "s"} require scope review.` : "No customer estate match is confirmed yet.");
+  const nextStep = finding?.recommendation.next_best_action || catalogueNextAction(row);
+  const confidence = finding?.recommendation.confidence
+    ? humanize(finding.recommendation.confidence)
+    : reviewed
+      ? "Reviewed source evidence"
+      : "Confidence not recorded";
+  const posture = row.urgency_posture && row.urgency_posture.toLowerCase() !== "unknown"
+    ? humanize(row.urgency_posture)
+    : cataloguePriority(row).label;
+  return (
+    <aside className="catalogue-intelligence-panel" aria-label="Selected catalogue intelligence">
+      <header className="intelligence-panel-header">
+        <p className="eyebrow">Selected decision context</p>
+        <h2>{catalogueRecordId(row)}</h2>
+        <p>{row.vendor_name} · {row.product_family || "Product pending"}</p>
+      </header>
+
+      <section className={`selected-posture ${cataloguePriority(row).tone}`}>
+        <ShieldAlert size={24} aria-hidden />
+        <div><strong>{posture}</strong><p>{reason}</p></div>
+      </section>
+
+      <div className="context-facts">
+        <article><span className="fact-icon steel"><Network size={17} aria-hidden /></span><div><strong>Customer context</strong><p>{customerContext}</p></div></article>
+        <article><span className={`fact-icon ${reviewed ? "trust" : "amber"}`}><BadgeCheck size={17} aria-hidden /></span><div><strong>Confidence</strong><p>{confidence} · {catalogueEvidenceLabel(row)}</p></div></article>
+        <article><span className="fact-icon teal"><UserRound size={17} aria-hidden /></span><div><strong>Recommended next step</strong><p>{nextStep}</p></div></article>
+      </div>
+
+      <section className="decision-gate">
+        <h3>Human gate timeline</h3>
+        <DecisionGateStep label={reviewed ? "Source evidence verified" : "Source evidence needs review"} detail={humanize(row.review_state || "pending_review")} state={reviewed ? "complete" : "current"} />
+        <DecisionGateStep label={matched ? reviewed ? "Customer scope recorded" : "Customer scope needs review" : "Customer scope not mapped"} detail={matched ? `${row.customer_match_count} matched record${row.customer_match_count === 1 ? "" : "s"}` : "Estate mapping required"} state={matched ? reviewed ? "complete" : "current" : "locked"} />
+        <DecisionGateStep label="Accountable owner decision" detail="Named human decision required" state={reviewed && matched && !approved ? "current" : approved ? "complete" : "locked"} />
+        <DecisionGateStep label={approved ? "Final approval issued" : "Final decision not issued"} detail={approved ? "Recorded by accountable approver" : "Approval not issued"} state={approved ? "complete" : "locked"} />
+      </section>
+
+      <div className="panel-actions">
+        <button type="button" className="action-button" onClick={onOpenReview}><ClipboardCheck size={16} aria-hidden /> Open evidence review</button>
+        <button type="button" className="action-button secondary-action" onClick={onOpenComparison}><Wrench size={16} aria-hidden /> Compare remediation</button>
+        <button type="button" className="action-button secondary-action" aria-label="Ask PatchForge about selected record" onClick={onOpenAsk}><MessageSquareText size={16} aria-hidden /> Ask PatchForge</button>
+        <button type="button" className="action-button pack-action" onClick={() => onPreparePack(row)} disabled={!canGeneratePacks}><FileCheck2 size={16} aria-hidden /> Prepare decision pack</button>
+      </div>
+
+      <div className="governance-callout"><LockKeyhole size={16} aria-hidden /><p>PatchForge prepares the evidence. An accountable human approves the decision.</p></div>
+    </aside>
+  );
+}
+
+function DecisionGateStep({ label, detail, state }: { label: string; detail: string; state: "complete" | "current" | "locked" }) {
+  return (
+    <div className={`gate-step gate-${state}`}>
+      <span className="gate-marker">{state === "complete" ? <CheckCircle2 size={17} aria-hidden /> : state === "locked" ? <LockKeyhole size={14} aria-hidden /> : <Clock3 size={16} aria-hidden />}</span>
+      <span><strong>{label}</strong><small>{detail}</small></span>
+    </div>
+  );
+}
+
+function collapseCatalogueRows(rows: SecurityActionCenterRow[]): SecurityActionCenterRow[] {
+  const records = new Map<string, SecurityActionCenterRow>();
+  for (const row of rows) {
+    const key = catalogueRecordId(row).toLowerCase();
+    const current = records.get(key);
+    if (!current) {
+      records.set(key, { ...row });
+      continue;
+    }
+    const fixedVersions = [...new Set([...(current.fixed_versions || []), ...(row.fixed_versions || [])])];
+    const affectedVersions = [...new Set([...(current.affected_versions || []), ...(row.affected_versions || [])])];
+    const matches = [...(current.customer_matches || []), ...(row.customer_matches || [])]
+      .filter((match, index, all) => {
+        const assetId = String(match.asset_id || "");
+        return !assetId || all.findIndex((candidate) => String(candidate.asset_id || "") === assetId) === index;
+      });
+    const epssScores = [current.epss_score, row.epss_score].filter((value): value is number => typeof value === "number");
+    const epssPercentiles = [current.epss_percentile, row.epss_percentile].filter((value): value is number => typeof value === "number");
+    records.set(key, {
+      ...current,
+      vulnerability_id: current.vulnerability_id || row.vulnerability_id,
+      cve_id: current.cve_id || row.cve_id,
+      advisory_id: current.advisory_id || row.advisory_id,
+      affected_feature: current.affected_feature || row.affected_feature,
+      affected_versions: affectedVersions,
+      fixed_versions: fixedVersions,
+      cvss_score: Math.max(current.cvss_score || 0, row.cvss_score || 0) || null,
+      epss_score: epssScores.length ? Math.max(...epssScores) : null,
+      epss_percentile: epssPercentiles.length ? Math.max(...epssPercentiles) : null,
+      kev: Boolean(current.kev || row.kev),
+      patch_available: Boolean(current.patch_available || row.patch_available),
+      known_exploited: Boolean(current.known_exploited || row.known_exploited),
+      review_state: conservativeReviewState(current.review_state, row.review_state),
+      evidence_state: conservativeReviewState(current.evidence_state, row.evidence_state),
+      customer_match_count: Math.max(current.customer_match_count || 0, row.customer_match_count || 0),
+      customer_matches: matches,
+      urgency_posture: current.urgency_posture || row.urgency_posture,
+      applicability_posture: current.applicability_posture || row.applicability_posture,
+      final_approval_issued: Boolean(current.final_approval_issued || row.final_approval_issued),
+      last_refreshed: newestTimestamp(current.last_refreshed, row.last_refreshed)
+    });
+  }
+  return [...records.values()];
+}
+
+function conservativeReviewState(left?: string, right?: string): string | undefined {
+  const values = [left, right].filter((value): value is string => Boolean(value));
+  const trusted = new Set(["reviewed", "verified", "accepted", "accepted_positive", "accepted_positive_evidence"]);
+  return values.find((value) => !trusted.has(value.trim().toLowerCase())) || values[0];
+}
+
+function newestTimestamp(left?: string | null, right?: string | null): string | null {
+  if (!left) return right || null;
+  if (!right) return left;
+  return Date.parse(right) > Date.parse(left) ? right : left;
+}
+
+function catalogueRecordId(row: SecurityActionCenterRow): string {
+  return row.cve_id || row.advisory_id || row.vulnerability_id || row.id;
+}
+
+function catalogueMatchedAssetId(row: SecurityActionCenterRow): string {
+  const match = row.customer_matches?.find((item) => typeof item.asset_id === "string" && item.asset_id.trim());
+  return match ? String(match.asset_id) : "";
+}
+
+function cataloguePriority(row: SecurityActionCenterRow): { key: "urgent" | "critical" | "high" | "medium" | "standard"; label: string; tone: string } {
+  if ((row.known_exploited || row.kev) && row.customer_match_count > 0) {
+    return { key: "urgent", label: "Urgent", tone: "danger" };
+  }
+  const severity = String(row.severity || "").toLowerCase();
+  if (severity === "critical") {
+    return { key: "critical", label: "Critical", tone: "danger" };
+  }
+  if (severity === "high") {
+    return { key: "high", label: "High", tone: "amber" };
+  }
+  if (severity === "medium") {
+    return { key: "medium", label: "Medium", tone: "steel" };
+  }
+  return { key: "standard", label: humanize(severity || "standard"), tone: "steel" };
+}
+
+function catalogueExploitSignal(row: SecurityActionCenterRow): string {
+  if (row.known_exploited) {
+    return "Known exploited";
+  }
+  if (row.kev) {
+    return "KEV listed";
+  }
+  return row.epss_score !== null && row.epss_score !== undefined ? "EPSS signal" : "No reviewed signal";
+}
+
+function catalogueEpssLabel(value?: number | null): string {
+  if (value === null || value === undefined) {
+    return "EPSS not recorded";
+  }
+  const percent = value <= 1 ? value * 100 : value;
+  return `EPSS ${percent.toFixed(percent >= 10 ? 0 : 1)}%`;
+}
+
+function catalogueCustomerScope(row: SecurityActionCenterRow): string {
+  return row.customer_match_count ? `${row.customer_match_count} matched record${row.customer_match_count === 1 ? "" : "s"}` : "No confirmed match";
+}
+
+function catalogueEvidenceVerified(row: SecurityActionCenterRow): boolean {
+  const states = [row.review_state, row.evidence_state]
+    .map((value) => String(value || "").trim().toLowerCase())
+    .filter(Boolean);
+  const trusted = new Set(["reviewed", "verified", "accepted", "accepted_positive", "accepted_positive_evidence"]);
+  return states.length > 0 && states.every((state) => trusted.has(state));
+}
+
+function catalogueEvidenceLabel(row: SecurityActionCenterRow): string {
+  if (catalogueEvidenceVerified(row)) {
+    return "Verified evidence";
+  }
+  if (/rejected/i.test(String(row.review_state || row.evidence_state || ""))) {
+    return "Evidence rejected";
+  }
+  return "Needs review";
+}
+
+function catalogueNextAction(row: SecurityActionCenterRow): string {
+  if (!catalogueEvidenceVerified(row)) {
+    return "Review evidence";
+  }
+  if (!row.customer_match_count) {
+    return "Map estate scope";
+  }
+  if (!row.patch_available) {
+    return "Confirm remediation";
+  }
+  return row.final_approval_issued ? "Monitor closure" : "Request human decision";
+}
+
+function catalogueWhyPrioritised(row: SecurityActionCenterRow): string {
+  if ((row.known_exploited || row.kev) && row.customer_match_count) {
+    return `Active exploitation evidence and ${row.customer_match_count} customer match${row.customer_match_count === 1 ? "" : "es"} make this a priority review.`;
+  }
+  if (row.known_exploited || row.kev) {
+    return "Active exploitation evidence requires customer scope confirmation.";
+  }
+  return "PatchForge is waiting for reviewed evidence and confirmed customer scope before a decision can be issued.";
+}
+
+function catalogueGeneratedLabel(generatedAt: string): string {
+  if (!generatedAt) {
+    return "Catalogue refresh time is not available.";
+  }
+  const parsed = new Date(generatedAt);
+  return Number.isNaN(parsed.getTime()) ? "Catalogue refresh time is not available." : `Catalogue generated ${parsed.toLocaleString()}`;
 }
 
 function VendorsExploitsRegister({
@@ -2634,7 +3036,7 @@ function ReportsPacks({
         </div>
         <div className="split-grid">
           <StatusLine label="Pack ID" value={String(preExport.pack_id || latestPack?.pack_id || "Generate a pack")} tone={latestPack ? "trust" : "amber"} />
-          <StatusLine label="Baseline" value={String(preExport.baseline || latestPack?.product_baseline || ACTIVE_BASELINE)} tone="steel" />
+          <StatusLine label="Baseline" value={String(preExport.baseline || latestPack?.product_baseline || "Not recorded by runtime")} tone="steel" />
           <StatusLine label="Renderer commit" value={String(preExport.renderer_commit || latestPack?.report_renderer_commit || "not recorded")} tone="steel" />
           <StatusLine label="Image tag" value={String(preExport.image_tag || latestPack?.report_renderer_image_tag || "not recorded")} tone="steel" />
           <StatusLine label="Evidence state" value={humanize(String(preExport.evidence_state || "evidence_review_required"))} tone="amber" />
@@ -3281,6 +3683,10 @@ function VendorLens({
   setAdvisoryForm,
   question,
   setQuestion,
+  selectedAssetId,
+  setSelectedAssetId,
+  selectedAdvisoryId,
+  setSelectedAdvisoryId,
   onSaveAsset,
   onIngestAdvisory,
   onAssess,
@@ -3296,23 +3702,28 @@ function VendorLens({
   setAdvisoryForm: (value: typeof emptyVendorAdvisoryForm) => void;
   question: string;
   setQuestion: (value: string) => void;
+  selectedAssetId: string;
+  setSelectedAssetId: (value: string) => void;
+  selectedAdvisoryId: string;
+  setSelectedAdvisoryId: (value: string) => void;
   onSaveAsset: (event: FormEvent<HTMLFormElement>) => void;
   onIngestAdvisory: (event: FormEvent<HTMLFormElement>) => void;
-  onAssess: () => void;
-  onAsk: () => void;
+  onAssess: (assetId?: string, advisoryId?: string) => void;
+  onAsk: (assetId?: string, advisoryId?: string) => void;
   onRefreshSource: (vendorId?: string) => void;
   onComparePatch: (assetId?: string, advisoryId?: string) => void;
   canWrite: boolean;
 }) {
   const [activeTab, setActiveTab] = useState(vendorLensTabs[0]);
   const [selectedVendorId, setSelectedVendorId] = useState(vendorLens.vendors[0]?.vendor_id || "");
-  const [selectedAssetId, setSelectedAssetId] = useState(vendorLens.assets[0]?.asset_id || "");
-  const [selectedAdvisoryId, setSelectedAdvisoryId] = useState(vendorLens.advisories[0]?.advisory_id || "");
   const asset = vendorLens.assets.find((item) => item.asset_id === selectedAssetId) || vendorLens.assets[0];
   const advisory = vendorLens.advisories.find((item) => item.advisory_id === selectedAdvisoryId) || vendorLens.advisories[0];
-  const assessment = vendorLens.latestAssessment || vendorLens.dashboard?.recent_assessments?.[0] || null;
-  const chat = vendorLens.latestChat;
-  const comparison = vendorLens.latestComparison;
+  const contextAssetId = asset?.asset_id || "";
+  const contextAdvisoryId = advisory?.advisory_id || "";
+  const assessment = [vendorLens.latestAssessment, ...(vendorLens.dashboard?.recent_assessments || [])]
+    .find((item) => recordMatchesContext(item, contextAssetId, contextAdvisoryId)) || null;
+  const chat = recordMatchesContext(vendorLens.latestChat, contextAssetId, contextAdvisoryId) ? vendorLens.latestChat : null;
+  const comparison = recordMatchesContext(vendorLens.latestComparison, contextAssetId, contextAdvisoryId) ? vendorLens.latestComparison : null;
   const selectedVendor = vendorLens.vendors.find((vendor) => vendor.vendor_id === selectedVendorId) || vendorLens.vendors[0] || null;
   const cards = [
     { label: "Vendors tracked", value: vendorLens.dashboard?.vendors_tracked || vendorLens.vendors.length, tone: "steel", icon: Network },
@@ -3346,13 +3757,13 @@ function VendorLens({
   }, [selectedVendorId, vendorLens.vendors]);
 
   useEffect(() => {
-    if (!selectedAssetId && vendorLens.assets[0]?.asset_id) {
+    if (vendorLens.assets[0]?.asset_id && !vendorLens.assets.some((item) => item.asset_id === selectedAssetId)) {
       setSelectedAssetId(vendorLens.assets[0].asset_id);
     }
   }, [selectedAssetId, vendorLens.assets]);
 
   useEffect(() => {
-    if (!selectedAdvisoryId && vendorLens.advisories[0]?.advisory_id) {
+    if (vendorLens.advisories[0]?.advisory_id && !vendorLens.advisories.some((item) => item.advisory_id === selectedAdvisoryId)) {
       setSelectedAdvisoryId(vendorLens.advisories[0].advisory_id);
     }
   }, [selectedAdvisoryId, vendorLens.advisories]);
@@ -3398,10 +3809,10 @@ function VendorLens({
           <button type="button" className="action-button" onClick={() => onRefreshSource("all-vendors")} disabled={!canWrite}>
             <RefreshCw size={16} aria-hidden /> Refresh All NVD Vendors
           </button>
-          <button type="button" className="action-button secondary-action" onClick={onAssess} disabled={!canWrite || !asset || !advisory}>
+          <button type="button" className="action-button secondary-action" onClick={() => onAssess(asset?.asset_id, advisory?.advisory_id)} disabled={!canWrite || !asset || !advisory}>
             <Gauge size={16} aria-hidden /> Assess
           </button>
-          <button type="button" className="action-button secondary-action" onClick={onAsk} disabled={!canWrite || !asset || !advisory}>
+          <button type="button" className="action-button secondary-action" onClick={() => onAsk(asset?.asset_id, advisory?.advisory_id)} disabled={!canWrite || !asset || !advisory}>
             <MessageSquareText size={16} aria-hidden /> Ask PatchForge
           </button>
           <button type="button" className="action-button secondary-action" onClick={() => onComparePatch(asset?.asset_id, advisory?.advisory_id)} disabled={!canWrite || !asset || !advisory}>
@@ -3653,7 +4064,7 @@ function VendorLens({
               Question
               <textarea value={question} onChange={(event) => setQuestion(event.target.value)} rows={4} />
             </label>
-            <button type="button" className="action-button" onClick={onAsk} disabled={!canWrite || !asset || !advisory}>
+            <button type="button" className="action-button" onClick={() => onAsk(asset?.asset_id, advisory?.advisory_id)} disabled={!canWrite || !asset || !advisory}>
               <MessageSquareText size={16} aria-hidden /> Ask PatchForge
             </button>
           </div>
@@ -3746,10 +4157,10 @@ function DecisionPacks({
                     <button type="button" className="icon-button" title="Export signed JSON pack" aria-label={`Export ${pack.pack_id}`} onClick={() => onExportPack(pack.pack_id)}>
                       <FileCheck2 size={16} aria-hidden />
                     </button>
-                    <button type="button" className="icon-button" title="Download board DOCX" aria-label={`Download DOCX ${pack.pack_id}`} onClick={() => defaultReport && onDownloadReport(pack.pack_id, defaultReport.report_type, "docx")} disabled={!defaultReport}>
+                    <button type="button" className="icon-button" title={pack.verification?.verified ? "Download verified board DOCX" : "Verification required before report download"} aria-label={`Download DOCX ${pack.pack_id}`} onClick={() => defaultReport && onDownloadReport(pack.pack_id, defaultReport.report_type, "docx")} disabled={!defaultReport || !pack.verification?.verified}>
                       <FileText size={16} aria-hidden />
                     </button>
-                    <button type="button" className="icon-button" title="Download board PDF" aria-label={`Download PDF ${pack.pack_id}`} onClick={() => defaultReport && onDownloadReport(pack.pack_id, defaultReport.report_type, "pdf")} disabled={!defaultReport}>
+                    <button type="button" className="icon-button" title={pack.verification?.verified ? "Download verified board PDF" : "Verification required before report download"} aria-label={`Download PDF ${pack.pack_id}`} onClick={() => defaultReport && onDownloadReport(pack.pack_id, defaultReport.report_type, "pdf")} disabled={!defaultReport || !pack.verification?.verified}>
                       <Download size={16} aria-hidden />
                     </button>
                   </div>
@@ -3776,17 +4187,18 @@ function Reports({
 }) {
   const sortedPacks = newestDecisionPacks(decisionPacks);
   const verifiedPacks = sortedPacks.filter((pack) => pack.verification?.verified);
-  const latestPack = verifiedPacks[0] || sortedPacks[0];
+  // Reports must never present or download an unverified pack as a signed output.
+  // A dedicated pack selector remains required for deliberate historical selection.
+  const latestPack = verifiedPacks[0] || null;
   const latestPackHasVendorLens = Boolean(latestPack?.artefacts && (
     latestPack.artefacts["config_applicability_assessment.json"]
     || latestPack.artefacts["customer_network_asset_snapshot.json"]
     || latestPack.artefacts["vendor_security_advisory_snapshot.json"]
     || latestPack.artefacts["sra_config_chat_session.json"]
   ));
-  const latestBaseline = latestPack?.product_baseline || ACTIVE_BASELINE;
-  const olderPackWarning = latestPack && latestBaseline !== ACTIVE_BASELINE
-    ? `Older baseline detected: ${latestBaseline}. Current report renderer will stamp ${ACTIVE_BASELINE}.`
-    : null;
+  const latestBaseline = latestPack?.product_baseline || "Not recorded by runtime";
+  const latestReportVersion = latestPack?.report_template_version || "Recorded when the pack is generated";
+  const latestContextVersion = latestPack?.report_context_version || "Recorded when the pack is generated";
   const reportPage = usePagination(reports, 6, "reports-catalog");
   return (
     <>
@@ -3811,17 +4223,16 @@ function Reports({
       <section className="data-band report-version-panel">
         <div className="section-title compact-title">
           <h3>Current Report Context</h3>
-          <span className="pill teal">{ACTIVE_BASELINE}</span>
+          <span className="pill teal">{latestBaseline}</span>
         </div>
         <div className="decision-option-grid compact-status-grid">
-          <StatusLine label="Pack ID" value={latestPack?.pack_id || "No signed pack selected"} tone="trust" />
-          <StatusLine label="Report version" value={REPORT_TEMPLATE_VERSION} tone="steel" />
-          <StatusLine label="Context version" value={REPORT_CONTEXT_VERSION} tone="steel" />
+          <StatusLine label="Pack ID" value={latestPack?.pack_id || "No verified pack available"} tone={latestPack ? "trust" : "amber"} />
+          <StatusLine label="Report version" value={latestReportVersion} tone="steel" />
+          <StatusLine label="Context version" value={latestContextVersion} tone="steel" />
           <StatusLine label="Final approval" value={latestPack?.final_approval_issued ? "Issued" : "False"} tone="amber" />
           <StatusLine label="VendorLens context" value={latestPackHasVendorLens ? "Included in pack" : "Not attached to selected pack"} tone={latestPackHasVendorLens ? "teal" : "amber"} />
-          <StatusLine label="Verification" value={latestPack?.verification?.verified ? "Verified" : "Pending or not recorded"} tone="trust" />
+          <StatusLine label="Verification" value={latestPack?.verification?.verified ? "Verified" : "Required before report download"} tone={latestPack ? "trust" : "amber"} />
         </div>
-        {olderPackWarning && <p className="boundary-copy">{olderPackWarning}</p>}
         {!latestPackHasVendorLens && latestPack && <p className="boundary-copy">Selected pack can still export reports, but VendorLens sections will clearly state that network vendor applicability evidence was not attached.</p>}
       </section>
 
@@ -3832,7 +4243,7 @@ function Reports({
               <h3>{report.title}</h3>
               <span className="pill steel">{report.audience}</span>
             </div>
-            <StatusLine label="Source" value="Signed decision pack" tone="trust" />
+            <StatusLine label="Source" value={latestPack ? "Verified signed decision pack" : "No verified pack selected"} tone={latestPack ? "trust" : "amber"} />
             <StatusLine label="Formats" value="DOCX and PDF" tone="teal" />
             <StatusLine label="Boundary" value="No deployment or approval" tone="amber" />
             <div className="report-actions">
@@ -3849,6 +4260,7 @@ function Reports({
       <PaginationControls {...reportPage} label="reports" />
       {!reports.length && <EmptyState title="No report catalogue" detail="Active report outputs load from the protected PatchForge API." />}
       {!decisionPacks.length && <EmptyState title="No signed pack available" detail="Generate a signed decision pack before producing board packs or customer reports." />}
+      {decisionPacks.length > 0 && !verifiedPacks.length && <EmptyState title="No verified pack available" detail="Report downloads remain blocked until a decision pack passes signature verification." />}
     </>
   );
 }
@@ -4113,6 +4525,7 @@ function UtilityRail({
   adminHealth: AdminHealth | null;
 }) {
   const signing = adminHealth?.checks?.find((check) => check.name === "Signing trust");
+  const signingStatus = signing?.status || "unknown";
   return (
     <>
       <section className="rail-section">
@@ -4133,8 +4546,8 @@ function UtilityRail({
       </section>
       <section className="rail-section">
         <h3>Signing Trust</h3>
-        <StatusLine label="Verifier" value={decisionPacks.some((pack) => pack.verification?.verified) ? "Verified" : "Ready"} tone="trust" />
-        <StatusLine label="Trust" value={humanize(signing?.status || "ready")} tone="trust" />
+        <StatusLine label="Verifier" value={decisionPacks.some((pack) => pack.verification?.verified) ? "Verified pack present" : "No verified pack"} tone={decisionPacks.some((pack) => pack.verification?.verified) ? "trust" : "amber"} />
+        <StatusLine label="Trust" value={humanize(signingStatus)} tone={healthTone(signingStatus)} detail={signing?.mode || "Admin health status unavailable or restricted"} />
       </section>
       <section className="rail-section">
         <h3>Recent Packs</h3>
@@ -4245,6 +4658,68 @@ function candidateList(value: unknown): string[] {
   return [String(value)];
 }
 
+function latestSourceRun(state: SourceFeedState) {
+  return [...state.recent_runs]
+    .filter((run) => Boolean(run.completed_at))
+    .sort((left, right) => Date.parse(right.completed_at || "") - Date.parse(left.completed_at || ""))[0] || null;
+}
+
+function sourceRunLabel(state: SourceFeedState): string {
+  const run = latestSourceRun(state);
+  if (!run?.completed_at) {
+    return "No source run recorded";
+  }
+  if (!/completed/i.test(run.status || "")) {
+    return `Last source run ${humanize(run.status || "failed")}`;
+  }
+  const completedAt = Date.parse(run.completed_at);
+  if (!Number.isFinite(completedAt)) {
+    return "Source run time unavailable";
+  }
+  const minutes = Math.max(0, Math.floor((Date.now() - completedAt) / 60000));
+  if (minutes < 1) {
+    return "Last source run just now";
+  }
+  if (minutes < 60) {
+    return `Last source run ${minutes}m ago`;
+  }
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return `Last source run ${hours}h ago`;
+  }
+  return `Last source run ${Math.floor(hours / 24)}d ago`;
+}
+
+function sourceRunTone(state: SourceFeedState): string {
+  const run = latestSourceRun(state);
+  if (!run?.completed_at) {
+    return "source-unknown";
+  }
+  const age = Date.now() - Date.parse(run.completed_at);
+  if (!/completed/i.test(run.status || "") || !Number.isFinite(age) || age > 8 * 60 * 60 * 1000) {
+    return "source-stale";
+  }
+  return "source-current";
+}
+
+function accountDisplayName(accountName: string | null): string {
+  if (!accountName) {
+    return "Signed in";
+  }
+  const localPart = accountName.split("@")[0];
+  return localPart.split(/[._-]/).filter(Boolean).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ") || accountName;
+}
+
+function accountInitials(accountName: string | null): string {
+  const displayName = accountDisplayName(accountName);
+  return displayName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join("") || "PF";
+}
+
+function displayRole(roles: string[]): string {
+  const role = roles.find((item) => item.startsWith("PatchForge.")) || roles[0];
+  return role ? role.replace("PatchForge.", "") : "Role pending";
+}
+
 function humanize(value: string): string {
   return value.replace(/_/g, " ").replace(/\b\w/g, (match) => match.toUpperCase());
 }
@@ -4267,6 +4742,21 @@ function relevantPatchComparison(comparison: VendorLensPatchComparison | null, s
   }
   const comparisonIds = [comparison.advisory_id, comparison.cve].filter(Boolean).map((value) => String(value).toLowerCase());
   return comparisonIds.includes(selectedAdvisoryId.toLowerCase()) ? comparison : null;
+}
+
+function recordMatchesContext(
+  record: { asset_id?: string | null; advisory_id?: string | null; cve?: string | null } | null,
+  assetId: string,
+  advisoryId: string
+): boolean {
+  if (!record) {
+    return false;
+  }
+  const recordAdvisoryIds = [record.advisory_id, record.cve]
+    .filter(Boolean)
+    .map((value) => String(value).toLowerCase());
+  return (!assetId || record.asset_id === assetId)
+    && (!advisoryId || recordAdvisoryIds.includes(advisoryId.toLowerCase()));
 }
 
 function severityTone(severity = "") {
@@ -4294,7 +4784,7 @@ function healthTone(status = "") {
   if (["ready", "verified", "advisory", "governed"].includes(status.toLowerCase())) {
     return "trust";
   }
-  if (["planned", "pending", "placeholder"].includes(status.toLowerCase())) {
+  if (["planned", "pending", "placeholder", "unknown", "stale", "degraded", "failed"].includes(status.toLowerCase())) {
     return "amber";
   }
   return "steel";

@@ -779,10 +779,20 @@ export function getPatchForgeConfig(): PatchForgeRuntimeConfig {
     tenantHeader: import.meta.env.VITE_PATCHFORGE_TENANT_HEADER,
     environmentLabel: import.meta.env.VITE_PATCHFORGE_ENVIRONMENT_LABEL
   };
+  const localPreviewConfig = import.meta.env.DEV
+    && typeof window !== "undefined"
+    && new URLSearchParams(window.location.search).get("preview") === "1"
+    ? {
+        apiBaseUrl: viteConfig.apiBaseUrl || "http://127.0.0.1:8080",
+        tenantHeader: viteConfig.tenantHeader || "diiac.io",
+        environmentLabel: viteConfig.environmentLabel || "Local preview"
+      }
+    : {};
   return {
     ...DEFAULT_CONFIG,
     ...Object.fromEntries(Object.entries(viteConfig).filter(([, value]) => Boolean(value))),
-    ...(typeof window !== "undefined" ? window.PATCHFORGE_CONFIG || {} : {})
+    ...(typeof window !== "undefined" ? window.PATCHFORGE_CONFIG || {} : {}),
+    ...localPreviewConfig
   };
 }
 
