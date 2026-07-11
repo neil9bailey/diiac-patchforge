@@ -17,9 +17,11 @@ const ROUTE_ROLES = [
   { method: "POST", pattern: /^\/api\/patchforge\/source-feeds\/refresh$/, roles: ["PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.Admin"] },
   { method: "POST", pattern: /^\/api\/patchforge\/bayesian\//, roles: ["PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.Admin"] },
   { method: "POST", pattern: /^\/api\/patchforge\/vendors/, roles: ["PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.Admin"] },
-  { method: "POST", pattern: /^\/api\/patchforge\/decision-packs\/generate$/, roles: ["PatchForge.SecurityLead", "PatchForge.CABApprover", "PatchForge.Admin"] },
+  { method: "POST", pattern: /^\/api\/patchforge\/(?:decision-packs\/generate|reports-packs\/generate|reports\/generate)$/, roles: ["PatchForge.SecurityLead", "PatchForge.CABApprover", "PatchForge.Admin"] },
+  { method: "POST", pattern: /^\/api\/patchforge\/action-packs$/, roles: ["PatchForge.SecurityLead", "PatchForge.CABApprover", "PatchForge.Admin"] },
+  { method: "POST", pattern: /^\/api\/patchforge\/workflow\/items\/[^/]+\/transition$/, roles: ["PatchForge.SecurityLead", "PatchForge.CABApprover", "PatchForge.RiskOwner", "PatchForge.Admin"] },
   { method: "POST", pattern: /^\/api\/sra\//, roles: ["PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.Admin"] },
-  { method: "GET", pattern: /^\/api\//, roles: ["PatchForge.Reader", "PatchForge.Auditor", "PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.Admin"] },
+  { method: "GET", pattern: /^\/api\//, roles: ["PatchForge.Reader", "PatchForge.Auditor", "PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.CABApprover", "PatchForge.RiskOwner", "PatchForge.ServiceOwner", "PatchForge.Admin"] },
   { method: "POST", pattern: /^\/api\//, roles: ["PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.Admin"] }
 ];
 

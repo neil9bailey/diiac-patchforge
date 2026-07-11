@@ -79,6 +79,8 @@ The catalogue-first rebuild is governed by the [PatchForge Intelligence Rebuild 
 ```powershell
 python -m pytest -q --basetemp .pytest_tmp
 npm test
+npm run api:check
+npm run collector:test
 npm --prefix Frontend test
 npm --prefix Frontend run build
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate_iac.ps1

@@ -16,3 +16,7 @@ The blueprint is the governing reference for the catalogue-first rebuild. Implem
 - [Operations](operations/)
 - [Validation](validation/)
 - [Release evidence](release/evidence/)
+
+## Operating loops
+
+- [Azure Container Update Loop](deployment/PATCHFORGE_AZURE_CONTAINER_UPDATE_LOOP.md)

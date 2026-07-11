@@ -7,6 +7,32 @@ param(
 
 $ErrorActionPreference = "Stop"
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+
+function Invoke-CheckedNative {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Command,
+        [Parameter(Mandatory = $true)]
+        [string[]]$Arguments,
+        [switch]$CaptureOutput
+    )
+
+    if ($CaptureOutput) {
+        $output = & $Command @Arguments
+        $exitCode = $LASTEXITCODE
+        if ($exitCode -ne 0) {
+            throw "$Command failed with exit code $exitCode."
+        }
+        return @($output)
+    }
+
+    & $Command @Arguments
+    $exitCode = $LASTEXITCODE
+    if ($exitCode -ne 0) {
+        throw "$Command failed with exit code $exitCode."
+    }
+}
+
 $images = @(
     @{ Name = "diiac/patchforge-frontend"; Path = "Frontend"; Dockerfile = "Frontend/Dockerfile" },
     @{ Name = "diiac/patchforge-bridge"; Path = "backend-api"; Dockerfile = "backend-api/Dockerfile" },
@@ -44,7 +70,20 @@ if ($null -eq $az) {
     throw "Azure CLI is required to log in to ACR."
 }
 
-az acr login --name $RegistryName
+Invoke-CheckedNative -Command "docker" -Arguments @("version")
+Invoke-CheckedNative -Command "az" -Arguments @("acr", "login", "--name", $RegistryName)
+
+foreach ($image in $images) {
+    $existingTags = Invoke-CheckedNative -Command "az" -Arguments @(
+        "acr", "repository", "show-tags",
+        "--name", $RegistryName,
+        "--repository", $image.Name,
+        "--output", "tsv"
+    ) -CaptureOutput
+    if (@($existingTags) -contains $ImageTag) {
+        throw "Refusing to reuse existing ACR tag '$ImageTag' for $($image.Name). Choose a new immutable tag."
+    }
+}
 
 foreach ($image in $images) {
     $context = Join-Path $repoRoot $image.Path
@@ -54,8 +93,8 @@ foreach ($image in $images) {
     }
 
     $fullName = "$RegistryName.azurecr.io/$($image.Name):$ImageTag"
-    docker build -f $dockerfile -t $fullName $context
-    docker push $fullName
+    Invoke-CheckedNative -Command "docker" -Arguments @("build", "-f", $dockerfile, "-t", $fullName, $context)
+    Invoke-CheckedNative -Command "docker" -Arguments @("push", $fullName)
 }
 
 Write-Host "PatchForge image build/push complete."

@@ -80,6 +80,39 @@ jobs:
       - name: Build frontend
         run: npm run build
 
+  collector:
+    name: Windows collector checks
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Check collector syntax
+        run: node --check collector/patchforge-collector.mjs
+
+      - name: Run collector tests
+        run: npm run collector:test
+
+      - name: Parse collector PowerShell helpers
+        shell: powershell
+        run: |
+          $errors = @()
+          Get-ChildItem scripts -Filter "*patchforge_collector*.ps1" | ForEach-Object {
+            $tokens = $null
+            $parseErrors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$tokens, [ref]$parseErrors)
+            $errors += $parseErrors
+          }
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            exit 1
+          }
+
   iac:
     name: Bicep IaC build
     runs-on: ubuntu-latest
@@ -97,6 +130,7 @@ jobs:
       - python-contracts-runtime
       - backend-api
       - frontend
+      - collector
       - iac
     strategy:
       fail-fast: false

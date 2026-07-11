@@ -268,6 +268,64 @@ export function hashObject(value) {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex");
 }
 
+const REVISION_METADATA_KEYS = new Set([
+  "actor_oid",
+  "actor_roles",
+  "actor_tenant_id",
+  "actor_upn",
+  "completed_at",
+  "content_hash",
+  "created_at",
+  "effective_tenant_id",
+  "evidence_state",
+  "fetched_at",
+  "final_approval_issued",
+  "ingested_at",
+  "payload_hash",
+  "previous_payload_hash",
+  "requested_tenant_id",
+  "review_invalidated_at",
+  "review_invalidated_reason",
+  "review_state",
+  "reviewed_at",
+  "reviewed_by",
+  "server_payload_hash",
+  "source_record_ids",
+  "source_state",
+  "tenant_id",
+  "tenant_id_source",
+  "tenant_override_ignored",
+  "updated_at",
+  "upstream_payload_hash"
+]);
+
+function canonicalRevisionValue(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => canonicalRevisionValue(item));
+  }
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([key]) => !REVISION_METADATA_KEYS.has(key))
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, nested]) => [key, canonicalRevisionValue(nested)])
+    );
+  }
+  return value;
+}
+
+function sourceRevisionHash(payload, source) {
+  const { sources: _sources, ...vulnerabilityPayload } = payload || {};
+  return hashObject(canonicalRevisionValue({
+    source,
+    vulnerability: vulnerabilityPayload
+  }));
+}
+
+function vulnerabilityContentHash(record) {
+  return hashObject(canonicalRevisionValue(record || {}));
+}
+
 export class PatchForgeJsonStorage {
   constructor(rootDir = path.resolve("customer-config/default/patchforge")) {
     this.rootDir = rootDir;
@@ -417,77 +475,117 @@ export class PatchForgeJsonStorage {
     const now = new Date().toISOString();
     const vulnerabilityId = payload.vulnerability_id || payload.canonical_id || `vuln-${randomUUID()}`;
     const sourceInputs = Array.isArray(payload.sources) ? payload.sources : [];
+    const existingVulnerability = (await this.list("vulnerabilities", tenantId))
+      .find((record) => record.vulnerability_id === vulnerabilityId) || null;
+    const existingSources = await this.list("sources", tenantId);
     const sourceRecordIds = [];
+    const sourceRevisionsUnchanged = [];
+    const invalidatedSourceIds = [];
 
     for (const source of sourceInputs) {
+      const sourceRecordId = source.source_record_id || `src-${randomUUID()}`;
+      const payloadHash = sourceRevisionHash(payload, source);
+      const existingSource = existingSources.find((record) => record.source_record_id === sourceRecordId) || null;
+      const unchanged = Boolean(existingSource && existingSource.server_payload_hash === payloadHash);
       const sourceRecord = {
+        ...(existingSource || {}),
         tenant_id: tenantId,
-        source_record_id: source.source_record_id || `src-${randomUUID()}`,
+        source_record_id: sourceRecordId,
         vulnerability_id: vulnerabilityId,
         source_class: source.source_class || "scanner_output",
         source_name: source.source_name || "manual-ingest",
         source_url: source.source_url || null,
-        payload_hash: source.payload_hash || hashObject(source),
+        payload_hash: payloadHash,
+        server_payload_hash: payloadHash,
+        upstream_payload_hash: source.payload_hash || null,
         ingested_at: now,
-        review_state: source.review_state || "pending_review",
-        evidence_state: source.evidence_state || "referenced",
-        reviewed_by: null,
-        reviewed_at: null,
+        review_state: unchanged ? existingSource.review_state : "pending_review",
+        evidence_state: unchanged ? existingSource.evidence_state : "referenced",
+        reviewed_by: unchanged ? existingSource.reviewed_by || null : null,
+        reviewed_at: unchanged ? existingSource.reviewed_at || null : null,
+        previous_payload_hash: existingSource && !unchanged ? existingSource.payload_hash || null : existingSource?.previous_payload_hash || null,
+        review_invalidated_reason: existingSource && !unchanged ? "source_payload_changed" : null,
+        review_invalidated_at: existingSource && !unchanged ? now : null,
         ...lineageFromPayload(payload)
       };
       sourceRecordIds.push(sourceRecord.source_record_id);
+      sourceRevisionsUnchanged.push(unchanged);
+      if (existingSource && !unchanged) {
+        invalidatedSourceIds.push(sourceRecord.source_record_id);
+      }
       await this.append("sources", sourceRecord);
     }
 
+    const sourceRevisionsStable = sourceRevisionsUnchanged.every(Boolean);
+    const mergedSourceRecordIds = Array.from(new Set([
+      ...(existingVulnerability?.source_record_ids || []),
+      ...sourceRecordIds
+    ]));
+
     const record = {
+      ...(existingVulnerability || {}),
       tenant_id: tenantId,
       vulnerability_id: vulnerabilityId,
       canonical_id: payload.canonical_id || vulnerabilityId,
-      title: payload.title || vulnerabilityId,
-      description: payload.description || "",
-      advisory_id: payload.advisory_id || null,
-      vendor_id: payload.vendor_id || null,
-      vendor_name: payload.vendor_name || null,
-      vendor_aliases: payload.vendor_aliases || [],
-      product_family: payload.product_family || payload.product || null,
-      product_aliases: payload.product_aliases || [],
-      model: payload.model || null,
-      affected_models: payload.affected_models || [],
-      affected_versions: payload.affected_versions || [],
-      fixed_versions: payload.fixed_versions || [],
-      affected_feature: payload.affected_feature || null,
-      affected_features: payload.affected_features || [],
-      feature_aliases: payload.feature_aliases || [],
-      severity: payload.severity || "unknown",
-      cvss_score: payload.cvss_score ?? null,
-      epss_score: payload.epss_score ?? payload.epss ?? null,
-      epss_percentile: payload.epss_percentile ?? null,
-      kev: Boolean(payload.kev),
-      known_exploited: Boolean(payload.known_exploited),
-      internet_exposed: Boolean(payload.internet_exposed),
-      ot_relevant: Boolean(payload.ot_relevant),
-      affected_service_ids: payload.affected_service_ids || [],
-      affected_asset_ids: payload.affected_asset_ids || [],
-      patch_status: payload.patch_status || "unknown",
-      patch_available: Boolean(payload.patch_available),
-      workaround_status: payload.workaround_status || "unknown",
-      source_feed: payload.source_feed || null,
-      source_name: payload.source_name || sourceInputs[0]?.source_name || null,
-      source_url: payload.source_url || sourceInputs[0]?.source_url || null,
-      urgency_posture: payload.urgency_posture || null,
-      applicability_posture: payload.applicability_posture || null,
+      title: payload.title || existingVulnerability?.title || vulnerabilityId,
+      description: payload.description ?? existingVulnerability?.description ?? "",
+      advisory_id: payload.advisory_id ?? existingVulnerability?.advisory_id ?? null,
+      vendor_id: payload.vendor_id ?? existingVulnerability?.vendor_id ?? null,
+      vendor_name: payload.vendor_name ?? existingVulnerability?.vendor_name ?? null,
+      vendor_aliases: payload.vendor_aliases ?? existingVulnerability?.vendor_aliases ?? [],
+      product_family: payload.product_family || payload.product || existingVulnerability?.product_family || null,
+      product_aliases: payload.product_aliases ?? existingVulnerability?.product_aliases ?? [],
+      model: payload.model ?? existingVulnerability?.model ?? null,
+      affected_models: payload.affected_models ?? existingVulnerability?.affected_models ?? [],
+      affected_versions: payload.affected_versions ?? existingVulnerability?.affected_versions ?? [],
+      fixed_versions: payload.fixed_versions ?? existingVulnerability?.fixed_versions ?? [],
+      affected_feature: payload.affected_feature ?? existingVulnerability?.affected_feature ?? null,
+      affected_features: payload.affected_features ?? existingVulnerability?.affected_features ?? [],
+      feature_aliases: payload.feature_aliases ?? existingVulnerability?.feature_aliases ?? [],
+      severity: payload.severity || existingVulnerability?.severity || "unknown",
+      cvss_score: payload.cvss_score ?? existingVulnerability?.cvss_score ?? null,
+      epss_score: payload.epss_score ?? payload.epss ?? existingVulnerability?.epss_score ?? null,
+      epss_percentile: payload.epss_percentile ?? existingVulnerability?.epss_percentile ?? null,
+      kev: Boolean(payload.kev ?? existingVulnerability?.kev ?? false),
+      known_exploited: Boolean(payload.known_exploited ?? existingVulnerability?.known_exploited ?? false),
+      internet_exposed: Boolean(payload.internet_exposed ?? existingVulnerability?.internet_exposed ?? false),
+      ot_relevant: Boolean(payload.ot_relevant ?? existingVulnerability?.ot_relevant ?? false),
+      affected_service_ids: payload.affected_service_ids ?? existingVulnerability?.affected_service_ids ?? [],
+      affected_asset_ids: payload.affected_asset_ids ?? existingVulnerability?.affected_asset_ids ?? [],
+      patch_status: payload.patch_status ?? existingVulnerability?.patch_status ?? "unknown",
+      patch_available: Boolean(payload.patch_available ?? existingVulnerability?.patch_available ?? false),
+      workaround_status: payload.workaround_status ?? existingVulnerability?.workaround_status ?? "unknown",
+      source_feed: payload.source_feed ?? existingVulnerability?.source_feed ?? null,
+      source_name: payload.source_name || sourceInputs[0]?.source_name || existingVulnerability?.source_name || null,
+      source_url: payload.source_url || sourceInputs[0]?.source_url || existingVulnerability?.source_url || null,
+      urgency_posture: payload.urgency_posture ?? existingVulnerability?.urgency_posture ?? null,
+      applicability_posture: payload.applicability_posture ?? existingVulnerability?.applicability_posture ?? null,
       final_approval_issued: false,
-      sla_due_at: payload.sla_due_at || null,
+      sla_due_at: payload.sla_due_at ?? existingVulnerability?.sla_due_at ?? null,
       source_state: "source_bound",
-      review_state: payload.review_state || "pending_review",
-      source_record_ids: sourceRecordIds,
-      tags: payload.tags || [],
+      review_state: "pending_review",
+      source_record_ids: mergedSourceRecordIds,
+      tags: Array.from(new Set([...(existingVulnerability?.tags || []), ...(payload.tags || [])])),
       ...lineageFromPayload(payload),
-      created_at: now,
-      updated_at: null
+      created_at: existingVulnerability?.created_at || now,
+      updated_at: existingVulnerability ? now : null
     };
+    const contentHash = vulnerabilityContentHash(record);
+    const previousContentHash = existingVulnerability ? vulnerabilityContentHash(existingVulnerability) : null;
+    const preserveReviewState = Boolean(existingVulnerability)
+      && sourceRevisionsStable
+      && previousContentHash === contentHash;
+    record.review_state = preserveReviewState ? existingVulnerability.review_state : "pending_review";
+    record.content_hash = contentHash;
 
     await this.append("vulnerabilities", record);
+    for (const sourceRecordId of invalidatedSourceIds) {
+      await this.audit(tenantId, "source_review_invalidated", {
+        vulnerability_id: vulnerabilityId,
+        source_record_id: sourceRecordId,
+        reason: "source_payload_changed"
+      });
+    }
     await this.audit(tenantId, "vulnerability_ingested", { vulnerability_id: vulnerabilityId });
     return record;
   }
@@ -709,8 +807,15 @@ export class PatchForgeJsonStorage {
     const publicSourceFeeds = configuredSourceFeeds(config);
     const agentReady = agentIntakeEnabled(config) || parseEnvBoolean(process.env.PATCHFORGE_AGENT_INTAKE_ENABLED, false);
     const sourceFeedsReady = publicSourceFeeds.length > 0 || parseEnvBoolean(process.env.PATCHFORGE_PUBLIC_SOURCE_FEEDS_ENABLED, false);
-    const lastSourceFeedRun = sourceFeedRuns[sourceFeedRuns.length - 1] || null;
-    const schedulerReady = Boolean(process.env.PATCHFORGE_SCHEDULER_ENABLED || sourceFeedRuns.length > 0);
+    const schedulerRuns = sourceFeedRuns.filter((run) =>
+      Boolean(run.scheduler_run_id)
+      || run.actor_oid === "patchforge-scheduler"
+      || run.tenant_id_source === "scheduler_config"
+    );
+    const lastSchedulerRun = schedulerRuns[schedulerRuns.length - 1] || null;
+    const schedulerConfigured = parseEnvBoolean(process.env.PATCHFORGE_SCHEDULER_ENABLED, false)
+      || process.env.PATCHFORGE_COMPONENT === "scheduler";
+    const schedulerHealth = sourceFeedSchedulerHealth(lastSchedulerRun, schedulerConfigured);
     const workerReady = Boolean(process.env.PATCHFORGE_WORKER_ENABLED || process.env.PATCHFORGE_COMPONENT === "ingest-export-worker" || this.storageMode === "postgresql");
     return {
       tenant_id: tenantId,
@@ -742,8 +847,8 @@ export class PatchForgeJsonStorage {
         },
         {
           name: "Scheduler health",
-          status: schedulerReady ? "ready" : "pending",
-          mode: lastSourceFeedRun?.completed_at ? `last source refresh ${lastSourceFeedRun.completed_at}` : "scheduler-enabled-awaiting-first-run"
+          status: schedulerHealth.status,
+          mode: schedulerHealth.mode
         },
         {
           name: "Database health",
@@ -1185,6 +1290,36 @@ function parseEnvBoolean(value, fallback) {
     return fallback;
   }
   return ["1", "true", "yes", "on"].includes(String(value).toLowerCase());
+}
+
+function sourceFeedSchedulerHealth(lastRun, configured) {
+  if (!configured) {
+    return { status: "pending", mode: "scheduler-not-confirmed" };
+  }
+  if (!lastRun?.completed_at) {
+    return { status: "pending", mode: "scheduler-enabled-awaiting-first-run" };
+  }
+  const completedAt = Date.parse(lastRun.completed_at);
+  if (!Number.isFinite(completedAt)) {
+    return { status: "degraded", mode: "last source refresh timestamp is invalid" };
+  }
+  const staleAfterMs = positiveNumber(process.env.PATCHFORGE_SOURCE_FEED_STALE_AFTER_MS, 8 * 60 * 60 * 1000);
+  const ageMs = Math.max(0, Date.now() - completedAt);
+  const runStatus = String(lastRun.status || "unknown").toLowerCase();
+  const ageMinutes = Math.floor(ageMs / 60000);
+  const mode = `last source refresh ${lastRun.completed_at}; age ${ageMinutes} minute(s); expected within ${Math.floor(staleAfterMs / 3600000)} hour(s)`;
+  if (!["completed", "completed_with_warnings"].includes(runStatus)) {
+    return { status: "degraded", mode: `${mode}; last run ${runStatus}` };
+  }
+  if (ageMs > staleAfterMs) {
+    return { status: "stale", mode };
+  }
+  return { status: runStatus === "completed_with_warnings" ? "degraded" : "ready", mode };
+}
+
+function positiveNumber(value, fallback) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
 function assertKnownCollection(collection) {

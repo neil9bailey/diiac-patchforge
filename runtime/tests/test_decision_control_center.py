@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 
 import pytest
 
@@ -50,6 +50,7 @@ def test_dcc_evidence_events_close_blockers_only_with_valid_refs():
 
 
 def test_risk_acceptance_requires_owner_expiry_and_rationale():
+    future_expiry = (date.today() + timedelta(days=30)).isoformat()
     source_pack, current_state = compile_source_pack(
         decision_id="decision-3",
         decision_posture="risk_accept_temporarily",
@@ -61,13 +62,13 @@ def test_risk_acceptance_requires_owner_expiry_and_rationale():
         record_event(source_pack, current_state, {
             "event_type": "risk_acceptance_recorded",
             "owner": "risk-owner",
-            "expiry_date": "2026-06-30",
+            "expiry_date": future_expiry,
         })
 
     next_state = record_event(source_pack, current_state, {
         "event_type": "risk_acceptance_recorded",
         "owner": "risk-owner",
-        "expiry_date": "2026-06-30",
+        "expiry_date": future_expiry,
         "rationale": "Maintenance window constrained.",
     })
     assert next_state.risk_acceptance["owner"] == "risk-owner"
@@ -76,6 +77,7 @@ def test_risk_acceptance_requires_owner_expiry_and_rationale():
 
 def test_risk_acceptance_expiry_works():
     assert risk_acceptance_expired("2026-05-25", today=date(2026, 5, 26)) is True
+    assert risk_acceptance_expired("2026-05-26", today=date(2026, 5, 26)) is False
     assert risk_acceptance_expired("2026-05-27", today=date(2026, 5, 26)) is False
 
 
@@ -104,4 +106,3 @@ def test_current_state_is_separate_from_signed_source_state():
     assert after_approval.blockers == []
     assert after_approval.final_approval_issued is True
     assert len(after_approval.event_ledger) == 2
-

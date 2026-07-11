@@ -5,7 +5,7 @@ import hmac
 import json
 import os
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Protocol
 from typing import Any
@@ -233,6 +233,8 @@ def has_final_approval(approval_events: list[dict[str, Any]] | None) -> bool:
         event.get("approval_type") == "final"
         and event.get("approval_state") == "approved"
         and bool(event.get("approver"))
+        and event.get("server_verified") is True
+        and bool({"PatchForge.CABApprover", "PatchForge.Admin"} & set(event.get("actor_roles") or []))
         for event in (approval_events or [])
     )
 
@@ -244,30 +246,57 @@ def apply_policy_pack(
     risk_acceptance: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     blockers = list(evaluation.blockers)
-    final_approval_issued = has_final_approval(approval_events)
+    trusted_final_approval_recorded = has_final_approval(approval_events)
+    untrusted_final_approval_present = any(
+        event.get("approval_type") == "final"
+        and event.get("approval_state") == "approved"
+        and not (
+            event.get("server_verified") is True
+            and bool({"PatchForge.CABApprover", "PatchForge.Admin"} & set(event.get("actor_roles") or []))
+        )
+        for event in (approval_events or [])
+    )
 
-    if decision_posture == "emergency_change_required" and not final_approval_issued:
+    if untrusted_final_approval_present:
+        blockers.append("untrusted_final_approval_event")
+
+    if decision_posture == "emergency_change_required" and not trusted_final_approval_recorded:
         blockers.append("emergency_human_approval")
 
     if decision_posture == "risk_accept_temporarily":
         required = ["owner", "expiry_date", "rationale"]
         missing = [field for field in required if not (risk_acceptance or {}).get(field)]
         blockers.extend([f"risk_acceptance_{field}" for field in missing])
-        if not final_approval_issued:
+        expiry_date = (risk_acceptance or {}).get("expiry_date")
+        if expiry_date and risk_acceptance_expired(expiry_date):
+            blockers.append("risk_acceptance_expired")
+        if not trusted_final_approval_recorded:
             blockers.append("risk_acceptance_human_approval")
 
     if decision_posture == "close_verified" and "post_patch_validation" not in evaluation.satisfied:
         blockers.append("post_patch_validation")
 
+    blockers = sorted(set(blockers))
+    final_approval_issued = trusted_final_approval_recorded and not blockers
+
     return {
         "decision_posture": decision_posture,
         "readiness_score": evaluation.readiness_score,
-        "blockers": sorted(set(blockers)),
+        "blockers": blockers,
         "satisfied": evaluation.satisfied,
+        "final_approval_recorded": trusted_final_approval_recorded,
         "final_approval_issued": final_approval_issued,
         "rejected_refs": evaluation.rejected_refs,
         "advisory_only_refs": evaluation.advisory_only_refs,
     }
+
+
+def risk_acceptance_expired(expiry_date: str, today: date | None = None) -> bool:
+    try:
+        expiry = date.fromisoformat(str(expiry_date))
+    except (TypeError, ValueError):
+        return True
+    return expiry < (today or datetime.now(timezone.utc).date())
 
 
 def calculate_readiness(policy_result: dict[str, Any]) -> dict[str, Any]:
@@ -287,6 +316,16 @@ def calculate_readiness(policy_result: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def evidence_model_for_posture(decision_posture: str, requested_model: str) -> str:
+    posture_models = {
+        "emergency_change_required": "emergency_patch_change",
+        "risk_accept_temporarily": "patch_risk_acceptance",
+        "block_go_live": "service_transition_patch_readiness",
+        "close_verified": "service_transition_patch_readiness",
+    }
+    return posture_models.get(decision_posture, requested_model)
+
+
 def build_patch_decision_context(
     vulnerability: dict[str, Any],
     evidence_items: list[dict[str, Any]],
@@ -300,7 +339,8 @@ def build_patch_decision_context(
     ensure_boundary_safe(vulnerability)
     decision_posture = classify_patch_decision_type(vulnerability, patch_availability, controls, requested_posture)
     evidence_register = build_evidence_register(evidence_items)
-    evaluation = apply_evidence_model(model_name, evidence_register)
+    effective_model_name = evidence_model_for_posture(decision_posture, model_name)
+    evaluation = apply_evidence_model(effective_model_name, evidence_register)
     policy_result = apply_policy_pack(decision_posture, evaluation, approval_events, risk_acceptance)
     readiness = calculate_readiness(policy_result)
 
@@ -309,7 +349,7 @@ def build_patch_decision_context(
         "decision_id": f"decision-{uuid4()}",
         "vulnerability_id": vulnerability.get("vulnerability_id") or vulnerability.get("canonical_id"),
         "decision_posture": decision_posture,
-        "evidence_model": model_name,
+        "evidence_model": effective_model_name,
         "evidence_refs": [item["evidence_ref"] for item in evidence_register["items"]],
         "blockers": readiness["blockers"],
         "readiness": readiness,

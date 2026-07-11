@@ -15,7 +15,16 @@ import {
   verifySignedActionPack
 } from "./patchforge/priority.js";
 import { buildFindingIntelligence, buildIntelligenceForTenant } from "./patchforge/intelligence.js";
-import { REPORT_CATALOG, buildReportContentReview, generateDecisionPackReport } from "./patchforge/reports.js";
+import {
+  DEFAULT_IMAGE_TAG,
+  DEFAULT_PRODUCT_BASELINE,
+  DEFAULT_RENDERER_COMMIT,
+  REPORT_CATALOG,
+  REPORT_CONTEXT_VERSION,
+  REPORT_TEMPLATE_VERSION,
+  buildReportContentReview,
+  generateDecisionPackReport
+} from "./patchforge/reports.js";
 import { getOpenAiAgentStatus, OPENAI_AGENT_NAMES, runOpenAiAgent } from "./patchforge/openaiAgentService.js";
 import { startScheduler } from "./patchforge/scheduler.js";
 import { handlePlatformRoutes } from "./routes/platformRoutes.js";
@@ -199,7 +208,13 @@ export function createServer(options = {}) {
       if (req.method === "POST" && vulnerabilityReviewMatch) {
         const body = await readJson(req);
         const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
-        const result = await storage.reviewVulnerability(tenantContext.effective_tenant_id, decodeURIComponent(vulnerabilityReviewMatch[1]), withLineage(body, tenantContext, authorization));
+        const principal = authorization.principal || {};
+        const reviewer = principal.upn || principal.oid || (principal.auth_disabled ? body.reviewer : null) || "unknown";
+        const result = await storage.reviewVulnerability(
+          tenantContext.effective_tenant_id,
+          decodeURIComponent(vulnerabilityReviewMatch[1]),
+          withLineage({ ...body, reviewer }, tenantContext, authorization)
+        );
         return result ? sendJson(res, 200, result) : sendJson(res, 404, { error: "vulnerability_not_found" });
       }
 
@@ -1350,6 +1365,26 @@ function lineageFields(tenantContext, authorization) {
   };
 }
 
+export function bindApprovalEventsToPrincipal(events, authorization) {
+  const principal = authorization?.principal || {};
+  const roles = Array.isArray(principal.roles) ? principal.roles.map(String) : [];
+  const actorId = principal.oid || principal.upn || null;
+  const canIssueFinalApproval = Boolean(actorId)
+    && roles.some((role) => ["PatchForge.CABApprover", "PatchForge.Admin"].includes(role));
+
+  return (Array.isArray(events) ? events : []).map((event) => {
+    const finalApprovalRequest = event?.approval_type === "final" && event?.approval_state === "approved";
+    const serverVerified = finalApprovalRequest && canIssueFinalApproval;
+    return {
+      ...event,
+      approver: serverVerified ? (principal.upn || principal.oid) : String(event?.approver || "unverified-client-claim"),
+      approver_oid: serverVerified ? principal.oid || null : null,
+      actor_roles: serverVerified ? roles : [],
+      server_verified: serverVerified
+    };
+  });
+}
+
 async function ingestAgentFinding(storage, tenantId, body) {
   const sourceClass = String(body.source_class || body.agent_source_class || "mcp_agent_finding");
   if (!AGENT_FINDING_SOURCE_CLASSES.has(sourceClass)) {
@@ -1456,7 +1491,7 @@ function sendBinary(res, statusCode, buffer, { contentType, fileName }) {
   res.end(buffer);
 }
 
-function buildEvidenceItemsFromRecord(vulnerability, submittedItems = []) {
+export function buildEvidenceItemsFromRecord(vulnerability) {
   const sourceEvidence = (vulnerability.sources || []).map((source) => ({
     evidence_ref: source.source_record_id,
     evidence_class: source.evidence_class || evidenceClassForSource(source),
@@ -1468,8 +1503,9 @@ function buildEvidenceItemsFromRecord(vulnerability, submittedItems = []) {
     source_url: source.source_url || null
   }));
 
-  const submittedEvidence = Array.isArray(submittedItems) ? submittedItems : [];
-  return [...sourceEvidence, ...submittedEvidence];
+  // Evidence state and class must be compiled from persisted tenant records.
+  // Client-supplied evidence items are not trusted as hard-gate inputs.
+  return sourceEvidence;
 }
 
 async function generateDecisionPackForRequest({ storage, runtimeClient, tenantContext, authorization, body }) {
@@ -1512,7 +1548,7 @@ async function generateDecisionPackForRequest({ storage, runtimeClient, tenantCo
   const runtimeResult = await runtimeClient.createDecisionPack({
     tenant_id: resolvedTenant,
     vulnerability,
-    evidence_items: buildEvidenceItemsFromRecord(vulnerability, body.evidence_items),
+    evidence_items: buildEvidenceItemsFromRecord(vulnerability),
     model_name: body.model_name || "vuln_patch_governance",
     requested_posture: body.requested_posture || body.decision_posture || null,
     patch_availability: body.patch_availability || null,
@@ -1533,7 +1569,7 @@ async function generateDecisionPackForRequest({ storage, runtimeClient, tenantCo
     vendorlens_decision_context: vendorLensContext.vendorlens_decision_context,
     controls: body.controls || null,
     risk_acceptance: body.risk_acceptance || null,
-    approval_events: body.approval_events || []
+    approval_events: bindApprovalEventsToPrincipal(body.approval_events, authorization)
   });
 
   const decisionContext = runtimeResult.decision_context || {};
@@ -1552,12 +1588,12 @@ async function generateDecisionPackForRequest({ storage, runtimeClient, tenantCo
     signing_provider: runtimeResult.signing_provider || null,
     artefacts: runtimeResult.artefacts || null,
     runtime_component: runtimeResult.runtime_component || "patchforge-runtime",
-    report_template_version: body.report_template_version || null,
-    report_renderer_commit: body.report_renderer_commit || process.env.PATCHFORGE_RENDERER_COMMIT || process.env.PATCHFORGE_COMMIT_SHA || process.env.GIT_COMMIT || null,
-    report_renderer_image_tag: body.report_renderer_image_tag || process.env.PATCHFORGE_IMAGE_TAG || process.env.CONTAINER_IMAGE_TAG || null,
+    report_template_version: process.env.PATCHFORGE_REPORT_TEMPLATE_VERSION || REPORT_TEMPLATE_VERSION,
+    report_renderer_commit: process.env.PATCHFORGE_RENDERER_COMMIT || process.env.PATCHFORGE_COMMIT_SHA || process.env.GIT_COMMIT || DEFAULT_RENDERER_COMMIT,
+    report_renderer_image_tag: process.env.PATCHFORGE_IMAGE_TAG || process.env.CONTAINER_IMAGE_TAG || DEFAULT_IMAGE_TAG,
     generated_from_pack_id: runtimeResult.pack_id,
-    product_baseline: body.product_baseline || process.env.PATCHFORGE_PRODUCT_BASELINE || "PF-AZ11-CUSTOMER-DEMO-MATURITY",
-    report_context_version: body.report_context_version || null,
+    product_baseline: process.env.PATCHFORGE_PRODUCT_BASELINE || DEFAULT_PRODUCT_BASELINE,
+    report_context_version: process.env.PATCHFORGE_REPORT_CONTEXT_VERSION || REPORT_CONTEXT_VERSION,
     ...lineageFields(tenantContext, authorization),
     created_at: runtimeResult.created_at || new Date().toISOString()
   };
@@ -1709,7 +1745,15 @@ function buildPriorUpdateProposal(body = {}) {
 function buildBayesianAssessment(body = {}) {
   const vulnerability = body.vulnerability || body;
   const cvss = Number(vulnerability.cvss_score || body.cvss || 0);
-  const epss = clamp(Number(body.epss || vulnerability.epss || 0), 0, 1);
+  const epss = clamp(firstFiniteNumber(
+    body.epss,
+    body.epss_score,
+    body.epss_probability,
+    vulnerability.epss,
+    vulnerability.epss_score,
+    vulnerability.epss_probability,
+    0
+  ), 0, 1);
   const priors = defaultBayesianPriors();
   const exploitSignals = [
     Boolean(vulnerability.known_exploited || body.known_exploited) ? 0.32 : 0,
@@ -1774,6 +1818,19 @@ function recommendedPosture(assessment, vulnerability) {
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, Number.isFinite(value) ? value : min));
+}
+
+function firstFiniteNumber(...values) {
+  for (const value of values) {
+    if (value === null || value === undefined || value === "") {
+      continue;
+    }
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) {
+      return numeric;
+    }
+  }
+  return 0;
 }
 
 function round(value) {

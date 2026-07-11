@@ -28,10 +28,11 @@ export async function buildIntelligenceForTenant({ storage, tenantId, vulnerabil
     return null;
   }
 
-  const [vendorAdvisories, threatSignals, assets, services, decisionPacks, sourceFeedRuns, reviews] = await Promise.all([
+  const [vendorAdvisories, threatSignals, assets, customerNetworkAssets, services, decisionPacks, sourceFeedRuns, reviews] = await Promise.all([
     storage.list("vendor_advisories", tenantId),
     storage.list("threat_signals", tenantId),
     storage.list("assets", tenantId),
+    storage.list("customer_network_assets", tenantId),
     storage.list("services", tenantId),
     storage.list("decision_packs", tenantId),
     storage.list("source_feed_runs", tenantId),
@@ -42,13 +43,27 @@ export async function buildIntelligenceForTenant({ storage, tenantId, vulnerabil
     vulnerability,
     vendorAdvisories,
     threatSignals,
-    assets,
+    assets: mergeAssetSources(assets, customerNetworkAssets),
     services,
     decisionPacks,
     sourceFeedRuns,
     reviews,
     bayesianSnapshot
   });
+}
+
+function mergeAssetSources(assets, customerNetworkAssets) {
+  const merged = new Map((assets || []).map((asset) => [asset.asset_id, asset]));
+  for (const asset of (customerNetworkAssets || [])) {
+    merged.set(asset.asset_id, {
+      ...asset,
+      asset_name: asset.asset_name || asset.model || asset.product_family || asset.asset_id,
+      asset_class: asset.asset_class || asset.asset_category || "customer_network_asset",
+      criticality: asset.criticality || "not_recorded",
+      exposure: asset.exposure || (asset.internet_facing ? "internet" : asset.management_exposure || "unknown")
+    });
+  }
+  return [...merged.values()];
 }
 
 export function buildFindingIntelligence({
@@ -66,12 +81,13 @@ export function buildFindingIntelligence({
   const matchingSignals = matchThreatSignals(vulnerability, threatSignals);
   const affectedServices = matchServices(vulnerability, services);
   const affectedAssets = matchAssets(vulnerability, assets);
+  const matchingReviews = matchReviews(vulnerability, reviews);
   const latestPack = decisionPacks
     .filter((pack) => pack.vulnerability_id === vulnerability.vulnerability_id)
     .sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")))[0] || null;
   const vendorProfile = inferVendorProduct(vulnerability, matchingAdvisories);
   const epss = latestEpss(matchingSignals);
-  const evidence = evidenceSummary(vulnerability, matchingAdvisories, matchingSignals, reviews);
+  const evidence = evidenceSummary(vulnerability, matchingAdvisories, matchingSignals, matchingReviews);
   const exposure = exposureSummary(vulnerability, affectedServices, affectedAssets);
   const posture = recommendPosture({ vulnerability, affectedServices, affectedAssets, advisories: matchingAdvisories, epss, bayesianSnapshot });
   const customerPosture = customerFacingPosture(vulnerability, matchingAdvisories, posture, exposure);
@@ -142,18 +158,17 @@ function matchAdvisories(vulnerability, advisories) {
   const ids = new Set([
     vulnerability.vulnerability_id,
     vulnerability.canonical_id,
+    vulnerability.advisory_id,
     ...(vulnerability.tags || [])
   ].filter(Boolean).map((value) => String(value).toLowerCase()));
   return advisories.filter((item) => {
-    const candidates = [
+    const directIds = [
       item.cve,
       item.vulnerability_id,
-      item.advisory_id,
-      item.title,
-      item.vendor_id,
-      item.product_id
+      item.advisory_id
     ].filter(Boolean).map((value) => String(value).toLowerCase());
-    return candidates.some((candidate) => ids.has(candidate) || candidate.includes(String(vulnerability.vulnerability_id).toLowerCase()));
+    const titleCves = String(item.title || "").match(/CVE-\d{4}-\d{4,}/gi) || [];
+    return [...directIds, ...titleCves.map((value) => value.toLowerCase())].some((candidate) => ids.has(candidate));
   });
 }
 
@@ -170,6 +185,15 @@ function matchServices(vulnerability, services) {
 function matchAssets(vulnerability, assets) {
   const affected = new Set(vulnerability.affected_asset_ids || []);
   return assets.filter((asset) => affected.has(asset.asset_id) || (asset.vulnerability_ids || []).includes(vulnerability.vulnerability_id));
+}
+
+function matchReviews(vulnerability, reviews) {
+  const vulnerabilityId = String(vulnerability.vulnerability_id || vulnerability.canonical_id || "");
+  const sourceIds = new Set(vulnerability.source_record_ids || []);
+  return reviews.filter((review) =>
+    String(review.vulnerability_id || "") === vulnerabilityId
+    || (review.source_record_id && sourceIds.has(review.source_record_id))
+  );
 }
 
 function inferVendorProduct(vulnerability, advisories) {

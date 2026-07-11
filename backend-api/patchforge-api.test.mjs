@@ -4,12 +4,190 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import JSZip from "jszip";
-import { createServer } from "./server.js";
+import { bindApprovalEventsToPrincipal, buildEvidenceItemsFromRecord, createServer } from "./server.js";
 import { PatchForgeJsonStorage } from "./patchforge/storage.js";
 import { createSourceFeedClient } from "./patchforge/sourceFeeds.js";
 import { runSchedulerOnce } from "./patchforge/scheduler.js";
-import { createAuthConfigFromEnv } from "./auth.js";
-import { REPORT_CATALOG, buildReportContext } from "./patchforge/reports.js";
+import { createAuthConfigFromEnv, rolesForRoute } from "./auth.js";
+import { buildFindingIntelligence, buildIntelligenceForTenant } from "./patchforge/intelligence.js";
+import { REPORT_CATALOG, REPORT_CONTEXT_VERSION, REPORT_TEMPLATE_VERSION, buildReportContext } from "./patchforge/reports.js";
+
+test("report context prefers immutable signed-pack intelligence over later live state", () => {
+  const context = buildReportContext({
+    reportType: "board_vulnerability_remediation_summary",
+    pack: {
+      pack_id: "PF-SNAPSHOT-001",
+      vulnerability_id: "CVE-2026-SNAPSHOT-001",
+      artefacts: {
+        "finding_intelligence_snapshot.json": {
+          summary: { executive_readout: "Signed-pack snapshot readout." },
+          recommendation: { posture: "defer_pending_evidence" }
+        }
+      }
+    },
+    intelligence: {
+      summary: { executive_readout: "Later mutable live readout." },
+      recommendation: { posture: "patch_required" }
+    }
+  });
+
+  assert.equal(context.executiveReadout, "Signed-pack snapshot readout.");
+  assert.equal(context.recommendation.posture, "defer_pending_evidence");
+});
+
+test("all signed-pack generation aliases require the same elevated roles", () => {
+  const expected = ["PatchForge.SecurityLead", "PatchForge.CABApprover", "PatchForge.Admin"];
+  for (const pathName of [
+    "/api/patchforge/decision-packs/generate",
+    "/api/patchforge/reports-packs/generate",
+    "/api/patchforge/reports/generate"
+  ]) {
+    assert.deepEqual(rolesForRoute("POST", pathName), expected);
+  }
+});
+
+test("accountable approval roles retain least-privilege API read access", () => {
+  const readRoles = rolesForRoute("GET", "/api/patchforge/reports-packs");
+  for (const role of ["PatchForge.CABApprover", "PatchForge.RiskOwner", "PatchForge.ServiceOwner"]) {
+    assert.ok(readRoles.includes(role), `${role} should be able to read governed workflow context`);
+  }
+});
+
+test("finding intelligence requires a review linked to the current finding", () => {
+  const intelligence = buildFindingIntelligence({
+    vulnerability: {
+      vulnerability_id: "CVE-2026-REVIEW-SCOPE-001",
+      source_record_ids: ["source-current"],
+      sources: [],
+      affected_asset_ids: [],
+      affected_service_ids: [],
+      patch_status: "unknown"
+    },
+    reviews: [{
+      review_id: "review-unrelated",
+      vulnerability_id: "CVE-2026-OTHER-001",
+      source_record_id: "source-other",
+      reviewer: "security-lead"
+    }]
+  });
+
+  assert.ok(intelligence.evidence.gaps.includes("Human source review event"));
+});
+
+test("finding intelligence does not correlate prefix-collision CVE identifiers", () => {
+  const intelligence = buildFindingIntelligence({
+    vulnerability: {
+      vulnerability_id: "CVE-2026-0001",
+      canonical_id: "CVE-2026-0001",
+      sources: [],
+      affected_asset_ids: [],
+      affected_service_ids: [],
+      patch_status: "unknown"
+    },
+    vendorAdvisories: [{
+      advisory_id: "ADV-CVE-2026-00010",
+      cve: "CVE-2026-00010",
+      title: "Vendor notice for CVE-2026-00010",
+      known_exploited: true,
+      review_state: "pending_review"
+    }]
+  });
+
+  assert.equal(intelligence.source_context.vendor_advisory_count, 0);
+  assert.equal(intelligence.exploitability.known_exploited, false);
+});
+
+test("finding intelligence includes governed customer-network asset records", async () => {
+  const storageRoot = await mkdtemp(path.join(os.tmpdir(), "patchforge-intelligence-assets-"));
+  const storage = new PatchForgeJsonStorage(storageRoot);
+  try {
+    await storage.ingestVulnerability("tenant-a", {
+      vulnerability_id: "CVE-2026-CUSTOMER-ASSET-001",
+      affected_asset_ids: ["customer-network-asset-1"]
+    });
+    await storage.append("customer_network_assets", {
+      tenant_id: "tenant-a",
+      asset_id: "customer-network-asset-1",
+      model: "SRX4100",
+      product_family: "Juniper SRX",
+      review_state: "reviewed",
+      evidence_state: "accepted_positive_evidence",
+      internet_facing: true
+    });
+
+    const intelligence = await buildIntelligenceForTenant({
+      storage,
+      tenantId: "tenant-a",
+      vulnerabilityId: "CVE-2026-CUSTOMER-ASSET-001"
+    });
+    assert.equal(intelligence.exposure.affected_asset_count, 1);
+    assert.equal(intelligence.exposure.affected_assets[0].asset_id, "customer-network-asset-1");
+  } finally {
+    await rm(storageRoot, { recursive: true, force: true });
+  }
+});
+
+test("stored EPSS score contributes to Bayesian finding analysis", async () => {
+  await withApi(async (baseUrl) => {
+    await request(baseUrl, "/api/patchforge/vulnerabilities/ingest", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({
+        vulnerability_id: "CVE-2026-EPSS-001",
+        epss_score: 0.95,
+        patch_status: "unknown"
+      })
+    });
+    const analysis = await request(baseUrl, "/api/patchforge/vulnerabilities/CVE-2026-EPSS-001/analyse", {
+      method: "POST",
+      headers: { "x-tenant-id": "tenant-a" },
+      body: JSON.stringify({})
+    });
+    assert.equal(analysis.response.status, 200);
+    assert.equal(analysis.body.bayesian.exploit_probability_posterior, 0.37);
+  });
+});
+
+test("decision-pack evidence compiler ignores client-supplied hard-gate claims", () => {
+  const items = buildEvidenceItemsFromRecord({
+    sources: [{
+      source_record_id: "source-persisted",
+      source_class: "vendor_advisory",
+      review_state: "pending_review",
+      evidence_state: "referenced"
+    }]
+  }, [{
+    evidence_ref: "forged-client-evidence",
+    evidence_class: "human_review_signoff",
+    source_class: "human_review",
+    review_state: "reviewed",
+    evidence_state: "reviewed"
+  }]);
+
+  assert.deepEqual(items.map((item) => item.evidence_ref), ["source-persisted"]);
+});
+
+test("approval lineage is server-bound and cannot be forged by the request body", () => {
+  const requested = [{
+    approval_type: "final",
+    approval_state: "approved",
+    approver: "forged-cab-chair",
+    server_verified: true,
+    actor_roles: ["PatchForge.Admin"]
+  }];
+  const untrusted = bindApprovalEventsToPrincipal(requested, {
+    principal: { oid: "security-1", upn: "security@diiac.io", roles: ["PatchForge.SecurityLead"] }
+  });
+  assert.equal(untrusted[0].server_verified, false);
+  assert.deepEqual(untrusted[0].actor_roles, []);
+
+  const trusted = bindApprovalEventsToPrincipal(requested, {
+    principal: { oid: "cab-1", upn: "cab@diiac.io", roles: ["PatchForge.CABApprover"] }
+  });
+  assert.equal(trusted[0].server_verified, true);
+  assert.equal(trusted[0].approver, "cab@diiac.io");
+  assert.deepEqual(trusted[0].actor_roles, ["PatchForge.CABApprover"]);
+});
 
 async function withApi(run, options = {}) {
   const storageRoot = await mkdtemp(path.join(os.tmpdir(), "patchforge-api-"));
@@ -1214,6 +1392,8 @@ test("PatchForge catalogue, customer operational assets, ask, and reports APIs w
     });
     assert.equal(generated.response.status, 201);
     assert.equal(generated.body.decision_pack.final_approval_issued, false);
+    assert.equal(generated.body.decision_pack.report_template_version, REPORT_TEMPLATE_VERSION);
+    assert.equal(generated.body.decision_pack.report_context_version, REPORT_CONTEXT_VERSION);
     assert.equal(generated.body.pre_export_state.final_approval_issued, false);
     assert.ok(generated.body.report_quality_reviews.every((review) => review.status === "PASS"));
   });
@@ -1719,6 +1899,154 @@ test("admin config saves locally, masks secrets, and blocks live Azure mutation"
     assert.equal(blocked.response.status, 400);
     assert.equal(blocked.body.error, "live_azure_mutation_blocked");
   });
+});
+
+test("identical source refresh preserves review while changed content invalidates it", async () => {
+  const storageRoot = await mkdtemp(path.join(os.tmpdir(), "patchforge-source-review-"));
+  const storage = new PatchForgeJsonStorage(storageRoot);
+  let description = "Original reviewed description";
+  const sourceFeedClient = createSourceFeedClient({
+    fetchImpl: async () => jsonResponse({
+      catalogVersion: "test",
+      vulnerabilities: [{
+        cveID: "CVE-2026-REFRESH-001",
+        vendorProject: "Example Vendor",
+        product: "Gateway",
+        vulnerabilityName: "Reviewed refresh item",
+        shortDescription: description,
+        dateAdded: "2026-01-01",
+        dueDate: "2026-02-01"
+      }]
+    })
+  });
+  try {
+    await sourceFeedClient.refresh({ storage, tenantId: "tenant-a", body: { feed_id: "cisa-kev", limit: 1 } });
+    await storage.reviewVulnerability("tenant-a", "CVE-2026-REFRESH-001", {
+      source_record_id: "src-cisa-kev-CVE-2026-REFRESH-001",
+      reviewer: "security-lead",
+      review_state: "reviewed",
+      vulnerability_review_state: "reviewed",
+      evidence_state: "accepted_positive_evidence"
+    });
+
+    await sourceFeedClient.refresh({ storage, tenantId: "tenant-a", body: { feed_id: "cisa-kev", limit: 1 } });
+    const unchanged = await storage.getVulnerability("tenant-a", "CVE-2026-REFRESH-001");
+    assert.equal(unchanged.review_state, "reviewed");
+    assert.equal(unchanged.sources[0].evidence_state, "accepted_positive_evidence");
+
+    description = "Materially changed upstream description";
+    await sourceFeedClient.refresh({ storage, tenantId: "tenant-a", body: { feed_id: "cisa-kev", limit: 1 } });
+    const changed = await storage.getVulnerability("tenant-a", "CVE-2026-REFRESH-001");
+    assert.equal(changed.review_state, "pending_review");
+    assert.equal(changed.sources[0].evidence_state, "referenced");
+    assert.equal(changed.sources[0].review_invalidated_reason, "source_payload_changed");
+  } finally {
+    await rm(storageRoot, { recursive: true, force: true });
+  }
+});
+
+test("server revision hashes prevent replayed client hashes and top-level changes from preserving review", async () => {
+  const storageRoot = await mkdtemp(path.join(os.tmpdir(), "patchforge-source-hash-"));
+  const storage = new PatchForgeJsonStorage(storageRoot);
+  try {
+    await storage.ingestVulnerability("tenant-a", {
+      vulnerability_id: "CVE-2026-HASH-001",
+      title: "Original title",
+      severity: "high",
+      kev: true,
+      patch_available: true,
+      sources: [{
+        source_record_id: "src-hash-001",
+        source_class: "vendor_advisory",
+        source_name: "Vendor",
+        source_url: "https://vendor.example/advisory/1",
+        payload_hash: "client-controlled-hash"
+      }]
+    });
+    await storage.reviewVulnerability("tenant-a", "CVE-2026-HASH-001", {
+      source_record_id: "src-hash-001",
+      reviewer: "security-lead",
+      review_state: "reviewed",
+      vulnerability_review_state: "reviewed",
+      evidence_state: "accepted_positive_evidence"
+    });
+
+    await storage.ingestVulnerability("tenant-a", {
+      vulnerability_id: "CVE-2026-HASH-001",
+      title: "Materially changed title",
+      severity: "medium",
+      kev: false,
+      patch_available: false,
+      sources: [{
+        source_record_id: "src-hash-001",
+        source_class: "vendor_advisory",
+        source_name: "Vendor",
+        source_url: "https://vendor.example/advisory/2",
+        payload_hash: "client-controlled-hash"
+      }]
+    });
+    const changed = await storage.getVulnerability("tenant-a", "CVE-2026-HASH-001");
+    assert.equal(changed.review_state, "pending_review");
+    assert.equal(changed.sources[0].evidence_state, "referenced");
+    assert.notEqual(changed.sources[0].payload_hash, "client-controlled-hash");
+    assert.equal(changed.kev, false);
+    assert.equal(changed.patch_available, false);
+
+    await storage.reviewVulnerability("tenant-a", "CVE-2026-HASH-001", {
+      reviewer: "security-lead",
+      review_state: "reviewed",
+      vulnerability_review_state: "reviewed"
+    });
+    await storage.ingestVulnerability("tenant-a", {
+      vulnerability_id: "CVE-2026-HASH-001",
+      severity: "critical"
+    });
+    const topLevelChanged = await storage.getVulnerability("tenant-a", "CVE-2026-HASH-001");
+    assert.equal(topLevelChanged.review_state, "pending_review");
+  } finally {
+    await rm(storageRoot, { recursive: true, force: true });
+  }
+});
+
+test("admin health marks historical scheduler evidence as stale", async () => {
+  const storageRoot = await mkdtemp(path.join(os.tmpdir(), "patchforge-health-"));
+  const storage = new PatchForgeJsonStorage(storageRoot);
+  try {
+    await withEnv({ PATCHFORGE_SCHEDULER_ENABLED: "true" }, async () => {
+      await storage.append("source_feed_runs", {
+        tenant_id: "tenant-a",
+        run_id: "run-stale-1",
+        scheduler_run_id: "scheduler-stale-1",
+        feed_id: "cisa-kev",
+        status: "completed",
+        completed_at: "2000-01-01T00:00:00Z"
+      });
+      const health = await storage.adminHealth("tenant-a");
+      assert.equal(statusFor(health.checks, "Scheduler health"), "stale");
+    });
+  } finally {
+    await rm(storageRoot, { recursive: true, force: true });
+  }
+});
+
+test("manual source refresh history does not prove that the scheduler is configured", async () => {
+  const storageRoot = await mkdtemp(path.join(os.tmpdir(), "patchforge-manual-health-"));
+  const storage = new PatchForgeJsonStorage(storageRoot);
+  try {
+    await withEnv({ PATCHFORGE_SCHEDULER_ENABLED: undefined }, async () => {
+      await storage.append("source_feed_runs", {
+        tenant_id: "tenant-a",
+        run_id: "manual-refresh-1",
+        feed_id: "cisa-kev",
+        status: "completed",
+        completed_at: new Date().toISOString()
+      });
+      const health = await storage.adminHealth("tenant-a");
+      assert.equal(statusFor(health.checks, "Scheduler health"), "pending");
+    });
+  } finally {
+    await rm(storageRoot, { recursive: true, force: true });
+  }
 });
 
 test("admin purge previews and requires typed confirmation before deleting records", async () => {
@@ -2390,6 +2718,23 @@ test("auth gate requires a valid bearer token and PatchForge app role when enabl
     }
     return { roles: [], tid: "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da", oid: "user-empty" };
   });
+});
+
+test("triage role cannot use a signed-pack generation alias", async () => {
+  await withAuthenticatedApi(async (baseUrl) => {
+    const forbidden = await request(baseUrl, "/api/patchforge/reports/generate", {
+      method: "POST",
+      headers: { authorization: "Bearer triage" },
+      body: JSON.stringify({ vulnerability_id: "CVE-2026-FORGED-PACK-001" })
+    });
+    assert.equal(forbidden.response.status, 403);
+    assert.equal(forbidden.body.error, "insufficient_patchforge_role");
+  }, async () => ({
+    roles: ["PatchForge.TriageAnalyst"],
+    tid: "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+    oid: "triage-oid",
+    upn: "triage@diiac.io"
+  }));
 });
 
 test("auth config accepts both API identifier URI and API client ID audiences", () => {
