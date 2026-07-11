@@ -1,0 +1,38 @@
+{
+  "release": "PF-AZ-MODERN-UI-20260711",
+  "date": "2026-07-11",
+  "source_commit": "907995fdf1ea290a7e551463e461af8a884cf44c",
+  "branch": "codex/patchforge-rebuild-20260601",
+  "image_tag": "pfaz-modern-ui-20260711-907995f",
+  "deployment_method": "targeted_container_app_image_and_release_metadata_update",
+  "deployment_completed_at_utc": "2026-07-11T18:04:19.4387899Z",
+  "public_smoke_completed_at_utc": "2026-07-11T18:04:37.7826992Z",
+  "git": {
+    "local_remote_match": true,
+    "draft_pull_request": "https://github.com/neil9bailey/diiac-patchforge/pull/2",
+    "merge_state": "clean",
+    "checks_passed": 8
+  },
+  "local_tests": {
+    "python_contracts_runtime": 30,
+    "backend_api": 62,
+    "frontend": 20,
+    "windows_collector": 5
+  },
+  "full_bicep_apply": {
+    "performed": false,
+    "status": "blocked_due_to_live_topology_drift_risk",
+    "what_if": {
+      "modify": 18,
+      "no_change": 9,
+      "unsupported": 13,
+      "ignore": 3
+    }
+  },
+  "azure_rollout": {
+    "apps_updated": 6,
+    "apps_verified": 6,
+    "rollback_invoked": false
+  },
+  "release_state": "azure_public_and_responsive_shell_validated_signed_in_uat_pending"
+}

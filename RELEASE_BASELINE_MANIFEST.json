@@ -1,88 +1,121 @@
 {
   "product": "DIIaC PatchForge",
-  "baseline_id": "PF-AZ11-CUSTOMER-DEMO-MATURITY",
-  "baseline_name": "Catalogue-first customer demo maturity and operational intelligence rebuild",
-  "baseline_date": "2026-06-04",
+  "baseline_id": "PF-AZ-MODERN-UI-20260711",
+  "baseline_name": "Modern enterprise user experience and governed automation readiness",
+  "baseline_date": "2026-07-11",
   "target_url": "https://patchforge.diiac.io",
   "api_url": "https://api.patchforge.diiac.io",
   "remote_target": "neil9bailey/diiac-patchforge",
-  "release_state": "azure_public_smoke_validated_signed_in_uat_pending",
+  "branch": "codex/patchforge-rebuild-20260601",
+  "draft_pull_request": "https://github.com/neil9bailey/diiac-patchforge/pull/2",
+  "source_commit": "907995fdf1ea290a7e551463e461af8a884cf44c",
+  "release_state": "azure_public_and_responsive_shell_validated_signed_in_uat_pending",
   "deployment_performed": true,
+  "deployment_method": "targeted_container_app_image_and_release_metadata_update",
+  "full_bicep_apply_performed": false,
+  "full_bicep_apply_disposition": {
+    "status": "blocked_due_to_live_topology_drift_risk",
+    "what_if": {
+      "modify": 18,
+      "no_change": 9,
+      "unsupported": 13,
+      "ignore": 3
+    }
+  },
   "uses_existing_azure_resources": true,
   "new_azure_resources_created_in_this_increment": false,
   "azure_resource_group": "rg-diiac-patchforge-prod",
-  "azure_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+  "azure_region": "uksouth",
   "storage_state": "postgresql_live",
   "auth_state": "entra_rbac_required",
   "signing_state": "azure_key_vault_required_for_production_runtime",
-  "current_frontend_image_tag": "pfaz11-20260603-f56fd2b",
-  "current_backend_image_tag": "pfrebuild-20260601-43f953c",
-  "current_runtime_image_tag": "pfrebuild-20260601-43f953c",
-  "current_frontend_commit": "f56fd2b",
-  "current_rebuild_commit": "43f953c",
-  "release_commits": [
-    "43f953c",
-    "f56fd2b"
+  "current_image_tag": "pfaz-modern-ui-20260711-907995f",
+  "report_context_version": "patchforge-report-context.pfaz-modern-ui-20260711.v1",
+  "image_digests": {
+    "frontend": "sha256:50feacc4163fd54dc53218434108f598cec0d06780898c7cf078a86df6d15f49",
+    "bridge_api": "sha256:e0db40d5ccaaaff797142d74ada7053f5ba0c773f4b148a41d5f12a7e81105fb",
+    "runtime": "sha256:81a0c2bf505427583225000abb9f15cb64ffc4f4215c47bce911a509bdee0e3d",
+    "sra": "sha256:8c0f5db8b1144279ee54504354adf77dbdcec363848c0efb6c22fb24c0deafc7",
+    "worker": "sha256:2a9ef9a9ce8abdc87f577c78dda287b31430c448e1e152b067e5ad77e038a33d",
+    "scheduler": "sha256:88bd431c55e4fe1e4b5689ce904cce7fbf9f3b82dceac31ed6de5978a8336c22"
+  },
+  "current_active_revisions": {
+    "ui": "ca-patchforge-ui-prod--0000040",
+    "bridge_api": "ca-patchforge-bridge-prod--0000039",
+    "runtime": "ca-patchforge-runtime-prod--0000030",
+    "sra": "ca-patchforge-sra-prod--0000029",
+    "worker": "ca-patchforge-worker-prod--0000029",
+    "scheduler": "ca-patchforge-scheduler-prod--0000029"
+  },
+  "scope": [
+    "modern enterprise shell with clear navigation, status, command, and account context",
+    "responsive signed-out and signed-in workspace behavior",
+    "Patch and CVE catalogue with evidence-led intelligence",
+    "vendor catalogue and customer estate workflows",
+    "Ask PatchForge governed advisory workflow",
+    "reports and signed action-pack workflows",
+    "admin operational intelligence and safe diagnostics",
+    "fail-closed build, image, deployment, and rollback workflow hardening"
   ],
-  "previous_validated_release": {
+  "top_level_navigation": [
+    "Patch & CVE Catalogue",
+    "Vendor Catalogue",
+    "Customer Estate",
+    "Ask PatchForge",
+    "Reports",
+    "Admin"
+  ],
+  "current_validation": {
+    "python_tests": "pass_30",
+    "backend_tests": "pass_62",
+    "frontend_tests": "pass_20",
+    "windows_collector_tests": "pass_5",
+    "frontend_build": "pass_vite_595_65_kb_chunk_advisory_only",
+    "github_checks": "pass_8",
+    "acr_image_digest_verification": "pass_6",
+    "container_app_revision_readback": "pass_6",
+    "container_app_release_metadata_readback": "pass_6",
+    "ui_http_200": "pass",
+    "api_health_http_200": "pass",
+    "api_readiness_http_200_postgresql_auth_tenant": "pass",
+    "protected_route_unauthenticated_401": "pass",
+    "live_signed_out_browser_desktop": "pass_1280x720",
+    "live_signed_out_browser_mobile": "pass_390x844_no_horizontal_overflow",
+    "browser_console_warnings_errors": "pass_none",
+    "signed_in_six_area_uat": "pending_not_claimed",
+    "fresh_signed_pack_generation": "pending_not_claimed",
+    "fresh_docx_pdf_report_review": "pending_not_claimed",
+    "production_validation_record_cleanup": "pending_not_applicable_until_uat_records_exist"
+  },
+  "release_metadata_readback": {
+    "image_tag": "pfaz-modern-ui-20260711-907995f",
+    "container_image_tag": "pfaz-modern-ui-20260711-907995f",
+    "commit_sha": "907995fdf1ea290a7e551463e461af8a884cf44c",
+    "renderer_commit": "907995fdf1ea290a7e551463e461af8a884cf44c",
+    "product_baseline": "PF-AZ-MODERN-UI-20260711",
+    "report_context_version": "patchforge-report-context.pfaz-modern-ui-20260711.v1"
+  },
+  "evidence_paths": [
+    "docs/release/evidence/2026-07-11-patchforge-modern-ui/"
+  ],
+  "known_blockers": [
+    {
+      "id": "iac_live_state_reconciliation",
+      "status": "open",
+      "detail": "The full Bicep desired-state model must be reconciled with the live PostgreSQL topology before a broad template apply is safe."
+    },
+    {
+      "id": "signed_in_uat_and_report_proof",
+      "status": "open",
+      "detail": "Signed-in six-area UAT, a fresh signed pack, and Customer, Board, and CAB DOCX/PDF proof remain required human validation gates."
+    }
+  ],
+  "previous_fully_signed_in_validated_release": {
     "baseline_id": "PF-AZ10-SIMPLIFIED-EXPERIENCE",
     "image_tag": "pfaz10-20260530-e728ec0",
     "commit": "e728ec0",
     "release_state": "azure_live_browser_validated"
   },
-  "scope": [
-    "catalogue-first Security Action Center",
-    "Vendors & Exploits Register for vendor, CVE, exploit-signal, patch, and hotfix evidence",
-    "Customer Operational Assets for devices, services, configuration evidence, and exposure matching",
-    "Patch / Hotfix Compare for current and proposed version review",
-    "Ask PatchForge deterministic advisory workflow with human accountability",
-    "Reports for signed packs, customer reports, board summaries, CAB reports, technical appendices, and verification",
-    "Admin as system and data health"
-  ],
-  "top_level_navigation": [
-    "Security Action Center",
-    "Vendors & Exploits Register",
-    "Customer Operational Assets",
-    "Patch / Hotfix Compare",
-    "Ask PatchForge",
-    "Reports",
-    "Admin"
-  ],
-  "current_active_revisions": {
-    "ui": "ca-patchforge-ui-prod--0000029",
-    "bridge_api": "ca-patchforge-bridge-prod--0000025",
-    "runtime": "ca-patchforge-runtime-prod--0000023",
-    "sra": "ca-patchforge-sra-prod--0000022",
-    "worker": "ca-patchforge-worker-prod--0000022",
-    "scheduler": "ca-patchforge-scheduler-prod--0000022"
-  },
-  "current_validation": {
-    "frontend_tests": "pass_10",
-    "frontend_build": "pass_vite_chunk_size_warning_only",
-    "ui_http_200": "pass",
-    "api_health_http_200": "pass",
-    "protected_security_action_center_unauthenticated_401": "pass",
-    "live_signed_out_browser_shell": "pass",
-    "signed_in_patchforge_admin_uat": "pending_not_claimed",
-    "fresh_pfaz11_signed_pack_generation": "pending_not_claimed",
-    "fresh_pfaz11_docx_pdf_report_review": "pending_not_claimed",
-    "production_validation_record_cleanup_after_pfaz11_uat": "pending_not_applicable_until_uat_records_are_created"
-  },
-  "evidence_paths": [
-    "docs/release/evidence/2026-06-01-patchforge-rebuild-live-deploy/"
-  ],
-  "known_blockers": [
-    {
-      "id": "azure_cli_api_token_consent",
-      "status": "open",
-      "detail": "Azure CLI token acquisition for the PatchForge API returns AADSTS65001 for the Azure CLI application. Browser/MSAL remains the protected UI validation path."
-    },
-    {
-      "id": "pfaz11_signed_in_uat",
-      "status": "open",
-      "detail": "Full signed-in seven-area UAT and fresh PF-AZ11 report proof are not yet claimed."
-    }
-  ],
   "report_stamp_fields": [
     "report_template_version",
     "report_renderer_commit",

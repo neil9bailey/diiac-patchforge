@@ -1,12 +1,85 @@
 # Current Release
 
+## DIIaC PatchForge PF-AZ-MODERN-UI-20260711
+
+Release state: deployed to Azure and validated through public HTTP plus responsive signed-out browser checks; signed-in six-area UAT and fresh signed report proof remain pending human gates.
+
+Date: 2026-07-11
+
+PF-AZ-MODERN-UI-20260711 modernises PatchForge into a human-centred enterprise workspace with six clear operating areas: Patch & CVE Catalogue, Vendor Catalogue, Customer Estate, Ask PatchForge, Reports, and Admin. It also hardens release planning, immutable image publishing, targeted deployment, release-metadata truth, readiness polling, and automatic rollback behavior.
+
+Source and delivery state:
+
+- Branch: `codex/patchforge-rebuild-20260601`
+- Commit: `907995fdf1ea290a7e551463e461af8a884cf44c`
+- Image tag: `pfaz-modern-ui-20260711-907995f`
+- Draft PR: `https://github.com/neil9bailey/diiac-patchforge/pull/2`
+- GitHub checks: PASS, 8
+- Local and remote branch heads: MATCH
+
+Current active revisions:
+
+- UI: `ca-patchforge-ui-prod--0000040`
+- Bridge/API: `ca-patchforge-bridge-prod--0000039`
+- Runtime: `ca-patchforge-runtime-prod--0000030`
+- SRA: `ca-patchforge-sra-prod--0000029`
+- Worker: `ca-patchforge-worker-prod--0000029`
+- Scheduler: `ca-patchforge-scheduler-prod--0000029`
+
+Current immutable image digests:
+
+- UI: `sha256:50feacc4163fd54dc53218434108f598cec0d06780898c7cf078a86df6d15f49`
+- Bridge/API: `sha256:e0db40d5ccaaaff797142d74ada7053f5ba0c773f4b148a41d5f12a7e81105fb`
+- Runtime: `sha256:81a0c2bf505427583225000abb9f15cb64ffc4f4215c47bce911a509bdee0e3d`
+- SRA: `sha256:8c0f5db8b1144279ee54504354adf77dbdcec363848c0efb6c22fb24c0deafc7`
+- Worker: `sha256:2a9ef9a9ce8abdc87f577c78dda287b31430c448e1e152b067e5ad77e038a33d`
+- Scheduler: `sha256:88bd431c55e4fe1e4b5689ce904cce7fbf9f3b82dceac31ed6de5978a8336c22`
+
+Validated for PF-AZ-MODERN-UI-20260711:
+
+- Python contracts/runtime tests: PASS, 30
+- Backend API tests: PASS, 62
+- Frontend tests: PASS, 20
+- Windows collector tests: PASS, 5
+- Frontend production build: PASS; 595.65 kB Vite chunk-size advisory remains
+- ACR exact-tag and local RepoDigest verification: PASS, 6 images
+- Targeted Azure rollout: PASS, 6 apps
+- Single-revision, latest-ready, health, provisioning, and 100% traffic readback: PASS, 6 apps
+- Release metadata readback for tag, full commit, renderer commit, baseline, and report context: PASS, 6 apps
+- UI HTTP 200: PASS
+- API health HTTP 200: PASS
+- API readiness HTTP 200 with PostgreSQL, auth required, and tenant required: PASS
+- Protected route without authentication HTTP 401: PASS
+- Production signed-out desktop shell at 1280x720: PASS
+- Production signed-out mobile shell at 390x844 with no horizontal overflow: PASS
+- Production browser warnings/errors: none
+
+Deployment disposition:
+
+- The full Bicep apply was not performed. Exact-tag what-if reported 18 modifications, 9 no-change resources, 13 unsupported items, and 3 ignored items, including unsafe live topology/storage drift.
+- Only the six existing Container App images and their non-secret release metadata were updated.
+- Two local rollback archives were retained outside the repository: the original June baseline and the immediately preceding July image set.
+
+Not yet claimed for PF-AZ-MODERN-UI-20260711:
+
+- signed-in Microsoft Entra UAT through all six operating areas
+- fresh signed action-pack generation and verification
+- fresh Customer, Board, and CAB DOCX/PDF export and visual review
+- production validation-record cleanup after signed-in UAT
+
+Evidence path:
+
+- `docs/release/evidence/2026-07-11-patchforge-modern-ui/`
+
+PF-AZ-MODERN-UI-20260711 does not add vulnerability scanning, exploit generation, procedural exploit steps, patch deployment, autonomous evidence-gate closure, autonomous CAB approval, or autonomous risk acceptance.
+
 ## DIIaC PatchForge PF-AZ11-CUSTOMER-DEMO-MATURITY
 
 Release state: deployed to Azure with public UI/API smoke validation complete; signed-in PF-AZ11 end-user UAT and fresh PF-AZ11 report export proof remain pending.
 
 Date: 2026-06-04
 
-PF-AZ11-CUSTOMER-DEMO-MATURITY is the current application baseline for the catalogue-first PatchForge rebuild. It presents the seven-area operating model: Security Action Center, Vendors & Exploits Register, Customer Operational Assets, Patch / Hotfix Compare, Ask PatchForge, Reports, and Admin.
+PF-AZ11-CUSTOMER-DEMO-MATURITY is a historical application baseline for the catalogue-first PatchForge rebuild. It presented the seven-area operating model: Security Action Center, Vendors & Exploits Register, Customer Operational Assets, Patch / Hotfix Compare, Ask PatchForge, Reports, and Admin.
 
 Current deployed image state:
 
@@ -697,7 +770,7 @@ Internal endpoints:
 
 ## Deployment State
 
-Latest deployment performed on 2026-05-28.
+Latest deployment performed on 2026-07-11.
 
 Target:
 
@@ -722,8 +795,9 @@ Deployment evidence:
 - `docs/release/evidence/2026-05-27-patchforge-pfaz9-vendorlens/`
 - `docs/release/evidence/2026-05-27-patchforge-pfaz10-ui-vendorlens-ciso-compare/`
 - `docs/release/evidence/2026-05-28-patchforge-pfaz9a-vendorlens-report-proof/`
+- `docs/release/evidence/2026-07-11-patchforge-modern-ui/`
 
-Latest PF-AZ9A-VENDORLENS revisions:
+Historical PF-AZ9A-VENDORLENS revisions:
 
 - UI: `ca-patchforge-ui-prod--0000018`
 - Bridge/API: `ca-patchforge-bridge-prod--0000017`
