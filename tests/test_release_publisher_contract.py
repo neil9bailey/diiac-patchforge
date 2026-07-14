@@ -28,3 +28,14 @@ def test_pre_update_failure_does_not_claim_that_rollback_ran():
     assert "$containerAppUpdateAttempted = $attemptedApps.Count -gt 0" in source
     assert '"failed_before_containerapp_update"' in source
     assert "No application rollback is required." in source
+
+
+def test_key_vault_parsing_supports_current_and_legacy_cli_schemas():
+    source = publisher_source()
+
+    assert "function Get-KeyVaultSignatureValue" in source
+    assert '@("signature", "result", "value")' in source
+    assert "function Test-KeyVaultVerificationResult" in source
+    assert '@("isValid", "value", "result")' in source
+    assert source.count("Get-KeyVaultSignatureValue -SignResult $signResult") == 2
+    assert source.count("Test-KeyVaultVerificationResult -VerifyResult $verifyResult") == 2
