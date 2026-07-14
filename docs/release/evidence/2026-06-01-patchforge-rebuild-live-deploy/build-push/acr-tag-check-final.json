@@ -1,0 +1,32 @@
+[
+    {
+        "repository":  "diiac/patchforge-frontend",
+        "tag":  "pfrebuild-20260601-43f953c",
+        "found":  true
+    },
+    {
+        "repository":  "diiac/patchforge-bridge",
+        "tag":  "pfrebuild-20260601-43f953c",
+        "found":  true
+    },
+    {
+        "repository":  "diiac/patchforge-runtime",
+        "tag":  "pfrebuild-20260601-43f953c",
+        "found":  true
+    },
+    {
+        "repository":  "diiac/patchforge-sra-agent",
+        "tag":  "pfrebuild-20260601-43f953c",
+        "found":  true
+    },
+    {
+        "repository":  "diiac/patchforge-ingest-worker",
+        "tag":  "pfrebuild-20260601-43f953c",
+        "found":  true
+    },
+    {
+        "repository":  "diiac/patchforge-scheduler",
+        "tag":  "pfrebuild-20260601-43f953c",
+        "found":  true
+    }
+]

@@ -1,7 +1,7 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import App from "./App";
-import { FindingIntelligence, PatchForgeApi, PatchForgeMetrics } from "./api";
+import { FindingEvidenceQueue, FindingIntelligence, PatchForgeApi, PatchForgeMetrics } from "./api";
 import { PatchForgeAuthSession } from "./auth";
 
 const metrics: PatchForgeMetrics = {
@@ -242,6 +242,113 @@ const comparison = {
   final_approval_issued: false
 };
 
+const discoveryOverview = {
+  tenant_id: "diiac.io",
+  generated_at: "2026-06-11T19:30:00Z",
+  categories: ["network_device", "security_appliance", "physical_server", "virtual_server", "hypervisor"],
+  collectors: [{
+    collector_id: "collector-customer-estate-mvp",
+    name: "Customer estate collector MVP",
+    platform: "windows",
+    site: "Primary site",
+    enabled_categories: ["network_device", "security_appliance"],
+    connection_mode: "outbound_only",
+    status: "registered",
+    last_seen_at: null,
+    advisory_only: true,
+    review_required: true,
+    no_vulnerability_scanning: true,
+    no_patch_deployment: true,
+    final_approval_issued: false
+  }],
+  policies: [{
+    policy_id: "policy-customer-estate-mvp",
+    collector_id: "collector-customer-estate-mvp",
+    name: "Read-only customer estate snapshot",
+    enabled: true,
+    categories: ["network_device", "security_appliance"],
+    discovery_methods: ["manual_snapshot"],
+    schedule: "manual",
+    credential_reference: "customer-vault:patchforge/read-only-discovery",
+    read_only: true,
+    outbound_only: true,
+    advisory_only: true,
+    review_required: true,
+    final_approval_issued: false
+  }],
+  recent_runs: [{
+    run_id: "run-customer-estate-mvp",
+    collector_id: "collector-customer-estate-mvp",
+    policy_id: "policy-customer-estate-mvp",
+    status: "completed",
+    completed_at: "2026-06-11T19:31:00Z",
+    received_asset_count: 1,
+    imported_asset_count: 1,
+    rejected_asset_count: 0,
+    categories: ["security_appliance"],
+    discovery_method: "manual_snapshot",
+    final_approval_issued: false
+  }],
+  metrics: {
+    collector_count: 1,
+    enabled_policy_count: 1,
+    collector_imported_asset_count: 1,
+    pending_review_asset_count: 1,
+    last_import_at: "2026-06-11T19:31:00Z"
+  },
+  boundary: {
+    advisory_only: true,
+    outbound_collector_only: true,
+    no_vulnerability_scanning: true,
+    no_patch_deployment: true,
+    final_approval_issued: false
+  }
+};
+
+const findingEvidenceQueue: FindingEvidenceQueue = {
+  tenant_id: "diiac.io",
+  vulnerability_id: "CVE-2026-REAL-001",
+  supported_evidence_classes: ["affected_asset_scope", "human_review_signoff"],
+  evidence: [{
+    tenant_id: "diiac.io",
+    evidence_id: "evidence-pending-1",
+    vulnerability_id: "CVE-2026-REAL-001",
+    evidence_class: "affected_asset_scope",
+    summary: "Customer asset scope confirmed",
+    source_refs: ["CHG-1001"],
+    content_hash: "sha256:pending-content",
+    finding_revision_hash: "sha256:finding-revision",
+    latest_event_hash: "sha256:submitted-event",
+    event_count: 1,
+    replay_verified: true,
+    expired: false,
+    expiry_evaluated_at: "2026-07-14T10:00:00Z",
+    review_state: "pending_review",
+    evidence_state: "pending_review",
+    final_approval_issued: false
+  }, {
+    tenant_id: "diiac.io",
+    evidence_id: "evidence-expired-1",
+    vulnerability_id: "CVE-2026-REAL-001",
+    evidence_class: "affected_asset_scope",
+    summary: "Expired customer configuration snapshot",
+    content_hash: "sha256:expired-content",
+    finding_revision_hash: "sha256:finding-revision",
+    latest_event_hash: "sha256:rejected-event",
+    event_count: 2,
+    replay_verified: true,
+    expires_at: "2026-07-01T10:00:00Z",
+    expired: true,
+    expiry_evaluated_at: "2026-07-14T10:00:00Z",
+    review_state: "rejected",
+    evidence_state: "rejected",
+    final_approval_issued: false
+  }],
+  evidence_events: [],
+  audit_replay: [],
+  boundary: { final_approval_issued: false }
+};
+
 function createApi(overrides: Partial<PatchForgeApi> = {}): PatchForgeApi {
   const base: PatchForgeApi = {
     metrics: vi.fn(async () => metrics),
@@ -336,6 +443,11 @@ function createApi(overrides: Partial<PatchForgeApi> = {}): PatchForgeApi {
         title: "CAB Patch Decision Report",
         audience: "Change Advisory Board",
         formats: ["docx", "pdf"]
+      }, {
+        report_type: "technical_evidence_appendix",
+        title: "Technical Evidence Appendix",
+        audience: "Security engineering and audit",
+        formats: ["docx", "pdf"]
       }],
       decision_packs: [{
         decision_pack_id: "PF-TEST-0001",
@@ -380,6 +492,13 @@ function createApi(overrides: Partial<PatchForgeApi> = {}): PatchForgeApi {
           pack_id: "PF-TEST-0001",
           status: "PASS" as const,
           checks: [{ name: "required_evidence", status: "pass" as const }],
+          final_approval_issued: false
+        }, {
+          review_id: "report-review-technical",
+          report_type: "technical_evidence_appendix",
+          pack_id: "PF-TEST-0001",
+          status: "PASS" as const,
+          checks: [{ name: "metadata_present", status: "pass" as const }],
           final_approval_issued: false
         }]
       }
@@ -436,6 +555,11 @@ function createApi(overrides: Partial<PatchForgeApi> = {}): PatchForgeApi {
       report_type: "cab_patch_decision_report",
       title: "CAB Patch Decision Report",
       audience: "Change Advisory Board",
+      formats: ["docx", "pdf"]
+    }, {
+      report_type: "technical_evidence_appendix",
+      title: "Technical Evidence Appendix",
+      audience: "Security engineering and audit",
       formats: ["docx", "pdf"]
     }]),
     downloadDecisionPackReport: vi.fn(async () => new Blob(["report"], { type: "application/pdf" })),
@@ -506,6 +630,23 @@ function createApi(overrides: Partial<PatchForgeApi> = {}): PatchForgeApi {
     }]),
     listCustomerNetworkAssets: vi.fn(async () => [asset]),
     upsertCustomerNetworkAsset: vi.fn(async (_tenantId, payload) => ({ ...asset, ...payload, asset_id: String(payload.asset_id || asset.asset_id) })),
+    assetDiscoveryOverview: vi.fn(async () => discoveryOverview),
+    registerAssetCollector: vi.fn(async (_tenantId, payload) => ({
+      ...discoveryOverview.collectors[0],
+      ...payload,
+      collector_id: String(payload.collector_id || discoveryOverview.collectors[0].collector_id)
+    })),
+    upsertAssetDiscoveryPolicy: vi.fn(async (_tenantId, payload) => ({
+      ...discoveryOverview.policies[0],
+      ...payload,
+      policy_id: String(payload.policy_id || discoveryOverview.policies[0].policy_id)
+    })),
+    importDiscoveredAssets: vi.fn(async () => ({
+      run: discoveryOverview.recent_runs[0],
+      imported_assets: [{ ...asset, asset_id: "disc-srx4100-edge-1", discovery_source: "patchforge_collector", review_state: "pending_review" }],
+      rejected_assets: [],
+      boundary: discoveryOverview.boundary
+    })),
     listVendorSecurityAdvisories: vi.fn(async () => [advisory]),
     ingestVendorSecurityAdvisory: vi.fn(async (_tenantId, payload) => ({ ...advisory, advisory_id: String(payload.advisory_id || advisory.advisory_id) })),
     refreshVendorLensSource: vi.fn(async () => ({
@@ -572,6 +713,24 @@ function createApi(overrides: Partial<PatchForgeApi> = {}): PatchForgeApi {
     actionCenter: vi.fn(async () => [finding]),
     findingIntelligence: vi.fn(async () => finding),
     analyseFinding: vi.fn(async () => ({ intelligence: finding })),
+    findingEvidence: vi.fn(async () => findingEvidenceQueue),
+    submitFindingEvidence: vi.fn(async (_tenantId, vulnerabilityId, payload) => ({
+      ...findingEvidenceQueue.evidence[0],
+      evidence_id: "evidence-submitted-2",
+      vulnerability_id: vulnerabilityId,
+      evidence_class: String(payload.evidence_class || "affected_asset_scope"),
+      summary: String(payload.summary || "Submitted evidence")
+    })),
+    reviewFindingEvidence: vi.fn(async (_tenantId, _vulnerabilityId, _evidenceId, payload) => ({
+      ...findingEvidenceQueue.evidence[0],
+      review_state: payload.decision === "accept" ? "reviewed" : "rejected",
+      evidence_state: payload.decision === "accept" ? "accepted_positive_evidence" : "rejected"
+    })),
+    reopenFindingEvidence: vi.fn(async () => ({
+      ...findingEvidenceQueue.evidence[1],
+      review_state: "reopened",
+      evidence_state: "pending_review"
+    })),
     sraResearch: vi.fn(async () => ({ sra: { advisory_only: true, can_close_evidence_gates_alone: false } })),
     adminHealth: vi.fn(async () => ({
       tenant_id: "diiac.io",
@@ -582,6 +741,14 @@ function createApi(overrides: Partial<PatchForgeApi> = {}): PatchForgeApi {
         { name: "Signing trust", status: "ready", mode: "key-vault" }
       ]
     })),
+    adminPurge: vi.fn(async () => ({
+      dry_run: true,
+      scopes: ["reports"],
+      collections: ["decision_packs"],
+      counts: { decision_packs: 1 },
+      total_records: 1,
+      required_confirmation: "FACTORY_RESET_PATCHFORGE"
+    })),
     adminConfig: vi.fn(async () => ({
       general: { environment: "Production", governance_tier: "Enterprise Strict" }
     })),
@@ -591,31 +758,89 @@ function createApi(overrides: Partial<PatchForgeApi> = {}): PatchForgeApi {
 }
 
 describe("PatchForge simplified customer experience", () => {
-  it("renders the five simplified top-level functions and the global catalogue", async () => {
+  it("renders the six PatchForge top-level areas and the patch catalogue", async () => {
     const api = createApi();
     render(<App auth={auth} api={api} />);
 
     await waitFor(() => expect(api.securityActionCenter).toHaveBeenCalled());
 
-    expect(screen.getAllByRole("heading", { name: "Global Security Action Center" }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByRole("region", { name: "Patch & CVE Catalogue" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Patch & CVE Catalogue" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Vendor Catalogue" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Customer Estate" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Ask PatchForge" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Reports & Packs" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reports" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Admin" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Security Action Center" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Vendors & Exploits Register" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Patch / Hotfix Compare" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "VendorLens" })).not.toBeInTheDocument();
-    expect(screen.getByText("Vendor Groups")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "What needs attention today?" })).toBeInTheDocument();
     expect(screen.getAllByText("Fortinet").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("CVE-2026-REAL-001").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText("Grouped CVE / Advisory Catalogue")).toBeInTheDocument();
-    expect(screen.getByText("CVE Detail")).toBeInTheDocument();
-    expect(screen.getByText("Evidence & Approval")).toBeInTheDocument();
-  });
+    expect(screen.getByRole("heading", { name: "Priority action queue" })).toBeInTheDocument();
+    expect(screen.getByText("Urgent Scope Confirmation Required")).toBeInTheDocument();
+    expect(screen.getByText("Recommended next step")).toBeInTheDocument();
+    expect(screen.getByText("PatchForge prepares the evidence. An accountable human approves the decision.")).toBeInTheDocument();
+    expect(screen.getByRole("row", { name: /CVE-2026-REAL-001 Fortinet/i })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("cell", { name: "CVE-2026-REAL-001" })).toHaveAttribute("data-label", "CVE");
+    expect(screen.getByRole("button", { name: "Ask PatchForge about selected record" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Needs review" }));
+    expect(screen.getByRole("button", { name: "Needs review" })).toHaveAttribute("aria-pressed", "true");
+  }, 15000);
 
-  it("searches the global security action center with customer and patch filters", async () => {
+  it("routes the global command search into the governed catalogue", async () => {
     const api = createApi();
     render(<App auth={auth} api={api} />);
 
-    await screen.findAllByRole("heading", { name: "Global Security Action Center" });
+    await screen.findByRole("heading", { name: "What needs attention today?" });
+    fireEvent.click(screen.getByRole("button", { name: "Reports" }));
+    const commandSearch = screen.getByLabelText("Search PatchForge");
+    fireEvent.change(commandSearch, { target: { value: "CVE-2026-REAL-001" } });
+    fireEvent.submit(commandSearch.closest("form")!);
+
+    await waitFor(() => expect(api.searchSecurityActionCenter).toHaveBeenCalledWith("diiac.io", expect.objectContaining({ q: "CVE-2026-REAL-001" })));
+    expect(screen.getByRole("heading", { name: "What needs attention today?" })).toBeInTheDocument();
+  });
+
+  it("prepares a catalogue pack without inheriting an unrelated asset", async () => {
+    const api = createApi();
+    render(<App auth={auth} api={api} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Prepare decision pack" }));
+
+    await waitFor(() => expect(api.generateReportsPack).toHaveBeenCalledWith("diiac.io", expect.objectContaining({
+      vulnerability_id: "CVE-2026-REAL-001",
+      advisory_id: "FG-PFAZ10-SSLVPN",
+      asset_id: undefined
+    })));
+  }, 15000);
+
+  it("never treats unreviewed or rejected evidence as verified", async () => {
+    const guardedCatalogue = {
+      ...securityActionCenterState,
+      catalogue_rows: [{
+        ...securityActionCenterState.catalogue_rows[0],
+        review_state: "reviewed",
+        evidence_state: "rejected"
+      }]
+    };
+    const api = createApi({
+      securityActionCenter: vi.fn(async () => guardedCatalogue),
+      actionCenter: vi.fn(async () => [])
+    });
+    render(<App auth={auth} api={api} />);
+
+    expect(await screen.findByRole("cell", { name: "Needs review" })).toBeInTheDocument();
+    expect(screen.queryByText("Verified evidence")).not.toBeInTheDocument();
+    expect(screen.getByText(/Confidence not recorded/)).toBeInTheDocument();
+  }, 15000);
+
+  it("searches the security action center with customer and patch filters", async () => {
+    const api = createApi();
+    render(<App auth={auth} api={api} />);
+
+    await screen.findByRole("region", { name: "Patch & CVE Catalogue" });
     fireEvent.change(screen.getByLabelText("Search"), { target: { value: "SSL-VPN FortiGate 7.2.7" } });
     fireEvent.change(screen.getByLabelText("Customer match"), { target: { value: "true" } });
     fireEvent.change(screen.getByLabelText("Patch available"), { target: { value: "true" } });
@@ -628,12 +853,31 @@ describe("PatchForge simplified customer experience", () => {
     })));
   });
 
+  it("registers a real collector path and downloads config without sample imports", async () => {
+    const api = createApi();
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+    render(<App auth={auth} api={api} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Customer Estate" }));
+    expect(await screen.findByRole("heading", { name: "Collector Intake" }, { timeout: 20000 })).toBeInTheDocument();
+    expect(screen.getByText("Outbound-only | review required")).toBeInTheDocument();
+    expect(screen.getByText(/network device/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Register Collector" }));
+    await waitFor(() => expect(api.registerAssetCollector).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole("button", { name: "Create Policy" }));
+    await waitFor(() => expect(api.upsertAssetDiscoveryPolicy).toHaveBeenCalled());
+    expect(screen.queryByRole("button", { name: "Import Sample Snapshot" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Download Collector Config" }));
+    expect(api.importDiscoveredAssets).not.toHaveBeenCalled();
+    expect(screen.getByRole("status")).toHaveTextContent(/Collector config downloaded/i);
+  });
+
   it("extracts a device, confirms the customer asset, matches CVEs, and runs Patch Compare", async () => {
     const api = createApi();
     render(<App auth={auth} api={api} />);
 
     fireEvent.click(await screen.findByRole("button", { name: "Customer Estate" }));
-    expect(screen.getByRole("heading", { name: "Describe a Device" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Describe a Device" })).toBeInTheDocument();
     expect(screen.getByText("Devices & Assets")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Extract Fields" }));
@@ -660,7 +904,10 @@ describe("PatchForge simplified customer experience", () => {
     render(<App auth={auth} api={api} />);
 
     fireEvent.click(await screen.findByRole("button", { name: "Ask PatchForge" }));
-    expect(screen.getByText(/No CVE\/advisory is selected/i)).toBeInTheDocument();
+    expect(await screen.findByText(/No CVE\/advisory is selected/i, {}, { timeout: 10000 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Run Plan" })).toBeInTheDocument();
+    expect(screen.getByText("Find the right CVE or patch")).toBeInTheDocument();
+    expect(screen.getByText("Create the decision pack")).toBeInTheDocument();
     fireEvent.click(screen.getAllByRole("button", { name: "Ask PatchForge" }).at(-1)!);
 
     await waitFor(() => expect(api.askPatchForge).toHaveBeenCalledWith("diiac.io", expect.not.objectContaining({
@@ -668,55 +915,292 @@ describe("PatchForge simplified customer experience", () => {
     })));
     expect(await screen.findByText("Short Answer")).toBeInTheDocument();
     expect(screen.getByText("Current Governed Posture")).toBeInTheDocument();
+    expect(screen.getByText("Candidate CVEs / Patches / Catalogue Scopes")).toBeInTheDocument();
+    expect(screen.getByText("CVE-2026-REAL-001")).toBeInTheDocument();
     expect(screen.getByText("Decision Not Allowed Yet")).toBeInTheDocument();
     expect(screen.getByText(/cannot issue final approval/i)).toBeInTheDocument();
     expect(screen.getByText("Human Approval Required")).toBeInTheDocument();
     expect(screen.getByText("Optional AI-Assisted Answer")).toBeInTheDocument();
-    expect(screen.getByText(/Optional OpenAI-native agents are disabled/i)).toBeInTheDocument();
+    expect(screen.getByText("Deterministic answer active")).toBeInTheDocument();
+    expect(screen.getAllByText("Runtime disabled").length).toBeGreaterThanOrEqual(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Use advisory FG-PFAZ10-SSLVPN" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "Ask PatchForge" }).at(-1)!);
+    await waitFor(() => expect(api.askPatchForge).toHaveBeenLastCalledWith("diiac.io", expect.objectContaining({
+      advisory_id: "FG-PFAZ10-SSLVPN"
+    })));
+    fireEvent.click(screen.getByRole("button", { name: /Generate Signed Pack/ }));
+    await waitFor(() => expect(api.generateReportsPack).toHaveBeenCalled());
   });
+
+  it("keeps deterministic Ask PatchForge visible when optional AI fails", async () => {
+    const api = createApi({
+      openAiAgentStatus: vi.fn(async () => ({
+        enabled: true,
+        configured: true,
+        provider: "openai",
+        model: "gpt-4o-mini",
+        timeout_ms: 15000,
+        max_output_tokens: 1000,
+        verifier_required: true,
+        advisory_only: true,
+        final_approval_issued: false,
+        can_close_hard_gates: false,
+        can_approve: false,
+        can_patch: false,
+        can_accept_risk: false
+      })),
+      askOpenAiAgent: vi.fn()
+        .mockResolvedValueOnce({
+          snapshot_id: "agent-verified",
+          agent_name: "Ask PatchForge Agent",
+          status: "verified" as const,
+          verifier_status: "passed" as const,
+          output: {
+            recommended_next_action: "Attach reviewed customer evidence.",
+            decision_not_allowed_yet: "Human approval remains required.",
+            final_approval_issued: false
+          },
+          fallback: null,
+          verification_failures: [],
+          final_approval_issued: false,
+          can_close_hard_gates: false
+        })
+        .mockRejectedValueOnce(new Error("agent unavailable"))
+    });
+    render(<App auth={auth} api={api} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Ask PatchForge" }));
+    await screen.findByRole("heading", { name: "Run Plan" });
+    fireEvent.click(screen.getAllByRole("button", { name: "Ask PatchForge" }).at(-1)!);
+
+    await waitFor(() => expect(api.askOpenAiAgent).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText("Deterministic + verified AI")).toBeInTheDocument();
+    expect(screen.getByText("Verifier Status")).toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Ask PatchForge" }).at(-1)!);
+
+    await waitFor(() => expect(api.askOpenAiAgent).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText("Deterministic answer active")).toBeInTheDocument();
+    expect(screen.queryByText("Verifier Status")).not.toBeInTheDocument();
+    expect(screen.getByText(/answered deterministically/i)).toBeInTheDocument();
+  });
+
+  it("keeps the selected Vendor Catalogue context through assessment and pack generation", async () => {
+    const secondAsset = { ...asset, asset_id: "net-asset-2", model: "200F", firmware_version: "7.4.1" };
+    const secondAdvisory = { ...advisory, advisory_id: "FG-SECOND-002", cve: "CVE-2026-SECOND-002", title: "Second advisory" };
+    const secondAssessment = { ...match, assessment_id: "cfg-app-2", asset_id: secondAsset.asset_id, advisory_id: secondAdvisory.advisory_id };
+    const api = createApi({
+      listCustomerNetworkAssets: vi.fn(async () => [asset, secondAsset]),
+      listVendorSecurityAdvisories: vi.fn(async () => [advisory, secondAdvisory]),
+      assessConfigApplicability: vi.fn(async () => secondAssessment)
+    });
+    render(<App auth={auth} api={api} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Vendor Catalogue" }));
+    fireEvent.click(await screen.findByRole("tab", { name: "Patch Compare" }, { timeout: 10000 }));
+    fireEvent.click(screen.getByRole("button", { name: /fortinet 200F/i }));
+    fireEvent.click(screen.getByRole("button", { name: /CVE-2026-SECOND-002/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Assess" }));
+
+    await waitFor(() => expect(api.assessConfigApplicability).toHaveBeenCalledWith("diiac.io", {
+      asset_id: "net-asset-2",
+      advisory_id: "FG-SECOND-002"
+    }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Reports" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Generate Signed Pack" }, { timeout: 10000 }));
+    await waitFor(() => expect(api.generateReportsPack).toHaveBeenCalled());
+    const payload = vi.mocked(api.generateReportsPack).mock.calls.at(-1)?.[1] || {};
+    expect(payload).toEqual(expect.objectContaining({
+      asset_id: "net-asset-2",
+      advisory_id: "FG-SECOND-002",
+      config_applicability_assessment: expect.objectContaining({ assessment_id: "cfg-app-2" })
+    }));
+    expect(payload).not.toHaveProperty("product_baseline");
+    expect(payload).not.toHaveProperty("report_template_version");
+    expect(payload).not.toHaveProperty("report_context_version");
+  }, 30000);
+
+  it("does not send a stale Vendor Catalogue assessment after the selected context changes", async () => {
+    const secondAsset = { ...asset, asset_id: "net-asset-2", model: "200F", firmware_version: "7.4.1" };
+    const secondAdvisory = { ...advisory, advisory_id: "FG-SECOND-002", cve: "CVE-2026-SECOND-002", title: "Second advisory" };
+    const api = createApi({
+      listCustomerNetworkAssets: vi.fn(async () => [asset, secondAsset]),
+      listVendorSecurityAdvisories: vi.fn(async () => [advisory, secondAdvisory])
+    });
+    render(<App auth={auth} api={api} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Vendor Catalogue" }));
+    fireEvent.click(await screen.findByRole("tab", { name: "Patch Compare" }, { timeout: 10000 }));
+    fireEvent.click(screen.getByRole("button", { name: /fortinet 200F/i }));
+    fireEvent.click(screen.getByRole("button", { name: /CVE-2026-SECOND-002/i }));
+    fireEvent.click(screen.getAllByRole("button", { name: "Ask PatchForge" }).at(-1)!);
+    fireEvent.click(screen.getAllByRole("button", { name: "Ask PatchForge" }).at(-1)!);
+
+    await waitFor(() => expect(api.startVendorLensChat).toHaveBeenCalledWith("diiac.io", expect.objectContaining({
+      asset_id: "net-asset-2",
+      advisory_id: "FG-SECOND-002",
+      assessment: undefined
+    })));
+  }, 30000);
 
   it("consolidates report generation, metadata, downloads, and signed pack export", async () => {
     const api = createApi();
     vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
     render(<App auth={auth} api={api} />);
 
-    fireEvent.click(await screen.findByRole("button", { name: "Reports & Packs" }));
-    expect(screen.getByRole("heading", { name: "Reports & Packs" })).toBeInTheDocument();
-    expect(screen.getByText("Pre-Export Check")).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: "Reports" }));
+    expect(screen.getByRole("region", { name: "Reports" })).toBeInTheDocument();
+    expect(await screen.findByText("Pre-Export Check")).toBeInTheDocument();
     expect(screen.getAllByText("PF-AZ11-CUSTOMER-DEMO-MATURITY").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("pfaz11-test")).toBeInTheDocument();
     expect(screen.getByText("Final approval false")).toBeInTheDocument();
     expect(screen.getByText("Report Content QA")).toBeInTheDocument();
-    expect(screen.getByText("3/3 PASS")).toBeInTheDocument();
+    expect(screen.getByText("4/4 PASS")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Generate Signed Pack" }));
     await waitFor(() => expect(api.generateReportsPack).toHaveBeenCalled());
 
-    fireEvent.click(screen.getByRole("button", { name: "Download DOCX PF-TEST-0001" }));
+    fireEvent.click(screen.getByRole("button", { name: "Download Board Vulnerability Summary DOCX from PF-TEST-0001" }));
     await waitFor(() => expect(api.downloadDecisionPackReport).toHaveBeenCalledWith("diiac.io", "PF-TEST-0001", "board_vulnerability_remediation_summary", "docx"));
   });
+
+  it("keeps an explicitly selected historical verified pack stable across refresh", async () => {
+    const historicalPack = {
+      decision_pack_id: "PF-HISTORY-0001",
+      pack_id: "PF-HISTORY-0001",
+      vulnerability_id: "CVE-2026-REAL-001",
+      final_approval_issued: false,
+      verification: { verified: true },
+      product_baseline: "PF-HISTORICAL",
+      created_at: "2026-06-01T08:00:00Z"
+    };
+    const currentPack = {
+      decision_pack_id: "PF-TEST-0001",
+      pack_id: "PF-TEST-0001",
+      vulnerability_id: "CVE-2026-REAL-001",
+      final_approval_issued: false,
+      verification: { verified: true },
+      product_baseline: "PF-AZ11-CUSTOMER-DEMO-MATURITY",
+      created_at: "2026-07-14T08:00:00Z"
+    };
+    const api = createApi({
+      listDecisionPacks: vi.fn(async () => [historicalPack, currentPack])
+    });
+    render(<App auth={auth} api={api} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Reports" }));
+    const selector = await screen.findByRole("combobox", { name: "Verified decision pack" });
+    await waitFor(() => expect(selector).toHaveValue("PF-TEST-0001"));
+    fireEvent.change(selector, { target: { value: "PF-HISTORY-0001" } });
+    expect(selector).toHaveValue("PF-HISTORY-0001");
+    expect(screen.getByRole("button", { name: "Download Board Vulnerability Summary DOCX from PF-HISTORY-0001" })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Generate Signed Pack" }));
+    await waitFor(() => expect(api.generateReportsPack).toHaveBeenCalled());
+    await waitFor(() => expect(selector).toHaveValue("PF-HISTORY-0001"));
+  }, 15000);
+
+  it("blocks signed report downloads when the newest pack is not verified", async () => {
+    const api = createApi({
+      listDecisionPacks: vi.fn(async () => [{
+        decision_pack_id: "PF-UNVERIFIED-1",
+        pack_id: "PF-UNVERIFIED-1",
+        vulnerability_id: "CVE-2026-REAL-001",
+        final_approval_issued: false,
+        verification: { verified: false }
+      }])
+    });
+    render(<App auth={auth} api={api} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Reports" }));
+    expect(await screen.findByText("Report downloads remain blocked until a decision pack passes signature verification.")).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Verified decision pack" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Download Board Vulnerability Summary DOCX from selected pack" })).toBeDisabled();
+  }, 15000);
+
+  it("supports finding evidence submission, reject conflict handling, expiry, and reopen", async () => {
+    const conflict = Object.assign(new Error("evidence_revision_conflict"), { status: 409 });
+    const api = createApi({
+      reviewFindingEvidence: vi.fn(async () => { throw conflict; })
+    });
+    render(<App auth={auth} api={api} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Open review queue" }));
+    expect(await screen.findByRole("heading", { name: "Submit, review, reject, and reopen immutable evidence" }, { timeout: 10000 })).toBeInTheDocument();
+    expect(screen.getByText(/This immutable record is expired/)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Concise evidence summary"), { target: { value: "New customer scope evidence" } });
+    fireEvent.click(screen.getByRole("button", { name: "Submit immutable evidence" }));
+    await waitFor(() => expect(api.submitFindingEvidence).toHaveBeenCalledWith("diiac.io", "CVE-2026-REAL-001", expect.objectContaining({
+      evidence_class: "affected_asset_scope",
+      summary: "New customer scope evidence"
+    })));
+
+    const pendingCard = screen.getByRole("heading", { name: "Customer asset scope confirmed" }).closest("article");
+    expect(pendingCard).not.toBeNull();
+    fireEvent.change(within(pendingCard!).getByLabelText("Reviewer rationale"), { target: { value: "Source hash does not match the current finding." } });
+    expect(within(pendingCard!).getByRole("button", { name: "Accept" })).toBeEnabled();
+    fireEvent.click(within(pendingCard!).getByRole("button", { name: "Reject" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Evidence conflict");
+    expect(api.reviewFindingEvidence).toHaveBeenCalledWith("diiac.io", "CVE-2026-REAL-001", "evidence-pending-1", expect.objectContaining({
+      decision: "reject",
+      expected_content_hash: "sha256:pending-content",
+      expected_event_hash: "sha256:submitted-event"
+    }));
+
+    const expiredCard = screen.getByRole("heading", { name: "Expired customer configuration snapshot" }).closest("article");
+    expect(expiredCard).not.toBeNull();
+    fireEvent.change(within(expiredCard!).getByLabelText("Reviewer rationale"), { target: { value: "Reopen for a refreshed evidence submission." } });
+    fireEvent.click(within(expiredCard!).getByRole("button", { name: "Reopen review" }));
+    await waitFor(() => expect(api.reopenFindingEvidence).toHaveBeenCalledWith("diiac.io", "CVE-2026-REAL-001", "evidence-expired-1", expect.objectContaining({
+      expected_content_hash: "sha256:expired-content",
+      expected_event_hash: "sha256:rejected-event"
+    })));
+  }, 30000);
+
+  it("allows a CAB approver to generate packs without enabling triage actions", async () => {
+    const api = createApi();
+    const cabAuth = { ...auth, roles: ["PatchForge.CABApprover"] };
+    render(<App auth={cabAuth} api={api} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Reports" }));
+    expect(await screen.findByRole("button", { name: "Generate Signed Pack" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Patch & CVE Catalogue" }));
+    expect(await screen.findByRole("button", { name: "Refresh KEV intelligence" })).toBeDisabled();
+  }, 15000);
 
   it("refreshes source feeds from the simplified action center", async () => {
     const api = createApi();
     render(<App auth={auth} api={api} />);
 
-    fireEvent.click(await screen.findByRole("button", { name: "Refresh KEV" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Refresh KEV intelligence" }));
     await waitFor(() => expect(api.refreshSourceFeed).toHaveBeenCalledWith("diiac.io", expect.objectContaining({ feed_id: "cisa-kev", limit: 5 })));
+    expect(screen.getByRole("heading", { name: "What needs attention today?" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Patch & CVE Catalogue" })).toHaveClass("active");
   });
 
-  it("hides admin navigation and disables write actions without privileged roles", async () => {
+  it("keeps assurance visible and disables write actions without privileged roles", async () => {
     render(<App auth={{ ...auth, roles: ["PatchForge.Reader"] }} api={createApi()} />);
 
-    expect(screen.queryByRole("button", { name: "Admin" })).not.toBeInTheDocument();
-    expect(await screen.findByRole("button", { name: "Refresh KEV" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Admin" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Refresh KEV intelligence" })).toBeDisabled();
   });
 
   it("renders admin controls and avoids prohibited wording", async () => {
     const { container } = render(<App auth={auth} api={createApi()} />);
 
     fireEvent.click(await screen.findByRole("button", { name: "Admin" }));
-    expect(screen.getByRole("heading", { name: "Admin" })).toBeInTheDocument();
+    expect((await screen.findAllByRole("heading", { name: "System & Data Health" }, { timeout: 10000 })).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Entra ID / RBAC")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Entra ID \/ RBAC/i })).not.toBeInTheDocument();
+    expect(screen.getByText("OpenAI Assistance")).toBeInTheDocument();
+    expect(screen.getByText("DIIaC IT Service / Enterprise Build")).toBeInTheDocument();
+    expect(screen.getByText("Patch Deployment")).toBeInTheDocument();
+    expect(screen.getAllByText("Blocked").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByRole("heading", { name: "Typed confirmation required before destructive data cleanup" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Execute Confirmed Purge" })).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "admin sections page 2" }));
     expect(screen.getByText("Signing & Trust")).toBeInTheDocument();
     expect(container.textContent?.toLowerCase()).not.toContain("autonomous patching");
@@ -724,12 +1208,88 @@ describe("PatchForge simplified customer experience", () => {
   });
 
   it("shows the Entra sign-in gate when unauthenticated", () => {
-    render(<App auth={{ ...auth, status: "unauthenticated", accountName: null }} api={createApi()} />);
+    const { container } = render(<App auth={{ ...auth, status: "unauthenticated", accountName: null }} api={createApi()} />);
+    expect(screen.getByRole("heading", { name: "PatchForge Intelligence by DIIaC\u2122" })).toBeInTheDocument();
+    expect(screen.getByText("DIIaC\u2122")).toBeInTheDocument();
+    expect(container.textContent).not.toContain("\\u2122");
+    expect(screen.queryByRole("heading", { name: /PatchForge Intelligence by DIIaC.*PatchForge/ })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Sign in with Microsoft" })).toBeInTheDocument();
   });
 
-  it("renders API auth errors clearly", async () => {
-    render(<App auth={auth} api={createApi({ metrics: vi.fn(async () => { throw new Error("insufficient_patchforge_role"); }) })} />);
-    expect(await screen.findByText("insufficient_patchforge_role")).toBeInTheDocument();
+  it("lets signed-in users collapse and restore the primary navigation", async () => {
+    const { container } = render(<App auth={auth} api={createApi()} />);
+    const toggle = await screen.findByRole("button", { name: "Toggle navigation" });
+    const shell = container.querySelector("main.app-shell");
+
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(shell).not.toHaveClass("nav-collapsed");
+
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(shell).toHaveClass("nav-collapsed");
+
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(shell).not.toHaveClass("nav-collapsed");
+  });
+
+  it("provides keyboard-complete Vendor Catalogue tabs", async () => {
+    render(<App auth={auth} api={createApi()} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Vendor Catalogue" }));
+    const firstTab = await screen.findByRole("tab", { name: "Network Vendors" }, { timeout: 10000 });
+    const secondTab = screen.getByRole("tab", { name: "Product Families" });
+    expect(firstTab).toHaveAttribute("aria-selected", "true");
+    expect(secondTab).toHaveAttribute("tabindex", "-1");
+
+    firstTab.focus();
+    fireEvent.keyDown(firstTab, { key: "ArrowRight" });
+
+    expect(secondTab).toHaveFocus();
+    expect(secondTab).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tabpanel")).toHaveAttribute("aria-labelledby", secondTab.id);
+  });
+
+  it("closes the mobile drawer with Escape and restores toggle focus", async () => {
+    vi.stubGlobal("matchMedia", vi.fn((query: string) => ({
+      matches: query === "(max-width: 820px)",
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(() => false)
+    })));
+    try {
+      render(<App auth={auth} api={createApi()} />);
+      const toggle = await screen.findByRole("button", { name: "Toggle navigation" });
+      expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+      toggle.focus();
+      fireEvent.click(toggle);
+      expect(await screen.findByRole("button", { name: "Close navigation" })).toHaveFocus();
+
+      fireEvent.keyDown(document, { key: "Escape" });
+      expect(toggle).toHaveAttribute("aria-expanded", "false");
+      await waitFor(() => expect(toggle).toHaveFocus());
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("retains successful panels and retries one unavailable data surface", async () => {
+    const metricsRequest = vi.fn()
+      .mockRejectedValueOnce(new Error("insufficient_patchforge_role"))
+      .mockResolvedValue(metrics);
+    render(<App auth={auth} api={createApi({ metrics: metricsRequest })} />);
+
+    const warning = await screen.findByLabelText("Partially unavailable data sources");
+    expect(warning).toHaveTextContent("Dashboard metrics: insufficient_patchforge_role");
+    expect(await screen.findByRole("heading", { name: "What needs attention today?" })).toBeInTheDocument();
+    fireEvent.click(within(warning).getByRole("button", { name: "Retry Dashboard metrics" }));
+
+    await waitFor(() => expect(metricsRequest).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.queryByLabelText("Partially unavailable data sources")).not.toBeInTheDocument());
   });
 });

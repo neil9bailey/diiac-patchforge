@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PatchForge Customer",
+  "type": "object",
+  "required": ["id", "name", "tenant_key", "service_tier", "status", "created_at", "updated_at"],
+  "properties": {
+    "id": { "type": "string" },
+    "name": { "type": "string" },
+    "tenant_key": { "type": "string" },
+    "service_tier": { "type": "string" },
+    "status": { "type": "string" },
+    "created_at": { "type": "string" },
+    "updated_at": { "type": "string" }
+  }
+}

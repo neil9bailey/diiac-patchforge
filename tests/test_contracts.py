@@ -48,6 +48,18 @@ EXPECTED_SCHEMAS = {
     "agent_guidance_snapshot.schema.json",
     "config_applicability_agent_response.schema.json",
     "report_quality_review.schema.json",
+    "vendor.schema.json",
+    "product.schema.json",
+    "cve.schema.json",
+    "exploit_signal.schema.json",
+    "customer.schema.json",
+    "customer_estate.schema.json",
+    "customer_asset.schema.json",
+    "config_evidence.schema.json",
+    "exposure_match.schema.json",
+    "patch_action.schema.json",
+    "patch_compare_report.schema.json",
+    "signed_action_pack.schema.json",
 }
 
 COMMON_REQUIRED_CLASSES = {
@@ -170,3 +182,14 @@ def test_vendorlens_schemas_are_advisory_and_human_reviewed():
     assert chat["properties"]["final_approval_issued"]["default"] is False
     assert advisory["properties"]["review_state"]["default"] == "pending_review"
     assert advisory["properties"]["can_close_hard_gates_alone"]["const"] is False
+
+
+def test_patchforge_rebuild_models_include_safety_and_source_bound_defaults():
+    exploit_signal = load_json(SCHEMA_DIR / "exploit_signal.schema.json")
+    config_evidence = load_json(SCHEMA_DIR / "config_evidence.schema.json")
+    patch_action = load_json(SCHEMA_DIR / "patch_action.schema.json")
+
+    assert exploit_signal["properties"]["no_exploit_mechanics"]["const"] is True
+    assert config_evidence["properties"]["raw_secret_values_persisted"]["const"] is False
+    assert patch_action["properties"]["human_change_approval_required"]["const"] is True
+    assert patch_action["properties"]["no_autonomous_production_approval"]["const"] is True

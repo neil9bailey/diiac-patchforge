@@ -15,10 +15,15 @@ param bridgeExternalIngress bool = true
 @description('Whether to deploy Container Apps. Set false for the first infrastructure pass so ACR can be created and images pushed before app revisions are created.')
 param deployContainerApps bool = true
 
-@description('Whether to create PostgreSQL Flexible Server. Keep false until a secure administrator password and network model are confirmed.')
-param createPostgres bool = false
+@description('PostgreSQL lifecycle mode: disabled for local JSON, existing to reference live resources without modifying them, or create for a new managed server.')
+@allowed([
+  'disabled'
+  'existing'
+  'create'
+])
+param postgresMode string = 'disabled'
 
-@description('PostgreSQL administrator login. Only used when createPostgres is true.')
+@description('PostgreSQL administrator login. The password is only used when postgresMode is create.')
 param postgresAdministratorLogin string = 'patchforgeadmin'
 
 @secure()
@@ -27,6 +32,15 @@ param postgresAdministratorPassword string = ''
 
 @description('Container image tag used for initial container app placeholders.')
 param imageTag string = 'bootstrap'
+
+@description('Immutable source commit represented by the deployed image tag and report renderer.')
+param sourceCommitSha string = 'local'
+
+@description('Product baseline stamped into decision packs and reports.')
+param productBaseline string = 'PF-LOCAL'
+
+@description('Report context contract version stamped into decision packs and reports.')
+param reportContextVersion string = 'patchforge-report-context.local.v1'
 
 @description('PatchForge API app identifier URI used as the Entra access-token audience.')
 param entraAudience string = 'api://ec30b0eb-cfc4-48cc-a5f2-2a1345d96736'
@@ -42,6 +56,24 @@ param keyVaultSigningKeyVersion string = ''
 
 @description('Key Vault secret name containing the PostgreSQL administrator password for the bridge storage adapter.')
 param postgresPasswordSecretName string = 'patchforge-postgres-admin-password'
+
+@description('Whether the Bridge/API should enable the optional OpenAI-native advisory agent layer.')
+param openAiAgentEnabled bool = false
+
+@description('OpenAI model used by the optional Bridge/API advisory agent layer when enabled.')
+param openAiModel string = 'gpt-5.4'
+
+@description('Optional Key Vault secret name containing the OpenAI API key for the Bridge/API. Leave blank to keep OPENAI_API_KEY unset.')
+param openAiApiKeySecretName string = ''
+
+@description('Optional Key Vault URI containing the OpenAI API key secret. Leave blank to use the dedicated PatchForge Key Vault.')
+param openAiApiKeyVaultUri string = ''
+
+@description('OpenAI advisory agent request timeout in milliseconds.')
+param openAiTimeoutMs int = 15000
+
+@description('Maximum output tokens allowed for optional OpenAI advisory agent responses.')
+param openAiMaxOutputTokens int = 1000
 
 @description('Whether to add the PostgreSQL firewall rule that allows Azure services to reach the server.')
 param allowAzureServicesToPostgres bool = true
@@ -164,7 +196,7 @@ module database 'postgres-or-sql.bicep' = {
   params: {
     location: location
     tags: tags
-    createPostgres: createPostgres
+    postgresMode: postgresMode
     postgresServerName: names.postgres
     databaseName: names.database
     administratorLogin: postgresAdministratorLogin
@@ -193,14 +225,23 @@ module containerApps 'container-apps.bicep' = if (deployContainerApps) {
     databaseName: names.database
     databaseUser: postgresAdministratorLogin
     databasePasswordSecretName: postgresPasswordSecretName
-    storageMode: createPostgres ? 'postgresql' : 'local-json'
+    storageMode: database.outputs.databaseMode == 'disabled' ? 'local-json' : 'postgresql'
     entraTenantId: subscription().tenantId
     entraAudience: entraAudience
     authRequired: authRequired
+    openAiAgentEnabled: openAiAgentEnabled
+    openAiModel: openAiModel
+    openAiApiKeySecretName: openAiApiKeySecretName
+    openAiApiKeyVaultUri: openAiApiKeyVaultUri
+    openAiTimeoutMs: openAiTimeoutMs
+    openAiMaxOutputTokens: openAiMaxOutputTokens
     keyVaultSigningKeyId: empty(keyVaultSigningKeyVersion)
       ? '${keyVault.outputs.vaultUri}keys/${keyVaultSigningKeyName}'
       : '${keyVault.outputs.vaultUri}keys/${keyVaultSigningKeyName}/${keyVaultSigningKeyVersion}'
     environmentLabel: environmentName
+    sourceCommitSha: sourceCommitSha
+    productBaseline: productBaseline
+    reportContextVersion: reportContextVersion
   }
 }
 

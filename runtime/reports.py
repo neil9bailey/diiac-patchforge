@@ -11,36 +11,60 @@ REPORT_TYPES = {
     "technical_evidence_appendix": "Technical Evidence Appendix",
 }
 
-REPORT_SECTIONS = [
-    "Customer Assurance Position",
-    "Customer Device / Service Context",
-    "Matching CVEs / Advisories",
-    "Applicability Assessment",
-    "Patch Compare Result",
-    "Evidence Needed",
-    "What Can Be Shared With Customer",
-    "What Cannot Yet Be Claimed",
-    "Recommended Next Action",
-    "Executive Decision Summary",
-    "Top Risks",
-    "Affected Vendors / Products",
-    "Customer Exposure",
-    "Why This Matters Now",
-    "Recommended Next Actions",
-    "Evidence Gaps",
-    "Residual Risk / Governance Position",
-    "Change Decision Request",
-    "Affected Devices",
-    "Patch Applicability",
-    "Patch Compare",
-    "Test / Rollback Evidence Needed",
-    "Approval Conditions",
-    "Maintenance Window / Implementation Owner if known",
-    "Required Evidence Before CAB Approval",
-    "Final Approval State",
-    "Signed Pack Metadata",
-    "Decision Boundary",
-]
+REPORT_SECTION_GROUPS = {
+    "customer_patch_governance_pack": [
+        "Customer Assurance Position",
+        "Customer Device / Service Context",
+        "Matching CVEs / Advisories",
+        "Applicability Assessment",
+        "Patch Compare Result",
+        "Evidence Needed",
+        "Recommended Next Action",
+        "What Can Be Shared With Customer",
+        "What Cannot Yet Be Claimed",
+        "Final Approval State",
+        "Signed Pack Metadata",
+        "Decision Boundary",
+    ],
+    "board_vulnerability_remediation_summary": [
+        "Executive Decision Summary",
+        "Top Risks",
+        "Affected Vendors / Products",
+        "Customer Exposure",
+        "Why This Matters Now",
+        "Recommended Next Actions",
+        "Evidence Gaps",
+        "Residual Risk / Governance Position",
+        "Final Approval State",
+        "Signed Pack Metadata",
+        "Decision Boundary",
+    ],
+    "cab_patch_decision_report": [
+        "Change Decision Request",
+        "Affected Devices",
+        "Patch Applicability",
+        "Patch Compare",
+        "Test / Rollback Evidence Needed",
+        "Approval Conditions",
+        "Maintenance Window / Implementation Owner if known",
+        "Required Evidence Before CAB Approval",
+        "Final Approval State",
+        "Signed Pack Metadata",
+        "Decision Boundary",
+    ],
+    "technical_evidence_appendix": [
+        "Customer Device / Service Context",
+        "Matching CVEs / Advisories",
+        "Applicability Assessment",
+        "Patch Compare Result",
+        "Evidence Needed",
+        "Final Approval State",
+        "Signed Pack Metadata",
+        "Decision Boundary",
+    ],
+}
+
+REPORT_SECTIONS = list(dict.fromkeys(section for sections in REPORT_SECTION_GROUPS.values() for section in sections))
 
 REPORT_TEMPLATE_VERSION = "patchforge-report-template.v2026-05-31.1"
 REPORT_CONTEXT_VERSION = "patchforge-report-context.v4"
@@ -88,7 +112,7 @@ def render_report(report_type: str, context: dict[str, Any]) -> str:
         "",
     ]
 
-    for section in REPORT_SECTIONS:
+    for section in REPORT_SECTION_GROUPS[report_type]:
         lines.extend(_render_section(section, context))
 
     return "\n".join(lines).strip() + "\n"

@@ -1,0 +1,75 @@
+{
+  "release": "PF-AZ-MODERN-UI-20260711",
+  "tag": "pfaz-modern-ui-20260711-907995f",
+  "source_commit": "907995fdf1ea290a7e551463e461af8a884cf44c",
+  "completed_at_utc": "2026-07-11T18:04:19.4387899Z",
+  "common_release_metadata": {
+    "image_tag": "pfaz-modern-ui-20260711-907995f",
+    "commit_sha": "907995fdf1ea290a7e551463e461af8a884cf44c",
+    "renderer_commit": "907995fdf1ea290a7e551463e461af8a884cf44c",
+    "product_baseline": "PF-AZ-MODERN-UI-20260711",
+    "report_context_version": "patchforge-report-context.pfaz-modern-ui-20260711.v1"
+  },
+  "apps": [
+    {
+      "app": "ca-patchforge-runtime-prod",
+      "revision": "ca-patchforge-runtime-prod--0000030",
+      "digest": "sha256:81a0c2bf505427583225000abb9f15cb64ffc4f4215c47bce911a509bdee0e3d",
+      "provisioning_state": "Succeeded",
+      "running_status": "Running",
+      "health": "Healthy",
+      "revision_provisioning": "Provisioned",
+      "traffic_percent": 100
+    },
+    {
+      "app": "ca-patchforge-sra-prod",
+      "revision": "ca-patchforge-sra-prod--0000029",
+      "digest": "sha256:8c0f5db8b1144279ee54504354adf77dbdcec363848c0efb6c22fb24c0deafc7",
+      "provisioning_state": "Succeeded",
+      "running_status": "Running",
+      "health": "Healthy",
+      "revision_provisioning": "Provisioned",
+      "traffic_percent": 100
+    },
+    {
+      "app": "ca-patchforge-worker-prod",
+      "revision": "ca-patchforge-worker-prod--0000029",
+      "digest": "sha256:2a9ef9a9ce8abdc87f577c78dda287b31430c448e1e152b067e5ad77e038a33d",
+      "provisioning_state": "Succeeded",
+      "running_status": "Running",
+      "health": "Healthy",
+      "revision_provisioning": "Provisioned",
+      "traffic_percent": 100
+    },
+    {
+      "app": "ca-patchforge-scheduler-prod",
+      "revision": "ca-patchforge-scheduler-prod--0000029",
+      "digest": "sha256:88bd431c55e4fe1e4b5689ce904cce7fbf9f3b82dceac31ed6de5978a8336c22",
+      "provisioning_state": "Succeeded",
+      "running_status": "Running",
+      "health": "Healthy",
+      "revision_provisioning": "Provisioned",
+      "traffic_percent": 100
+    },
+    {
+      "app": "ca-patchforge-bridge-prod",
+      "revision": "ca-patchforge-bridge-prod--0000039",
+      "digest": "sha256:e0db40d5ccaaaff797142d74ada7053f5ba0c773f4b148a41d5f12a7e81105fb",
+      "provisioning_state": "Succeeded",
+      "running_status": "Running",
+      "health": "Healthy",
+      "revision_provisioning": "Provisioned",
+      "traffic_percent": 100
+    },
+    {
+      "app": "ca-patchforge-ui-prod",
+      "revision": "ca-patchforge-ui-prod--0000040",
+      "digest": "sha256:50feacc4163fd54dc53218434108f598cec0d06780898c7cf078a86df6d15f49",
+      "provisioning_state": "Succeeded",
+      "running_status": "Running",
+      "health": "Healthy",
+      "revision_provisioning": "Provisioned",
+      "traffic_percent": 100
+    }
+  ]
+}

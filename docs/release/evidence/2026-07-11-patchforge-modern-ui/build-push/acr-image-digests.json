@@ -1,0 +1,39 @@
+{
+  "registry": "acrdiiacpatchforgeprod.azurecr.io",
+  "tag": "pfaz-modern-ui-20260711-907995f",
+  "source_commit": "907995fdf1ea290a7e551463e461af8a884cf44c",
+  "verified_at_utc": "2026-07-11T17:54:03.8232204Z",
+  "verification": "exact ACR tag digest equals local Docker RepoDigest",
+  "images": [
+    {
+      "repository": "diiac/patchforge-frontend",
+      "digest": "sha256:50feacc4163fd54dc53218434108f598cec0d06780898c7cf078a86df6d15f49",
+      "verified": true
+    },
+    {
+      "repository": "diiac/patchforge-bridge",
+      "digest": "sha256:e0db40d5ccaaaff797142d74ada7053f5ba0c773f4b148a41d5f12a7e81105fb",
+      "verified": true
+    },
+    {
+      "repository": "diiac/patchforge-runtime",
+      "digest": "sha256:81a0c2bf505427583225000abb9f15cb64ffc4f4215c47bce911a509bdee0e3d",
+      "verified": true
+    },
+    {
+      "repository": "diiac/patchforge-sra-agent",
+      "digest": "sha256:8c0f5db8b1144279ee54504354adf77dbdcec363848c0efb6c22fb24c0deafc7",
+      "verified": true
+    },
+    {
+      "repository": "diiac/patchforge-ingest-worker",
+      "digest": "sha256:2a9ef9a9ce8abdc87f577c78dda287b31430c448e1e152b067e5ad77e038a33d",
+      "verified": true
+    },
+    {
+      "repository": "diiac/patchforge-scheduler",
+      "digest": "sha256:88bd431c55e4fe1e4b5689ce904cce7fbf9f3b82dceac31ed6de5978a8336c22",
+      "verified": true
+    }
+  ]
+}

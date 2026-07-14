@@ -1,0 +1,1278 @@
+믯傿瑡档潆杲⁥慴杲瑥摥䌠湯慴湩牥䄠灰⁳灵慤整›晰敲畢汩ⵤ〲㘲㘰㄰㐭昳㔹挳਍Updating ca-patchforge-ui-prod -> acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-frontend:pfrebuild-20260601-43f953c
+az :
+At line:33 char:10
++   $raw = az containerapp update -g $rg -n $app.name --image $app.imag ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+/ Running ..
+| Running ..
+\ Running ..
+- Running ..
+/ Running ..
+| Running ..
+\ Running ..
+{
+  "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/containerapps/ca-patchforge-ui-prod",
+  "identity": {
+    "type": "UserAssigned",
+    "userAssignedIdentities": {
+      "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourcegroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-ui-prod": {
+        "clientId": "bfe97bcf-de61-4349-844f-d1fee1403d42",
+        "principalId": "178e6987-cc7a-445f-8020-0f2424e79b45"
+      }
+    }
+  },
+  "location": "UK South",
+  "name": "ca-patchforge-ui-prod",
+  "properties": {
+    "configuration": {
+      "activeRevisionsMode": "Single",
+      "dapr": null,
+      "identitySettings": [],
+      "ingress": {
+        "additionalPortMappings": null,
+        "allowInsecure": false,
+        "clientCertificateMode": null,
+        "corsPolicy": null,
+        "customDomains": [
+          {
+            "bindingType": "SniEnabled",
+            "certificateId": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/managedEnvironments/acae-diiac-patchforge-prod/managedCertificates/mc-acae-diiac-pat-patchforge-diiac-9158",
+            "name": "patchforge.diiac.io"
+          }
+        ],
+        "exposedPort": 0,
+        "external": true,
+        "fqdn": "ca-patchforge-ui-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io",
+        "ipSecurityRestrictions": null,
+        "stickySessions": null,
+        "targetPort": 8080,
+        "traffic": [
+          {
+            "latestRevision": true,
+            "weight": 100
+          }
+        ],
+        "transport": "Auto"
+      },
+      "maxInactiveRevisions": null,
+      "registries": [
+        {
+          "identity": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-ui-prod",
+          "passwordSecretRef": "",
+          "server": "acrdiiacpatchforgeprod.azurecr.io",
+          "username": ""
+        }
+      ],
+      "runtime": null,
+      "secrets": null,
+      "service": null
+    },
+    "customDomainVerificationId": "D815E8B3470ADCCFE09104F6B9557CC8DC05A4BF8DFED6FC65F27D87B54195E5",
+    "delegatedIdentities": [],
+    "environmentId": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/managedEnvironments/acae-diiac-patchforge-prod",
+    "eventStreamEndpoint": "https://uksouth.azurecontainerapps.dev/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/containerApps/ca-patchforge-ui-prod/eventstream",
+    "latestReadyRevisionName": "ca-patchforge-ui-prod--0000027",
+    "latestRevisionFqdn": "ca-patchforge-ui-prod--0000028.lemonpebble-11b2e331.uksouth.azurecontainerapps.io",
+    "latestRevisionName": "ca-patchforge-ui-prod--0000028",
+    "managedEnvironmentId": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/managedEnvironments/acae-diiac-patchforge-prod",
+    "outboundIpAddresses": [
+      "51.145.61.244"
+    ],
+    "provisioningState": "Succeeded",
+    "runningStatus": "Running",
+    "template": {
+      "containers": [
+        {
+          "env": [
+            {
+              "name": "PATCHFORGE_ENVIRONMENT"
+            },
+            {
+              "name": "PATCHFORGE_BOUNDARY"
+            },
+            {
+              "name": "PATCHFORGE_STORAGE_ACCOUNT"
+            },
+            {
+              "name": "PATCHFORGE_KEYVAULT_URI"
+            },
+            {
+              "name": "PATCHFORGE_DATABASE_HOST"
+            },
+            {
+              "name": "PATCHFORGE_DATABASE_NAME"
+            },
+            {
+              "name": "PATCHFORGE_DATABASE_USER"
+            },
+            {
+              "name": "PATCHFORGE_DATABASE_PASSWORD_SECRET_NAME"
+            },
+            {
+              "name": "PATCHFORGE_STORAGE_MODE"
+            },
+            {
+              "name": "PATCHFORGE_ENTRA_TENANT_ID"
+            },
+            {
+              "name": "PATCHFORGE_ENTRA_AUDIENCE"
+            },
+            {
+              "name": "PATCHFORGE_AUTH_REQUIRED"
+            },
+            {
+              "name": "PATCHFORGE_KEYVAULT_SIGNING_KEY_ID"
+            },
+            {
+              "name": "AZURE_CLIENT_ID"
+            },
+            {
+              "name": "PATCHFORGE_COMPONENT"
+            },
+            {
+              "name": "PATCHFORGE_AGENT_INTAKE_ENABLED"
+            },
+            {
+              "name": "PATCHFORGE_PUBLIC_SOURCE_FEEDS_ENABLED"
+            },
+            {
+              "name": "PATCHFORGE_WORKER_ENABLED"
+            },
+            {
+              "name": "PATCHFORGE_SCHEDULER_ENABLED"
+            },
+            {
+              "name": "PATCHFORGE_IMAGE_TAG"
+            },
+            {
+              "name": "PATCHFORGE_RENDERER_COMMIT"
+            },
+            {
+              "name": "PATCHFORGE_PRODUCT_BASELINE"
+            },
+            {
+              "name": "PATCHFORGE_REPORT_CONTEXT_VERSION"
+            },
+            {
+              "name": "CONTAINER_IMAGE_TAG"
+            },
+            {
+              "name": "PATCHFORGE_COMMIT_SHA"
+            },
+            {
+              "name": "PATCHFORGE_OPENAI_AGENT_ENABLED"
+            }
+          ],
+          "image": "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-frontend:pfrebuild-20260601-43f953c",
+          "name": "patchforge-ui",
+          "resources": {
+            "cpu": 0.5,
+            "ephemeralStorage": "2Gi",
+            "memory": "1Gi"
+          }
+        }
+      ],
+      "initContainers": null,
+      "revisionSuffix": "",
+      "scale": {
+        "cooldownPeriod": 300,
+        "maxReplicas": 3,
+        "minReplicas": 1,
+        "pollingInterval": 30,
+        "rules": null
+      },
+      "serviceBinds": null,
+      "terminationGracePeriodSeconds": null,
+      "volumes": null
+    },
+    "workloadProfileName": null
+  },
+  "resourceGroup": "rg-diiac-patchforge-prod",
+  "systemData": {
+    "createdAt": "2026-05-26T16:11:34.0122591",
+    "createdBy": "nbailey@diiac.io",
+    "createdByType": "User",
+    "lastModifiedAt": "2026-06-01T23:04:05.1579116",
+    "lastModifiedBy": "nbailey@diiac.io",
+    "lastModifiedByType": "User"
+  },
+  "tags": {
+    "boundary": "governance-only",
+    "component": "frontend",
+    "environment": "prod",
+    "managedBy": "bicep",
+    "owner": "DIIaC",
+    "product": "DIIaC PatchForge"
+  },
+  "type": "Microsoft.App/containerApps"
+}
+[K
+Updating ca-patchforge-bridge-prod -> acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-bridge:pfrebuild-20260601-43f953c
+az :
+At line:33 char:10
++   $raw = az containerapp update -g $rg -n $app.name --image $app.imag ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+/ Running ..
+| Running ..
+\ Running ..
+- Running ..
+/ Running ..
+| Running ..
+{
+  "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/containerapps/ca-patchforge-bridge-prod",
+  "identity": {
+    "type": "UserAssigned",
+    "userAssignedIdentities": {
+      "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourcegroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-bridge-prod": {
+        "clientId": "5d6d92eb-e3da-41cb-951d-5bbe852f870f",
+        "principalId": "811fac36-db22-409c-be1e-3754e02318cc"
+      }
+    }
+  },
+  "location": "UK South",
+  "name": "ca-patchforge-bridge-prod",
+  "properties": {
+    "configuration": {
+      "activeRevisionsMode": "Single",
+      "dapr": null,
+      "identitySettings": [],
+      "ingress": {
+        "additionalPortMappings": null,
+        "allowInsecure": false,
+        "clientCertificateMode": null,
+        "corsPolicy": null,
+        "customDomains": [
+          {
+            "bindingType": "SniEnabled",
+            "certificateId": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/managedEnvironments/acae-diiac-patchforge-prod/managedCertificates/mc-acae-diiac-pat-api-patchforge-d-1628",
+            "name": "api.patchforge.diiac.io"
+          }
+        ],
+        "exposedPort": 0,
+        "external": true,
+        "fqdn": "ca-patchforge-bridge-prod.lemonpebble-11b2e331.uksouth.azurecontainerapps.io",
+        "ipSecurityRestrictions": null,
+        "stickySessions": null,
+        "targetPort": 8080,
+        "traffic": [
+          {
+            "latestRevision": true,
+            "weight": 100
+          }
+        ],
+        "transport": "Auto"
+      },
+      "maxInactiveRevisions": null,
+      "registries": [
+        {
+          "identity": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-bridge-prod",
+          "passwordSecretRef": "",
+          "server": "acrdiiacpatchforgeprod.azurecr.io",
+          "username": ""
+        }
+      ],
+      "runtime": null,
+      "secrets": null,
+      "service": null
+    },
+    "customDomainVerificationId": "D815E8B3470ADCCFE09104F6B9557CC8DC05A4BF8DFED6FC65F27D87B54195E5",
+    "delegatedIdentities": [],
+    "environmentId": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/managedEnvironments/acae-diiac-patchforge-prod",
+    "eventStreamEndpoint": "https://uksouth.azurecontainerapps.dev/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/containerApps/ca-patchforge-bridge-prod/eventstream",
+    "latestReadyRevisionName": "ca-patchforge-bridge-prod--0000024",
+    "latestRevisionFqdn": "ca-patchforge-bridge-prod--0000025.lemonpebble-11b2e331.uksouth.azurecontainerapps.io",
+    "latestRevisionName": "ca-patchforge-bridge-prod--0000025",
+    "managedEnvironmentId": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/managedEnvironments/acae-diiac-patchforge-prod",
+    "outboundIpAddresses": [
+      "51.145.61.244"
+    ],
+    "provisioningState": "Succeeded",
+    "runningStatus": "Running",
+    "template": {
+      "containers": [
+        {
+          "env": [
+            {
+              "name": "PATCHFORGE_ENVIRONMENT"
+            },
+            {
+              "name": "PATCHFORGE_BOUNDARY"
+            },
+            {
+              "name": "PATCHFORGE_STORAGE_ACCOUNT"
+            },
+            {
+              "name": "PATCHFORGE_KEYVAULT_URI"
+            },
+            {
+              "name": "PATCHFORGE_DATABASE_HOST"
+            },
+            {
+              "name": "PATCHFORGE_DATABASE_NAME"
+            },
+            {
+              "name": "PATCHFORGE_DATABASE_USER"
+            },
+            {
+              "name": "PATCHFORGE_DATABASE_PASSWORD_SECRET_NAME"
+            },
+            {
+              "name": "PATCHFORGE_STORAGE_MODE"
+            },
+            {
+              "name": "PATCHFORGE_ENTRA_TENANT_ID"
+            },
+            {
+              "name": "PATCHFORGE_ENTRA_AUDIENCE"
+            },
+            {
+              "name": "PATCHFORGE_AUTH_REQUIRED"
+            },
+            {
+              "name": "PATCHFORGE_KEYVAULT_SIGNING_KEY_ID"
+            },
+            {
+              "name": "AZURE_CLIENT_ID"
+            },
+            {
+              "name": "PATCHFORGE_COMPONENT"
+            },
+            {
+              "name": "PATCHFORGE_RUNTIME_URL"
+            },
+            {
+              "name": "PATCHFORGE_ALLOWED_ORIGINS"
+            },
+            {
+              "name": "PATCHFORGE_DEFAULT_TENANT"
+            },
+            {
+              "name": "PATCHFORGE_AGENT_INTAKE_ENABLED"
+            },
+            {
+              "name": "PATCHFORGE_PUBLIC_SOURCE_FEEDS_ENABLED"
+            },
+            {
+              "name": "PATCHFORGE_WORKER_ENABLED"
+            },
+            {
+              "name": "PATCHFORGE_SCHEDULER_ENABLED"
+            },
+            {
+              "name": "PATCHFORGE_IMAGE_TAG"
+            },
+            {
+              "name": "PATCHFORGE_RENDERER_COMMIT"
+            },
+            {
+              "name": "PATCHFORGE_PRODUCT_BASELINE"
+            },
+            {
+              "name": "PATCHFORGE_REPORT_CONTEXT_VERSION"
+            },
+            {
+              "name": "CONTAINER_IMAGE_TAG"
+            },
+            {
+              "name": "PATCHFORGE_COMMIT_SHA"
+            },
+            {
+              "name": "PATCHFORGE_OPENAI_AGENT_ENABLED"
+            },
+            {
+              "name": "PATCHFORGE_SEARCH_MODE"
+            }
+          ],
+          "image": "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-bridge:pfrebuild-20260601-43f953c",
+          "name": "patchforge-bridge",
+          "resources": {
+            "cpu": 0.5,
+            "ephemeralStorage": "2Gi",
+            "memory": "1Gi"
+          }
+        }
+      ],
+      "initContainers": null,
+      "revisionSuffix": "",
+      "scale": {
+        "cooldownPeriod": 300,
+        "maxReplicas": 5,
+        "minReplicas": 1,
+        "pollingInterval": 30,
+        "rules": null
+      },
+      "serviceBinds": null,
+      "terminationGracePeriodSeconds": null,
+      "volumes": null
+    },
+    "workloadProfileName": null
+  },
+  "resourceGroup": "rg-diiac-patchforge-prod",
+  "systemData": {
+    "createdAt": "2026-05-26T16:11:33.9966324",
+    "createdBy": "nbailey@diiac.io",
+    "createdByType": "User",
+    "lastModifiedAt": "2026-06-01T23:04:31.7298251",
+    "lastModifiedBy": "nbailey@diiac.io",
+    "lastModifiedByType": "User"
+  },
+  "tags": {
+    "boundary": "governance-only",
+    "component": "bridge-api",
+    "environment": "prod",
+    "managedBy": "bicep",
+    "owner": "DIIaC",
+    "product": "DIIaC PatchForge"
+  },
+  "type": "Microsoft.App/containerApps"
+}
+[K
+Updating ca-patchforge-runtime-prod -> acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-runtime:pfrebuild-20260601-43f953c
+az :
+At line:33 char:10
++   $raw = az containerapp update -g $rg -n $app.name --image $app.imag ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+/ Running ..
+| Running ..
+\ Running ..
+- Running ..
+/ Running ..
+| Running ..
+{
+  "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/containerapps/ca-patchforge-runtime-prod",
+  "identity": {
+    "type": "UserAssigned",
+    "userAssignedIdentities": {
+      "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourcegroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-runtime-prod": {
+        "clientId": "c149eac8-fce9-4ab4-ad23-9f5348f3a673",
+        "principalId": "12b0c001-518d-4b6f-95f7-9865c1731f59"
+      }
+    }
+  },
+  "location": "UK South",
+  "name": "ca-patchforge-runtime-prod",
+  "properties": {
+    "configuration": {
+      "activeRevisionsMode": "Single",
+      "dapr": null,
+      "identitySettings": [],
+      "ingress": {
+        "additionalPortMappings": null,
+        "allowInsecure": false,
+        "clientCertificateMode": null,
+        "corsPolicy": null,
+        "customDomains": null,
+        "exposedPort": 0,
+        "external": false,
+        "fqdn": "ca-patchforge-runtime-prod.internal.lemonpebble-11b2e331.uksouth.azurecontainerapps.io",
+        "ipSecurityRestrictions": null,
+        "stickySessions": null,
+        "targetPort": 8080,
+        "traffic": [
+          {
+            "latestRevision": true,
+            "weight": 100
+          }
+        ],
+        "transport": "Auto"
+      },
+      "maxInactiveRevisions": null,
+      "registries": [
+        {
+          "identity": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-runtime-prod",
+          "passwordSecretRef": "",
+          "server": "acrdiiacpatchforgeprod.azurecr.io",
+          "username": ""
+        }
+      ],
+      "runtime": null,
+      "secrets": null,
+      "service": null
+    },
+    "customDomainVerificationId": "D815E8B3470ADCCFE09104F6B9557CC8DC05A4BF8DFED6FC65F27D87B54195E5",
+    "delegatedIdentities": [],
+    "environmentId": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/managedEnvironments/acae-diiac-patchforge-prod",
+    "eventStreamEndpoint": "https://uksouth.azurecontainerapps.dev/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/containerApps/ca-patchforge-runtime-prod/eventstream",
+    "latestReadyRevisionName": "ca-patchforge-runtime-prod--0000022",
+    "latestRevisionFqdn": "ca-patchforge-runtime-prod--0000023.internal.lemonpebble-11b2e331.uksouth.azurecontainerapps.io",
+    "latestRevisionName": "ca-patchforge-runtime-prod--0000023",
+    "managedEnvironmentId": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/managedEnvironments/acae-diiac-patchforge-prod",
+    "outboundIpAddresses": [
+      "51.145.61.244"
+    ],
+    "provisioningState": "Succeeded",
+    "runningStatus": "Running",
+    "template": {
+      "containers": [
+        {
+          "env": [
+            {
+              "name": "PATCHFORGE_ENVIRONMENT"
+            },
+            {
+              "name": "PATCHFORGE_BOUNDARY"
+            },
+            {
+              "name": "PATCHFORGE_STORAGE_ACCOUNT"
+            },
+            {
+              "name": "PATCHFORGE_KEYVAULT_URI"
+            },
+            {
+              "name": "PATCHFORGE_DATABASE_HOST"
+            },
+            {
+              "name": "PATCHFORGE_DATABASE_NAME"
+            },
+            {
+              "name": "PATCHFORGE_DATABASE_USER"
+            },
+            {
+              "name": "PATCHFORGE_DATABASE_PASSWORD_SECRET_NAME"
+            },
+            {
+              "name": "PATCHFORGE_STORAGE_MODE"
+            },
+            {
+              "name": "PATCHFORGE_ENTRA_TENANT_ID"
+            },
+            {
+              "name": "PATCHFORGE_ENTRA_AUDIENCE"
+            },
+            {
+              "name": "PATCHFORGE_AUTH_REQUIRED"
+            },
+            {
+              "name": "PATCHFORGE_KEYVAULT_SIGNING_KEY_ID"
+            },
+            {
+              "name": "AZURE_CLIENT_ID"
+            },
+            {
+              "name": "PATCHFORGE_COMPONENT"
+            },
+            {
+              "name": "PATCHFORGE_AGENT_INTAKE_ENABLED"
+            },
+            {
+              "name": "PATCHFORGE_PUBLIC_SOURCE_FEEDS_ENABLED"
+            },
+            {
+              "name": "PATCHFORGE_WORKER_ENABLED"
+            },
+            {
+              "name": "PATCHFORGE_SCHEDULER_ENABLED"
+            },
+            {
+              "name": "PATCHFORGE_IMAGE_TAG"
+            },
+            {
+              "name": "PATCHFORGE_RENDERER_COMMIT"
+            },
+            {
+              "name": "PATCHFORGE_PRODUCT_BASELINE"
+            },
+            {
+              "name": "PATCHFORGE_REPORT_CONTEXT_VERSION"
+            },
+            {
+              "name": "CONTAINER_IMAGE_TAG"
+            },
+            {
+              "name": "PATCHFORGE_COMMIT_SHA"
+            },
+            {
+              "name": "PATCHFORGE_OPENAI_AGENT_ENABLED"
+            },
+            {
+              "name": "PATCHFORGE_SEARCH_MODE"
+            }
+          ],
+          "image": "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-runtime:pfrebuild-20260601-43f953c",
+          "name": "patchforge-runtime",
+          "resources": {
+            "cpu": 0.5,
+            "ephemeralStorage": "2Gi",
+            "memory": "1Gi"
+          }
+        }
+      ],
+      "initContainers": null,
+      "revisionSuffix": "",
+      "scale": {
+        "cooldownPeriod": 300,
+        "maxReplicas": 3,
+        "minReplicas": 1,
+        "pollingInterval": 30,
+        "rules": null
+      },
+      "serviceBinds": null,
+      "terminationGracePeriodSeconds": null,
+      "volumes": null
+    },
+    "workloadProfileName": null
+  },
+  "resourceGroup": "rg-diiac-patchforge-prod",
+  "systemData": {
+    "createdAt": "2026-05-26T16:11:34.0435101",
+    "createdBy": "nbailey@diiac.io",
+    "createdByType": "User",
+    "lastModifiedAt": "2026-06-01T23:05:01.9047889",
+    "lastModifiedBy": "nbailey@diiac.io",
+    "lastModifiedByType": "User"
+  },
+  "tags": {
+    "boundary": "governance-only",
+    "component": "runtime-governance",
+    "environment": "prod",
+    "managedBy": "bicep",
+    "owner": "DIIaC",
+    "product": "DIIaC PatchForge"
+  },
+  "type": "Microsoft.App/containerApps"
+}
+[K
+Updating ca-patchforge-sra-prod -> acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-sra-agent:pfrebuild-20260601-43f953c
+az :
+At line:33 char:10
++   $raw = az containerapp update -g $rg -n $app.name --image $app.imag ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+/ Running ..
+| Running ..
+\ Running ..
+- Running ..
+/ Running ..
+| Running ..
+\ Running ..
+{
+  "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/containerapps/ca-patchforge-sra-prod",
+  "identity": {
+    "type": "UserAssigned",
+    "userAssignedIdentities": {
+      "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourcegroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-sra-prod": {
+        "clientId": "6631a621-19e7-4629-bcf5-2ec99d5f0676",
+        "principalId": "ddabbaaa-dd6f-4786-985b-c7df7585ad7a"
+      }
+    }
+  },
+  "location": "UK South",
+  "name": "ca-patchforge-sra-prod",
+  "properties": {
+    "configuration": {
+      "activeRevisionsMode": "Single",
+      "dapr": null,
+      "identitySettings": [],
+      "ingress": {
+        "additionalPortMappings": null,
+        "allowInsecure": false,
+        "clientCertificateMode": null,
+        "corsPolicy": null,
+        "customDomains": null,
+        "exposedPort": 0,
+        "external": false,
+        "fqdn": "ca-patchforge-sra-prod.internal.lemonpebble-11b2e331.uksouth.azurecontainerapps.io",
+        "ipSecurityRestrictions": null,
+        "stickySessions": null,
+        "targetPort": 8080,
+        "traffic": [
+          {
+            "latestRevision": true,
+            "weight": 100
+          }
+        ],
+        "transport": "Auto"
+      },
+      "maxInactiveRevisions": null,
+      "registries": [
+        {
+          "identity": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-sra-prod",
+          "passwordSecretRef": "",
+          "server": "acrdiiacpatchforgeprod.azurecr.io",
+          "username": ""
+        }
+      ],
+      "runtime": null,
+      "secrets": null,
+      "service": null
+    },
+    "customDomainVerificationId": "D815E8B3470ADCCFE09104F6B9557CC8DC05A4BF8DFED6FC65F27D87B54195E5",
+    "delegatedIdentities": [],
+    "environmentId": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/managedEnvironments/acae-diiac-patchforge-prod",
+    "eventStreamEndpoint": "https://uksouth.azurecontainerapps.dev/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/containerApps/ca-patchforge-sra-prod/eventstream",
+    "latestReadyRevisionName": "ca-patchforge-sra-prod--0000021",
+    "latestRevisionFqdn": "ca-patchforge-sra-prod--0000022.internal.lemonpebble-11b2e331.uksouth.azurecontainerapps.io",
+    "latestRevisionName": "ca-patchforge-sra-prod--0000022",
+    "managedEnvironmentId": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/managedEnvironments/acae-diiac-patchforge-prod",
+    "outboundIpAddresses": [
+      "51.145.61.244"
+    ],
+    "provisioningState": "Succeeded",
+    "runningStatus": "Running",
+    "template": {
+      "containers": [
+        {
+          "env": [
+            {
+              "name": "PATCHFORGE_ENVIRONMENT"
+            },
+            {
+              "name": "PATCHFORGE_BOUNDARY"
+            },
+            {
+              "name": "PATCHFORGE_STORAGE_ACCOUNT"
+            },
+            {
+              "name": "PATCHFORGE_KEYVAULT_URI"
+            },
+            {
+              "name": "PATCHFORGE_DATABASE_HOST"
+            },
+            {
+              "name": "PATCHFORGE_DATABASE_NAME"
+            },
+            {
+              "name": "PATCHFORGE_DATABASE_USER"
+            },
+            {
+              "name": "PATCHFORGE_DATABASE_PASSWORD_SECRET_NAME"
+            },
+            {
+              "name": "PATCHFORGE_STORAGE_MODE"
+            },
+            {
+              "name": "PATCHFORGE_ENTRA_TENANT_ID"
+            },
+            {
+              "name": "PATCHFORGE_ENTRA_AUDIENCE"
+            },
+            {
+              "name": "PATCHFORGE_AUTH_REQUIRED"
+            },
+            {
+              "name": "PATCHFORGE_KEYVAULT_SIGNING_KEY_ID"
+            },
+            {
+              "name": "AZURE_CLIENT_ID"
+            },
+            {
+              "name": "PATCHFORGE_COMPONENT"
+            },
+            {
+              "name": "PATCHFORGE_AGENT_INTAKE_ENABLED"
+            },
+            {
+              "name": "PATCHFORGE_PUBLIC_SOURCE_FEEDS_ENABLED"
+            },
+            {
+              "name": "PATCHFORGE_WORKER_ENABLED"
+            },
+            {
+              "name": "PATCHFORGE_SCHEDULER_ENABLED"
+            },
+            {
+              "name": "PATCHFORGE_IMAGE_TAG"
+            },
+            {
+              "name": "PATCHFORGE_RENDERER_COMMIT"
+            },
+            {
+              "name": "PATCHFORGE_PRODUCT_BASELINE"
+            },
+            {
+              "name": "PATCHFORGE_REPORT_CONTEXT_VERSION"
+            },
+            {
+              "name": "CONTAINER_IMAGE_TAG"
+            },
+            {
+              "name": "PATCHFORGE_COMMIT_SHA"
+            },
+            {
+              "name": "PATCHFORGE_OPENAI_AGENT_ENABLED"
+            },
+            {
+              "name": "PATCHFORGE_SEARCH_MODE"
+            }
+          ],
+          "image": "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-sra-agent:pfrebuild-20260601-43f953c",
+          "name": "patchforge-sra",
+          "resources": {
+            "cpu": 0.5,
+            "ephemeralStorage": "2Gi",
+            "memory": "1Gi"
+          }
+        }
+      ],
+      "initContainers": null,
+      "revisionSuffix": "",
+      "scale": {
+        "cooldownPeriod": 300,
+        "maxReplicas": 3,
+        "minReplicas": 0,
+        "pollingInterval": 30,
+        "rules": null
+      },
+      "serviceBinds": null,
+      "terminationGracePeriodSeconds": null,
+      "volumes": null
+    },
+    "workloadProfileName": null
+  },
+  "resourceGroup": "rg-diiac-patchforge-prod",
+  "systemData": {
+    "createdAt": "2026-05-26T16:11:34.0278835",
+    "createdBy": "nbailey@diiac.io",
+    "createdByType": "User",
+    "lastModifiedAt": "2026-06-01T23:05:33.0876185",
+    "lastModifiedBy": "nbailey@diiac.io",
+    "lastModifiedByType": "User"
+  },
+  "tags": {
+    "boundary": "governance-only",
+    "component": "sra-advisory-only",
+    "environment": "prod",
+    "managedBy": "bicep",
+    "owner": "DIIaC",
+    "product": "DIIaC PatchForge"
+  },
+  "type": "Microsoft.App/containerApps"
+}
+[K
+Updating ca-patchforge-worker-prod -> acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-ingest-worker:pfrebuild-20260601-43f953c
+az :
+At line:33 char:10
++   $raw = az containerapp update -g $rg -n $app.name --image $app.imag ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+/ Running ..
+| Running ..
+\ Running ..
+- Running ..
+/ Running ..
+| Running ..
+{
+  "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/containerapps/ca-patchforge-worker-prod",
+  "identity": {
+    "type": "UserAssigned",
+    "userAssignedIdentities": {
+      "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourcegroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-worker-prod": {
+        "clientId": "51ed854c-bc9a-403b-b452-38cb074eea46",
+        "principalId": "845bb434-c6c9-4cef-90ca-736d723a11b7"
+      }
+    }
+  },
+  "location": "UK South",
+  "name": "ca-patchforge-worker-prod",
+  "properties": {
+    "configuration": {
+      "activeRevisionsMode": "Single",
+      "dapr": null,
+      "identitySettings": [],
+      "ingress": {
+        "additionalPortMappings": null,
+        "allowInsecure": false,
+        "clientCertificateMode": null,
+        "corsPolicy": null,
+        "customDomains": null,
+        "exposedPort": 0,
+        "external": false,
+        "fqdn": "ca-patchforge-worker-prod.internal.lemonpebble-11b2e331.uksouth.azurecontainerapps.io",
+        "ipSecurityRestrictions": null,
+        "stickySessions": null,
+        "targetPort": 8080,
+        "traffic": [
+          {
+            "latestRevision": true,
+            "weight": 100
+          }
+        ],
+        "transport": "Auto"
+      },
+      "maxInactiveRevisions": null,
+      "registries": [
+        {
+          "identity": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-worker-prod",
+          "passwordSecretRef": "",
+          "server": "acrdiiacpatchforgeprod.azurecr.io",
+          "username": ""
+        }
+      ],
+      "runtime": null,
+      "secrets": null,
+      "service": null
+    },
+    "customDomainVerificationId": "D815E8B3470ADCCFE09104F6B9557CC8DC05A4BF8DFED6FC65F27D87B54195E5",
+    "delegatedIdentities": [],
+    "environmentId": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/managedEnvironments/acae-diiac-patchforge-prod",
+    "eventStreamEndpoint": "https://uksouth.azurecontainerapps.dev/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/containerApps/ca-patchforge-worker-prod/eventstream",
+    "latestReadyRevisionName": "ca-patchforge-worker-prod--0000021",
+    "latestRevisionFqdn": "ca-patchforge-worker-prod--0000022.internal.lemonpebble-11b2e331.uksouth.azurecontainerapps.io",
+    "latestRevisionName": "ca-patchforge-worker-prod--0000022",
+    "managedEnvironmentId": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/managedEnvironments/acae-diiac-patchforge-prod",
+    "outboundIpAddresses": [
+      "51.145.61.244"
+    ],
+    "provisioningState": "Succeeded",
+    "runningStatus": "Running",
+    "template": {
+      "containers": [
+        {
+          "env": [
+            {
+              "name": "PATCHFORGE_ENVIRONMENT"
+            },
+            {
+              "name": "PATCHFORGE_BOUNDARY"
+            },
+            {
+              "name": "PATCHFORGE_STORAGE_ACCOUNT"
+            },
+            {
+              "name": "PATCHFORGE_KEYVAULT_URI"
+            },
+            {
+              "name": "PATCHFORGE_DATABASE_HOST"
+            },
+            {
+              "name": "PATCHFORGE_DATABASE_NAME"
+            },
+            {
+              "name": "PATCHFORGE_DATABASE_USER"
+            },
+            {
+              "name": "PATCHFORGE_DATABASE_PASSWORD_SECRET_NAME"
+            },
+            {
+              "name": "PATCHFORGE_STORAGE_MODE"
+            },
+            {
+              "name": "PATCHFORGE_ENTRA_TENANT_ID"
+            },
+            {
+              "name": "PATCHFORGE_ENTRA_AUDIENCE"
+            },
+            {
+              "name": "PATCHFORGE_AUTH_REQUIRED"
+            },
+            {
+              "name": "PATCHFORGE_KEYVAULT_SIGNING_KEY_ID"
+            },
+            {
+              "name": "AZURE_CLIENT_ID"
+            },
+            {
+              "name": "PATCHFORGE_COMPONENT"
+            },
+            {
+              "name": "PATCHFORGE_AGENT_INTAKE_ENABLED"
+            },
+            {
+              "name": "PATCHFORGE_PUBLIC_SOURCE_FEEDS_ENABLED"
+            },
+            {
+              "name": "PATCHFORGE_WORKER_ENABLED"
+            },
+            {
+              "name": "PATCHFORGE_SCHEDULER_ENABLED"
+            },
+            {
+              "name": "PATCHFORGE_IMAGE_TAG"
+            },
+            {
+              "name": "PATCHFORGE_RENDERER_COMMIT"
+            },
+            {
+              "name": "PATCHFORGE_PRODUCT_BASELINE"
+            },
+            {
+              "name": "PATCHFORGE_REPORT_CONTEXT_VERSION"
+            },
+            {
+              "name": "CONTAINER_IMAGE_TAG"
+            },
+            {
+              "name": "PATCHFORGE_COMMIT_SHA"
+            },
+            {
+              "name": "PATCHFORGE_OPENAI_AGENT_ENABLED"
+            },
+            {
+              "name": "PATCHFORGE_SEARCH_MODE"
+            }
+          ],
+          "image": "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-ingest-worker:pfrebuild-20260601-43f953c",
+          "name": "patchforge-worker",
+          "resources": {
+            "cpu": 0.5,
+            "ephemeralStorage": "2Gi",
+            "memory": "1Gi"
+          }
+        }
+      ],
+      "initContainers": null,
+      "revisionSuffix": "",
+      "scale": {
+        "cooldownPeriod": 300,
+        "maxReplicas": 5,
+        "minReplicas": 0,
+        "pollingInterval": 30,
+        "rules": null
+      },
+      "serviceBinds": null,
+      "terminationGracePeriodSeconds": null,
+      "volumes": null
+    },
+    "workloadProfileName": null
+  },
+  "resourceGroup": "rg-diiac-patchforge-prod",
+  "systemData": {
+    "createdAt": "2026-05-26T16:11:33.9966324",
+    "createdBy": "nbailey@diiac.io",
+    "createdByType": "User",
+    "lastModifiedAt": "2026-06-01T23:06:04.5248041",
+    "lastModifiedBy": "nbailey@diiac.io",
+    "lastModifiedByType": "User"
+  },
+  "tags": {
+    "boundary": "governance-only",
+    "component": "ingest-export-worker",
+    "environment": "prod",
+    "managedBy": "bicep",
+    "owner": "DIIaC",
+    "product": "DIIaC PatchForge"
+  },
+  "type": "Microsoft.App/containerApps"
+}
+[K
+Updating ca-patchforge-scheduler-prod -> acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-scheduler:pfrebuild-20260601-43f953c
+az :
+At line:33 char:10
++   $raw = az containerapp update -g $rg -n $app.name --image $app.imag ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+/ Running ..
+| Running ..
+\ Running ..
+- Running ..
+/ Running ..
+| Running ..
+\ Running ..
+{
+  "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/containerapps/ca-patchforge-scheduler-prod",
+  "identity": {
+    "type": "UserAssigned",
+    "userAssignedIdentities": {
+      "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourcegroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-worker-prod": {
+        "clientId": "51ed854c-bc9a-403b-b452-38cb074eea46",
+        "principalId": "845bb434-c6c9-4cef-90ca-736d723a11b7"
+      }
+    }
+  },
+  "location": "UK South",
+  "name": "ca-patchforge-scheduler-prod",
+  "properties": {
+    "configuration": {
+      "activeRevisionsMode": "Single",
+      "dapr": null,
+      "identitySettings": [],
+      "ingress": {
+        "additionalPortMappings": null,
+        "allowInsecure": false,
+        "clientCertificateMode": null,
+        "corsPolicy": null,
+        "customDomains": null,
+        "exposedPort": 0,
+        "external": false,
+        "fqdn": "ca-patchforge-scheduler-prod.internal.lemonpebble-11b2e331.uksouth.azurecontainerapps.io",
+        "ipSecurityRestrictions": null,
+        "stickySessions": null,
+        "targetPort": 8080,
+        "traffic": [
+          {
+            "latestRevision": true,
+            "weight": 100
+          }
+        ],
+        "transport": "Auto"
+      },
+      "maxInactiveRevisions": null,
+      "registries": [
+        {
+          "identity": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-patchforge-worker-prod",
+          "passwordSecretRef": "",
+          "server": "acrdiiacpatchforgeprod.azurecr.io",
+          "username": ""
+        }
+      ],
+      "runtime": null,
+      "secrets": null,
+      "service": null
+    },
+    "customDomainVerificationId": "D815E8B3470ADCCFE09104F6B9557CC8DC05A4BF8DFED6FC65F27D87B54195E5",
+    "delegatedIdentities": [],
+    "environmentId": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/managedEnvironments/acae-diiac-patchforge-prod",
+    "eventStreamEndpoint": "https://uksouth.azurecontainerapps.dev/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/containerApps/ca-patchforge-scheduler-prod/eventstream",
+    "latestReadyRevisionName": "ca-patchforge-scheduler-prod--0000021",
+    "latestRevisionFqdn": "ca-patchforge-scheduler-prod--0000022.internal.lemonpebble-11b2e331.uksouth.azurecontainerapps.io",
+    "latestRevisionName": "ca-patchforge-scheduler-prod--0000022",
+    "managedEnvironmentId": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.App/managedEnvironments/acae-diiac-patchforge-prod",
+    "outboundIpAddresses": [
+      "51.145.61.244"
+    ],
+    "provisioningState": "Succeeded",
+    "runningStatus": "Running",
+    "template": {
+      "containers": [
+        {
+          "env": [
+            {
+              "name": "PATCHFORGE_ENVIRONMENT"
+            },
+            {
+              "name": "PATCHFORGE_BOUNDARY"
+            },
+            {
+              "name": "PATCHFORGE_STORAGE_ACCOUNT"
+            },
+            {
+              "name": "PATCHFORGE_KEYVAULT_URI"
+            },
+            {
+              "name": "PATCHFORGE_DATABASE_HOST"
+            },
+            {
+              "name": "PATCHFORGE_DATABASE_NAME"
+            },
+            {
+              "name": "PATCHFORGE_DATABASE_USER"
+            },
+            {
+              "name": "PATCHFORGE_DATABASE_PASSWORD_SECRET_NAME"
+            },
+            {
+              "name": "PATCHFORGE_STORAGE_MODE"
+            },
+            {
+              "name": "PATCHFORGE_ENTRA_TENANT_ID"
+            },
+            {
+              "name": "PATCHFORGE_ENTRA_AUDIENCE"
+            },
+            {
+              "name": "PATCHFORGE_AUTH_REQUIRED"
+            },
+            {
+              "name": "PATCHFORGE_KEYVAULT_SIGNING_KEY_ID"
+            },
+            {
+              "name": "AZURE_CLIENT_ID"
+            },
+            {
+              "name": "PATCHFORGE_COMPONENT"
+            },
+            {
+              "name": "PATCHFORGE_SCHEDULER_INTERVAL_MS"
+            },
+            {
+              "name": "PATCHFORGE_SCHEDULER_CISA_LIMIT"
+            },
+            {
+              "name": "PATCHFORGE_SCHEDULER_EPSS_LIMIT"
+            },
+            {
+              "name": "PATCHFORGE_AGENT_INTAKE_ENABLED"
+            },
+            {
+              "name": "PATCHFORGE_PUBLIC_SOURCE_FEEDS_ENABLED"
+            },
+            {
+              "name": "PATCHFORGE_WORKER_ENABLED"
+            },
+            {
+              "name": "PATCHFORGE_SCHEDULER_ENABLED"
+            },
+            {
+              "name": "PATCHFORGE_IMAGE_TAG"
+            },
+            {
+              "name": "PATCHFORGE_RENDERER_COMMIT"
+            },
+            {
+              "name": "PATCHFORGE_PRODUCT_BASELINE"
+            },
+            {
+              "name": "PATCHFORGE_REPORT_CONTEXT_VERSION"
+            },
+            {
+              "name": "CONTAINER_IMAGE_TAG"
+            },
+            {
+              "name": "PATCHFORGE_COMMIT_SHA"
+            },
+            {
+              "name": "PATCHFORGE_OPENAI_AGENT_ENABLED"
+            },
+            {
+              "name": "PATCHFORGE_SEARCH_MODE"
+            }
+          ],
+          "image": "acrdiiacpatchforgeprod.azurecr.io/diiac/patchforge-scheduler:pfrebuild-20260601-43f953c",
+          "name": "patchforge-scheduler",
+          "resources": {
+            "cpu": 0.25,
+            "ephemeralStorage": "1Gi",
+            "memory": "0.5Gi"
+          }
+        }
+      ],
+      "initContainers": null,
+      "revisionSuffix": "",
+      "scale": {
+        "cooldownPeriod": 300,
+        "maxReplicas": 1,
+        "minReplicas": 1,
+        "pollingInterval": 30,
+        "rules": null
+      },
+      "serviceBinds": null,
+      "terminationGracePeriodSeconds": null,
+      "volumes": null
+    },
+    "workloadProfileName": null
+  },
+  "resourceGroup": "rg-diiac-patchforge-prod",
+  "systemData": {
+    "createdAt": "2026-05-26T16:11:34.0122591",
+    "createdBy": "nbailey@diiac.io",
+    "createdByType": "User",
+    "lastModifiedAt": "2026-06-01T23:06:27.7130868",
+    "lastModifiedBy": "nbailey@diiac.io",
+    "lastModifiedByType": "User"
+  },
+  "tags": {
+    "boundary": "governance-only",
+    "component": "scheduler",
+    "environment": "prod",
+    "managedBy": "bicep",
+    "owner": "DIIaC",
+    "product": "DIIaC PatchForge"
+  },
+  "type": "Microsoft.App/containerApps"
+}
+[K

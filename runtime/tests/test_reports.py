@@ -1,7 +1,9 @@
 from pathlib import Path
 
 from runtime.governance_runtime import create_signed_decision_pack
-from runtime.reports import REPORT_SECTIONS, REPORT_TYPES, render_all_reports, render_report
+import pytest
+
+from runtime.reports import REPORT_SECTION_GROUPS, REPORT_TYPES, render_all_reports, render_report
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -38,8 +40,10 @@ def test_reports_render_required_sections():
     assert "final_approval_issued: false" in report
     assert "signing_provider:" in report
     assert "verification_state:" in report
-    for section in REPORT_SECTIONS:
+    for section in REPORT_SECTION_GROUPS["cab_patch_decision_report"]:
         assert f"## {section}" in report
+    assert "## What Can Be Shared With Customer" not in report
+    assert "## Executive Decision Summary" not in report
 
 
 def test_all_report_types_render_without_boundary_violations():
@@ -55,6 +59,22 @@ def test_all_report_types_render_without_boundary_violations():
     assert "does not" in combined
     assert "does not scan" in combined
     assert "signed pack metadata" in combined
+
+
+def test_removed_report_types_are_rejected():
+    for report_type in [
+        "ciso_executive_risk_brief",
+        "security_operations_action_plan",
+        "vendor_exposure_report",
+        "customer_estate_vulnerability_report",
+        "patch_hotfix_decision_pack",
+        "emergency_advisory_report",
+        "monthly_vulnerability_governance_pack",
+        "ciso_patch_version_comparison_report",
+        "board_vulnerability_summary",
+    ]:
+        with pytest.raises(ValueError, match="Unknown PatchForge report type"):
+            render_report(report_type, {"vulnerability_id": "REAL-RECORD-1"})
 
 
 def test_signed_pack_verifies_for_report_context(tmp_path):

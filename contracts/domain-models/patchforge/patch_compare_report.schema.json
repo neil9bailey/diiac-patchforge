@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PatchForge Patch Compare Report",
+  "type": "object",
+  "required": ["id", "options", "selected_candidate", "comparison_summary", "evidence_refs", "created_at"],
+  "properties": {
+    "id": { "type": "string" },
+    "customer_id": { "type": ["string", "null"] },
+    "asset_id": { "type": ["string", "null"] },
+    "cve_id": { "type": ["string", "null"] },
+    "options": { "type": "array", "items": { "$ref": "patch_action.schema.json" } },
+    "selected_candidate": { "type": "string" },
+    "comparison_summary": { "type": "string" },
+    "evidence_refs": { "type": "array", "items": { "type": "string" } },
+    "created_at": { "type": "string" }
+  }
+}

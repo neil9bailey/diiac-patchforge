@@ -2,12 +2,41 @@ import http from "node:http";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { authorizeRequest, createAuthConfigFromEnv } from "./auth.js";
-import { createPatchForgeStorage } from "./patchforge/storage.js";
+import { PATCHFORGE_PURGE_CONFIRMATION, createPatchForgeStorage } from "./patchforge/storage.js";
 import { createSourceFeedClient } from "./patchforge/sourceFeeds.js";
+import { listSourceAdapters, syncSourceAdapter } from "./patchforge/sourceAdapters.js";
+import { importAssetsFromCsv, parseConfigEvidence, redactConfigInput } from "./patchforge/configParsers.js";
+import {
+  buildPriorityIndex,
+  buildSignedActionPack,
+  comparePatchActions,
+  createWorkflowItem,
+  transitionWorkflowItem,
+  verifySignedActionPack
+} from "./patchforge/priority.js";
 import { buildFindingIntelligence, buildIntelligenceForTenant } from "./patchforge/intelligence.js";
-import { REPORT_CATALOG, buildReportContentReview, generateDecisionPackReport } from "./patchforge/reports.js";
+import {
+  DEFAULT_IMAGE_TAG,
+  DEFAULT_PRODUCT_BASELINE,
+  DEFAULT_RENDERER_COMMIT,
+  REPORT_CATALOG,
+  REPORT_CONTEXT_VERSION,
+  REPORT_TEMPLATE_VERSION,
+  buildReportContentReview,
+  generateDecisionPackReport
+} from "./patchforge/reports.js";
 import { getOpenAiAgentStatus, OPENAI_AGENT_NAMES, runOpenAiAgent } from "./patchforge/openaiAgentService.js";
 import { startScheduler } from "./patchforge/scheduler.js";
+import { startWorker } from "./patchforge/worker.js";
+import { handlePlatformRoutes } from "./routes/platformRoutes.js";
+import {
+  buildAssetDiscoveryOverview,
+  importDiscoveredAssets,
+  listAssetCollectors,
+  listAssetDiscoveryPolicies,
+  registerAssetCollector,
+  upsertAssetDiscoveryPolicy
+} from "./patchforge/assetDiscovery.js";
 import {
   buildAskPatchForgeResponse,
   buildSecurityActionCenterIndex,
@@ -34,6 +63,23 @@ import {
   upsertNetworkVendor
 } from "./patchforge/vendorLens.js";
 import { runSraTool } from "./sra/securityResearchAgent.js";
+import {
+  SUPPORTED_FINDING_EVIDENCE_CLASSES,
+  assertEvidenceEventPersisted,
+  compileFindingEvidenceItems,
+  createFindingEvidenceRecord,
+  createFindingEvidenceReopenEvent,
+  createFindingEvidenceReviewEvent,
+  projectFindingEvidenceRecord
+} from "./patchforge/evidenceReview.js";
+import {
+  buildSignedDecisionPackZip,
+  findStoredExportArtifact,
+  materializeSignedExportArtifact,
+  publicExportArtifact,
+  signedArtifactHeaders,
+  verifiedArtifact
+} from "./patchforge/exportArtifacts.js";
 
 const DEFAULT_PORT = Number(process.env.PORT || 8080);
 const MAX_REQUEST_BODY_BYTES = Number(process.env.PATCHFORGE_MAX_REQUEST_BODY_BYTES || 2 * 1024 * 1024);
@@ -48,7 +94,16 @@ const DEFAULT_VENDOR_PROFILES = [
   ["palo-alto", "Palo Alto", "infrastructure_networking"],
   ["citrix-netscaler", "Citrix / NetScaler", "infrastructure_networking"],
   ["f5", "F5", "infrastructure_networking"],
+  ["check-point", "Check Point", "infrastructure_networking"],
+  ["sophos", "Sophos", "infrastructure_networking"],
+  ["sonicwall", "SonicWall", "infrastructure_networking"],
+  ["watchguard", "WatchGuard", "infrastructure_networking"],
+  ["aruba-hpe", "Aruba / HPE", "infrastructure_networking"],
+  ["ubiquiti", "Ubiquiti", "infrastructure_networking"],
+  ["mikrotik", "MikroTik", "infrastructure_networking"],
+  ["barracuda", "Barracuda", "infrastructure_networking"],
   ["vmware-broadcom", "VMware / Broadcom", "virtualization_platform"],
+  ["ivanti", "Ivanti", "identity_endpoint_cloud"],
   ["red-hat", "Red Hat", "enterprise_apps"],
   ["canonical", "Canonical", "enterprise_apps"],
   ["suse", "SUSE", "enterprise_apps"],
@@ -57,9 +112,15 @@ const DEFAULT_VENDOR_PROFILES = [
   ["sap", "SAP", "enterprise_apps"],
   ["oracle", "Oracle", "enterprise_apps"],
   ["okta", "Okta", "identity_endpoint_cloud"],
+  ["zscaler", "Zscaler", "identity_endpoint_cloud"],
+  ["cloudflare", "Cloudflare", "identity_endpoint_cloud"],
+  ["akamai", "Akamai", "identity_endpoint_cloud"],
   ["crowdstrike", "CrowdStrike", "identity_endpoint_cloud"],
   ["sentinelone", "SentinelOne", "identity_endpoint_cloud"],
   ["trend-micro", "Trend Micro", "identity_endpoint_cloud"],
+  ["dell", "Dell", "infrastructure_networking"],
+  ["hp-enterprise", "HPE", "infrastructure_networking"],
+  ["lenovo", "Lenovo", "infrastructure_networking"],
   ["siemens", "Siemens", "ot_industrial"],
   ["schneider-electric", "Schneider Electric", "ot_industrial"],
   ["rockwell-automation", "Rockwell Automation", "ot_industrial"],
@@ -84,6 +145,7 @@ export function createServer(options = {}) {
   const runtimeClient = options.runtimeClient || createRuntimeClientFromEnv();
   const sourceFeedClient = options.sourceFeedClient || createSourceFeedClient();
   const vendorLensFetchImpl = options.vendorLensFetchImpl || globalThis.fetch;
+  const vendorLensOutboundOptions = options.vendorLensOutboundOptions || {};
   const openAiAgentFetchImpl = options.openAiAgentFetchImpl || globalThis.fetch;
   const corsConfig = options.cors || createCorsConfigFromEnv();
 
@@ -111,21 +173,8 @@ export function createServer(options = {}) {
       const baseTenantContext = resolveTenantContext(req, url, {}, authConfig, authorization.principal);
       const tenantId = baseTenantContext.effective_tenant_id;
 
-      if (req.method === "GET" && url.pathname === "/health") {
-        return sendJson(res, 200, {
-          status: "ok",
-          product: "DIIaC PatchForge",
-          boundary: "governance-only"
-        });
-      }
-
-      if (req.method === "GET" && url.pathname === "/readiness") {
-        return sendJson(res, 200, {
-          status: "ready",
-          storage: storage.storageMode || "local-json",
-          auth_required: Boolean(authConfig.required),
-          tenant_required: true
-        });
+      if (await handlePlatformRoutes({ req, res, url, storage, authConfig, sendJson })) {
+        return;
       }
 
       if (route === "GET /api/patchforge/vulnerabilities") {
@@ -178,8 +227,190 @@ export function createServer(options = {}) {
       if (req.method === "POST" && vulnerabilityReviewMatch) {
         const body = await readJson(req);
         const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
-        const result = await storage.reviewVulnerability(tenantContext.effective_tenant_id, decodeURIComponent(vulnerabilityReviewMatch[1]), withLineage(body, tenantContext, authorization));
+        const principal = authorization.principal || {};
+        const reviewer = principal.upn || principal.oid || (principal.auth_disabled ? body.reviewer : null) || "unknown";
+        const result = await storage.reviewVulnerability(
+          tenantContext.effective_tenant_id,
+          decodeURIComponent(vulnerabilityReviewMatch[1]),
+          withLineage({ ...body, reviewer }, tenantContext, authorization)
+        );
         return result ? sendJson(res, 200, result) : sendJson(res, 404, { error: "vulnerability_not_found" });
+      }
+
+      const findingEvidenceMatch = url.pathname.match(/^\/api\/patchforge\/vulnerabilities\/([^/]+)\/evidence$/);
+      if (req.method === "GET" && findingEvidenceMatch) {
+        const vulnerabilityId = decodeURIComponent(findingEvidenceMatch[1]);
+        const vulnerability = await storage.getVulnerability(tenantId, vulnerabilityId);
+        if (!vulnerability) {
+          return sendJson(res, 404, { error: "vulnerability_not_found" });
+        }
+        const records = (await storage.list("finding_evidence", tenantId))
+          .filter((record) => String(record.vulnerability_id).toLowerCase() === String(vulnerability.vulnerability_id).toLowerCase());
+        const events = await storage.list("finding_evidence_events", tenantId);
+        const evidence = records.map((record) => projectFindingEvidenceRecord({
+          record,
+          vulnerability,
+          events: events.filter((event) => event.evidence_id === record.evidence_id)
+        }));
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          vulnerability_id: vulnerability.vulnerability_id,
+          supported_evidence_classes: SUPPORTED_FINDING_EVIDENCE_CLASSES,
+          evidence,
+          evidence_events: events.filter((event) => evidence.some((record) => record.evidence_id === event.evidence_id)),
+          audit_replay: evidence.map((record) => ({
+            evidence_id: record.evidence_id,
+            replay_verified: record.replay_verified,
+            replay_failures: record.replay_failures,
+            latest_event_hash: record.latest_event_hash,
+            event_count: record.event_count,
+            expired: record.expired
+          })),
+          boundary: {
+            server_owned: true,
+            exact_finding_scope: true,
+            immutable_submission: true,
+            authenticated_review_required: true,
+            final_approval_issued: false
+          }
+        });
+      }
+
+      if (req.method === "POST" && findingEvidenceMatch) {
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        const vulnerabilityId = decodeURIComponent(findingEvidenceMatch[1]);
+        const vulnerability = await storage.getVulnerability(tenantRequest.tenantId, vulnerabilityId);
+        if (!vulnerability) {
+          return sendJson(res, 404, { error: "vulnerability_not_found" });
+        }
+        const evidence = createFindingEvidenceRecord({
+          tenantId: tenantRequest.tenantId,
+          vulnerability,
+          body: tenantRequest.body,
+          lineage: tenantRequest.lineageFields()
+        });
+        const persisted = await storage.appendImmutable("finding_evidence", evidence);
+        if (!persisted.created || persisted.record.content_hash !== evidence.content_hash) {
+          throw Object.assign(new Error("Evidence submission conflicted with an existing immutable record."), {
+            statusCode: 409,
+            publicError: "finding_evidence_submission_conflict",
+            publicMessage: "Evidence submission conflicted with an existing immutable record."
+          });
+        }
+        await storage.audit(tenantRequest.tenantId, "finding_evidence_submitted", {
+          vulnerability_id: vulnerability.vulnerability_id,
+          evidence_id: evidence.evidence_id,
+          evidence_class: evidence.evidence_class,
+          content_hash: evidence.content_hash,
+          ...tenantRequest.lineageFields()
+        });
+        return sendJson(res, 201, {
+          tenant_id: tenantRequest.tenantId,
+          tenant_context: tenantRequest.tenantContext,
+          evidence: persisted.record,
+          final_approval_issued: false
+        });
+      }
+
+      const findingEvidenceReviewMatch = url.pathname.match(/^\/api\/patchforge\/vulnerabilities\/([^/]+)\/evidence\/([^/]+)\/review$/);
+      if (req.method === "POST" && findingEvidenceReviewMatch) {
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        const vulnerabilityId = decodeURIComponent(findingEvidenceReviewMatch[1]);
+        const evidenceId = decodeURIComponent(findingEvidenceReviewMatch[2]);
+        const vulnerability = await storage.getVulnerability(tenantRequest.tenantId, vulnerabilityId);
+        if (!vulnerability) {
+          return sendJson(res, 404, { error: "vulnerability_not_found" });
+        }
+        const records = await storage.list("finding_evidence", tenantRequest.tenantId);
+        const existing = records.find((record) => record.evidence_id === evidenceId);
+        if (!existing) {
+          return sendJson(res, 404, { error: "finding_evidence_not_found" });
+        }
+        const evidenceEvents = await storage.list("finding_evidence_events", tenantRequest.tenantId);
+        const event = createFindingEvidenceReviewEvent({
+          record: existing,
+          vulnerability,
+          events: evidenceEvents,
+          body: tenantRequest.body,
+          principal: authorization.principal,
+          lineage: tenantRequest.lineageFields()
+        });
+        const persisted = await storage.appendImmutable("finding_evidence_events", event);
+        const persistedEvent = assertEvidenceEventPersisted(event, persisted);
+        const evidence = projectFindingEvidenceRecord({
+          record: existing,
+          vulnerability,
+          events: [...evidenceEvents.filter((item) => item.evidence_event_id !== persistedEvent.evidence_event_id), persistedEvent]
+        });
+        await storage.audit(tenantRequest.tenantId, "finding_evidence_reviewed", {
+          vulnerability_id: vulnerability.vulnerability_id,
+          evidence_id: evidence.evidence_id,
+          evidence_class: evidence.evidence_class,
+          review_state: evidence.review_state,
+          evidence_event_id: persistedEvent.evidence_event_id,
+          event_hash: persistedEvent.event_hash,
+          previous_event_hash: persistedEvent.previous_event_hash,
+          reviewed_content_hash: persistedEvent.evidence_content_hash,
+          ...tenantRequest.lineageFields()
+        });
+        return sendJson(res, 200, {
+          tenant_id: tenantRequest.tenantId,
+          tenant_context: tenantRequest.tenantContext,
+          evidence,
+          evidence_event: persistedEvent,
+          final_approval_issued: false
+        });
+      }
+
+      const findingEvidenceReopenMatch = url.pathname.match(/^\/api\/patchforge\/vulnerabilities\/([^/]+)\/evidence\/([^/]+)\/reopen$/);
+      if (req.method === "POST" && findingEvidenceReopenMatch) {
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        const vulnerabilityId = decodeURIComponent(findingEvidenceReopenMatch[1]);
+        const evidenceId = decodeURIComponent(findingEvidenceReopenMatch[2]);
+        const vulnerability = await storage.getVulnerability(tenantRequest.tenantId, vulnerabilityId);
+        if (!vulnerability) {
+          return sendJson(res, 404, { error: "vulnerability_not_found" });
+        }
+        const records = await storage.list("finding_evidence", tenantRequest.tenantId);
+        const existing = records.find((record) => record.evidence_id === evidenceId);
+        if (!existing) {
+          return sendJson(res, 404, { error: "finding_evidence_not_found" });
+        }
+        const evidenceEvents = await storage.list("finding_evidence_events", tenantRequest.tenantId);
+        const event = createFindingEvidenceReopenEvent({
+          record: existing,
+          vulnerability,
+          events: evidenceEvents,
+          body: tenantRequest.body,
+          principal: authorization.principal,
+          lineage: tenantRequest.lineageFields()
+        });
+        const persisted = await storage.appendImmutable("finding_evidence_events", event);
+        const persistedEvent = assertEvidenceEventPersisted(event, persisted);
+        const evidence = projectFindingEvidenceRecord({
+          record: existing,
+          vulnerability,
+          events: [...evidenceEvents.filter((item) => item.evidence_event_id !== persistedEvent.evidence_event_id), persistedEvent]
+        });
+        await storage.audit(tenantRequest.tenantId, "finding_evidence_reopened", {
+          vulnerability_id: vulnerability.vulnerability_id,
+          evidence_id: evidence.evidence_id,
+          evidence_class: evidence.evidence_class,
+          evidence_event_id: persistedEvent.evidence_event_id,
+          event_hash: persistedEvent.event_hash,
+          previous_event_hash: persistedEvent.previous_event_hash,
+          rationale: persistedEvent.rationale,
+          final_approval_issued: false,
+          ...tenantRequest.lineageFields()
+        });
+        return sendJson(res, 200, {
+          tenant_id: tenantRequest.tenantId,
+          tenant_context: tenantRequest.tenantContext,
+          evidence,
+          evidence_event: persistedEvent,
+          final_approval_issued: false
+        });
       }
 
       if (route === "GET /api/patchforge/assets") {
@@ -249,7 +480,16 @@ export function createServer(options = {}) {
         return sendJson(res, 200, await buildSecurityActionCenterIndex({ storage, tenantId }));
       }
 
+      if (route === "GET /api/patchforge/vendors-exploits-register") {
+        return sendJson(res, 200, await buildSecurityActionCenterIndex({ storage, tenantId }));
+      }
+
       if (route === "GET /api/patchforge/security-action-center/search") {
+        const index = await buildSecurityActionCenterIndex({ storage, tenantId });
+        return sendJson(res, 200, searchSecurityActionCenterIndex(index, Object.fromEntries(url.searchParams.entries())));
+      }
+
+      if (route === "GET /api/patchforge/vendors-exploits-register/search") {
         const index = await buildSecurityActionCenterIndex({ storage, tenantId });
         return sendJson(res, 200, searchSecurityActionCenterIndex(index, Object.fromEntries(url.searchParams.entries())));
       }
@@ -275,7 +515,17 @@ export function createServer(options = {}) {
         return detail ? sendJson(res, 200, { tenant_context: baseTenantContext, ...detail }) : sendJson(res, 404, { error: "cve_or_advisory_not_found" });
       }
 
-      if (route === "GET /api/patchforge/customer-estate/assets") {
+      const vendorsExploitsCveMatch = url.pathname.match(/^\/api\/patchforge\/vendors-exploits-register\/cves\/([^/]+)$/);
+      if (req.method === "GET" && vendorsExploitsCveMatch) {
+        const detail = await securityActionCenterDetail({
+          storage,
+          tenantId,
+          id: decodeURIComponent(vendorsExploitsCveMatch[1])
+        });
+        return detail ? sendJson(res, 200, { tenant_context: baseTenantContext, ...detail }) : sendJson(res, 404, { error: "cve_or_advisory_not_found" });
+      }
+
+      if (route === "GET /api/patchforge/customer-estate/assets" || route === "GET /api/patchforge/customer-operational-assets/assets") {
         const [assets, services, assessments, comparisons] = await Promise.all([
           listCustomerNetworkAssets(storage, tenantId),
           storage.list("services", tenantId),
@@ -299,7 +549,7 @@ export function createServer(options = {}) {
         });
       }
 
-      if (route === "POST /api/patchforge/customer-estate/assets/extract") {
+      if (route === "POST /api/patchforge/customer-estate/assets/extract" || route === "POST /api/patchforge/customer-operational-assets/assets/extract") {
         const body = await readJson(req);
         const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
         return sendJson(res, 200, {
@@ -311,7 +561,7 @@ export function createServer(options = {}) {
         });
       }
 
-      if (route === "POST /api/patchforge/customer-estate/assets/upsert") {
+      if (route === "POST /api/patchforge/customer-estate/assets/upsert" || route === "POST /api/patchforge/customer-operational-assets/assets/upsert") {
         const body = await readJson(req);
         const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
         const asset = await upsertCustomerNetworkAsset(storage, tenantContext.effective_tenant_id, withLineage(body.asset || body, tenantContext, authorization));
@@ -323,7 +573,7 @@ export function createServer(options = {}) {
         });
       }
 
-      if (route === "POST /api/patchforge/customer-estate/match") {
+      if (route === "POST /api/patchforge/customer-estate/match" || route === "POST /api/patchforge/customer-operational-assets/match") {
         const body = await readJson(req);
         const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
         const match = await matchCustomerEstate({
@@ -339,7 +589,7 @@ export function createServer(options = {}) {
         });
       }
 
-      if (route === "POST /api/patchforge/customer-estate/patch-compare") {
+      if (route === "POST /api/patchforge/customer-estate/patch-compare" || route === "POST /api/patchforge/customer-operational-assets/patch-compare") {
         const body = await readJson(req);
         const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
         const comparison = await compareAndStorePatchVersion(storage, tenantContext.effective_tenant_id, withLineage({
@@ -351,6 +601,182 @@ export function createServer(options = {}) {
           tenant_context: tenantContext,
           comparison: summarizePatchComparison(comparison, body)
         });
+      }
+
+      if (route === "GET /api/patchforge/customers") {
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          customers: await storage.list("customers", tenantId)
+        });
+      }
+
+      if (route === "POST /api/patchforge/customers") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const customer = {
+          tenant_id: tenantContext.effective_tenant_id,
+          id: body.id || body.customer_id || `customer-${Date.now()}`,
+          name: body.name || body.customer_name || "Customer pending",
+          tenant_key: body.tenant_key || body.id || body.customer_id || null,
+          service_tier: body.service_tier || "standard",
+          status: body.status || "active",
+          created_at: body.created_at || new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          ...lineageFields(tenantContext, authorization)
+        };
+        await storage.append("customers", customer);
+        await storage.audit(tenantContext.effective_tenant_id, "customer_upserted", { customer_id: customer.id });
+        return sendJson(res, 201, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, customer });
+      }
+
+      const customerAssetsMatch = url.pathname.match(/^\/api\/patchforge\/customers\/([^/]+)\/assets$/);
+      if (req.method === "GET" && customerAssetsMatch) {
+        const customerId = decodeURIComponent(customerAssetsMatch[1]);
+        const assets = (await storage.list("customer_assets", tenantId)).filter((asset) => String(asset.customer_id) === customerId);
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          customer_id: customerId,
+          assets
+        });
+      }
+
+      if (req.method === "POST" && customerAssetsMatch) {
+        const customerId = decodeURIComponent(customerAssetsMatch[1]);
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const assets = body.csv
+          ? importAssetsFromCsv({ tenantId: tenantContext.effective_tenant_id, customerId, estateId: body.estate_id, csv: body.csv, source: body.source || "csv_import" })
+          : [{
+              tenant_id: tenantContext.effective_tenant_id,
+              id: body.id || body.asset_id || `asset-${Date.now()}`,
+              customer_id: customerId,
+              estate_id: body.estate_id || null,
+              site: body.site || null,
+              hostname: body.hostname || body.name || null,
+              asset_type: body.asset_type || "server_or_device",
+              vendor: body.vendor || body.vendor_id || null,
+              product: body.product || body.product_family || null,
+              version: body.version || body.software_version || null,
+              firmware_version: body.firmware_version || null,
+              software_packages: Array.isArray(body.software_packages) ? body.software_packages : [],
+              cpe: body.cpe || null,
+              internet_exposed: Boolean(body.internet_exposed),
+              criticality: body.criticality || "unknown",
+              source: body.source || "manual",
+              source_confidence: body.source_confidence ?? 0.75,
+              parser_confidence: body.parser_confidence ?? 0.75,
+              tags: Array.isArray(body.tags) ? body.tags : [],
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }];
+        for (const asset of assets) {
+          await storage.append("customer_assets", { ...asset, ...lineageFields(tenantContext, authorization) });
+        }
+        return sendJson(res, 201, {
+          tenant_id: tenantContext.effective_tenant_id,
+          tenant_context: tenantContext,
+          customer_id: customerId,
+          assets,
+          imported: assets.length
+        });
+      }
+
+      if (route === "POST /api/patchforge/config/redact") {
+        const body = await readJson(req);
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          redaction: redactConfigInput(body.config || body.text || body.raw || "")
+        });
+      }
+
+      if (route === "POST /api/patchforge/config/parse") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const evidence = parseConfigEvidence({
+          tenantId: tenantContext.effective_tenant_id,
+          customerId: body.customer_id || null,
+          assetId: body.asset_id || null,
+          input: body.config || body.text || body.raw || "",
+          sourceType: body.source_type || "paste",
+          parser: body.parser || "auto"
+        });
+        await storage.append("config_evidence", { ...evidence, ...lineageFields(tenantContext, authorization) });
+        return sendJson(res, 200, {
+          tenant_id: tenantContext.effective_tenant_id,
+          tenant_context: tenantContext,
+          config_evidence: evidence
+        });
+      }
+
+      if (route === "POST /api/patchforge/exposure/match") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const match = await matchCustomerEstate({
+          storage,
+          tenantId: tenantContext.effective_tenant_id,
+          body: withLineage(body, tenantContext, authorization),
+          persist: body.persist !== false
+        });
+        for (const item of match.matches || []) {
+          await storage.append("exposure_matches", {
+            tenant_id: tenantContext.effective_tenant_id,
+            id: item.id || item.assessment_id || `exposure-${Date.now()}`,
+            customer_id: body.customer_id || null,
+            asset_id: item.asset_id || body.asset_id || null,
+            cve_id: item.cve || body.cve_id || null,
+            vendor_id: item.vendor_id || body.vendor_id || null,
+            product_id: item.product_id || item.product_family || body.product_id || null,
+            match_confidence: item.match_confidence || (item.applicability_posture === "applicable" ? 0.85 : 0.55),
+            match_reason: item.decision_not_allowed_yet || item.urgency_posture || "source-bound deterministic match",
+            affected_version: item.firmware_version || body.version || null,
+            fixed_version: body.fixed_version || null,
+            evidence_refs: item.evidence_required || [],
+            unresolved_gaps: item.evidence_gaps || [],
+            created_at: new Date().toISOString(),
+            ...lineageFields(tenantContext, authorization)
+          });
+        }
+        return sendJson(res, 200, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, ...match });
+      }
+
+      if (route === "POST /api/patchforge/priority/index") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const priority = buildPriorityIndex(body);
+        await storage.append("patch_actions", {
+          tenant_id: tenantContext.effective_tenant_id,
+          id: priority.id,
+          cve_id: priority.cve_id,
+          asset_id: priority.asset_id,
+          action_type: "priority_index",
+          recommended_action: priority.posture,
+          risk_reduction: priority.priority_score,
+          operational_risk: body.operational_risk || "unknown",
+          service_impact: body.service_impact || "pending review",
+          rollback_risk: body.rollback_risk || "pending review",
+          change_window_suitability: body.change_window_suitability || "pending review",
+          ciso_approval_required: priority.posture === "Emergency action recommended" || priority.posture === "Exception review required",
+          human_change_approval_required: true,
+          no_autonomous_production_approval: true,
+          evidence_refs: body.evidence_refs || [],
+          ...lineageFields(tenantContext, authorization)
+        });
+        return sendJson(res, 200, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, priority });
+      }
+
+      if (route === "POST /api/patchforge/patch-compare") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const report = comparePatchActions(body);
+        await storage.append("patch_compare_reports", {
+          tenant_id: tenantContext.effective_tenant_id,
+          ...report,
+          ...lineageFields(tenantContext, authorization)
+        });
+        return sendJson(res, 200, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, patch_compare_report: report });
       }
 
       if (route === "POST /api/patchforge/ask") {
@@ -387,15 +813,18 @@ export function createServer(options = {}) {
         }
         const body = await readJson(req);
         const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const deterministicAnswer = await buildAskPatchForgeResponse({
+          storage,
+          tenantId: tenantContext.effective_tenant_id,
+          body: withLineage(body, tenantContext, authorization)
+        });
+        const serverEvidence = await buildServerOwnedAgentEvidence(storage, tenantContext.effective_tenant_id, body);
         const result = await runOpenAiAgent({
           agentName: OPENAI_AGENT_NAMES[agentKey],
           prompt: body.question || body.prompt || body.message || "",
           evidence: {
-            ...body.evidence,
-            deterministic_answer: body.deterministic_answer || null,
-            reviewed_exposure_evidence: Boolean(body.reviewed_exposure_evidence),
-            reviewed_applicability_evidence: Boolean(body.reviewed_applicability_evidence),
-            reviewed_customer_assurance_evidence: Boolean(body.reviewed_customer_assurance_evidence)
+            ...serverEvidence,
+            deterministic_answer: deterministicAnswer.response || deterministicAnswer
           },
           tenantId: tenantContext.effective_tenant_id,
           fetchImpl: openAiAgentFetchImpl
@@ -408,7 +837,15 @@ export function createServer(options = {}) {
         return sendJson(res, result.status === "verified" ? 200 : 202, {
           tenant_id: tenantContext.effective_tenant_id,
           tenant_context: tenantContext,
-          agent_guidance: result
+          agent_guidance: result,
+          server_evidence_context: {
+            finding_binding: serverEvidence.finding_binding,
+            accepted_evidence_count: serverEvidence.accepted_evidence_count,
+            reviewed_exposure_evidence: serverEvidence.reviewed_exposure_evidence,
+            reviewed_applicability_evidence: serverEvidence.reviewed_applicability_evidence,
+            reviewed_customer_assurance_evidence: serverEvidence.reviewed_customer_assurance_evidence,
+            caller_review_flags_ignored: true
+          }
         });
       }
 
@@ -453,6 +890,43 @@ export function createServer(options = {}) {
         }
       }
 
+      if (route === "GET /api/patchforge/sources/adapters") {
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          adapters: listSourceAdapters(),
+          boundary: {
+            source_bound: true,
+            fixture_backed_when_needed: true,
+            no_exploit_payloads: true,
+            review_required: true
+          }
+        });
+      }
+
+      if (route === "POST /api/patchforge/sources/sync") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        try {
+          const result = await syncSourceAdapter({
+            storage,
+            tenantId: tenantContext.effective_tenant_id,
+            body: withLineage(body, tenantContext, authorization)
+          });
+          return sendJson(res, 202, {
+            tenant_id: tenantContext.effective_tenant_id,
+            tenant_context: tenantContext,
+            ...result
+          });
+        } catch (error) {
+          return sendJson(res, error.code === "unsupported_source_adapter" ? 400 : 502, {
+            error: error.code || "source_adapter_sync_failed",
+            message: error.message,
+            allowed_adapters: error.allowedAdapters || listSourceAdapters().map((adapterInfo) => adapterInfo.adapter_id)
+          });
+        }
+      }
+
       if (route === "GET /api/patchforge/vendorlens/dashboard") {
         return sendJson(res, 200, {
           tenant_context: baseTenantContext,
@@ -469,10 +943,9 @@ export function createServer(options = {}) {
       }
 
       if (route === "POST /api/patchforge/vendorlens/vendors/upsert") {
-        const body = await readJson(req);
-        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
-        const vendor = await upsertNetworkVendor(storage, tenantContext.effective_tenant_id, withLineage(body, tenantContext, authorization));
-        return sendJson(res, 200, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, vendor });
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        const vendor = await upsertNetworkVendor(storage, tenantRequest.tenantId, tenantRequest.withLineage());
+        return sendJson(res, 200, { tenant_id: tenantRequest.tenantId, tenant_context: tenantRequest.tenantContext, vendor });
       }
 
       if (route === "GET /api/patchforge/vendorlens/assets") {
@@ -484,10 +957,9 @@ export function createServer(options = {}) {
       }
 
       if (route === "POST /api/patchforge/vendorlens/assets") {
-        const body = await readJson(req);
-        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
-        const asset = await upsertCustomerNetworkAsset(storage, tenantContext.effective_tenant_id, withLineage(body, tenantContext, authorization));
-        return sendJson(res, 201, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, asset });
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        const asset = await upsertCustomerNetworkAsset(storage, tenantRequest.tenantId, tenantRequest.withLineage());
+        return sendJson(res, 201, { tenant_id: tenantRequest.tenantId, tenant_context: tenantRequest.tenantContext, asset });
       }
 
       if (route === "GET /api/patchforge/vendorlens/advisories") {
@@ -499,35 +971,33 @@ export function createServer(options = {}) {
       }
 
       if (route === "POST /api/patchforge/vendorlens/advisories/ingest") {
-        const body = await readJson(req);
-        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
-        const advisory = await ingestVendorSecurityAdvisory(storage, tenantContext.effective_tenant_id, withLineage(body, tenantContext, authorization));
-        return sendJson(res, 201, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, advisory });
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        const advisory = await ingestVendorSecurityAdvisory(storage, tenantRequest.tenantId, tenantRequest.withLineage());
+        return sendJson(res, 201, { tenant_id: tenantRequest.tenantId, tenant_context: tenantRequest.tenantContext, advisory });
       }
 
       if (route === "POST /api/patchforge/vendorlens/sources/refresh") {
-        const body = await readJson(req);
-        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
         const run = await refreshVendorLensSource({
           storage,
-          tenantId: tenantContext.effective_tenant_id,
-          body: withLineage(body, tenantContext, authorization),
-          fetchImpl: vendorLensFetchImpl
+          tenantId: tenantRequest.tenantId,
+          body: tenantRequest.withLineage(),
+          fetchImpl: vendorLensFetchImpl,
+          outboundOptions: vendorLensOutboundOptions
         });
         return sendJson(res, 202, {
-          tenant_id: tenantContext.effective_tenant_id,
-          tenant_context: tenantContext,
+          tenant_id: tenantRequest.tenantId,
+          tenant_context: tenantRequest.tenantContext,
           source_feed_run: run
         });
       }
 
       if (route === "POST /api/patchforge/vendorlens/applicability/assess") {
-        const body = await readJson(req);
-        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
-        const assessment = await assessAndStoreConfigApplicability(storage, tenantContext.effective_tenant_id, withLineage(body, tenantContext, authorization));
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        const assessment = await assessAndStoreConfigApplicability(storage, tenantRequest.tenantId, tenantRequest.withLineage());
         return sendJson(res, 200, {
-          tenant_id: tenantContext.effective_tenant_id,
-          tenant_context: tenantContext,
+          tenant_id: tenantRequest.tenantId,
+          tenant_context: tenantRequest.tenantContext,
           assessment
         });
       }
@@ -541,23 +1011,21 @@ export function createServer(options = {}) {
       }
 
       if (route === "POST /api/patchforge/vendorlens/patch-compare") {
-        const body = await readJson(req);
-        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
-        const comparison = await compareAndStorePatchVersion(storage, tenantContext.effective_tenant_id, withLineage(body, tenantContext, authorization));
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        const comparison = await compareAndStorePatchVersion(storage, tenantRequest.tenantId, tenantRequest.withLineage());
         return sendJson(res, 200, {
-          tenant_id: tenantContext.effective_tenant_id,
-          tenant_context: tenantContext,
+          tenant_id: tenantRequest.tenantId,
+          tenant_context: tenantRequest.tenantContext,
           comparison
         });
       }
 
       if (route === "POST /api/patchforge/vendorlens/chat") {
-        const body = await readJson(req);
-        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
-        const chat = await createVendorLensChatSession(storage, tenantContext.effective_tenant_id, withLineage(body, tenantContext, authorization));
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        const chat = await createVendorLensChatSession(storage, tenantRequest.tenantId, tenantRequest.withLineage());
         return sendJson(res, 201, {
-          tenant_id: tenantContext.effective_tenant_id,
-          tenant_context: tenantContext,
+          tenant_id: tenantRequest.tenantId,
+          tenant_context: tenantRequest.tenantContext,
           ...chat
         });
       }
@@ -569,13 +1037,12 @@ export function createServer(options = {}) {
       }
 
       if (req.method === "POST" && vendorLensChatMatch) {
-        const body = await readJson(req);
-        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
-        const chat = await appendVendorLensChatMessage(storage, tenantContext.effective_tenant_id, decodeURIComponent(vendorLensChatMatch[1]), withLineage(body, tenantContext, authorization));
-        return chat ? sendJson(res, 200, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, ...chat }) : sendJson(res, 404, { error: "vendorlens_chat_not_found" });
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        const chat = await appendVendorLensChatMessage(storage, tenantRequest.tenantId, decodeURIComponent(vendorLensChatMatch[1]), tenantRequest.withLineage());
+        return chat ? sendJson(res, 200, { tenant_id: tenantRequest.tenantId, tenant_context: tenantRequest.tenantContext, ...chat }) : sendJson(res, 404, { error: "vendorlens_chat_not_found" });
       }
 
-      if (route === "GET /api/patchforge/reports-packs") {
+      if (route === "GET /api/patchforge/reports-packs" || route === "GET /api/patchforge/reports/overview") {
         const decisionPacks = await storage.list("decision_packs", tenantId);
         const latestPack = decisionPacks.slice(-1)[0] || null;
         return sendJson(res, 200, {
@@ -602,7 +1069,7 @@ export function createServer(options = {}) {
         });
       }
 
-      if (route === "POST /api/patchforge/reports-packs/generate") {
+      if (route === "POST /api/patchforge/reports-packs/generate" || route === "POST /api/patchforge/reports/generate") {
         const body = await readJson(req);
         const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
         const result = await generateDecisionPackForRequest({ storage, runtimeClient, tenantContext, authorization, body });
@@ -633,6 +1100,18 @@ export function createServer(options = {}) {
         if (!pack) {
           return sendJson(res, 404, { error: "decision_pack_not_found" });
         }
+        if (pack.verification?.verified !== true) {
+          return sendJson(res, 409, {
+            error: "decision_pack_verification_required",
+            message: "Export is blocked until the source decision pack verifies successfully."
+          });
+        }
+        const exportArtifacts = (await storage.list("export_artifacts", tenantId))
+          .filter((record) => record.pack_id === pack.pack_id)
+          .map((record) => {
+            verifiedArtifact(record);
+            return publicExportArtifact(record);
+          });
         return sendJson(res, 200, {
           tenant_id: tenantId,
           tenant_context: baseTenantContext,
@@ -642,12 +1121,78 @@ export function createServer(options = {}) {
           verification: pack.verification || null,
           decision_pack: pack,
           artefacts: pack.artefacts || null,
+          signed_export_artifacts: exportArtifacts,
+          signed_zip_url: `/api/patchforge/decision-packs/${encodeURIComponent(pack.pack_id)}/export.zip`,
           boundary: {
             no_scanner: true,
             no_exploit_generation: true,
             no_patch_deployment: true,
             no_production_mutation: true,
             no_autonomous_approval: true
+          }
+        });
+      }
+
+      const decisionPackZipMatch = url.pathname.match(/^\/api\/patchforge\/decision-packs\/([^/]+)\/export\.zip$/);
+      if (req.method === "GET" && decisionPackZipMatch) {
+        const packId = decodeURIComponent(decisionPackZipMatch[1]);
+        const packs = await storage.list("decision_packs", tenantId);
+        const pack = packs.find((record) => record.pack_id === packId || record.decision_pack_id === packId);
+        if (!pack) {
+          return sendJson(res, 404, { error: "decision_pack_not_found" });
+        }
+        if (pack.verification?.verified !== true) {
+          return sendJson(res, 409, {
+            error: "decision_pack_verification_required",
+            message: "Signed ZIP export is blocked until the source decision pack verifies successfully."
+          });
+        }
+        let materialized;
+        const existing = await findStoredExportArtifact(storage, tenantId, pack.pack_id, "signed_decision_pack_zip");
+        if (existing) {
+          materialized = verifiedArtifact(existing);
+        } else {
+          const zip = await buildSignedDecisionPackZip({ runtimeClient, tenantId, pack });
+          materialized = await materializeSignedExportArtifact({
+            storage,
+            runtimeClient,
+            tenantId,
+            pack,
+            artifactKind: "signed_decision_pack_zip",
+            fileName: zip.fileName,
+            contentType: zip.contentType,
+            buffer: zip.buffer
+          });
+        }
+        return sendBinary(res, 200, materialized.buffer, {
+          contentType: materialized.record.content_type,
+          fileName: materialized.record.file_name,
+          headers: signedArtifactHeaders(materialized.record)
+        });
+      }
+
+      const exportManifestMatch = url.pathname.match(/^\/api\/patchforge\/decision-packs\/([^/]+)\/exports\/([^/]+)\/manifest$/);
+      if (req.method === "GET" && exportManifestMatch) {
+        const packId = decodeURIComponent(exportManifestMatch[1]);
+        const artifactId = decodeURIComponent(exportManifestMatch[2]);
+        const record = (await storage.list("export_artifacts", tenantId))
+          .find((item) => item.pack_id === packId && item.artifact_id === artifactId);
+        if (!record) {
+          return sendJson(res, 404, { error: "export_artifact_not_found" });
+        }
+        const materialized = verifiedArtifact(record);
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          artifact: publicExportArtifact(record),
+          signed_manifest: record.signed_manifest,
+          signature: record.signature,
+          signature_metadata: record.signature_metadata,
+          verification: materialized.verification,
+          boundary: {
+            source_pack_immutable: true,
+            manifest_does_not_issue_approval: true,
+            final_approval_issued: Boolean(record.final_approval_issued)
           }
         });
       }
@@ -662,7 +1207,23 @@ export function createServer(options = {}) {
         if (!pack) {
           return sendJson(res, 404, { error: "decision_pack_not_found" });
         }
+        if (pack.verification?.verified !== true) {
+          return sendJson(res, 409, {
+            error: "decision_pack_verification_required",
+            message: "Report export is blocked until the source decision pack verifies successfully."
+          });
+        }
         try {
+          const artifactKind = `report:${reportType}:${format}`;
+          const existing = await findStoredExportArtifact(storage, tenantId, pack.pack_id, artifactKind);
+          if (existing) {
+            const materialized = verifiedArtifact(existing);
+            return sendBinary(res, 200, materialized.buffer, {
+              contentType: materialized.record.content_type,
+              fileName: materialized.record.file_name,
+              headers: signedArtifactHeaders(materialized.record)
+            });
+          }
           const vulnerability = await storage.getVulnerability(tenantId, pack.vulnerability_id);
           const sourceFeedRuns = await storage.list("source_feed_runs", tenantId);
           const intelligence = vulnerability ? await buildIntelligenceForTenant({
@@ -679,12 +1240,23 @@ export function createServer(options = {}) {
             intelligence,
             sourceFeedRuns: sourceFeedRuns.slice(-10).reverse()
           });
-          return sendBinary(res, 200, report.buffer, {
+          const materialized = await materializeSignedExportArtifact({
+            storage,
+            runtimeClient,
+            tenantId,
+            pack,
+            artifactKind,
+            fileName: report.fileName,
             contentType: report.contentType,
-            fileName: report.fileName
+            buffer: report.buffer
+          });
+          return sendBinary(res, 200, materialized.buffer, {
+            contentType: materialized.record.content_type,
+            fileName: materialized.record.file_name,
+            headers: signedArtifactHeaders(materialized.record)
           });
         } catch (error) {
-          return sendJson(res, error.code === "unknown_report_type" ? 400 : 500, {
+          return sendJson(res, error.statusCode || (error.code === "unknown_report_type" ? 400 : 500), {
             error: error.code || "report_generation_failed",
             message: error.message,
             allowed_reports: REPORT_CATALOG.map((item) => item.report_type)
@@ -697,6 +1269,67 @@ export function createServer(options = {}) {
         const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
         const result = await generateDecisionPackForRequest({ storage, runtimeClient, tenantContext, authorization, body });
         return sendJson(res, result.statusCode, result.payload);
+      }
+
+      if (route === "POST /api/patchforge/action-packs") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const pack = buildSignedActionPack(body);
+        await storage.append("signed_action_packs", {
+          tenant_id: tenantContext.effective_tenant_id,
+          ...pack,
+          ...lineageFields(tenantContext, authorization)
+        });
+        return sendJson(res, 201, {
+          tenant_id: tenantContext.effective_tenant_id,
+          tenant_context: tenantContext,
+          signed_action_pack: pack
+        });
+      }
+
+      const actionPackVerifyMatch = url.pathname.match(/^\/api\/patchforge\/action-packs\/([^/]+)\/verify$/);
+      if (req.method === "GET" && actionPackVerifyMatch) {
+        const packId = decodeURIComponent(actionPackVerifyMatch[1]);
+        const packs = await storage.list("signed_action_packs", tenantId);
+        const pack = packs.find((item) => item.id === packId || item.pack_id === packId);
+        return pack
+          ? sendJson(res, 200, { tenant_id: tenantId, tenant_context: baseTenantContext, verifier_result: verifySignedActionPack(pack), signed_action_pack: pack })
+          : sendJson(res, 404, { error: "signed_action_pack_not_found" });
+      }
+
+      if (route === "GET /api/patchforge/workflow/items") {
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          workflow_items: await storage.list("workflow_items", tenantId)
+        });
+      }
+
+      if (route === "POST /api/patchforge/workflow/items") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const item = createWorkflowItem({
+          ...withLineage(body, tenantContext, authorization),
+          tenant_id: tenantContext.effective_tenant_id
+        });
+        await storage.append("workflow_items", item);
+        await storage.audit(tenantContext.effective_tenant_id, "workflow_item_created", { id: item.id, status: item.status });
+        return sendJson(res, 201, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, workflow_item: item });
+      }
+
+      const workflowTransitionMatch = url.pathname.match(/^\/api\/patchforge\/workflow\/items\/([^/]+)\/transition$/);
+      if (req.method === "POST" && workflowTransitionMatch) {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const itemId = decodeURIComponent(workflowTransitionMatch[1]);
+        const existing = (await storage.list("workflow_items", tenantContext.effective_tenant_id)).find((item) => item.id === itemId);
+        if (!existing) {
+          return sendJson(res, 404, { error: "workflow_item_not_found" });
+        }
+        const item = transitionWorkflowItem(existing, withLineage(body, tenantContext, authorization));
+        await storage.append("workflow_items", item);
+        await storage.audit(tenantContext.effective_tenant_id, "workflow_item_transitioned", { id: item.id, status: item.status });
+        return sendJson(res, 200, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, workflow_item: item });
       }
 
       if (route === "GET /api/patchforge/admin/config") {
@@ -727,19 +1360,119 @@ export function createServer(options = {}) {
         return sendJson(res, 200, { ...(await storage.adminHealth(tenantId)), tenant_context: baseTenantContext });
       }
 
-      if (route === "POST /api/patchforge/bayesian/assess") {
-        const body = await readJson(req);
-        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
-        const assessment = buildBayesianAssessment(withLineage(body, tenantContext, authorization));
-        await storage.append("bayesian_assessments", {
-          tenant_id: tenantContext.effective_tenant_id,
-          assessment_id: assessment.assessment_id,
-          ...assessment,
-          ...lineageFields(tenantContext, authorization)
+      if (route === "GET /api/patchforge/admin/purge") {
+        const scopes = (url.searchParams.get("scopes") || "")
+          .split(",")
+          .map((scope) => scope.trim())
+          .filter(Boolean);
+        const plan = await storage.purgePatchForgeData(tenantId, {
+          scopes,
+          all: url.searchParams.get("all") === "true",
+          reports: url.searchParams.get("reports") === "true",
+          catalogue: url.searchParams.get("catalogue") === "true",
+          assets: url.searchParams.get("assets") === "true",
+          uploads: url.searchParams.get("uploads") === "true",
+          logs: url.searchParams.get("logs") === "true",
+          cache: url.searchParams.get("cache") === "true",
+          dry_run: true
         });
         return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          purge: plan
+        });
+      }
+
+      if (route === "POST /api/patchforge/admin/purge") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const purge = await storage.purgePatchForgeData(tenantContext.effective_tenant_id, {
+          ...body,
+          dry_run: body.dry_run !== false,
+          confirm: body.confirm
+        });
+        if (purge.blocked || purge.error === "typed_confirmation_required") {
+          return sendJson(res, 400, {
+            tenant_id: tenantContext.effective_tenant_id,
+            tenant_context: tenantContext,
+            error: "typed_confirmation_required",
+            message: `Type ${PATCHFORGE_PURGE_CONFIRMATION} to run a destructive PatchForge purge.`,
+            purge
+          });
+        }
+        return sendJson(res, purge.dry_run ? 200 : 202, {
           tenant_id: tenantContext.effective_tenant_id,
           tenant_context: tenantContext,
+          purge
+        });
+      }
+
+      if (route === "GET /api/patchforge/discovery/overview") {
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          discovery: await buildAssetDiscoveryOverview(storage, tenantId)
+        });
+      }
+
+      if (route === "GET /api/patchforge/discovery/collectors") {
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          collectors: await listAssetCollectors(storage, tenantId)
+        });
+      }
+
+      if (route === "POST /api/patchforge/discovery/collectors") {
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        const collector = await registerAssetCollector(storage, tenantRequest.tenantId, tenantRequest.withLineage());
+        return sendJson(res, 201, {
+          tenant_id: tenantRequest.tenantId,
+          tenant_context: tenantRequest.tenantContext,
+          collector
+        });
+      }
+
+      if (route === "GET /api/patchforge/discovery/policies") {
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          policies: await listAssetDiscoveryPolicies(storage, tenantId)
+        });
+      }
+
+      if (route === "POST /api/patchforge/discovery/policies") {
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        const policy = await upsertAssetDiscoveryPolicy(storage, tenantRequest.tenantId, tenantRequest.withLineage());
+        return sendJson(res, 201, {
+          tenant_id: tenantRequest.tenantId,
+          tenant_context: tenantRequest.tenantContext,
+          policy
+        });
+      }
+
+      if (route === "POST /api/patchforge/discovery/import") {
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        const result = await importDiscoveredAssets(storage, tenantRequest.tenantId, tenantRequest.withLineage());
+        return sendJson(res, 202, {
+          tenant_id: tenantRequest.tenantId,
+          tenant_context: tenantRequest.tenantContext,
+          ...result
+        });
+      }
+
+      if (route === "POST /api/patchforge/bayesian/assess") {
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        const assessment = buildBayesianAssessment(tenantRequest.withLineage());
+        await storage.append("bayesian_assessments", {
+          tenant_id: tenantRequest.tenantId,
+          assessment_id: assessment.assessment_id,
+          ...assessment,
+          ...tenantRequest.lineageFields()
+        });
+        return sendJson(res, 200, {
+          tenant_id: tenantRequest.tenantId,
+          tenant_context: tenantRequest.tenantContext,
           bayesian: assessment
         });
       }
@@ -754,18 +1487,17 @@ export function createServer(options = {}) {
       }
 
       if (route === "POST /api/patchforge/bayesian/prior-update-dry-run") {
-        const body = await readJson(req);
-        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
-        if (body.live_update === true) {
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        if (tenantRequest.body.live_update === true) {
           return sendJson(res, 400, {
             error: "live_prior_update_locked",
             message: "PatchForge Bayesian prior updates are proposal-only unless explicitly approved in a later controlled release."
           });
         }
         return sendJson(res, 200, {
-          tenant_id: tenantContext.effective_tenant_id,
-          tenant_context: tenantContext,
-          proposal: buildPriorUpdateProposal(withLineage(body, tenantContext, authorization))
+          tenant_id: tenantRequest.tenantId,
+          tenant_context: tenantRequest.tenantContext,
+          proposal: buildPriorUpdateProposal(tenantRequest.withLineage())
         });
       }
 
@@ -778,10 +1510,9 @@ export function createServer(options = {}) {
       }
 
       if (route === "POST /api/patchforge/vendors/upsert") {
-        const body = await readJson(req);
-        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
-        const vendor = await upsertVendor(storage, tenantContext.effective_tenant_id, withLineage(body, tenantContext, authorization));
-        return sendJson(res, 200, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, vendor });
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        const vendor = await upsertVendor(storage, tenantRequest.tenantId, tenantRequest.withLineage());
+        return sendJson(res, 200, { tenant_id: tenantRequest.tenantId, tenant_context: tenantRequest.tenantContext, vendor });
       }
 
       const vendorDetailMatch = url.pathname.match(/^\/api\/patchforge\/vendors\/([^/]+)$/);
@@ -792,10 +1523,9 @@ export function createServer(options = {}) {
 
       const vendorAdvisoryMatch = url.pathname.match(/^\/api\/patchforge\/vendors\/([^/]+)\/advisories\/ingest$/);
       if (req.method === "POST" && vendorAdvisoryMatch) {
-        const body = await readJson(req);
-        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
-        const advisory = await ingestVendorAdvisory(storage, tenantContext.effective_tenant_id, decodeURIComponent(vendorAdvisoryMatch[1]), withLineage(body, tenantContext, authorization));
-        return sendJson(res, 201, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, advisory });
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        const advisory = await ingestVendorAdvisory(storage, tenantRequest.tenantId, decodeURIComponent(vendorAdvisoryMatch[1]), tenantRequest.withLineage());
+        return sendJson(res, 201, { tenant_id: tenantRequest.tenantId, tenant_context: tenantRequest.tenantContext, advisory });
       }
 
       const vendorLandscapeMatch = url.pathname.match(/^\/api\/patchforge\/vendors\/([^/]+)\/threat-landscape$/);
@@ -819,28 +1549,27 @@ export function createServer(options = {}) {
 
       const analyseMatch = url.pathname.match(/^\/api\/patchforge\/vulnerabilities\/([^/]+)\/analyse$/);
       if (req.method === "POST" && analyseMatch) {
-        const body = await readJson(req);
-        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
         const vulnerabilityIdForAnalysis = decodeURIComponent(analyseMatch[1]);
-        const bayesianSnapshot = buildBayesianAssessment({ vulnerability: await storage.getVulnerability(tenantContext.effective_tenant_id, vulnerabilityIdForAnalysis) || {}, ...body });
+        const bayesianSnapshot = buildBayesianAssessment({ vulnerability: await storage.getVulnerability(tenantRequest.tenantId, vulnerabilityIdForAnalysis) || {}, ...tenantRequest.body });
         const intelligence = await buildIntelligenceForTenant({
           storage,
-          tenantId: tenantContext.effective_tenant_id,
+          tenantId: tenantRequest.tenantId,
           vulnerabilityId: vulnerabilityIdForAnalysis,
           bayesianSnapshot
         });
         if (!intelligence) {
           return sendJson(res, 404, { error: "vulnerability_not_found" });
         }
-        await storage.audit(tenantContext.effective_tenant_id, "finding_intelligence_generated", {
+        await storage.audit(tenantRequest.tenantId, "finding_intelligence_generated", {
           vulnerability_id: vulnerabilityIdForAnalysis,
           intelligence_id: intelligence.intelligence_id,
           recommendation: intelligence.recommendation?.posture,
-          ...lineageFields(tenantContext, authorization)
+          ...tenantRequest.lineageFields()
         });
         return sendJson(res, 200, {
-          tenant_id: tenantContext.effective_tenant_id,
-          tenant_context: tenantContext,
+          tenant_id: tenantRequest.tenantId,
+          tenant_context: tenantRequest.tenantContext,
           intelligence,
           bayesian: bayesianSnapshot,
           boundary: intelligence.boundary
@@ -857,11 +1586,10 @@ export function createServer(options = {}) {
       };
 
       if (sraRoutes[route]) {
-        const body = await readJson(req);
-        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
         try {
-          const result = runSraTool(sraRoutes[route], withLineage({ ...body, tenant_id: tenantContext.effective_tenant_id }, tenantContext, authorization));
-          return sendJson(res, 200, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, sra: result });
+          const result = runSraTool(sraRoutes[route], tenantRequest.withLineage({ ...tenantRequest.body, tenant_id: tenantRequest.tenantId }));
+          return sendJson(res, 200, { tenant_id: tenantRequest.tenantId, tenant_context: tenantRequest.tenantContext, sra: result });
         } catch (error) {
           return sendJson(res, 400, { error: "sra_boundary_violation", message: error.message });
         }
@@ -923,6 +1651,18 @@ function withLineage(payload, tenantContext, authorization) {
   };
 }
 
+async function readTenantJson(req, url, authConfig, authorization) {
+  const body = await readJson(req);
+  const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+  return {
+    body,
+    tenantContext,
+    tenantId: tenantContext.effective_tenant_id,
+    withLineage: (payload = body) => withLineage(payload, tenantContext, authorization),
+    lineageFields: () => lineageFields(tenantContext, authorization)
+  };
+}
+
 function lineageFields(tenantContext, authorization) {
   const principal = authorization?.principal || {};
   return {
@@ -935,6 +1675,26 @@ function lineageFields(tenantContext, authorization) {
     tenant_id_source: tenantContext.tenant_id_source,
     tenant_override_ignored: tenantContext.tenant_override_ignored
   };
+}
+
+export function bindApprovalEventsToPrincipal(events, authorization) {
+  const principal = authorization?.principal || {};
+  const roles = Array.isArray(principal.roles) ? principal.roles.map(String) : [];
+  const actorId = principal.oid || principal.upn || null;
+  const canIssueFinalApproval = Boolean(actorId)
+    && roles.some((role) => ["PatchForge.CABApprover", "PatchForge.Admin"].includes(role));
+
+  return (Array.isArray(events) ? events : []).map((event) => {
+    const finalApprovalRequest = event?.approval_type === "final" && event?.approval_state === "approved";
+    const serverVerified = finalApprovalRequest && canIssueFinalApproval;
+    return {
+      ...event,
+      approver: serverVerified ? (principal.upn || principal.oid) : String(event?.approver || "unverified-client-claim"),
+      approver_oid: serverVerified ? principal.oid || null : null,
+      actor_roles: serverVerified ? roles : [],
+      server_verified: serverVerified
+    };
+  });
 }
 
 async function ingestAgentFinding(storage, tenantId, body) {
@@ -1032,18 +1792,19 @@ function sendJson(res, statusCode, payload) {
   res.end(`${body}\n`);
 }
 
-function sendBinary(res, statusCode, buffer, { contentType, fileName }) {
+function sendBinary(res, statusCode, buffer, { contentType, fileName, headers = {} }) {
   res.writeHead(statusCode, {
     "content-type": contentType,
     "content-length": buffer.length,
     "content-disposition": `attachment; filename="${fileName}"`,
     "cache-control": "no-store",
-    "x-content-type-options": "nosniff"
+    "x-content-type-options": "nosniff",
+    ...headers
   });
   res.end(buffer);
 }
 
-function buildEvidenceItemsFromRecord(vulnerability, submittedItems = []) {
+export function buildEvidenceItemsFromRecord(vulnerability, findingEvidenceRecords = [], findingEvidenceEvents = [], options = {}) {
   const sourceEvidence = (vulnerability.sources || []).map((source) => ({
     evidence_ref: source.source_record_id,
     evidence_class: source.evidence_class || evidenceClassForSource(source),
@@ -1055,8 +1816,49 @@ function buildEvidenceItemsFromRecord(vulnerability, submittedItems = []) {
     source_url: source.source_url || null
   }));
 
-  const submittedEvidence = Array.isArray(submittedItems) ? submittedItems : [];
-  return [...sourceEvidence, ...submittedEvidence];
+  // Evidence state and class must be compiled from persisted tenant records.
+  // Client-supplied evidence items are not trusted as hard-gate inputs.
+  return [...sourceEvidence, ...compileFindingEvidenceItems(vulnerability, findingEvidenceRecords, findingEvidenceEvents, options)];
+}
+
+export async function buildServerOwnedAgentEvidence(storage, tenantId, body = {}) {
+  const requestedId = String(body.vulnerability_id || body.cve || body.advisory_id || body.finding_id || "").trim();
+  const vulnerability = requestedId ? await storage.getVulnerability(tenantId, requestedId) : null;
+  const records = vulnerability ? await storage.list("finding_evidence", tenantId) : [];
+  const events = vulnerability ? await storage.list("finding_evidence_events", tenantId) : [];
+  const compiled = vulnerability ? compileFindingEvidenceItems(vulnerability, records, events) : [];
+  const accepted = compiled.filter((item) => item.server_owned === true
+    && item.server_verified_review === true
+    && item.review_state === "reviewed"
+    && item.evidence_state === "accepted_positive_evidence");
+  const classes = new Set(accepted.map((item) => item.evidence_class));
+  const reviewedExposure = ["affected_asset_scope", "affected_service_scope", "business_service_impact", "customer_impact"]
+    .some((evidenceClass) => classes.has(evidenceClass));
+  const reviewedApplicability = ["vulnerability_identity", "known_exploitation_or_urgency", "known_exploited_review", "patch_availability", "patch_feasibility"]
+    .some((evidenceClass) => classes.has(evidenceClass));
+  const reviewedCustomerAssurance = reviewedExposure && reviewedApplicability && classes.has("human_review_signoff");
+  return {
+    finding_binding: vulnerability ? {
+      vulnerability_id: vulnerability.vulnerability_id,
+      canonical_id: vulnerability.canonical_id || vulnerability.vulnerability_id,
+      finding_revision_hash: vulnerability.content_hash || null
+    } : null,
+    evidence_items: compiled.map((item) => ({
+      evidence_ref: item.evidence_ref,
+      evidence_class: item.evidence_class,
+      review_state: item.review_state,
+      evidence_state: item.evidence_state,
+      content_hash: item.content_hash,
+      finding_revision_hash: item.finding_revision_hash,
+      server_owned: item.server_owned,
+      server_verified_review: item.server_verified_review
+    })),
+    accepted_evidence_count: accepted.length,
+    reviewed_exposure_evidence: reviewedExposure,
+    reviewed_applicability_evidence: reviewedApplicability,
+    reviewed_customer_assurance_evidence: reviewedCustomerAssurance,
+    caller_review_flags_ignored: true
+  };
 }
 
 async function generateDecisionPackForRequest({ storage, runtimeClient, tenantContext, authorization, body }) {
@@ -1094,12 +1896,14 @@ async function generateDecisionPackForRequest({ storage, runtimeClient, tenantCo
     reviews: await storage.list("reviews", resolvedTenant),
     bayesianSnapshot: body.bayesian_snapshot || buildBayesianAssessment({ vulnerability })
   });
-  const vendorLensContext = await buildVendorLensPackContext(storage, resolvedTenant, body);
+  const vendorLensContext = await buildVendorLensPackContext(storage, resolvedTenant, body, vulnerability);
+  const findingEvidenceRecords = await storage.list("finding_evidence", resolvedTenant);
+  const findingEvidenceEvents = await storage.list("finding_evidence_events", resolvedTenant);
 
   const runtimeResult = await runtimeClient.createDecisionPack({
     tenant_id: resolvedTenant,
     vulnerability,
-    evidence_items: buildEvidenceItemsFromRecord(vulnerability, body.evidence_items),
+    evidence_items: buildEvidenceItemsFromRecord(vulnerability, findingEvidenceRecords, findingEvidenceEvents),
     model_name: body.model_name || "vuln_patch_governance",
     requested_posture: body.requested_posture || body.decision_posture || null,
     patch_availability: body.patch_availability || null,
@@ -1120,7 +1924,7 @@ async function generateDecisionPackForRequest({ storage, runtimeClient, tenantCo
     vendorlens_decision_context: vendorLensContext.vendorlens_decision_context,
     controls: body.controls || null,
     risk_acceptance: body.risk_acceptance || null,
-    approval_events: body.approval_events || []
+    approval_events: bindApprovalEventsToPrincipal(body.approval_events, authorization)
   });
 
   const decisionContext = runtimeResult.decision_context || {};
@@ -1139,12 +1943,12 @@ async function generateDecisionPackForRequest({ storage, runtimeClient, tenantCo
     signing_provider: runtimeResult.signing_provider || null,
     artefacts: runtimeResult.artefacts || null,
     runtime_component: runtimeResult.runtime_component || "patchforge-runtime",
-    report_template_version: body.report_template_version || null,
-    report_renderer_commit: body.report_renderer_commit || process.env.PATCHFORGE_RENDERER_COMMIT || process.env.PATCHFORGE_COMMIT_SHA || process.env.GIT_COMMIT || null,
-    report_renderer_image_tag: body.report_renderer_image_tag || process.env.PATCHFORGE_IMAGE_TAG || process.env.CONTAINER_IMAGE_TAG || null,
+    report_template_version: process.env.PATCHFORGE_REPORT_TEMPLATE_VERSION || REPORT_TEMPLATE_VERSION,
+    report_renderer_commit: process.env.PATCHFORGE_RENDERER_COMMIT || process.env.PATCHFORGE_COMMIT_SHA || process.env.GIT_COMMIT || DEFAULT_RENDERER_COMMIT,
+    report_renderer_image_tag: process.env.PATCHFORGE_IMAGE_TAG || process.env.CONTAINER_IMAGE_TAG || DEFAULT_IMAGE_TAG,
     generated_from_pack_id: runtimeResult.pack_id,
-    product_baseline: body.product_baseline || process.env.PATCHFORGE_PRODUCT_BASELINE || "PF-AZ11-CUSTOMER-DEMO-MATURITY",
-    report_context_version: body.report_context_version || null,
+    product_baseline: process.env.PATCHFORGE_PRODUCT_BASELINE || DEFAULT_PRODUCT_BASELINE,
+    report_context_version: process.env.PATCHFORGE_REPORT_CONTEXT_VERSION || REPORT_CONTEXT_VERSION,
     ...lineageFields(tenantContext, authorization),
     created_at: runtimeResult.created_at || new Date().toISOString()
   };
@@ -1202,11 +2006,7 @@ function reportPreExportState(pack = {}) {
     report_current_stale_warning: staleWarning,
     signing_provider: pack.signing_provider || "not recorded",
     verification_state: pack.verification?.verified ? "verified" : "pending_or_not_recorded",
-    report_quality_reviews: [
-      "customer_patch_governance_pack",
-      "board_vulnerability_remediation_summary",
-      "cab_patch_decision_report"
-    ].map((reportType) => buildReportContentReview({ reportType, pack }))
+    report_quality_reviews: REPORT_CATALOG.map((report) => buildReportContentReview({ reportType: report.report_type, pack }))
   };
 }
 
@@ -1300,7 +2100,15 @@ function buildPriorUpdateProposal(body = {}) {
 function buildBayesianAssessment(body = {}) {
   const vulnerability = body.vulnerability || body;
   const cvss = Number(vulnerability.cvss_score || body.cvss || 0);
-  const epss = clamp(Number(body.epss || vulnerability.epss || 0), 0, 1);
+  const epss = clamp(firstFiniteNumber(
+    body.epss,
+    body.epss_score,
+    body.epss_probability,
+    vulnerability.epss,
+    vulnerability.epss_score,
+    vulnerability.epss_probability,
+    0
+  ), 0, 1);
   const priors = defaultBayesianPriors();
   const exploitSignals = [
     Boolean(vulnerability.known_exploited || body.known_exploited) ? 0.32 : 0,
@@ -1365,6 +2173,19 @@ function recommendedPosture(assessment, vulnerability) {
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, Number.isFinite(value) ? value : min));
+}
+
+function firstFiniteNumber(...values) {
+  for (const value of values) {
+    if (value === null || value === undefined || value === "") {
+      continue;
+    }
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) {
+      return numeric;
+    }
+  }
+  return 0;
 }
 
 function round(value) {
@@ -1491,45 +2312,65 @@ function lineageFieldsFromBody(body) {
   };
 }
 
-async function buildVendorLensPackContext(storage, tenantId, body = {}) {
+async function buildVendorLensPackContext(storage, tenantId, body = {}, vulnerability = {}) {
   const assessments = await storage.list("config_applicability_assessments", tenantId);
   const advisories = await listVendorSecurityAdvisories(storage, tenantId);
   const assets = await listCustomerNetworkAssets(storage, tenantId);
   const chats = await storage.list("vendorlens_chat_sessions", tenantId);
   const comparisons = await listVendorLensPatchComparisons(storage, tenantId);
-  const assessment = body.config_applicability_assessment
-    || findRecord(assessments, "assessment_id", body.config_applicability_assessment_id)
-    || findRecord(assessments, "advisory_id", body.advisory_id)
-    || findRecord(assessments, "asset_id", body.asset_id)
-    || assessments.slice(-1)[0]
-    || null;
-  const advisory = body.vendor_security_advisory_snapshot
-    || body.advisory
-    || findRecord(advisories, "advisory_id", assessment?.advisory_id || body.advisory_id)
-    || null;
-  const asset = body.customer_network_asset_snapshot
-    || body.asset
-    || findRecord(assets, "asset_id", assessment?.asset_id || body.asset_id)
-    || null;
-  const vendorId = body.vendor_id || advisory?.vendor_id || asset?.vendor_id || assessment?.vendor_id;
+  const requested = {
+    vulnerabilityIds: contextIdList(vulnerability.vulnerability_id, vulnerability.canonical_id, body.vulnerability_id, body.cve_id, body.cve),
+    advisoryId: contextId(body.advisory_id),
+    assetId: contextId(body.asset_id)
+  };
+  const advisory = firstContextMatch([
+    body.vendor_security_advisory_snapshot,
+    body.advisory,
+    findRecord(advisories, "advisory_id", requested.advisoryId),
+    advisories.filter((record) => recordMatchesVulnerability(record, requested.vulnerabilityIds))
+  ], (record) => recordMatchesVulnerability(record, requested.vulnerabilityIds) || (!requested.vulnerabilityIds.length && sameContextId(record.advisory_id, requested.advisoryId)));
+  const resolvedAdvisoryId = contextId(advisory?.advisory_id);
+  const assessment = firstContextMatch([
+    body.config_applicability_assessment,
+    findRecord(assessments, "assessment_id", body.config_applicability_assessment_id),
+    assessments.filter((record) => sameContextId(record.advisory_id, resolvedAdvisoryId)),
+    assessments.filter((record) => recordMatchesVulnerability(record, requested.vulnerabilityIds)),
+    assessments.filter((record) => requested.assetId && sameContextId(record.asset_id, requested.assetId))
+  ], (record) => vendorLensRecordMatches(record, requested, resolvedAdvisoryId));
+  const comparison = firstContextMatch([
+    body.vendorlens_patch_comparison,
+    findRecord(comparisons, "comparison_id", body.comparison_id),
+    comparisons.filter((record) => sameContextId(record.advisory_id, resolvedAdvisoryId || assessment?.advisory_id)),
+    comparisons.filter((record) => recordMatchesVulnerability(record, requested.vulnerabilityIds)),
+    comparisons.filter((record) => requested.assetId && sameContextId(record.asset_id, requested.assetId))
+  ], (record) => vendorLensRecordMatches(record, requested, resolvedAdvisoryId || assessment?.advisory_id));
+  const contextAssetId = contextId(assessment?.asset_id || comparison?.asset_id);
+  const asset = contextAssetId
+    ? firstContextMatch([
+      body.customer_network_asset_snapshot,
+      body.asset,
+      findRecord(assets, "asset_id", contextAssetId)
+    ], (record) => sameContextId(record.asset_id, contextAssetId))
+    : null;
+  const vendorId = advisory?.vendor_id || asset?.vendor_id || assessment?.vendor_id || comparison?.vendor_id;
   const vendors = await listNetworkVendors(storage, tenantId);
-  const vendor = body.network_vendor_profile_snapshot
-    || findRecord(vendors, "vendor_id", vendorId)
-    || null;
-  const chat = body.sra_config_chat_session
-    || body.vendorlens_chat_session
-    || findRecord(chats, "session_id", body.session_id)
-    || findRecord(chats, "assessment_id", assessment?.assessment_id)
-    || chats.slice(-1)[0]
-    || null;
-  const comparison = body.vendorlens_patch_comparison
-    || findRecord(comparisons, "comparison_id", body.comparison_id)
-    || findRecord(comparisons, "advisory_id", assessment?.advisory_id || body.advisory_id)
-    || findRecord(comparisons, "asset_id", assessment?.asset_id || body.asset_id)
-    || comparisons.slice(-1)[0]
-    || null;
+  const vendor = vendorId
+    ? firstContextMatch([
+      body.network_vendor_profile_snapshot,
+      findRecord(vendors, "vendor_id", vendorId)
+    ], (record) => sameContextId(record.vendor_id, vendorId))
+    : null;
+  const chat = firstContextMatch([
+    body.sra_config_chat_session,
+    body.vendorlens_chat_session,
+    findRecord(chats, "session_id", body.session_id),
+    findRecord(chats, "assessment_id", assessment?.assessment_id),
+    chats.filter((record) => sameContextId(record.advisory_id, resolvedAdvisoryId || assessment?.advisory_id)),
+    chats.filter((record) => contextAssetId && sameContextId(record.asset_id, contextAssetId))
+  ], (record) => vendorLensChatMatches(record, requested, assessment, resolvedAdvisoryId, contextAssetId));
 
-  const vendorLensDecisionContext = body.vendorlens_decision_context || (assessment ? {
+  const vendorLensDecisionContext = assessment ? {
+    ...(body.vendorlens_decision_context || {}),
     context_id: `vendorlens-${assessment.assessment_id}`,
     source_bound: true,
     advisory_only: true,
@@ -1540,7 +2381,7 @@ async function buildVendorLensPackContext(storage, tenantId, body = {}) {
     decision_not_allowed_yet: assessment.decision_not_allowed_yet,
     recommended_next_action: nextActionForVendorLens(assessment.urgency_posture),
     evidence_gaps: assessment.evidence_gaps || []
-  } : null);
+  } : null;
 
   return {
     network_vendor_profile_snapshot: vendor,
@@ -1558,6 +2399,88 @@ function findRecord(records, field, value) {
     return null;
   }
   return records.find((record) => String(record[field]) === String(value)) || null;
+}
+
+function firstContextMatch(candidates, predicate) {
+  const seen = new Set();
+  for (const candidate of candidates.flat().filter(Boolean)) {
+    const key = [
+      candidate.assessment_id,
+      candidate.comparison_id,
+      candidate.session_id,
+      candidate.advisory_id,
+      candidate.asset_id,
+      candidate.cve,
+      candidate.vendor_id
+    ].filter(Boolean).join("|") || JSON.stringify(candidate).slice(0, 160);
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    if (predicate(candidate)) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+function vendorLensRecordMatches(record, requested, advisoryId) {
+  if (!record) {
+    return false;
+  }
+  const hasRequestedVulnerability = requested.vulnerabilityIds.length > 0;
+  const vulnerabilityMatch = hasRequestedVulnerability && recordMatchesVulnerability(record, requested.vulnerabilityIds);
+  const advisoryMatch = Boolean(advisoryId && sameContextId(record.advisory_id, advisoryId));
+  if (hasRequestedVulnerability && recordCveIds(record).length && !vulnerabilityMatch) {
+    return false;
+  }
+  if (!vulnerabilityMatch && !advisoryMatch) {
+    return false;
+  }
+  if (requested.assetId && record.asset_id && !sameContextId(record.asset_id, requested.assetId)) {
+    return false;
+  }
+  return true;
+}
+
+function vendorLensChatMatches(record, requested, assessment, advisoryId, assetId) {
+  if (!record) {
+    return false;
+  }
+  if (assessment?.assessment_id && sameContextId(record.assessment_id, assessment.assessment_id)) {
+    return true;
+  }
+  const advisoryMatch = advisoryId && sameContextId(record.advisory_id, advisoryId);
+  const assetMatch = assetId && sameContextId(record.asset_id, assetId);
+  if (requested.vulnerabilityIds.length && recordCveIds(record).length && !recordMatchesVulnerability(record, requested.vulnerabilityIds)) {
+    return false;
+  }
+  return Boolean(advisoryMatch && (!assetId || assetMatch));
+}
+
+function recordMatchesVulnerability(record, vulnerabilityIds) {
+  if (!record || !vulnerabilityIds.length) {
+    return false;
+  }
+  const wanted = new Set(vulnerabilityIds.map(contextId).filter(Boolean));
+  return recordCveIds(record).some((id) => wanted.has(contextId(id)))
+    || Boolean(record.advisory_id && wanted.has(contextId(record.advisory_id)));
+}
+
+function recordCveIds(record) {
+  return contextIdList(record?.vulnerability_id, record?.canonical_id, record?.cve_id, record?.cve, record?.cves);
+}
+
+function contextIdList(...values) {
+  return [...new Set(values.flatMap((value) => Array.isArray(value) ? value : [value]).map(contextId).filter(Boolean))];
+}
+
+function contextId(value) {
+  return value === undefined || value === null || value === "" ? "" : String(value).trim().toLowerCase();
+}
+
+function sameContextId(left, right) {
+  return Boolean(contextId(left) && contextId(left) === contextId(right));
 }
 
 function nextActionForVendorLens(posture) {
@@ -1579,26 +2502,32 @@ function slug(value) {
 
 export function createRuntimeClientFromEnv() {
   const baseUrl = DEFAULT_RUNTIME_URL.replace(/\/+$/, "");
+  async function postRuntime(pathname, payload) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), Number(process.env.PATCHFORGE_RUNTIME_TIMEOUT_MS || 45000));
+    try {
+      const response = await fetch(`${baseUrl}${pathname}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const message = body.message || body.error || `Runtime returned HTTP ${response.status}`;
+        throw new Error(message);
+      }
+      return body;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
   return {
     async createDecisionPack(payload) {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), Number(process.env.PATCHFORGE_RUNTIME_TIMEOUT_MS || 45000));
-      try {
-        const response = await fetch(`${baseUrl}/api/runtime/decision-packs`, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(payload),
-          signal: controller.signal
-        });
-        const body = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          const message = body.message || body.error || `Runtime returned HTTP ${response.status}`;
-          throw new Error(message);
-        }
-        return body;
-      } finally {
-        clearTimeout(timer);
-      }
+      return postRuntime("/api/runtime/decision-packs", payload);
+    },
+    async createExportManifest(payload) {
+      return postRuntime("/api/runtime/export-manifests", payload);
     }
   };
 }
@@ -1631,5 +2560,8 @@ if (isMain) {
   });
   if (process.env.PATCHFORGE_COMPONENT === "scheduler") {
     startScheduler();
+  }
+  if (process.env.PATCHFORGE_COMPONENT === "ingest-export-worker") {
+    startWorker();
   }
 }

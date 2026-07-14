@@ -1,0 +1,14 @@
+{
+  "environmentName": "AzureCloud",
+  "homeTenantId": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+  "id": "9ae9da49-de67-443b-af55-ce9db33ed8f4",
+  "isDefault": true,
+  "managedByTenants": [],
+  "name": "Azure subscription 1",
+  "state": "Enabled",
+  "tenantId": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+  "user": {
+    "name": "nbailey@diiac.io",
+    "type": "user"
+  }
+}

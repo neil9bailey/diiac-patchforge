@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PatchForge CVE",
+  "type": "object",
+  "required": ["id", "cve_id", "title", "description", "severity", "source_refs", "evidence_confidence"],
+  "properties": {
+    "id": { "type": "string" },
+    "cve_id": { "type": "string" },
+    "title": { "type": "string" },
+    "description": { "type": "string" },
+    "severity": { "type": "string" },
+    "cvss_score": { "type": ["number", "null"] },
+    "cvss_vector": { "type": ["string", "null"] },
+    "affected_products": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "affected_versions": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "fixed_versions": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "published_at": { "type": ["string", "null"] },
+    "last_modified": { "type": ["string", "null"] },
+    "source_refs": { "type": "array", "items": { "type": "string" } },
+    "evidence_confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+  }
+}

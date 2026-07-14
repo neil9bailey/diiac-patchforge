@@ -1,0 +1,79 @@
+az : WARNING: Packing source code into tar to upload...
+At line:10 char:1
++ az acr build --registry acrdiiacpatchforgeprod --image "diiac/patchfo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (WARNING: Packin...ar to upload...:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+WARNING: Uploading archived source code from
+'C:\Users\neilb\AppData\Local\Temp\build_archive_5ec87e134e454c6aa628c92aef3ae002.tar.gz'...
+WARNING: Sending context (122.979 KiB) to registry: acrdiiacpatchforgeprod...
+WARNING: Queued a build with ID: db3
+WARNING: Waiting for an agent...
+{
+  "agentConfiguration": {
+    "cpu": 2
+  },
+  "agentPoolName": null,
+  "createTime": "2026-06-01T22:54:43.830334+00:00",
+  "customRegistries": null,
+  "finishTime": "2026-06-01T22:55:31.320295+00:00",
+  "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ContainerRegistry/registries/acrdiiacpatchforgeprod/runs/db3",
+  "imageUpdateTrigger": null,
+  "isArchiveEnabled": false,
+  "lastUpdatedTime": "2026-06-01T22:55:31+00:00",
+  "logArtifact": null,
+  "name": "db3",
+  "outputImages": [
+    {
+      "digest": "sha256:66e908e2445ce58a0d5b1962636183ded05843fa95773e2000d3d46b2bd57d7f",
+      "registry": "acrdiiacpatchforgeprod.azurecr.io",
+      "repository": "diiac/patchforge-bridge",
+      "tag": "pfrebuild-20260601-43f953c"
+    },
+    {
+      "digest": "sha256:66e908e2445ce58a0d5b1962636183ded05843fa95773e2000d3d46b2bd57d7f",
+      "registry": "acrdiiacpatchforgeprod.azurecr.io",
+      "repository": "diiac/patchforge-sra-agent",
+      "tag": "pfrebuild-20260601-43f953c"
+    },
+    {
+      "digest": "sha256:66e908e2445ce58a0d5b1962636183ded05843fa95773e2000d3d46b2bd57d7f",
+      "registry": "acrdiiacpatchforgeprod.azurecr.io",
+      "repository": "diiac/patchforge-ingest-worker",
+      "tag": "pfrebuild-20260601-43f953c"
+    },
+    {
+      "digest": "sha256:66e908e2445ce58a0d5b1962636183ded05843fa95773e2000d3d46b2bd57d7f",
+      "registry": "acrdiiacpatchforgeprod.azurecr.io",
+      "repository": "diiac/patchforge-scheduler",
+      "tag": "pfrebuild-20260601-43f953c"
+    }
+  ],
+  "platform": {
+    "architecture": "amd64",
+    "os": "linux",
+    "variant": null
+  },
+  "provisioningState": "Succeeded",
+  "resourceGroup": "rg-diiac-patchforge-prod",
+  "runErrorMessage": null,
+  "runId": "db3",
+  "runType": "QuickRun",
+  "sourceRegistryAuth": null,
+  "sourceTrigger": null,
+  "startTime": "2026-06-01T22:54:44.096399+00:00",
+  "status": "Succeeded",
+  "systemData": {
+    "createdAt": null,
+    "createdBy": null,
+    "createdByType": null,
+    "lastModifiedAt": "2026-06-01T22:54:43.726165+00:00",
+    "lastModifiedBy": "nbailey@diiac.io",
+    "lastModifiedByType": "User"
+  },
+  "task": null,
+  "timerTrigger": null,
+  "type": "Microsoft.ContainerRegistry/registries/runs",
+  "updateTriggerToken": null
+}

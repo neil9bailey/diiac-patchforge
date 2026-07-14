@@ -1,0 +1,43 @@
+{
+  "release": "PF-AZ-MODERN-UI-20260711",
+  "target": "https://patchforge.diiac.io/",
+  "stylesheet": "/assets/index-D5y4kGcT.css",
+  "signed_out_shell": {
+    "status": "pass",
+    "heading": "PatchForge Intelligence by DIIaC(TM)",
+    "sign_in_action_present": true,
+    "desktop": {
+      "viewport": "1280x720",
+      "body_scroll_width": 1280,
+      "auth_panel_fully_in_view": true
+    },
+    "mobile": {
+      "viewport": "390x844",
+      "body_scroll_width": 390,
+      "horizontal_overflow": false,
+      "navigation_position": "static",
+      "auth_panel_fully_in_view": true
+    },
+    "browser_warnings": 0,
+    "browser_errors": 0
+  },
+  "signed_in_uat": {
+    "status": "pending_not_claimed",
+    "reason": "No authenticated PatchForge browser session was available and no account login was performed.",
+    "required_areas": [
+      "Patch & CVE Catalogue",
+      "Vendor Catalogue",
+      "Customer Estate",
+      "Ask PatchForge",
+      "Reports",
+      "Admin"
+    ]
+  },
+  "fresh_signed_pack_and_reports": {
+    "status": "pending_not_claimed"
+  },
+  "production_validation_data_cleanup": {
+    "status": "pending_not_applicable",
+    "reason": "No signed-in validation records were created."
+  }
+}

@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import { guardedFetchJson } from "./outboundFetch.js";
 
 export const CISA_KEV_FEED_URL = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json";
 export const FIRST_EPSS_API_URL = "https://api.first.org/data/v1/epss";
@@ -30,12 +31,13 @@ const PUBLIC_SOURCE_FEEDS = [
 
 export function createSourceFeedClient(options = {}) {
   const fetchImpl = options.fetchImpl || globalThis.fetch;
+  const outboundOptions = options.outboundOptions || {};
   return {
     listFeeds() {
       return listPublicSourceFeeds();
     },
     async refresh({ storage, tenantId, body = {} }) {
-      return refreshSourceFeed({ storage, tenantId, body, fetchImpl });
+      return refreshSourceFeed({ storage, tenantId, body, fetchImpl, outboundOptions });
     }
   };
 }
@@ -44,7 +46,7 @@ export function listPublicSourceFeeds() {
   return PUBLIC_SOURCE_FEEDS.map((feed) => ({ ...feed }));
 }
 
-export async function refreshSourceFeed({ storage, tenantId, body = {}, fetchImpl = globalThis.fetch }) {
+export async function refreshSourceFeed({ storage, tenantId, body = {}, fetchImpl = globalThis.fetch, outboundOptions = {} }) {
   const feedId = body.feed_id || "cisa-kev";
   const feed = PUBLIC_SOURCE_FEEDS.find((candidate) => candidate.feed_id === feedId);
   if (!feed) {
@@ -56,22 +58,22 @@ export async function refreshSourceFeed({ storage, tenantId, body = {}, fetchImp
   }
 
   if (feed.feed_id === "cisa-kev") {
-    return refreshCisaKev({ storage, tenantId, feed, body, fetchImpl });
+    return refreshCisaKev({ storage, tenantId, feed, body, fetchImpl, outboundOptions });
   }
 
   if (feed.feed_id === "first-epss") {
-    return refreshFirstEpss({ storage, tenantId, feed, body, fetchImpl });
+    return refreshFirstEpss({ storage, tenantId, feed, body, fetchImpl, outboundOptions });
   }
 
   throw new Error(`No handler registered for PatchForge source feed: ${feed.feed_id}`);
 }
 
-async function refreshCisaKev({ storage, tenantId, feed, body, fetchImpl }) {
+async function refreshCisaKev({ storage, tenantId, feed, body, fetchImpl, outboundOptions }) {
   const startedAt = new Date().toISOString();
   const runId = body.run_id || `run-cisa-kev-${Date.now()}-${randomUUID().slice(0, 8)}`;
   const limit = boundedLimit(body.limit, 10, 1, 50);
   const requestedCve = normalizeCveList(body.cve || body.cves);
-  const feedPayload = await fetchJson(feed.source_url, fetchImpl);
+  const feedPayload = await fetchJson(feed.source_url, fetchImpl, outboundOptions);
   const vulnerabilities = Array.isArray(feedPayload.vulnerabilities) ? feedPayload.vulnerabilities : [];
   const filtered = requestedCve.length
     ? vulnerabilities.filter((item) => requestedCve.includes(String(item.cveID || "").toUpperCase()))
@@ -152,7 +154,7 @@ async function refreshCisaKev({ storage, tenantId, feed, body, fetchImpl }) {
   });
 }
 
-async function refreshFirstEpss({ storage, tenantId, feed, body, fetchImpl }) {
+async function refreshFirstEpss({ storage, tenantId, feed, body, fetchImpl, outboundOptions }) {
   const startedAt = new Date().toISOString();
   const runId = body.run_id || `run-first-epss-${Date.now()}-${randomUUID().slice(0, 8)}`;
   const requestedCve = normalizeCveList(body.cve || body.cves);
@@ -175,7 +177,7 @@ async function refreshFirstEpss({ storage, tenantId, feed, body, fetchImpl }) {
 
   const params = new URLSearchParams({ cve: cves.join(",") });
   const requestUrl = `${feed.source_url}?${params.toString()}`;
-  const epssPayload = await fetchJson(requestUrl, fetchImpl);
+  const epssPayload = await fetchJson(requestUrl, fetchImpl, outboundOptions);
   const records = Array.isArray(epssPayload.data) ? epssPayload.data : [];
   let recordsEnriched = 0;
 
@@ -238,20 +240,16 @@ async function refreshFirstEpss({ storage, tenantId, feed, body, fetchImpl }) {
   });
 }
 
-async function fetchJson(url, fetchImpl) {
+async function fetchJson(url, fetchImpl, outboundOptions = {}) {
   if (typeof fetchImpl !== "function") {
     throw new Error("PatchForge source feed refresh requires a fetch implementation.");
   }
-  const response = await fetchImpl(url, {
+  return guardedFetchJson(url, { ...outboundOptions, fetchImpl,
     headers: {
       accept: "application/json",
       "user-agent": "DIIaC-PatchForge/1.0 source-bound-governance"
     }
   });
-  if (!response.ok) {
-    throw new Error(`Source feed request failed with HTTP ${response.status}`);
-  }
-  return response.json();
 }
 
 async function recordRun(storage, tenantId, run) {

@@ -1,0 +1,25 @@
+[
+    {
+        "name":  "backend-multitag",
+        "images":  [
+                       "diiac/patchforge-bridge:pfrebuild-20260601-43f953c",
+                       "diiac/patchforge-sra-agent:pfrebuild-20260601-43f953c",
+                       "diiac/patchforge-ingest-worker:pfrebuild-20260601-43f953c",
+                       "diiac/patchforge-scheduler:pfrebuild-20260601-43f953c"
+                   ],
+        "dockerfile":  "backend-api/Dockerfile",
+        "context":  "backend-api",
+        "exitCode":  0,
+        "log":  "docs\\release\\evidence\\2026-06-01-patchforge-rebuild-live-deploy\\build-push\\acr-build-backend-multitag-no-logs.log"
+    },
+    {
+        "name":  "runtime",
+        "images":  [
+                       "diiac/patchforge-runtime:pfrebuild-20260601-43f953c"
+                   ],
+        "dockerfile":  "runtime/Dockerfile",
+        "context":  ".",
+        "exitCode":  0,
+        "log":  "docs\\release\\evidence\\2026-06-01-patchforge-rebuild-live-deploy\\build-push\\acr-build-runtime-no-logs.log"
+    }
+]

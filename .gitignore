@@ -26,6 +26,7 @@ Thumbs.db
 
 # Build and export artefacts
 artifacts/generated/
+artifacts/collector/
 artifacts/tmp/
 artifacts/pfaz5-validation-pack/
 infra/bicep/*.json

@@ -1,0 +1,93 @@
+{
+  "apiBaseUrl": "https://api.patchforge.diiac.io",
+  "tenantId": "diiac.io",
+  "collector": {
+    "collector_id": "collector-customer-site-01",
+    "name": "Customer Site 01 Collector",
+    "site": "Primary site",
+    "environment": "production",
+    "categories": [
+      "network_device",
+      "security_appliance",
+      "physical_server",
+      "virtual_server",
+      "hypervisor",
+      "cloud_resource",
+      "endpoint",
+      "storage",
+      "application_platform"
+    ],
+    "package_channel": "windows_exe_day1"
+  },
+  "policy": {
+    "policy_id": "policy-customer-site-01",
+    "name": "Customer Site 01 read-only discovery",
+    "categories": [
+      "network_device",
+      "security_appliance",
+      "physical_server",
+      "virtual_server",
+      "hypervisor",
+      "cloud_resource",
+      "endpoint",
+      "storage",
+      "application_platform"
+    ],
+    "credential_reference": "customer-vault:patchforge/read-only-discovery",
+    "scope": {
+      "sites": ["Primary site"],
+      "source_systems": ["local_host", "hyperv", "azure_cli", "http_json"]
+    }
+  },
+  "auth": {
+    "bearerTokenEnv": "PATCHFORGE_COLLECTOR_TOKEN",
+    "azureCliScope": "api://ec30b0eb-cfc4-48cc-a5f2-2a1345d96736/PatchForge.Access",
+    "azureTenantId": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+    "azureCliManagedIdentity": false,
+    "managedIdentityClientIdEnv": "PATCHFORGE_COLLECTOR_MANAGED_IDENTITY_CLIENT_ID"
+  },
+  "lifecycle": {
+    "heartbeatFile": "C:\\ProgramData\\PatchForge\\Collector\\collector-heartbeat.json",
+    "revocationFile": "C:\\ProgramData\\PatchForge\\Collector\\collector.revoked.json",
+    "spoolDirectory": "C:\\ProgramData\\PatchForge\\Collector\\spool",
+    "maxSpoolEntries": 100,
+    "maxSpoolEntryBytes": 8388608,
+    "maxReplayAttempts": 5,
+    "collectorVersion": "customer-managed",
+    "packageDigest": null
+  },
+  "adapters": [
+    {
+      "type": "local_host",
+      "enabled": true
+    },
+    {
+      "type": "hyperv",
+      "enabled": true
+    },
+    {
+      "type": "azure_cli",
+      "enabled": false,
+      "subscription": "00000000-0000-0000-0000-000000000000"
+    },
+    {
+      "type": "http_json",
+      "enabled": false,
+      "url": "https://nms.example.test/api/assets",
+      "headers": {
+        "Authorization": "Bearer env:NMS_READONLY_TOKEN"
+      },
+      "assetPath": "items",
+      "fieldMap": {
+        "asset_id": "id",
+        "category": "category",
+        "hostname": "hostname",
+        "vendor_name": "vendor",
+        "product_family": "product",
+        "model": "model",
+        "firmware_version": "version",
+        "ip_addresses": "ip"
+      }
+    }
+  ]
+}

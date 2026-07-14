@@ -37,7 +37,7 @@ PatchForge does not scan environments, exploit vulnerabilities, deploy patches, 
 
 ## Current Product Scope
 
-This repository now contains the PF-AZ10-SIMPLIFIED-EXPERIENCE production product line for PatchForge:
+This repository now contains the PF-AZ11-CUSTOMER-DEMO-MATURITY production product line for PatchForge:
 
 - product identity
 - product boundary
@@ -48,28 +48,42 @@ This repository now contains the PF-AZ10-SIMPLIFIED-EXPERIENCE production produc
 - deterministic runtime governance and signed decision packs
 - Azure Key Vault production signing path
 - Microsoft Entra sign-in and token-backed frontend API use
-- Global Security Action Center for source-bound CVEs, vendor advisories, KEV/EPSS signals, customer match counts, and governance posture
-- Customer Estate for customer devices/assets, services, config evidence, exposure matches, and Patch Compare
+- Patch & CVE Catalogue for source-bound CVEs, vendor advisories, KEV/EPSS signals, customer matches, evidence posture, and next actions
+- Vendor Catalogue for vendor/advisory context, selected customer asset applicability, and Patch Compare
+- Customer Estate for customer devices/assets, services, collector/config evidence, exposure matches, and lifecycle state
 - Ask PatchForge advisory workflow for vendor, device, feature, patch, and evidence questions
-- Reports & Packs consolidation for customer, board, CAB, technical appendix, signed pack, and verification outputs
+- Reports consolidation for customer, board, CAB, technical appendix, signed pack, and verification outputs
 - deterministic search index across vulnerabilities, vendor advisories, vendor profiles, customer assets, applicability assessments, and source-feed records
 - vendor intelligence and config-aware patch advisor capabilities surfaced inside the simplified workflows
 - customer network asset, model, firmware, feature, and exposure evidence records
 - Ask PatchForge advisory chat with human accountability
 - source-bound SRA and agent finding intake
-- simplified Global Security Action Center, Customer Estate, Ask PatchForge, Reports & Packs, and Admin navigation
+- modern six-area Patch & CVE Catalogue, Vendor Catalogue, Customer Estate, Ask PatchForge, Reports, and Admin navigation
 - human-readable finding intelligence API
 - decision-grade DOCX/PDF board and CAB reports
 - signed-pack finding intelligence snapshots
 - board-grade validation evidence
+- an operational user guide for day-to-day security, service-owner, CAB, and customer-assurance use
 
 No scanner, exploit, or patch-deployment capability is created. PatchForge remains a governance and assurance product only.
+
+## Operational User Guide
+
+Start with [PatchForge Operational User Guide](docs/operations/PATCHFORGE_OPERATIONAL_USER_GUIDE.md) when helping end users understand how to use PatchForge correctly in day-to-day operations. It covers the six-area Patch & CVE Catalogue, Vendor Catalogue, Customer Estate, Ask PatchForge, Reports, and Admin experience plus finding-scoped evidence review, explicit pack selection, human approval boundaries, and credibility checks before customer or board reporting.
+
+For the current implementation-versus-live status, operator actions, evidence requirements, and release stop conditions, use the [PatchForge 14-Area Improvement Closure Matrix](docs/validation/PATCHFORGE_14_AREA_IMPROVEMENT_CLOSURE_2026-07-14.md). The candidate is not a claimed production release until its live and human gates are evidenced.
+
+## Canonical Rebuild Blueprint
+
+The catalogue-first rebuild is governed by the [PatchForge Intelligence Rebuild Blueprint](docs/product/PATCHFORGE_INTELLIGENCE_REBUILD_BLUEPRINT.md). The current six-area information architecture consolidates that blueprint into Patch & CVE Catalogue, Vendor Catalogue, Customer Estate, Ask PatchForge, user-driven Reports, and Admin as System & Data Health while preserving the same trust and product boundaries.
 
 ## Local Validation
 
 ```powershell
 python -m pytest -q --basetemp .pytest_tmp
 npm test
+npm run api:check
+npm run collector:test
 npm --prefix Frontend test
 npm --prefix Frontend run build
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate_iac.ps1

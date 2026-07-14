@@ -4,9 +4,23 @@ import { PublicClientApplication } from "@azure/msal-browser";
 import { MsalProvider } from "@azure/msal-react";
 import App from "./App";
 import { getPatchForgeConfig } from "./api";
-import { MsalPatchForgeAuthProvider } from "./auth";
+import { MsalPatchForgeAuthProvider, PatchForgeAuthSession } from "./auth";
 import "./styles.css";
 
+const previewParams = new URLSearchParams(window.location.search);
+const localPreviewEnabled = import.meta.env.DEV && previewParams.get("preview") === "1";
+const allowedPreviewRoles = [
+  "PatchForge.Reader",
+  "PatchForge.TriageAnalyst",
+  "PatchForge.SecurityLead",
+  "PatchForge.CABApprover",
+  "PatchForge.Auditor",
+  "PatchForge.Admin"
+] as const;
+const requestedPreviewRole = previewParams.get("previewRole");
+const localPreviewRole = localPreviewEnabled && allowedPreviewRoles.includes(requestedPreviewRole as typeof allowedPreviewRoles[number])
+  ? requestedPreviewRole as typeof allowedPreviewRoles[number]
+  : "PatchForge.Admin";
 const config = getPatchForgeConfig();
 const msalInstance = new PublicClientApplication({
   auth: {
@@ -22,11 +36,22 @@ const msalInstance = new PublicClientApplication({
 
 await msalInstance.initialize();
 
+const localPreviewSession: PatchForgeAuthSession = {
+  status: "authenticated",
+  accountName: "preview.admin@diiac.io",
+  roles: [localPreviewRole],
+  signIn: async () => undefined,
+  signOut: async () => {
+    window.location.assign(window.location.pathname);
+  },
+  getAccessToken: async () => "local-preview"
+};
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <MsalProvider instance={msalInstance}>
       <MsalPatchForgeAuthProvider>
-        <App />
+        <App auth={localPreviewEnabled ? localPreviewSession : undefined} />
       </MsalPatchForgeAuthProvider>
     </MsalProvider>
   </React.StrictMode>

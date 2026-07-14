@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PatchForge Patch Action",
+  "type": "object",
+  "required": ["id", "action_type", "recommended_action", "human_change_approval_required", "no_autonomous_production_approval"],
+  "properties": {
+    "id": { "type": "string" },
+    "cve_id": { "type": ["string", "null"] },
+    "asset_id": { "type": ["string", "null"] },
+    "action_type": { "type": "string" },
+    "recommended_action": { "type": "string" },
+    "patch_url": { "type": ["string", "null"] },
+    "hotfix_url": { "type": ["string", "null"] },
+    "workaround": { "type": ["string", "null"] },
+    "risk_reduction": { "type": ["number", "string"] },
+    "operational_risk": { "type": ["number", "string"] },
+    "service_impact": { "type": "string" },
+    "rollback_risk": { "type": "string" },
+    "change_window_suitability": { "type": "string" },
+    "ciso_approval_required": { "type": "boolean", "default": false },
+    "human_change_approval_required": { "const": true },
+    "no_autonomous_production_approval": { "const": true },
+    "evidence_refs": { "type": "array", "items": { "type": "string" }, "default": [] }
+  }
+}

@@ -1,0 +1,142 @@
+name: PatchForge security and provenance
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: patchforge-security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Reject vulnerable dependency changes
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: always
+
+  codeql:
+    name: CodeQL (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language:
+          - javascript-typescript
+          - python
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Initialise CodeQL
+        uses: github/codeql-action/init@1ad29ea4a422cce9a242a9fae469541dcd08addc # v4
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-extended
+
+      - name: Analyse
+        uses: github/codeql-action/analyze@1ad29ea4a422cce9a242a9fae469541dcd08addc # v4
+        with:
+          category: /language:${{ matrix.language }}
+
+  repository-security:
+    name: Repository security, SBOM, and provenance
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Prepare evidence directory and source bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/security
+          git archive --format=zip --output="artifacts/security/patchforge-source-${GITHUB_SHA}.zip" HEAD
+          sha256sum "artifacts/security/patchforge-source-${GITHUB_SHA}.zip" > artifacts/security/SHA256SUMS
+
+      - name: Scan dependencies, secrets, and infrastructure
+        id: trivy
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,misconfig
+          skip-dirs: .git,artifacts,docs/release/evidence,**/node_modules,.playwright-mcp
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+          format: sarif
+          output: artifacts/security/trivy-repository.sarif
+          limit-severities-for-sarif: true
+          timeout: 15m
+
+      - name: Upload security findings
+        if: always() && hashFiles('artifacts/security/trivy-repository.sarif') != ''
+        uses: github/codeql-action/upload-sarif@1ad29ea4a422cce9a242a9fae469541dcd08addc # v4
+        with:
+          sarif_file: artifacts/security/trivy-repository.sarif
+          category: patchforge-repository
+
+      - name: Generate SPDX SBOM
+        if: always()
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln
+          skip-dirs: .git,artifacts,docs/release/evidence,**/node_modules,.playwright-mcp
+          format: spdx-json
+          output: artifacts/security/patchforge-sbom.spdx.json
+          exit-code: "0"
+          skip-setup-trivy: true
+          timeout: 15m
+
+      - name: Record SBOM digest
+        if: always() && hashFiles('artifacts/security/patchforge-sbom.spdx.json') != ''
+        shell: bash
+        run: sha256sum artifacts/security/patchforge-sbom.spdx.json >> artifacts/security/SHA256SUMS
+
+      - name: Attest source bundle and SBOM
+        if: github.event_name != 'pull_request' && hashFiles('artifacts/security/patchforge-sbom.spdx.json') != ''
+        uses: actions/attest@f6bf1532d7d6793fce74eac584813a8eee607999 # v4
+        with:
+          subject-path: artifacts/security/patchforge-source-${{ github.sha }}.zip
+          sbom-path: artifacts/security/patchforge-sbom.spdx.json
+
+      - name: Upload security and provenance evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: patchforge-security-${{ github.sha }}
+          path: artifacts/security
+          if-no-files-found: error
+          retention-days: 90

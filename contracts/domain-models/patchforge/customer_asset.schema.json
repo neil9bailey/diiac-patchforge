@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PatchForge Customer Asset",
+  "type": "object",
+  "required": ["id", "customer_id", "estate_id", "hostname", "vendor", "product", "source", "created_at", "updated_at"],
+  "properties": {
+    "id": { "type": "string" },
+    "customer_id": { "type": "string" },
+    "estate_id": { "type": "string" },
+    "site": { "type": ["string", "null"] },
+    "hostname": { "type": "string" },
+    "asset_type": { "type": ["string", "null"] },
+    "vendor": { "type": "string" },
+    "product": { "type": "string" },
+    "version": { "type": ["string", "null"] },
+    "firmware_version": { "type": ["string", "null"] },
+    "software_packages": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "cpe": { "type": ["string", "null"] },
+    "internet_exposed": { "type": "boolean", "default": false },
+    "criticality": { "type": "string", "default": "unknown" },
+    "source": { "type": "string" },
+    "source_confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "parser_confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "tags": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "created_at": { "type": "string" },
+    "updated_at": { "type": "string" }
+  }
+}

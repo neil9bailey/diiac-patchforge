@@ -9,7 +9,10 @@ from runtime.governance_runtime import (
     build_patch_decision_context,
     canonical_json,
     create_signed_decision_pack,
+    create_signed_export_manifest,
+    sha256_bytes,
     verify_pack_locally,
+    verify_signed_export_manifest,
 )
 from runtime.bayesian_patch_risk import assess_patch_risk, propose_prior_update
 
@@ -79,6 +82,26 @@ def test_sra_and_scanner_output_cannot_close_hard_gates_alone():
     assert "sra-vuln-id" in evaluation.advisory_only_refs
 
 
+@pytest.mark.parametrize("review_state,expired,replay_verified", [
+    ("expired", True, True),
+    ("reopened", False, True),
+    ("reviewed", False, False),
+])
+def test_expired_reopened_or_unreplayable_server_evidence_reopens_gate(review_state, expired, replay_verified):
+    evidence = [{
+        "evidence_ref": "server-human-vuln-id",
+        "evidence_class": "vulnerability_identity",
+        "source_class": "human_evidence_submission",
+        "review_state": review_state,
+        "evidence_state": "accepted_positive_evidence",
+        "server_owned": True,
+        "expired": expired,
+        "replay_verified": replay_verified,
+    }]
+    evaluation = apply_evidence_model("vuln_patch_governance", build_evidence_register(evidence))
+    assert "vulnerability_identity" in evaluation.blockers
+
+
 def test_agent_findings_are_advisory_and_cannot_close_hard_gates_alone():
     evidence = [
         {
@@ -140,8 +163,9 @@ def test_final_approval_false_by_default_for_emergency_patch():
         vulnerability=sample_vulnerability(),
         evidence_items=[
             accepted("human-vuln-id", "vulnerability_identity"),
-            accepted("human-asset", "affected_asset_scope"),
-            accepted("vendor-patch", "patch_availability"),
+            accepted("reviewed-urgency", "known_exploitation_or_urgency"),
+            accepted("reviewed-service", "affected_service_scope"),
+            accepted("reviewed-rollback", "rollback_plan"),
             accepted("human-review", "human_review_signoff"),
         ],
         requested_posture="emergency_change_required",
@@ -150,14 +174,73 @@ def test_final_approval_false_by_default_for_emergency_patch():
     assert "emergency_human_approval" in context["blockers"]
 
 
+def test_final_approval_requires_server_verified_role_and_closed_evidence_gates():
+    untrusted = build_patch_decision_context(
+        vulnerability=sample_vulnerability(),
+        evidence_items=[],
+        approval_events=[{
+            "approval_type": "final",
+            "approval_state": "approved",
+            "approver": "client-supplied-name",
+            "server_verified": True,
+            "actor_roles": ["PatchForge.TriageAnalyst"],
+        }],
+    )
+    assert untrusted["final_approval_issued"] is False
+    assert "untrusted_final_approval_event" in untrusted["blockers"]
+
+    trusted_but_blocked = build_patch_decision_context(
+        vulnerability=sample_vulnerability(),
+        evidence_items=[],
+        approval_events=[{
+            "approval_type": "final",
+            "approval_state": "approved",
+            "approver": "cab-chair",
+            "server_verified": True,
+            "actor_roles": ["PatchForge.CABApprover"],
+        }],
+    )
+    assert trusted_but_blocked["final_approval_issued"] is False
+    assert trusted_but_blocked["readiness"]["blockers"]
+
+
+def test_expired_risk_acceptance_remains_blocked():
+    context = build_patch_decision_context(
+        vulnerability=sample_vulnerability(),
+        evidence_items=[
+            accepted("human-vuln-id", "vulnerability_identity"),
+            accepted("reviewed-urgency", "known_exploitation_or_urgency"),
+            accepted("reviewed-service", "affected_service_scope"),
+            accepted("reviewed-rollback", "rollback_plan"),
+            accepted("human-review", "human_review_signoff"),
+        ],
+        requested_posture="risk_accept_temporarily",
+        risk_acceptance={
+            "owner": "risk-owner",
+            "expiry_date": "2000-01-01",
+            "rationale": "Historical exception.",
+        },
+        approval_events=[{
+            "approval_type": "final",
+            "approval_state": "approved",
+            "approver": "cab-chair",
+            "server_verified": True,
+            "actor_roles": ["PatchForge.CABApprover"],
+        }],
+    )
+    assert context["final_approval_issued"] is False
+    assert "risk_acceptance_expired" in context["blockers"]
+
+
 def test_generate_and_verify_signed_decision_pack(tmp_path: Path):
     result = create_signed_decision_pack(
         output_dir=tmp_path / "pack",
         vulnerability=sample_vulnerability(),
         evidence_items=[
             accepted("human-vuln-id", "vulnerability_identity"),
-            accepted("human-asset", "affected_asset_scope"),
-            accepted("vendor-patch", "patch_availability"),
+            accepted("reviewed-urgency", "known_exploitation_or_urgency"),
+            accepted("reviewed-service", "affected_service_scope"),
+            accepted("reviewed-rollback", "rollback_plan"),
             accepted("human-review", "human_review_signoff"),
         ],
         patch_availability={"status": "patch_available"},
@@ -210,7 +293,13 @@ def test_generate_and_verify_signed_decision_pack(tmp_path: Path):
             "final_approval_issued": False,
         },
         approval_events=[
-            {"approval_type": "final", "approval_state": "approved", "approver": "cab-chair"}
+            {
+                "approval_type": "final",
+                "approval_state": "approved",
+                "approver": "cab-chair",
+                "server_verified": True,
+                "actor_roles": ["PatchForge.CABApprover"],
+            }
         ],
     )
 
@@ -290,12 +379,19 @@ def test_generate_and_verify_es256_signed_decision_pack(tmp_path: Path):
         vulnerability=sample_vulnerability(),
         evidence_items=[
             accepted("human-vuln-id", "vulnerability_identity"),
-            accepted("human-asset", "affected_asset_scope"),
-            accepted("vendor-patch", "patch_availability"),
+            accepted("reviewed-urgency", "known_exploitation_or_urgency"),
+            accepted("reviewed-service", "affected_service_scope"),
+            accepted("reviewed-rollback", "rollback_plan"),
             accepted("human-review", "human_review_signoff"),
         ],
         approval_events=[
-            {"approval_type": "final", "approval_state": "approved", "approver": "cab-chair"}
+            {
+                "approval_type": "final",
+                "approval_state": "approved",
+                "approver": "cab-chair",
+                "server_verified": True,
+                "actor_roles": ["PatchForge.CABApprover"],
+            }
         ],
         key_vault_key_id="https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod/test",
         signing_provider=FakeKeyVaultSigner(),
@@ -313,6 +409,85 @@ def test_forbidden_boundary_keys_are_rejected(tmp_path: Path):
             output_dir=tmp_path / "pack",
             vulnerability=sample_vulnerability(exploit_steps=["not allowed"]),
             evidence_items=[],
+        )
+
+
+def test_signed_export_manifest_binds_exact_bytes_and_preserves_human_approval_boundary():
+    report_bytes = b"%PDF-1.7\nimmutable report bytes\n"
+    governance_hash = sha256_bytes(b"governance manifest")
+    bundle = create_signed_export_manifest(
+        pack_id="PF-TEST-EXPORT",
+        tenant_id="tenant-a",
+        governance_manifest_sha256=governance_hash,
+        final_approval_issued=False,
+        artefacts=[{
+            "name": "cab-patch-decision-report.pdf",
+            "media_type": "application/pdf",
+            "sha256": sha256_bytes(report_bytes),
+            "size_bytes": len(report_bytes),
+        }],
+        created_at="2026-07-12T10:00:00+00:00",
+    )
+
+    assert bundle["verification"]["verified"] is True
+    assert verify_signed_export_manifest(bundle)["verified"] is True
+    assert bundle["manifest"]["final_approval_issued"] is False
+    assert bundle["manifest"]["human_approval_boundary"]["manifest_does_not_issue_approval"] is True
+
+
+def test_signed_export_manifest_verification_fails_closed_after_descriptor_tampering():
+    bundle = create_signed_export_manifest(
+        pack_id="PF-TEST-TAMPER",
+        tenant_id="tenant-a",
+        governance_manifest_sha256=sha256_bytes(b"governance manifest"),
+        artefacts=[{
+            "name": "signed-decision-pack.zip",
+            "media_type": "application/zip",
+            "sha256": sha256_bytes(b"zip bytes"),
+            "size_bytes": len(b"zip bytes"),
+        }],
+    )
+    bundle["manifest"]["artefacts"][0]["size_bytes"] += 1
+    verification = verify_signed_export_manifest(bundle)
+    assert verification["verified"] is False
+    assert verification["manifest_ok"] is False
+
+
+@pytest.mark.parametrize("artefacts", [
+    [
+        {"name": "../report.pdf", "media_type": "application/pdf", "sha256": "0" * 64, "size_bytes": 1},
+    ],
+    [
+        {"name": "report.pdf", "media_type": "application/pdf", "sha256": "0" * 64, "size_bytes": 1},
+        {"name": "report.pdf", "media_type": "application/pdf", "sha256": "1" * 64, "size_bytes": 1},
+    ],
+    [
+        {"name": "report.exe", "media_type": "application/octet-stream", "sha256": "0" * 64, "size_bytes": 1},
+    ],
+])
+def test_signed_export_manifest_rejects_unsafe_duplicate_or_unsupported_artefacts(artefacts):
+    with pytest.raises(GovernanceRuntimeError):
+        create_signed_export_manifest(
+            pack_id="PF-TEST-INVALID",
+            tenant_id="tenant-a",
+            governance_manifest_sha256=sha256_bytes(b"governance manifest"),
+            artefacts=artefacts,
+        )
+
+
+def test_signed_export_manifest_rejects_string_approval_state():
+    with pytest.raises(GovernanceRuntimeError):
+        create_signed_export_manifest(
+            pack_id="PF-TEST-APPROVAL-TYPE",
+            tenant_id="tenant-a",
+            governance_manifest_sha256=sha256_bytes(b"governance manifest"),
+            artefacts=[{
+                "name": "report.pdf",
+                "media_type": "application/pdf",
+                "sha256": sha256_bytes(b"report"),
+                "size_bytes": len(b"report"),
+            }],
+            final_approval_issued="false",  # type: ignore[arg-type]
         )
 
 

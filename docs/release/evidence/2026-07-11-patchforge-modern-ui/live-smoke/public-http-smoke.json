@@ -1,0 +1,46 @@
+{
+  "release": "PF-AZ-MODERN-UI-20260711",
+  "tag": "pfaz-modern-ui-20260711-907995f",
+  "completed_at_utc": "2026-07-11T18:04:37.7826992Z",
+  "tests": [
+    {
+      "name": "ui",
+      "url": "https://patchforge.diiac.io/",
+      "expected_status": 200,
+      "actual_status": 200,
+      "passed": true
+    },
+    {
+      "name": "health",
+      "url": "https://api.patchforge.diiac.io/health",
+      "expected_status": 200,
+      "actual_status": 200,
+      "response": {
+        "status": "ok",
+        "product": "DIIaC PatchForge",
+        "boundary": "governance-only"
+      },
+      "passed": true
+    },
+    {
+      "name": "readiness",
+      "url": "https://api.patchforge.diiac.io/readiness",
+      "expected_status": 200,
+      "actual_status": 200,
+      "response": {
+        "status": "ready",
+        "storage": "postgresql",
+        "auth_required": true,
+        "tenant_required": true
+      },
+      "passed": true
+    },
+    {
+      "name": "protected_route_without_authentication",
+      "url": "https://api.patchforge.diiac.io/api/patchforge/security-action-center",
+      "expected_status": 401,
+      "actual_status": 401,
+      "passed": true
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+    "name":  "get-token-resource",
+    "ok":  false,
+    "statusCode":  null,
+    "message":  "No token returned"
+}

@@ -1,0 +1,35 @@
+[
+    {
+        "name":  "ui-root",
+        "url":  "https://patchforge.diiac.io/",
+        "statusCode":  200,
+        "statusDescription":  "OK",
+        "ok":  true,
+        "bodySnippet":  "\u003c!doctype html\u003e\n\u003chtml lang=\"en\"\u003e\n  \u003chead\u003e\n    \u003cmeta charset=\"UTF-8\" /\u003e\n    \u003cmeta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" /\u003e\n    \u003ctitle\u003eDIIaC\u0026trade; PatchForge\u003c/title\u003e\n    \u003cscript type=\"module\" crossorigin src=\"/assets/index-iEPkg866.js\"\u003e\u003c/script\u003e\n    \u003clink rel=\"stylesheet\" crossorigin href=\"/assets/index-BFwwJJck.css\"\u003e\n  \u003c/head\u003e\n  \u003cbody\u003e\n    \u003cdiv id=\"root\"\u003e\u003c/div\u003e\n    \u003cscript src=\"/patchforge-config.js\"\u003e\u003c/script\u003e\n  \u003c/body\u003e\n\u003c/html\u003e\n"
+    },
+    {
+        "name":  "api-health",
+        "url":  "https://api.patchforge.diiac.io/health",
+        "statusCode":  200,
+        "statusDescription":  "OK",
+        "ok":  true,
+        "bodySnippet":  "{\n  \"status\": \"ok\",\n  \"product\": \"DIIaC PatchForge\",\n  \"boundary\": \"governance-only\"\n}\n"
+    },
+    {
+        "name":  "api-readiness",
+        "url":  "https://api.patchforge.diiac.io/readiness",
+        "statusCode":  200,
+        "statusDescription":  "OK",
+        "ok":  true,
+        "bodySnippet":  "{\n  \"status\": \"ready\",\n  \"storage\": \"postgresql\",\n  \"auth_required\": true,\n  \"tenant_required\": true\n}\n"
+    },
+    {
+        "name":  "protected-security-action-center-unauth",
+        "url":  "https://api.patchforge.diiac.io/api/patchforge/security-action-center",
+        "statusCode":  401,
+        "statusDescription":  "Unauthorized",
+        "ok":  true,
+        "error":  "The remote server returned an error: (401) Unauthorized.",
+        "bodySnippet":  "{\n  \"error\": \"missing_bearer_token\",\n  \"message\": \"A Microsoft Entra access token is required.\",\n  \"required_roles\": [\n    \"PatchForge.Reader\",\n    \"PatchForge.Auditor\",\n    \"PatchForge.TriageAnalyst\",\n    \"PatchForge.SecurityLead\",\n    \"PatchForge.Admin\"\n  ]\n}\n"
+    }
+]

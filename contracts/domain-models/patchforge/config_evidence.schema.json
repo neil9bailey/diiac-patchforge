@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PatchForge Config Evidence",
+  "type": "object",
+  "required": ["id", "customer_id", "source_type", "redacted_config", "raw_upload_hash", "redaction_status", "parsed_facts", "parser_confidence", "created_at"],
+  "properties": {
+    "id": { "type": "string" },
+    "customer_id": { "type": ["string", "null"] },
+    "asset_id": { "type": ["string", "null"] },
+    "source_type": { "type": "string" },
+    "redacted_config": { "type": "string" },
+    "raw_upload_hash": { "type": "string" },
+    "redaction_status": { "type": "string" },
+    "parsed_facts": { "type": "object" },
+    "parser_confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "evidence_refs": { "type": "array", "items": { "type": "object" }, "default": [] },
+    "raw_secret_values_persisted": { "const": false },
+    "created_at": { "type": "string" }
+  }
+}

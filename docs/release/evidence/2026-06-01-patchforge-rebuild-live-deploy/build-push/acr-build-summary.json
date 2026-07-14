@@ -1,0 +1,8 @@
+{
+    "name":  "frontend",
+    "image":  "diiac/patchforge-frontend:pfrebuild-20260601-43f953c",
+    "dockerfile":  "Frontend/Dockerfile",
+    "context":  "Frontend",
+    "exitCode":  1,
+    "log":  "docs\\release\\evidence\\2026-06-01-patchforge-rebuild-live-deploy\\build-push\\acr-build-frontend.log"
+}

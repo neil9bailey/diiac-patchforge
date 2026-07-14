@@ -1,0 +1,64 @@
+az : WARNING: Packing source code into tar to upload...
+At line:15 char:1
++ az acr build --registry acrdiiacpatchforgeprod --image "diiac/patchfo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (WARNING: Packin...ar to upload...:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+WARNING: Excluding '.git' based on default ignore rules
+WARNING: Excluding '.gitignore' based on default ignore rules
+WARNING: Excluding '.pytest_cache/.gitignore' based on default ignore rules
+WARNING: Uploading archived source code from
+'C:\Users\neilb\AppData\Local\Temp\build_archive_bb912353c2ca49fdb5efe5b0b2528a5f.tar.gz'...
+WARNING: Sending context (36.137 MiB) to registry: acrdiiacpatchforgeprod...
+WARNING: Queued a build with ID: db4
+WARNING: Waiting for an agent...
+{
+  "agentConfiguration": {
+    "cpu": 2
+  },
+  "agentPoolName": null,
+  "createTime": "2026-06-01T23:01:11.598967+00:00",
+  "customRegistries": null,
+  "finishTime": "2026-06-01T23:01:39.948709+00:00",
+  "id": "/subscriptions/9ae9da49-de67-443b-af55-ce9db33ed8f4/resourceGroups/rg-diiac-patchforge-prod/providers/Microsoft.ContainerRegistry/registries/acrdiiacpatchforgeprod/runs/db4",
+  "imageUpdateTrigger": null,
+  "isArchiveEnabled": false,
+  "lastUpdatedTime": "2026-06-01T23:01:39+00:00",
+  "logArtifact": null,
+  "name": "db4",
+  "outputImages": [
+    {
+      "digest": "sha256:d80959310be3d1b1655942f2044482f82cffb9ba27a8254cefe5dd92786f66ba",
+      "registry": "acrdiiacpatchforgeprod.azurecr.io",
+      "repository": "diiac/patchforge-runtime",
+      "tag": "pfrebuild-20260601-43f953c"
+    }
+  ],
+  "platform": {
+    "architecture": "amd64",
+    "os": "linux",
+    "variant": null
+  },
+  "provisioningState": "Succeeded",
+  "resourceGroup": "rg-diiac-patchforge-prod",
+  "runErrorMessage": null,
+  "runId": "db4",
+  "runType": "QuickRun",
+  "sourceRegistryAuth": null,
+  "sourceTrigger": null,
+  "startTime": "2026-06-01T23:01:11.877297+00:00",
+  "status": "Succeeded",
+  "systemData": {
+    "createdAt": null,
+    "createdBy": null,
+    "createdByType": null,
+    "lastModifiedAt": "2026-06-01T23:01:11.440257+00:00",
+    "lastModifiedBy": "nbailey@diiac.io",
+    "lastModifiedByType": "User"
+  },
+  "task": null,
+  "timerTrigger": null,
+  "type": "Microsoft.ContainerRegistry/registries/runs",
+  "updateTriggerToken": null
+}

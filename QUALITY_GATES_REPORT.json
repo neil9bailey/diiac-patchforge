@@ -1,181 +1,128 @@
 {
-  "release": "PF-AZ10-SIMPLIFIED-EXPERIENCE",
-  "date": "2026-05-30",
-  "status": "azure_live_browser_validated",
-  "image_tag": "pfaz10-20260530-e728ec0",
-  "commit": "e728ec0",
-  "previous_live_release": {
-    "release": "PF-AZ9A-VENDORLENS",
-    "image_tag": "pfaz9a-20260528-923b386",
-    "commit": "923b386",
-    "status": "azure_live_browser_validated"
+  "release": "PF-AZ-MODERN-UI-20260711",
+  "date": "2026-07-11",
+  "status": "partial_pass_signed_in_uat_pending",
+  "branch": "codex/patchforge-rebuild-20260601",
+  "source_commit": "907995fdf1ea290a7e551463e461af8a884cf44c",
+  "current_image_tag": "pfaz-modern-ui-20260711-907995f",
+  "report_context_version": "patchforge-report-context.pfaz-modern-ui-20260711.v1",
+  "deployment_method": "targeted_container_app_image_and_release_metadata_update",
+  "draft_pull_request": "https://github.com/neil9bailey/diiac-patchforge/pull/2",
+  "image_digests": {
+    "frontend": "sha256:50feacc4163fd54dc53218434108f598cec0d06780898c7cf078a86df6d15f49",
+    "bridge_api": "sha256:e0db40d5ccaaaff797142d74ada7053f5ba0c773f4b148a41d5f12a7e81105fb",
+    "runtime": "sha256:81a0c2bf505427583225000abb9f15cb64ffc4f4215c47bce911a509bdee0e3d",
+    "sra": "sha256:8c0f5db8b1144279ee54504354adf77dbdcec363848c0efb6c22fb24c0deafc7",
+    "worker": "sha256:2a9ef9a9ce8abdc87f577c78dda287b31430c448e1e152b067e5ad77e038a33d",
+    "scheduler": "sha256:88bd431c55e4fe1e4b5689ce904cce7fbf9f3b82dceac31ed6de5978a8336c22"
+  },
+  "current_active_revisions": {
+    "ui": "ca-patchforge-ui-prod--0000040",
+    "bridge_api": "ca-patchforge-bridge-prod--0000039",
+    "runtime": "ca-patchforge-runtime-prod--0000030",
+    "sra": "ca-patchforge-sra-prod--0000029",
+    "worker": "ca-patchforge-worker-prod--0000029",
+    "scheduler": "ca-patchforge-scheduler-prod--0000029"
+  },
+  "test_results": {
+    "python_contracts_runtime": 30,
+    "backend_api": 62,
+    "frontend": 20,
+    "windows_collector": 5,
+    "github_required_checks": 8
   },
   "gates": [
     {
-      "name": "backend_server_syntax",
-      "status": "pass"
-    },
-    {
-      "name": "backend_auth_syntax",
-      "status": "pass"
-    },
-    {
-      "name": "backend_search_index_syntax",
-      "status": "pass"
-    },
-    {
-      "name": "backend_reports_syntax",
-      "status": "pass"
-    },
-    {
-      "name": "backend_config_applicability_syntax",
-      "status": "pass"
-    },
-    {
-      "name": "backend_vendorlens_syntax",
-      "status": "pass"
-    },
-    {
-      "name": "backend_scheduler_syntax",
-      "status": "pass"
-    },
-    {
-      "name": "sra_syntax",
-      "status": "pass"
-    },
-    {
-      "name": "backend_tests",
+      "name": "git_local_remote_alignment",
       "status": "pass",
-      "tests": 32
+      "detail": "The deployed source commit was pushed before image build; final local and remote branch alignment is verified after release-evidence publication."
     },
     {
-      "name": "frontend_tests",
+      "name": "github_pull_request_checks",
       "status": "pass",
-      "tests": 10
+      "checks": 8,
+      "detail": "Backend API, Bicep, frontend, Python, Windows collector, and frontend/bridge/runtime Docker smoke checks passed; draft PR merge state is clean."
     },
     {
-      "name": "frontend_build",
+      "name": "local_automated_tests",
       "status": "pass",
-      "note": "Vite chunk-size advisory only"
+      "detail": "Python 30, backend 62, frontend 20, and Windows collector 5 tests passed."
     },
     {
-      "name": "python_runtime_tests",
+      "name": "frontend_production_build",
+      "status": "pass_with_advisory",
+      "javascript_bundle_kb": 595.65,
+      "detail": "Vite build passed; chunk-size warning remains an optimization advisory."
+    },
+    {
+      "name": "dependency_audit",
+      "status": "pass_with_advisory",
+      "detail": "Backend has zero reported vulnerabilities; frontend has one low-severity dev-server-only esbuild advisory and no high or critical findings."
+    },
+    {
+      "name": "bicep_validation",
+      "status": "pass_with_advisory",
+      "detail": "Bicep build passed with an update advisory."
+    },
+    {
+      "name": "full_bicep_apply",
+      "status": "blocked_not_performed",
+      "what_if": {
+        "modify": 18,
+        "no_change": 9,
+        "unsupported": 13,
+        "ignore": 3
+      },
+      "reason": "The current template would risk topology and storage drift; targeted Container App updates were used instead."
+    },
+    {
+      "name": "acr_immutable_images",
       "status": "pass",
-      "tests": 26
+      "images": 6,
+      "detail": "Every exact ACR tag digest matches its local Docker RepoDigest."
     },
     {
-      "name": "iac_validation",
-      "status": "pass"
-    },
-    {
-      "name": "bicep_build",
-      "status": "pass"
-    },
-    {
-      "name": "docker_build_smoke",
+      "name": "azure_targeted_rollout",
       "status": "pass",
-      "images": [
-        "frontend",
-        "bridge",
-        "runtime"
-      ]
+      "apps": 6,
+      "detail": "All apps are Single revision mode, Succeeded, Running, Healthy, Provisioned, latest-ready aligned, and at 100 percent latest-revision traffic."
     },
     {
-      "name": "github_push",
+      "name": "azure_release_metadata_readback",
       "status": "pass",
-      "commit": "e728ec0"
+      "detail": "All six apps report the exact image tag, full commit, product baseline, renderer commit, and report-context version."
     },
     {
-      "name": "acr_image_push",
+      "name": "public_http_smoke",
       "status": "pass",
-      "image_tag": "pfaz10-20260530-e728ec0"
+      "detail": "UI and API health/readiness return 200; readiness confirms PostgreSQL, auth, and tenant requirements; protected route returns 401 without authentication."
     },
     {
-      "name": "azure_update",
+      "name": "live_browser_signed_out_responsive_shell",
       "status": "pass",
-      "evidence": "docs/release/evidence/2026-05-30-patchforge-pfaz10-simplified-experience/deploy-apply/"
+      "detail": "Production stylesheet index-D5y4kGcT.css verified at 1280x720 and 390x844 with no horizontal overflow or browser warnings/errors."
     },
     {
-      "name": "live_api_smoke",
-      "status": "pass",
-      "evidence": "docs/release/evidence/2026-05-30-patchforge-pfaz10-simplified-experience/live-ui/http-smoke-e728ec0.json"
+      "name": "signed_in_six_area_uat",
+      "status": "pending",
+      "reason": "The in-app browser had no authenticated PatchForge session; no account login was performed."
     },
     {
-      "name": "protected_routes_unauthenticated",
-      "status": "pass",
-      "expected_status": 401
-    },
-    {
-      "name": "browser_msal_admin_validation",
-      "status": "pass",
-      "user": "n.bailey@diiac.io",
-      "role": "PatchForge.Admin"
-    },
-    {
-      "name": "global_security_action_center",
-      "status": "pass"
-    },
-    {
-      "name": "customer_estate_extract_match_compare",
-      "status": "pass"
-    },
-    {
-      "name": "ask_patchforge_advisory_response",
-      "status": "pass"
-    },
-    {
-      "name": "live_signed_pack_generation",
-      "status": "pass",
-      "pack_id": "PF-20260530-02cd95b4"
-    },
-    {
-      "name": "live_report_exports",
-      "status": "pass",
-      "formats": [
-        "docx",
-        "pdf"
-      ],
-      "reports": [
-        "customer_patch_governance_pack",
-        "board_vulnerability_summary",
-        "cab_patch_decision_report"
-      ]
-    },
-    {
-      "name": "live_report_review",
-      "status": "pass",
-      "evidence": "docs/release/evidence/2026-05-30-patchforge-pfaz10-simplified-experience/reports/PF-20260530-02cd95b4-report-review.json"
-    },
-    {
-      "name": "keyvault_signing",
-      "status": "pass"
-    },
-    {
-      "name": "postgres_readiness",
-      "status": "pass",
-      "storage": "postgresql"
+      "name": "fresh_signed_pack_and_report_exports",
+      "status": "pending",
+      "reason": "No fresh signed pack or Customer, Board, and CAB DOCX/PDF proof is claimed for this baseline."
     },
     {
       "name": "production_validation_data_cleanup",
-      "status": "pass",
-      "deleted_records": 9
-    },
-    {
-      "name": "temporary_firewall_cleanup",
-      "status": "pass"
+      "status": "pending_not_applicable",
+      "reason": "No signed-in production validation records were created during this rollout."
     }
   ],
-  "report_stamp_fields": {
-    "report_template_version": true,
-    "report_renderer_commit": true,
-    "report_renderer_image_tag": true,
-    "generated_from_pack_id": true,
-    "generated_at_utc": true,
-    "product_baseline": true,
-    "report_context_version": true,
-    "final_approval_issued": true,
-    "signing_provider": true,
-    "verification_state": true
+  "previous_validated_release": {
+    "release": "PF-AZ10-SIMPLIFIED-EXPERIENCE",
+    "image_tag": "pfaz10-20260530-e728ec0",
+    "commit": "e728ec0",
+    "status": "azure_live_browser_validated"
   },
   "boundary_checks": {
     "source_bound_advisory_intelligence": true,
@@ -189,8 +136,8 @@
     "autonomous_risk_acceptance_absent": true
   },
   "remaining_notes": [
-    "Frontend build passed with a Vite chunk-size advisory only.",
-    "Temporary validation records were removed from production PostgreSQL after evidence capture.",
-    "No scanner, exploit, patch deployment, autonomous CAB, or autonomous risk-acceptance capability was added."
+    "Signed-in six-area UAT and fresh signed report proof remain explicit human gates.",
+    "The Bicep desired-state model must be reconciled with the live PostgreSQL topology before a full template apply is safe.",
+    "The draft pull request is clean but remains unmerged."
   ]
 }

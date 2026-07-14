@@ -93,7 +93,108 @@ export type CustomerNetworkAsset = {
   config_evidence_refs?: string[];
   review_state?: string;
   evidence_state?: string;
+  asset_category?: string;
+  discovery_source?: string;
+  discovery_method?: string | null;
+  collector_id?: string | null;
+  collector_policy_id?: string | null;
+  collector_run_id?: string | null;
+  collector_imported_at?: string | null;
+  collector_confidence?: number | null;
+  hostname?: string | null;
+  ip_addresses?: string[];
+  mac_addresses?: string[];
+  cloud_resource_id?: string | null;
+  virtualization_host?: string | null;
+  review_required?: boolean;
+  final_approval_issued?: boolean;
   updated_at?: string;
+};
+
+export type AssetCollectorRecord = {
+  collector_id: string;
+  name: string;
+  platform: string;
+  site?: string | null;
+  environment?: string;
+  enabled_categories: string[];
+  connection_mode: string;
+  status: string;
+  health_status?: "pending" | "ready" | "stale" | "degraded" | "revoked" | string;
+  last_seen_at?: string | null;
+  last_heartbeat_at?: string | null;
+  heartbeat_id?: string | null;
+  heartbeat_state?: string | null;
+  heartbeat_age_minutes?: number | null;
+  next_heartbeat_due_at?: string | null;
+  last_run_id?: string | null;
+  last_run_at?: string | null;
+  last_message?: string | null;
+  last_asset_count?: number;
+  last_warning_count?: number;
+  collector_version?: string | null;
+  package_digest?: string | null;
+  package_channel?: string | null;
+  auth_mode?: string | null;
+  credential_mode?: string | null;
+  stale_reason?: string | null;
+  degraded_reason?: string | null;
+  revoked_at?: string | null;
+  revoked_reason?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  advisory_only: boolean;
+  review_required: boolean;
+  no_vulnerability_scanning: boolean;
+  no_patch_deployment: boolean;
+  final_approval_issued: boolean;
+};
+
+export type AssetDiscoveryPolicy = {
+  policy_id: string;
+  collector_id?: string | null;
+  name: string;
+  enabled: boolean;
+  categories: string[];
+  discovery_methods: string[];
+  schedule: string;
+  credential_reference?: string | null;
+  read_only: boolean;
+  outbound_only: boolean;
+  advisory_only: boolean;
+  review_required: boolean;
+  final_approval_issued: boolean;
+};
+
+export type AssetDiscoveryRun = {
+  run_id: string;
+  collector_id: string;
+  policy_id?: string | null;
+  status: string;
+  completed_at?: string | null;
+  received_asset_count: number;
+  imported_asset_count: number;
+  rejected_asset_count: number;
+  categories: string[];
+  discovery_method: string;
+  final_approval_issued: boolean;
+};
+
+export type AssetDiscoveryOverview = {
+  tenant_id: string;
+  generated_at: string;
+  categories: string[];
+  collectors: AssetCollectorRecord[];
+  policies: AssetDiscoveryPolicy[];
+  recent_runs: AssetDiscoveryRun[];
+  metrics: {
+    collector_count: number;
+    enabled_policy_count: number;
+    collector_imported_asset_count: number;
+    pending_review_asset_count: number;
+    last_import_at?: string | null;
+  };
+  boundary: Record<string, boolean>;
 };
 
 export type VendorSecurityAdvisory = {
@@ -373,6 +474,7 @@ export type SecurityActionCenterRow = {
   known_exploited?: boolean;
   source_state?: string;
   review_state?: string;
+  evidence_state?: string;
   customer_match_count: number;
   customer_matches?: Array<Record<string, unknown>>;
   urgency_posture?: string;
@@ -467,6 +569,9 @@ export type OpenAiAgentStatus = {
   can_approve: boolean;
   can_patch: boolean;
   can_accept_risk: boolean;
+  key_configured?: boolean;
+  key_value_exposed?: boolean;
+  agent_names?: Record<string, string>;
 };
 
 export type AgentGuidanceSnapshot = {
@@ -543,6 +648,54 @@ export type EvidenceSource = {
   evidence_state?: string;
 };
 
+export type FindingEvidenceRecord = {
+  tenant_id: string;
+  evidence_id: string;
+  vulnerability_id: string;
+  canonical_id?: string;
+  evidence_class: string;
+  summary: string;
+  evidence?: Record<string, unknown>;
+  source_refs?: string[];
+  content_hash: string;
+  finding_revision_hash: string;
+  expires_at?: string | null;
+  expired?: boolean;
+  expiry_evaluated_at?: string | null;
+  immutable?: boolean;
+  server_owned?: boolean;
+  review_state: string;
+  evidence_state: string;
+  review?: {
+    decision?: string;
+    reviewer_oid?: string | null;
+    reviewer_upn?: string | null;
+    reviewer_roles?: string[];
+    rationale?: string;
+    reviewed_at?: string;
+    server_verified?: boolean;
+  } | null;
+  latest_event_hash?: string | null;
+  event_count?: number;
+  replay_verified?: boolean;
+  replay_failures?: string[];
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  submitted_at?: string;
+  created_at?: string;
+  final_approval_issued?: boolean;
+};
+
+export type FindingEvidenceQueue = {
+  tenant_id: string;
+  vulnerability_id: string;
+  supported_evidence_classes: string[];
+  evidence: FindingEvidenceRecord[];
+  evidence_events?: Array<Record<string, unknown>>;
+  audit_replay?: Array<Record<string, unknown>>;
+  boundary?: Record<string, unknown>;
+};
+
 export type AssetRecord = {
   asset_id: string;
   asset_name?: string;
@@ -601,6 +754,19 @@ export type AdminHealth = {
   checks: Array<{ name: string; status: string; mode: string }>;
 };
 
+export type AdminPurgePlan = {
+  dry_run: boolean;
+  scopes: string[];
+  collections: string[];
+  counts: Record<string, number>;
+  total_records: number;
+  removed?: Record<string, number>;
+  required_confirmation: string;
+  blocked?: boolean;
+  error?: string;
+  boundary?: Record<string, unknown>;
+};
+
 export type AdminConfig = Record<string, unknown>;
 
 export type PatchForgeApi = {
@@ -638,6 +804,10 @@ export type PatchForgeApi = {
   listNetworkVendors(tenantId: string): Promise<NetworkVendorProfile[]>;
   listCustomerNetworkAssets(tenantId: string): Promise<CustomerNetworkAsset[]>;
   upsertCustomerNetworkAsset(tenantId: string, payload: Record<string, unknown>): Promise<CustomerNetworkAsset>;
+  assetDiscoveryOverview(tenantId: string): Promise<AssetDiscoveryOverview>;
+  registerAssetCollector(tenantId: string, payload: Record<string, unknown>): Promise<AssetCollectorRecord>;
+  upsertAssetDiscoveryPolicy(tenantId: string, payload: Record<string, unknown>): Promise<AssetDiscoveryPolicy>;
+  importDiscoveredAssets(tenantId: string, payload: Record<string, unknown>): Promise<{ run: AssetDiscoveryRun; imported_assets: CustomerNetworkAsset[]; rejected_assets: Array<Record<string, unknown>>; boundary: Record<string, boolean> }>;
   listVendorSecurityAdvisories(tenantId: string): Promise<VendorSecurityAdvisory[]>;
   ingestVendorSecurityAdvisory(tenantId: string, payload: Record<string, unknown>): Promise<VendorSecurityAdvisory>;
   refreshVendorLensSource(tenantId: string, payload: Record<string, unknown>): Promise<SourceFeedRun>;
@@ -648,8 +818,13 @@ export type PatchForgeApi = {
   actionCenter(tenantId: string): Promise<FindingIntelligence[]>;
   findingIntelligence(tenantId: string, vulnerabilityId: string): Promise<FindingIntelligence>;
   analyseFinding(tenantId: string, vulnerabilityId: string, payload?: Record<string, unknown>): Promise<{ intelligence: FindingIntelligence; bayesian?: BayesianAssessment }>;
+  findingEvidence(tenantId: string, vulnerabilityId: string): Promise<FindingEvidenceQueue>;
+  submitFindingEvidence(tenantId: string, vulnerabilityId: string, payload: Record<string, unknown>): Promise<FindingEvidenceRecord>;
+  reviewFindingEvidence(tenantId: string, vulnerabilityId: string, evidenceId: string, payload: Record<string, unknown>): Promise<FindingEvidenceRecord>;
+  reopenFindingEvidence(tenantId: string, vulnerabilityId: string, evidenceId: string, payload: Record<string, unknown>): Promise<FindingEvidenceRecord>;
   sraResearch(tenantId: string, path: string, payload: Record<string, unknown>): Promise<Record<string, unknown>>;
   adminHealth(tenantId: string): Promise<AdminHealth>;
+  adminPurge(tenantId: string, payload: Record<string, unknown>): Promise<AdminPurgePlan>;
   adminConfig(tenantId: string): Promise<AdminConfig>;
   saveAdminConfig(tenantId: string, payload: AdminConfig): Promise<AdminConfig>;
 };
@@ -678,10 +853,20 @@ export function getPatchForgeConfig(): PatchForgeRuntimeConfig {
     tenantHeader: import.meta.env.VITE_PATCHFORGE_TENANT_HEADER,
     environmentLabel: import.meta.env.VITE_PATCHFORGE_ENVIRONMENT_LABEL
   };
+  const localPreviewConfig = import.meta.env.DEV
+    && typeof window !== "undefined"
+    && new URLSearchParams(window.location.search).get("preview") === "1"
+    ? {
+        apiBaseUrl: viteConfig.apiBaseUrl || "http://127.0.0.1:8080",
+        tenantHeader: viteConfig.tenantHeader || "diiac.io",
+        environmentLabel: viteConfig.environmentLabel || "Local preview"
+      }
+    : {};
   return {
     ...DEFAULT_CONFIG,
     ...Object.fromEntries(Object.entries(viteConfig).filter(([, value]) => Boolean(value))),
-    ...(typeof window !== "undefined" ? window.PATCHFORGE_CONFIG || {} : {})
+    ...(typeof window !== "undefined" ? window.PATCHFORGE_CONFIG || {} : {}),
+    ...localPreviewConfig
   };
 }
 
@@ -700,7 +885,7 @@ export function createPatchForgeApi(getAccessToken: () => Promise<string>, confi
     const body = await response.json().catch(() => ({}));
     if (!response.ok) {
       const message = body.message || body.error || `PatchForge API returned HTTP ${response.status}`;
-      throw new Error(message);
+      throw Object.assign(new Error(message), { status: response.status, code: body.error || null });
     }
     return body as T;
   }
@@ -746,30 +931,30 @@ export function createPatchForgeApi(getAccessToken: () => Promise<string>, confi
       return request<Record<string, unknown>>(`/api/patchforge/security-action-center/cves/${encodeURIComponent(id)}`, tenantId);
     },
     async customerEstate(tenantId) {
-      return request<CustomerEstateState>("/api/patchforge/customer-estate/assets", tenantId);
+      return request<CustomerEstateState>("/api/patchforge/customer-operational-assets/assets", tenantId);
     },
     async extractCustomerAsset(tenantId, description) {
-      const body = await request<{ extracted_asset: CustomerAssetExtraction }>("/api/patchforge/customer-estate/assets/extract", tenantId, {
+      const body = await request<{ extracted_asset: CustomerAssetExtraction }>("/api/patchforge/customer-operational-assets/assets/extract", tenantId, {
         method: "POST",
         body: JSON.stringify({ description })
       });
       return body.extracted_asset;
     },
     async upsertCustomerEstateAsset(tenantId, payload) {
-      const body = await request<{ asset: CustomerNetworkAsset }>("/api/patchforge/customer-estate/assets/upsert", tenantId, {
+      const body = await request<{ asset: CustomerNetworkAsset }>("/api/patchforge/customer-operational-assets/assets/upsert", tenantId, {
         method: "POST",
         body: JSON.stringify(payload)
       });
       return body.asset;
     },
     async matchCustomerEstate(tenantId, payload) {
-      return request<CustomerEstateMatch>("/api/patchforge/customer-estate/match", tenantId, {
+      return request<CustomerEstateMatch>("/api/patchforge/customer-operational-assets/match", tenantId, {
         method: "POST",
         body: JSON.stringify(payload)
       });
     },
     async compareCustomerEstatePatch(tenantId, payload) {
-      const body = await request<{ comparison: VendorLensPatchComparison }>("/api/patchforge/customer-estate/patch-compare", tenantId, {
+      const body = await request<{ comparison: VendorLensPatchComparison }>("/api/patchforge/customer-operational-assets/patch-compare", tenantId, {
         method: "POST",
         body: JSON.stringify(payload)
       });
@@ -793,10 +978,10 @@ export function createPatchForgeApi(getAccessToken: () => Promise<string>, confi
       return body.agent_guidance;
     },
     async reportsPacks(tenantId) {
-      return request<ReportsPacksState>("/api/patchforge/reports-packs", tenantId);
+      return request<ReportsPacksState>("/api/patchforge/reports/overview", tenantId);
     },
     async generateReportsPack(tenantId, payload) {
-      const body = await request<{ decision_pack: DecisionPackRecord }>("/api/patchforge/reports-packs/generate", tenantId, {
+      const body = await request<{ decision_pack: DecisionPackRecord }>("/api/patchforge/reports/generate", tenantId, {
         method: "POST",
         body: JSON.stringify(payload)
       });
@@ -892,6 +1077,30 @@ export function createPatchForgeApi(getAccessToken: () => Promise<string>, confi
       });
       return body.asset;
     },
+    async assetDiscoveryOverview(tenantId) {
+      const body = await request<{ discovery: AssetDiscoveryOverview }>("/api/patchforge/discovery/overview", tenantId);
+      return body.discovery;
+    },
+    async registerAssetCollector(tenantId, payload) {
+      const body = await request<{ collector: AssetCollectorRecord }>("/api/patchforge/discovery/collectors", tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return body.collector;
+    },
+    async upsertAssetDiscoveryPolicy(tenantId, payload) {
+      const body = await request<{ policy: AssetDiscoveryPolicy }>("/api/patchforge/discovery/policies", tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return body.policy;
+    },
+    async importDiscoveredAssets(tenantId, payload) {
+      return request<{ run: AssetDiscoveryRun; imported_assets: CustomerNetworkAsset[]; rejected_assets: Array<Record<string, unknown>>; boundary: Record<string, boolean> }>("/api/patchforge/discovery/import", tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+    },
     async listVendorSecurityAdvisories(tenantId) {
       const body = await request<{ advisories: VendorSecurityAdvisory[] }>("/api/patchforge/vendorlens/advisories", tenantId);
       return body.advisories || [];
@@ -952,6 +1161,30 @@ export function createPatchForgeApi(getAccessToken: () => Promise<string>, confi
         body: JSON.stringify(payload)
       });
     },
+    async findingEvidence(tenantId, vulnerabilityId) {
+      return request<FindingEvidenceQueue>(`/api/patchforge/vulnerabilities/${encodeURIComponent(vulnerabilityId)}/evidence`, tenantId);
+    },
+    async submitFindingEvidence(tenantId, vulnerabilityId, payload) {
+      const body = await request<{ evidence: FindingEvidenceRecord }>(`/api/patchforge/vulnerabilities/${encodeURIComponent(vulnerabilityId)}/evidence`, tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return body.evidence;
+    },
+    async reviewFindingEvidence(tenantId, vulnerabilityId, evidenceId, payload) {
+      const body = await request<{ evidence: FindingEvidenceRecord }>(`/api/patchforge/vulnerabilities/${encodeURIComponent(vulnerabilityId)}/evidence/${encodeURIComponent(evidenceId)}/review`, tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return body.evidence;
+    },
+    async reopenFindingEvidence(tenantId, vulnerabilityId, evidenceId, payload) {
+      const body = await request<{ evidence: FindingEvidenceRecord }>(`/api/patchforge/vulnerabilities/${encodeURIComponent(vulnerabilityId)}/evidence/${encodeURIComponent(evidenceId)}/reopen`, tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return body.evidence;
+    },
     async sraResearch(tenantId, path, payload) {
       return request<Record<string, unknown>>(path, tenantId, {
         method: "POST",
@@ -960,6 +1193,13 @@ export function createPatchForgeApi(getAccessToken: () => Promise<string>, confi
     },
     async adminHealth(tenantId) {
       return request<AdminHealth>("/api/patchforge/admin/health", tenantId);
+    },
+    async adminPurge(tenantId, payload) {
+      const body = await request<{ purge: AdminPurgePlan }>("/api/patchforge/admin/purge", tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return body.purge;
     },
     async adminConfig(tenantId) {
       const body = await request<{ config: AdminConfig }>("/api/patchforge/admin/config", tenantId);

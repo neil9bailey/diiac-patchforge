@@ -41,12 +41,6 @@ export const REPORT_CATALOG = [
     title: "Technical Evidence Appendix",
     audience: "Security engineering and audit",
     formats: ["docx", "pdf"]
-  },
-  {
-    report_type: "ciso_patch_version_comparison_report",
-    title: "Patch Compare Appendix",
-    audience: "CISO and security leadership",
-    formats: ["docx", "pdf"]
   }
 ];
 
@@ -54,20 +48,12 @@ const BOUNDARY_TEXT = "PatchForge is a governance product. PatchForge does not d
 const HUMAN_APPROVAL_NOTICE = "Human approval remains required. PatchForge does not deploy patches, approve CAB decisions, accept risk, or close evidence gates autonomously.";
 const UNCONFIRMED_SCOPE_TEXT = "Customer asset and service exposure are not yet confirmed.";
 const NO_CUSTOMER_ASSURANCE_TEXT = "No customer remediation assurance can be issued yet because affected customer service scope and patch applicability evidence are not reviewed.";
-const REPORT_TEMPLATE_VERSION = "patchforge-report-template.v2026-05-31.1";
-const REPORT_CONTEXT_VERSION = "patchforge-report-context.v4";
-const DEFAULT_PRODUCT_BASELINE = process.env.PATCHFORGE_PRODUCT_BASELINE || "PF-AZ11-CUSTOMER-DEMO-MATURITY";
-const DEFAULT_RENDERER_COMMIT = process.env.PATCHFORGE_RENDERER_COMMIT || process.env.PATCHFORGE_COMMIT_SHA || process.env.GIT_COMMIT || "local";
-const DEFAULT_IMAGE_TAG = process.env.PATCHFORGE_IMAGE_TAG || process.env.CONTAINER_IMAGE_TAG || "local";
-const REPORT_TYPE_MAP = new Map([
-  ...REPORT_CATALOG.map((item) => [item.report_type, item]),
-  ["board_vulnerability_summary", {
-    report_type: "board_vulnerability_summary",
-    title: "Board Vulnerability Summary",
-    audience: "Board and senior leadership",
-    formats: ["docx", "pdf"]
-  }]
-]);
+export const REPORT_TEMPLATE_VERSION = "patchforge-report-template.v2026-05-31.1";
+export const REPORT_CONTEXT_VERSION = "patchforge-report-context.v4";
+export const DEFAULT_PRODUCT_BASELINE = process.env.PATCHFORGE_PRODUCT_BASELINE || "PF-AZ11-CUSTOMER-DEMO-MATURITY";
+export const DEFAULT_RENDERER_COMMIT = process.env.PATCHFORGE_RENDERER_COMMIT || process.env.PATCHFORGE_COMMIT_SHA || process.env.GIT_COMMIT || "local";
+export const DEFAULT_IMAGE_TAG = process.env.PATCHFORGE_IMAGE_TAG || process.env.CONTAINER_IMAGE_TAG || "local";
+const REPORT_TYPE_MAP = new Map(REPORT_CATALOG.map((item) => [item.report_type, item]));
 const COLORS = {
   ink: "17212B",
   muted: "5E6B76",
@@ -184,7 +170,7 @@ function reportReviewText(context) {
   if (context.reportType === "customer_patch_governance_pack") {
     sections.push("Customer Assurance Position", "What Can Be Shared With Customer", "What Cannot Yet Be Claimed");
   }
-  if (["board_vulnerability_remediation_summary", "board_vulnerability_summary"].includes(context.reportType)) {
+  if (context.reportType === "board_vulnerability_remediation_summary") {
     sections.push("Executive Decision Summary", "Top Risks", "Residual Risk / Governance Position");
   }
   if (context.reportType === "cab_patch_decision_report") {
@@ -207,7 +193,7 @@ function audienceSpecificCheck(context, text) {
   if (context.reportType === "customer_patch_governance_pack") {
     return /Customer Assurance Position/.test(text) && /What Cannot Yet Be Claimed/.test(text);
   }
-  if (["board_vulnerability_remediation_summary", "board_vulnerability_summary"].includes(context.reportType)) {
+  if (context.reportType === "board_vulnerability_remediation_summary") {
     return /Executive Decision Summary/.test(text) && /Residual Risk \/ Governance Position/.test(text);
   }
   if (context.reportType === "cab_patch_decision_report") {
@@ -228,7 +214,9 @@ export function buildReportContext({ reportType, pack, vulnerability = null, int
   const decisionContext = artefacts["patch_decision_context.json"] || {};
   const readiness = pack?.readiness || decisionContext.readiness || {};
   const bayesian = artefacts["bayesian_patch_risk_snapshot.json"] || null;
-  const findingIntelligence = intelligence || artefacts["finding_intelligence_snapshot.json"] || null;
+  // Reports are replayed from the immutable signed-pack snapshot. Live intelligence
+  // is only a fallback for legacy packs that do not contain that artefact.
+  const findingIntelligence = artefacts["finding_intelligence_snapshot.json"] || intelligence || null;
   const vendor = artefacts["vendor_intelligence_snapshot.json"] || null;
   const threat = artefacts["threat_landscape_snapshot.json"] || null;
   const networkVendor = artefacts["network_vendor_profile_snapshot.json"] || null;
@@ -619,7 +607,7 @@ function reportTypeRequiredDocxSections(context) {
       ])
     ];
   }
-  if (["board_vulnerability_remediation_summary", "board_vulnerability_summary"].includes(context.reportType)) {
+  if (context.reportType === "board_vulnerability_remediation_summary") {
     return [
       heading("Executive Decision Summary", HeadingLevel.HEADING_1),
       para(context.executiveReadout || `${context.vulnerabilityId} is governed as ${customerPosturePhrase(context)}. ${finalApprovalSentence(context)} ${context.humanApprovalNotice}`),
@@ -1312,7 +1300,7 @@ function pdfReportTypeRequiredSections(doc, context) {
     ]);
     return;
   }
-  if (["board_vulnerability_remediation_summary", "board_vulnerability_summary"].includes(context.reportType)) {
+  if (context.reportType === "board_vulnerability_remediation_summary") {
     pdfSection(doc, "Executive Decision Summary");
     pdfParagraph(doc, context.executiveReadout || `${context.vulnerabilityId} is governed as ${customerPosturePhrase(context)}. ${finalApprovalSentence(context)} ${context.humanApprovalNotice}`);
     pdfSection(doc, "Top Risks");

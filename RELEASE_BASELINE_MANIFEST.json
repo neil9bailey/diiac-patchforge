@@ -1,95 +1,121 @@
 {
   "product": "DIIaC PatchForge",
-  "baseline_id": "PF-AZ10-SIMPLIFIED-EXPERIENCE",
-  "baseline_name": "Simplified Customer Experience, Global Security Action Center, Customer Estate, Ask PatchForge, and Reports & Packs Consolidation",
-  "baseline_date": "2026-05-30",
+  "baseline_id": "PF-AZ-MODERN-UI-20260711",
+  "baseline_name": "Modern enterprise user experience and governed automation readiness",
+  "baseline_date": "2026-07-11",
   "target_url": "https://patchforge.diiac.io",
   "api_url": "https://api.patchforge.diiac.io",
   "remote_target": "neil9bailey/diiac-patchforge",
-  "release_state": "azure_live_browser_validated",
+  "branch": "codex/patchforge-rebuild-20260601",
+  "draft_pull_request": "https://github.com/neil9bailey/diiac-patchforge/pull/2",
+  "source_commit": "907995fdf1ea290a7e551463e461af8a884cf44c",
+  "release_state": "azure_public_and_responsive_shell_validated_signed_in_uat_pending",
   "deployment_performed": true,
+  "deployment_method": "targeted_container_app_image_and_release_metadata_update",
+  "full_bicep_apply_performed": false,
+  "full_bicep_apply_disposition": {
+    "status": "blocked_due_to_live_topology_drift_risk",
+    "what_if": {
+      "modify": 18,
+      "no_change": 9,
+      "unsupported": 13,
+      "ignore": 3
+    }
+  },
   "uses_existing_azure_resources": true,
   "new_azure_resources_created_in_this_increment": false,
   "azure_resource_group": "rg-diiac-patchforge-prod",
-  "azure_tenant_id": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+  "azure_region": "uksouth",
   "storage_state": "postgresql_live",
   "auth_state": "entra_rbac_required",
   "signing_state": "azure_key_vault_required_for_production_runtime",
-  "image_tag": "pfaz10-20260530-e728ec0",
-  "commit": "e728ec0",
-  "release_commits": [
-    "0cb9726",
-    "f77e2e9",
-    "e728ec0"
-  ],
-  "previous_live_baseline": {
-    "baseline_id": "PF-AZ9A-VENDORLENS",
-    "image_tag": "pfaz9a-20260528-923b386",
-    "commit": "923b386",
-    "release_state": "azure_live_browser_validated"
+  "current_image_tag": "pfaz-modern-ui-20260711-907995f",
+  "report_context_version": "patchforge-report-context.pfaz-modern-ui-20260711.v1",
+  "image_digests": {
+    "frontend": "sha256:50feacc4163fd54dc53218434108f598cec0d06780898c7cf078a86df6d15f49",
+    "bridge_api": "sha256:e0db40d5ccaaaff797142d74ada7053f5ba0c773f4b148a41d5f12a7e81105fb",
+    "runtime": "sha256:81a0c2bf505427583225000abb9f15cb64ffc4f4215c47bce911a509bdee0e3d",
+    "sra": "sha256:8c0f5db8b1144279ee54504354adf77dbdcec363848c0efb6c22fb24c0deafc7",
+    "worker": "sha256:2a9ef9a9ce8abdc87f577c78dda287b31430c448e1e152b067e5ad77e038a33d",
+    "scheduler": "sha256:88bd431c55e4fe1e4b5689ce904cce7fbf9f3b82dceac31ed6de5978a8336c22"
+  },
+  "current_active_revisions": {
+    "ui": "ca-patchforge-ui-prod--0000040",
+    "bridge_api": "ca-patchforge-bridge-prod--0000039",
+    "runtime": "ca-patchforge-runtime-prod--0000030",
+    "sra": "ca-patchforge-sra-prod--0000029",
+    "worker": "ca-patchforge-worker-prod--0000029",
+    "scheduler": "ca-patchforge-scheduler-prod--0000029"
   },
   "scope": [
-    "simplified top-level navigation around Global Security Action Center, Customer Estate, Ask PatchForge, Reports & Packs, and Admin",
-    "global CVE/advisory catalogue with vendor/product grouping, filters, search, customer exposure counts, and approval posture",
-    "customer estate asset extraction, upsert, exposure matching, config evidence, and patch comparison",
-    "advisory-only Ask PatchForge workflow with human accountability and final approval false",
-    "Reports & Packs consolidation with pre-export metadata, signed pack verification, and simplified customer/board/CAB reports",
-    "deterministic backend search index across vulnerabilities, advisories, vendor profiles, customer assets, applicability assessments, and source-feed records",
-    "production deployment, live UI validation, report export/review, and production validation-record cleanup"
+    "modern enterprise shell with clear navigation, status, command, and account context",
+    "responsive signed-out and signed-in workspace behavior",
+    "Patch and CVE catalogue with evidence-led intelligence",
+    "vendor catalogue and customer estate workflows",
+    "Ask PatchForge governed advisory workflow",
+    "reports and signed action-pack workflows",
+    "admin operational intelligence and safe diagnostics",
+    "fail-closed build, image, deployment, and rollback workflow hardening"
   ],
   "top_level_navigation": [
-    "Global Security Action Center",
+    "Patch & CVE Catalogue",
+    "Vendor Catalogue",
     "Customer Estate",
     "Ask PatchForge",
-    "Reports & Packs",
+    "Reports",
     "Admin"
   ],
-  "api_endpoints": [
-    "GET /api/patchforge/security-action-center",
-    "GET /api/patchforge/security-action-center/search",
-    "GET /api/patchforge/security-action-center/vendors",
-    "GET /api/patchforge/security-action-center/cves/:id",
-    "GET /api/patchforge/customer-estate/assets",
-    "POST /api/patchforge/customer-estate/assets/extract",
-    "POST /api/patchforge/customer-estate/assets/upsert",
-    "POST /api/patchforge/customer-estate/match",
-    "POST /api/patchforge/customer-estate/patch-compare",
-    "POST /api/patchforge/ask",
-    "GET /api/patchforge/reports-packs",
-    "POST /api/patchforge/reports-packs/generate"
+  "current_validation": {
+    "python_tests": "pass_30",
+    "backend_tests": "pass_62",
+    "frontend_tests": "pass_20",
+    "windows_collector_tests": "pass_5",
+    "frontend_build": "pass_vite_595_65_kb_chunk_advisory_only",
+    "github_checks": "pass_8",
+    "acr_image_digest_verification": "pass_6",
+    "container_app_revision_readback": "pass_6",
+    "container_app_release_metadata_readback": "pass_6",
+    "ui_http_200": "pass",
+    "api_health_http_200": "pass",
+    "api_readiness_http_200_postgresql_auth_tenant": "pass",
+    "protected_route_unauthenticated_401": "pass",
+    "live_signed_out_browser_desktop": "pass_1280x720",
+    "live_signed_out_browser_mobile": "pass_390x844_no_horizontal_overflow",
+    "browser_console_warnings_errors": "pass_none",
+    "signed_in_six_area_uat": "pending_not_claimed",
+    "fresh_signed_pack_generation": "pending_not_claimed",
+    "fresh_docx_pdf_report_review": "pending_not_claimed",
+    "production_validation_record_cleanup": "pending_not_applicable_until_uat_records_exist"
+  },
+  "release_metadata_readback": {
+    "image_tag": "pfaz-modern-ui-20260711-907995f",
+    "container_image_tag": "pfaz-modern-ui-20260711-907995f",
+    "commit_sha": "907995fdf1ea290a7e551463e461af8a884cf44c",
+    "renderer_commit": "907995fdf1ea290a7e551463e461af8a884cf44c",
+    "product_baseline": "PF-AZ-MODERN-UI-20260711",
+    "report_context_version": "patchforge-report-context.pfaz-modern-ui-20260711.v1"
+  },
+  "evidence_paths": [
+    "docs/release/evidence/2026-07-11-patchforge-modern-ui/"
   ],
-  "search_index_fields": [
-    "cve_id",
-    "advisory_id",
-    "vendor_name",
-    "vendor_aliases",
-    "product_family",
-    "product_aliases",
-    "model",
-    "affected_models",
-    "affected_versions",
-    "fixed_versions",
-    "affected_feature",
-    "feature_aliases",
-    "title",
-    "description",
-    "severity",
-    "cvss_score",
-    "epss_score",
-    "epss_percentile",
-    "kev_status",
-    "known_exploited",
-    "patch_available",
-    "workaround_status",
-    "source_url",
-    "source_name",
-    "source_class",
-    "source_feed",
-    "customer_asset_ids",
-    "customer_service_ids",
-    "urgency_posture",
-    "applicability_posture"
+  "known_blockers": [
+    {
+      "id": "iac_live_state_reconciliation",
+      "status": "open",
+      "detail": "The full Bicep desired-state model must be reconciled with the live PostgreSQL topology before a broad template apply is safe."
+    },
+    {
+      "id": "signed_in_uat_and_report_proof",
+      "status": "open",
+      "detail": "Signed-in six-area UAT, a fresh signed pack, and Customer, Board, and CAB DOCX/PDF proof remain required human validation gates."
+    }
   ],
+  "previous_fully_signed_in_validated_release": {
+    "baseline_id": "PF-AZ10-SIMPLIFIED-EXPERIENCE",
+    "image_tag": "pfaz10-20260530-e728ec0",
+    "commit": "e728ec0",
+    "release_state": "azure_live_browser_validated"
+  },
   "report_stamp_fields": [
     "report_template_version",
     "report_renderer_commit",
@@ -102,46 +128,6 @@
     "signing_provider",
     "verification_state"
   ],
-  "local_validation": {
-    "backend_syntax": "pass",
-    "backend_tests": "pass_32",
-    "frontend_tests": "pass_10",
-    "frontend_build": "pass_vite_chunk_size_warning_only",
-    "python_runtime_tests": "pass_26",
-    "iac_validation": "pass",
-    "bicep_build": "pass",
-    "docker_builds": "pass",
-    "evidence_path": "docs/release/evidence/2026-05-30-patchforge-pfaz10-simplified-experience/"
-  },
-  "azure_rollout": {
-    "github_push": "pass",
-    "acr_image_push": "pass",
-    "targeted_containerapp_update": "pass",
-    "active_revisions": {
-      "ui": "ca-patchforge-ui-prod--0000021",
-      "bridge_api": "ca-patchforge-bridge-prod--0000020",
-      "runtime": "ca-patchforge-runtime-prod--0000019",
-      "sra": "ca-patchforge-sra-prod--0000018",
-      "worker": "ca-patchforge-worker-prod--0000018",
-      "scheduler": "ca-patchforge-scheduler-prod--0000018"
-    }
-  },
-  "live_validation": {
-    "status": "pass",
-    "browser_msal_user": "n.bailey@diiac.io",
-    "displayed_role": "PatchForge.Admin",
-    "device_extraction_text": "FortiGate 100F running FortiOS 7.2.7. SSL-VPN disabled. IPsec enabled. Management internal only.",
-    "validation_asset_id": "net-asset-8087dce1-f354-4d86-a1e3-56d6c98de6ff",
-    "signed_pack_id": "PF-20260530-02cd95b4",
-    "signed_pack_verified": true,
-    "keyvault_signing": "pass",
-    "report_exports": "pass_docx_pdf_customer_board_cab",
-    "report_review": "pass",
-    "final_approval_issued": false,
-    "temporary_validation_data_cleanup": "pass_9_records_removed",
-    "temporary_firewall_cleanup": "pass",
-    "evidence_path": "docs/release/evidence/2026-05-30-patchforge-pfaz10-simplified-experience/live-ui/"
-  },
   "excluded_capabilities": [
     "vulnerability_scanner",
     "exploit_generation",

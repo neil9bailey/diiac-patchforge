@@ -1,0 +1,120 @@
+=== ACR build frontend => diiac/patchforge-frontend:pfrebuild-20260601-43f953c ===
+az : WARNING: Packing source code into tar to upload...
+At line:17 char:3
++   az acr build --registry acrdiiacpatchforgeprod --image $b.image --f ...
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (WARNING: Packin...ar to upload...:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+WARNING: Uploading archived source code from
+'C:\Users\neilb\AppData\Local\Temp\build_archive_7a1c5d48e8094ba7a4ebf912f9dc141c.tar.gz'...
+WARNING: Sending context (81.408 KiB) to registry: acrdiiacpatchforgeprod...
+WARNING: Queued a build with ID: db1
+WARNING: Waiting for an agent...
+2026/06/01 22:51:51 Downloading source code...
+
+2026/06/01 22:51:52 Finished downloading source code
+
+2026/06/01 22:51:52 Using acb_vol_90f816e8-177d-4b4a-a58d-97c732e0b637 as the home volume
+2026/06/01 22:51:52 Setting up Docker configuration...
+2026/06/01 22:51:53 Successfully set up Docker configuration
+2026/06/01 22:51:53 Logging in to registry: acrdiiacpatchforgeprod.azurecr.io
+2026/06/01 22:51:53 Successfully logged into acrdiiacpatchforgeprod.azurecr.io
+2026/06/01 22:51:53 Executing step ID: build. Timeout(sec): 28800, Working directory: '', Network: ''
+2026/06/01 22:51:53 Scanning for dependencies...
+2026/06/01 22:51:54 Successfully scanned dependencies
+2026/06/01 22:51:54 Launching container with name: build
+Sending build context to Docker daemon  419.8kB
+
+
+
+Step 1/12 : FROM node:24-bookworm-slim AS build
+24-bookworm-slim: Pulling from library/node
+068fedd6b0f1: Already exists
+9bea510bd805: Pulling fs layer
+e008f534e95c: Pulling fs layer
+b2b95943836c: Pulling fs layer
+06d464f614a9: Pulling fs layer
+06d464f614a9: Waiting
+9bea510bd805: Verifying Checksum
+9bea510bd805: Download complete
+b2b95943836c: Verifying Checksum
+b2b95943836c: Download complete
+9bea510bd805: Pull complete
+06d464f614a9: Verifying Checksum
+06d464f614a9: Download complete
+e008f534e95c: Verifying Checksum
+e008f534e95c: Download complete
+e008f534e95c: Pull complete
+
+b2b95943836c: Pull complete
+06d464f614a9: Pull complete
+Digest: sha256:242549cd46785b480c832479a730f4f2a20865d61ea2e404fdb2a5c3d3b73ecf
+Status: Downloaded newer image for node:24-bookworm-slim
+ ---> f5706f589c48
+Step 2/12 : WORKDIR /app
+ ---> Running in 3619a8657de0
+Removing intermediate container 3619a8657de0
+ ---> 736a4c7f97e3
+Step 3/12 : COPY package.json package-lock.json ./
+ ---> 25ca86427aea
+Step 4/12 : RUN npm ci
+ ---> Running in 31532e8601e8
+
+added 163 packages, and audited 164 packages in 5s
+
+
+27 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+npm notice
+npm notice New minor version of npm available! 11.13.0 -> 11.16.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.16.0
+npm notice To update run: npm install -g npm@11.16.0
+npm notice
+Removing intermediate container 31532e8601e8
+ ---> 4a0b0415d058
+Step 5/12 : COPY index.html tsconfig.json vite.config.ts ./
+
+ ---> c2ce08f61593
+Step 6/12 : COPY src ./src
+ ---> 314791d8c370
+Step 7/12 : COPY public ./public
+ ---> 8691e4b9a28f
+Step 8/12 : RUN npm run build
+
+ERROR: The command failed with an unexpected error. Here is the traceback:
+ERROR: 'charmap' codec can't encode character '\u2713' in position 177: character maps to <undefined>
+Traceback (most recent call last):
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\knack/cli.py", line 233, in invoke
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/cli/core/commands/__init__.py",
+line 682, in execute
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/cli/core/commands/__init__.py",
+line 812, in _run_jobs_serially
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/cli/core/commands/__init__.py",
+line 781, in _run_job
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/cli/core/commands/__init__.py",
+line 336, in __call__
+  File
+"D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/cli/core/commands/command_operation.py",
+line 120, in handler
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/cli/command_modules/acr/build.py",
+line 149, in acr_build
+  File
+"D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/cli/command_modules/acr/_stream_utils.py",
+line 56, in stream_logs
+  File
+"D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/cli/command_modules/acr/_stream_utils.py",
+line 126, in _stream_logs
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\colorama/ansitowin32.py", line 47, in
+write
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\colorama/ansitowin32.py", line 177, in
+write
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\colorama/ansitowin32.py", line 205, in
+write_and_convert
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\colorama/ansitowin32.py", line 210, in
+write_plain_text
+  File "encodings\cp1252.py", line 19, in encode
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2713' in position 177: character maps to <undefined>
+To check existing issues, please visit: https://github.com/Azure/azure-cli/issues

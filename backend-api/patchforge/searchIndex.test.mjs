@@ -28,6 +28,17 @@ async function withStorage(run) {
   }
 }
 
+async function withEmptyStorage(run) {
+  const storageRoot = await mkdtemp(path.join(os.tmpdir(), "patchforge-search-index-empty-"));
+  const storage = new PatchForgeJsonStorage(storageRoot);
+  try {
+    await storage.ensureReady();
+    await run(storage);
+  } finally {
+    await rm(storageRoot, { recursive: true, force: true });
+  }
+}
+
 async function seed(storage) {
   await storage.ensureReady();
   await ingestVendorSecurityAdvisory(storage, TENANT, {
@@ -168,6 +179,30 @@ test("optional PostgreSQL search path stays tenant-scoped and documents catalogu
   }
 });
 
+test("Ask PatchForge surfaces vendor catalogue scope when source-bound CVEs are missing", async () => {
+  await withEmptyStorage(async (storage) => {
+    const answer = await buildAskPatchForgeResponse({
+      storage,
+      tenantId: TENANT,
+      body: {
+        question: "We use Juniper SRX4100 firewalls for internet gateway services, supplier site to site VPNs, cloud VPNs, SSL client access, and internal NAT/PAT internet access."
+      }
+    });
+
+    assert.equal(answer.response.current_governed_posture, "cve_or_advisory_required");
+    assert.equal(answer.matched_assessment, null);
+    assert.match(answer.response.short_answer, /vendor\/product catalogue scope/i);
+    assert.ok(answer.candidate_matches.some((candidate) =>
+      candidate.candidate_type === "vendor_catalogue"
+      && candidate.vendor_id === "juniper"
+      && candidate.selectable === false
+      && candidate.no_patch_deployment === true
+      && candidate.final_approval_issued === false
+    ));
+    assert.match(answer.response.recommended_next_action, /Refresh the suggested VendorLens\/NVD vendor catalogue scope/i);
+  });
+});
+
 test("customer estate extraction, matching, advisor, and patch compare remain advisory-only", async () => {
   await withStorage(async (storage) => {
     const extracted = extractCustomerAssetDescription("FortiGate 100F running FortiOS 7.2.7. SSL-VPN disabled. IPsec enabled. Management internal only.");
@@ -205,8 +240,27 @@ test("customer estate extraction, matching, advisor, and patch compare remain ad
     });
     assert.equal(ambiguousAnswer.response.current_governed_posture, "cve_or_advisory_required");
     assert.equal(ambiguousAnswer.matched_assessment, null);
-    assert.match(ambiguousAnswer.response.short_answer, /specific CVE\/advisory ID/i);
+    assert.match(ambiguousAnswer.response.short_answer, /candidate CVE\/advisory patch record/i);
+    assert.ok(ambiguousAnswer.candidate_matches.some((candidate) => candidate.advisory_id === "JUNIPER-SRX-GATEWAY"));
+    assert.ok(ambiguousAnswer.candidate_matches.every((candidate) => candidate.final_approval_issued === false && candidate.no_patch_deployment === true));
+    assert.ok(ambiguousAnswer.response.what_we_know.some((item) => item.includes("Candidate option: CVE-2026-30003")));
+    assert.match(ambiguousAnswer.response.recommended_next_action, /Select one candidate CVE\/advisory/i);
     assert.ok(ambiguousAnswer.response.what_we_know.some((item) => item.includes("Juniper SRX 4100")));
+
+    const assetOnlyAnswer = await buildAskPatchForgeResponse({
+      storage,
+      tenantId: TENANT,
+      body: {
+        question: "We use Juniper SRX4100 Firewalls for an Internet Gateway service, supplier site to site VPNs, cloud site to site VPNs, end user SSL Client remote access, and internal application internet access via NAT/PAT rules."
+      }
+    });
+    assert.equal(assetOnlyAnswer.response.current_governed_posture, "cve_or_advisory_required");
+    assert.equal(assetOnlyAnswer.matched_assessment, null);
+    assert.match(assetOnlyAnswer.response.short_answer, /candidate CVE\/advisory patch record/i);
+    assert.ok(assetOnlyAnswer.candidate_matches.some((candidate) => candidate.advisory_id === "JUNIPER-SRX-GATEWAY"));
+    assert.ok(assetOnlyAnswer.response.what_we_know.some((item) => item.includes("Candidate option: CVE-2026-30003")));
+    assert.match(assetOnlyAnswer.response.why, /asset or service context without a selected CVE\/advisory/i);
+    assert.match(assetOnlyAnswer.response.recommended_next_action, /Select one candidate CVE\/advisory/i);
 
     const comparison = await compareAndStorePatchVersion(storage, TENANT, {
       asset_id: "fw-100f",

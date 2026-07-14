@@ -25,6 +25,8 @@ Before deployment, confirm permission to create or manage:
 - Log Analytics
 - Storage Account and containers
 - Key Vault with RBAC authorization
+
+For the guarded production publisher, the release identity must pass a fail-closed ES256 sign/verify preflight against `kv-diiac-patchforge-prod/keys/pf-pack-signing-prod` before any image build, push, rollback backup, or Container Apps update. Assign the built-in **Key Vault Crypto User** role (`12338af0-0e69-4776-bea7-57ae8d297424`) at the individual key scope, preferably through a time-bound/PIM-approved assignment. Subscription or management-group Owner does not grant Key Vault data-plane signing access. Remove a temporary assignment after the signed manifest and release evidence have been verified; retain the assignment/revocation readback outside the repository evidence bundle.
 - PostgreSQL Flexible Server or Azure SQL
 
 ## Safe Context Commands

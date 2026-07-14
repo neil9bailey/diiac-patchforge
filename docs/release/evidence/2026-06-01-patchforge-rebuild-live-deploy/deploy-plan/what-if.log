@@ -1,0 +1,8 @@
+az : WARNING: A new Bicep release is available: v0.43.8. Upgrade now by running "az bicep upgrade".
+At line:2 char:1
++ az deployment group what-if --resource-group rg-diiac-patchforge-prod ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (WARNING: A new ...bicep upgrade".:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+ERROR: The target scope "subscription" does not match the deployment scope "resourceGroup".
