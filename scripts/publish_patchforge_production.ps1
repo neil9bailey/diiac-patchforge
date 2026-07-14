@@ -170,6 +170,36 @@ function Get-ObjectPropertyValue {
     return $property.Value
 }
 
+function Get-KeyVaultSignatureValue {
+    param([Parameter(Mandatory = $true)]$SignResult)
+
+    if ($SignResult -is [string] -and -not [string]::IsNullOrWhiteSpace($SignResult)) {
+        return $SignResult
+    }
+    foreach ($propertyName in @("signature", "result", "value")) {
+        $candidate = Get-ObjectPropertyValue -Object $SignResult -Name $propertyName
+        if (-not [string]::IsNullOrWhiteSpace([string]$candidate)) {
+            return [string]$candidate
+        }
+    }
+    return $null
+}
+
+function Test-KeyVaultVerificationResult {
+    param([Parameter(Mandatory = $true)]$VerifyResult)
+
+    if ($VerifyResult -is [bool]) {
+        return $VerifyResult
+    }
+    foreach ($propertyName in @("isValid", "value", "result")) {
+        $candidate = Get-ObjectPropertyValue -Object $VerifyResult -Name $propertyName
+        if ($null -ne $candidate) {
+            return $candidate -eq $true
+        }
+    }
+    return $false
+}
+
 function Assert-ReleaseInputs {
     param([Parameter(Mandatory = $true)][string]$RepoRoot)
 
@@ -579,10 +609,7 @@ function Assert-KeyVaultSigningPreflight {
             "--algorithm", "ES256",
             "--digest", $digestBase64
         )
-        $signature = Get-ObjectPropertyValue -Object $signResult -Name "result"
-        if ([string]::IsNullOrWhiteSpace([string]$signature)) {
-            $signature = Get-ObjectPropertyValue -Object $signResult -Name "value"
-        }
+        $signature = Get-KeyVaultSignatureValue -SignResult $signResult
         if ([string]::IsNullOrWhiteSpace([string]$signature)) {
             throw "Key Vault did not return a preflight signature."
         }
@@ -593,16 +620,7 @@ function Assert-KeyVaultSigningPreflight {
             "--digest", $digestBase64,
             "--signature", [string]$signature
         )
-        $verified = if ($verifyResult -is [bool]) {
-            $verifyResult
-        }
-        else {
-            $verifyValue = Get-ObjectPropertyValue -Object $verifyResult -Name "value"
-            if ($null -eq $verifyValue) {
-                $verifyValue = Get-ObjectPropertyValue -Object $verifyResult -Name "result"
-            }
-            $verifyValue -eq $true
-        }
+        $verified = Test-KeyVaultVerificationResult -VerifyResult $verifyResult
         if (-not $verified) {
             throw "Key Vault rejected the preflight signature verification."
         }
@@ -648,10 +666,7 @@ function New-SignedImageManifest {
         "--algorithm", "ES256",
         "--digest", $hash.Base64
     )
-    $signature = Get-ObjectPropertyValue -Object $signResult -Name "result"
-    if ([string]::IsNullOrWhiteSpace([string]$signature)) {
-        $signature = Get-ObjectPropertyValue -Object $signResult -Name "value"
-    }
+    $signature = Get-KeyVaultSignatureValue -SignResult $signResult
     if ([string]::IsNullOrWhiteSpace([string]$signature)) {
         throw "Key Vault did not return a signature."
     }
@@ -667,17 +682,7 @@ function New-SignedImageManifest {
         "--digest", $readbackHash.Base64,
         "--signature", [string]$signature
     )
-    $verified = $false
-    if ($verifyResult -is [bool]) {
-        $verified = $verifyResult
-    }
-    else {
-        $verifyValue = Get-ObjectPropertyValue -Object $verifyResult -Name "value"
-        if ($null -eq $verifyValue) {
-            $verifyValue = Get-ObjectPropertyValue -Object $verifyResult -Name "result"
-        }
-        $verified = ($verifyValue -eq $true)
-    }
+    $verified = Test-KeyVaultVerificationResult -VerifyResult $verifyResult
     if (-not $verified) {
         throw "Key Vault ES256 signature verification failed."
     }
