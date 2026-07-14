@@ -322,11 +322,27 @@ function Assert-GitHubReleaseAuthorization {
         throw "Approval artifact checksum mismatch."
     }
 
-    $attestationOutput = (Invoke-NativeCapture -Command "gh" -Arguments @(
+    $attestationResult = Invoke-NativeCapture -Command "gh" -Arguments @(
         "attestation", "verify", $authorizationPath,
-        "--repo", $ApprovalRepository
-    )).StdOut
-    Write-Utf8NoBom -Path (Join-Path $approvalDirectory "attestation-verification.txt") -Content $attestationOutput
+        "--repo", $ApprovalRepository,
+        "--signer-workflow", "$ApprovalRepository/.github/workflows/production-release-approval.yml",
+        "--source-ref", $ApprovedRef,
+        "--source-digest", [string]$runJson.headSha,
+        "--format", "json"
+    )
+    if ([string]::IsNullOrWhiteSpace($attestationResult.StdOut)) {
+        throw "GitHub attestation verification succeeded but returned no verification evidence."
+    }
+    try {
+        $verifiedAttestations = $attestationResult.StdOut | ConvertFrom-Json
+    }
+    catch {
+        throw "GitHub attestation verification returned invalid JSON evidence."
+    }
+    if (@($verifiedAttestations).Count -lt 1) {
+        throw "GitHub attestation verification returned no verified attestations."
+    }
+    Write-Utf8NoBom -Path (Join-Path $approvalDirectory "attestation-verification.json") -Content $attestationResult.StdOut
 
     $authorization = [System.IO.File]::ReadAllText($authorizationPath) | ConvertFrom-Json
     $expected = [ordered]@{
@@ -936,9 +952,15 @@ try {
 catch {
     $failure = $_.Exception.Message
     $record.errors += $failure
-    $record.status = "failed_rollback_pending"
+    $containerAppUpdateAttempted = $attemptedApps.Count -gt 0
+    $record.status = if ($containerAppUpdateAttempted) { "failed_rollback_pending" } else { "failed_before_containerapp_update" }
     Write-ReleaseRecord -Record $record -Path $recordPath
-    Write-Warning "Release failed: $failure. Automatic reverse-order rollback is starting."
+    if ($containerAppUpdateAttempted) {
+        Write-Warning "Release failed: $failure. Automatic reverse-order rollback is starting."
+    }
+    else {
+        Write-Warning "Release failed before any Container App update: $failure. No application rollback is required."
+    }
 
     $rollbackErrors = New-Object System.Collections.Generic.List[string]
     for ($index = $attemptedApps.Count - 1; $index -ge 0; $index--) {
@@ -978,7 +1000,10 @@ catch {
     catch {
         $rollbackErrors.Add("post-rollback public smoke: $($_.Exception.Message)")
     }
-    if ($rollbackErrors.Count -eq 0) {
+    if (-not $containerAppUpdateAttempted) {
+        $record.status = "failed_before_containerapp_update"
+    }
+    elseif ($rollbackErrors.Count -eq 0) {
         $record.status = "failed_rolled_back"
     }
     else {
