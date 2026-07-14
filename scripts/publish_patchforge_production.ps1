@@ -892,6 +892,14 @@ try {
     $powershellExecutable = (Get-Process -Id $PID).Path
     Invoke-NativeStreaming -Command $powershellExecutable -Arguments @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $validateScript)
 
+    Invoke-NativeStreaming -Command "az" -Arguments @(
+        "acr", "login",
+        "--name", $RegistryName,
+        "--only-show-errors"
+    )
+    $record.status = "registry_access_verified"
+    Write-ReleaseRecord -Record $record -Path $recordPath
+
     $record.signing_preflight = Assert-KeyVaultSigningPreflight
     $record.status = "signing_access_verified"
     Write-ReleaseRecord -Record $record -Path $recordPath

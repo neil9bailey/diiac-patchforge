@@ -39,3 +39,14 @@ def test_key_vault_parsing_supports_current_and_legacy_cli_schemas():
     assert '@("isValid", "value", "result")' in source
     assert source.count("Get-KeyVaultSignatureValue -SignResult $signResult") == 2
     assert source.count("Test-KeyVaultVerificationResult -VerifyResult $verifyResult") == 2
+
+
+def test_registry_login_precedes_signing_and_rollback_image_capture():
+    source = publisher_source()
+
+    registry_login = source.index('"acr", "login"')
+    signing_preflight = source.index("$record.signing_preflight = Assert-KeyVaultSigningPreflight")
+    rollback_capture = source.index("Backup-CurrentImages -BeforeSnapshots")
+
+    assert registry_login < signing_preflight < rollback_capture
+    assert '"--name", $RegistryName' in source[registry_login:signing_preflight]
