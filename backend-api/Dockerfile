@@ -14,6 +14,11 @@ RUN npm ci --omit=dev \
 COPY . ./backend-api
 COPY customer-config-default ./customer-config/default
 
+RUN mkdir -p /app/customer-config/default/patchforge \
+    && chown -R node:node /app/customer-config/default/patchforge
+
 EXPOSE 8080
+
+USER node
 
 CMD ["node", "backend-api/server.js"]
