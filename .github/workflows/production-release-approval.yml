@@ -41,7 +41,7 @@ jobs:
       artifact-metadata: write
     steps:
       - name: Checkout approved ref
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
 
@@ -94,12 +94,12 @@ jobs:
             > artifacts/release-approval/SHA256SUMS
 
       - name: Attest approved release authorization
-        uses: actions/attest@f6bf1532d7d6793fce74eac584813a8eee607999 # v4
+        uses: actions/attest@a1948c3f048ba23858d222213b7c278aabede763 # v4
         with:
           subject-path: artifacts/release-approval/release-authorization.json
 
       - name: Upload approved release authorization
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: patchforge-production-release-${{ inputs.image_tag }}
           path: artifacts/release-approval
