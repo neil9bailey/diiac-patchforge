@@ -407,6 +407,7 @@ export function ReviewApprove({
   onDownloadReport,
   sraResult,
   canWrite,
+  canGeneratePacks,
   evidenceQueue,
   evidenceLoading,
   evidenceError,
@@ -432,6 +433,7 @@ export function ReviewApprove({
   onDownloadReport: (packId: string, reportType: string, format: "docx" | "pdf") => void;
   sraResult: Record<string, unknown> | null;
   canWrite: boolean;
+  canGeneratePacks: boolean;
   evidenceQueue: FindingEvidenceQueue | null;
   evidenceLoading: boolean;
   evidenceError: string | null;
@@ -519,7 +521,7 @@ export function ReviewApprove({
           <button type="button" className="action-button secondary-action" onClick={onSraResearch} disabled={!selectedVulnerabilityId || !canWrite}>
             <Radar size={16} aria-hidden /> Run SRA Advisory
           </button>
-          <button type="button" className="action-button" onClick={onGenerate} disabled={!selectedVulnerabilityId || !canWrite}>
+          <button type="button" className="action-button" onClick={onGenerate} disabled={!selectedVulnerabilityId || !canGeneratePacks}>
             <FileCheck2 size={16} aria-hidden /> Generate Signed Pack
           </button>
           <button type="button" className="action-button" onClick={() => latestPack && boardReport && onDownloadReport(latestPack.pack_id, boardReport.report_type, "docx")} disabled={!latestPack || !boardReport}>
@@ -537,7 +539,9 @@ export function ReviewApprove({
         </div>
       </section>
 
-      {!canWrite && <EmptyState title="Read-only role" detail="Review, pack generation, and report actions require a PatchForge write role." />}
+      {!canWrite && !canGeneratePacks && <EmptyState title="Read-only role" detail="Review analysis and decision-pack generation require an assigned PatchForge role." />}
+      {!canGeneratePacks && <p className="boundary-copy">Decision-pack generation requires a PatchForge Security Lead, CAB Approver, or Admin role.</p>}
+      {canGeneratePacks && !canWrite && <p className="boundary-copy">CAB Approvers can generate decision packs. Triage analysis and SRA advisory actions remain restricted to triage, security lead, or admin roles.</p>}
     </>
   );
 }
@@ -1065,7 +1069,8 @@ export function DecisionWorkbench({
   onGenerate,
   onBayesianAssess,
   bayesian,
-  canWrite
+  canWrite,
+  canGeneratePacks
 }: {
   vulnerabilities: VulnerabilityRecord[];
   selectedVulnerabilityId: string;
@@ -1076,6 +1081,7 @@ export function DecisionWorkbench({
   onBayesianAssess: () => void;
   bayesian: BayesianAssessment | null;
   canWrite: boolean;
+  canGeneratePacks: boolean;
 }) {
   return (
     <section className="wide-band">
@@ -1102,7 +1108,7 @@ export function DecisionWorkbench({
         <button type="button" className="action-button" onClick={onBayesianAssess} disabled={!selectedVulnerabilityId || !canWrite}>
           <Radar size={16} aria-hidden /> Run Bayesian Advisory
         </button>
-        <button type="button" className="action-button" onClick={onGenerate} disabled={!selectedVulnerabilityId || !canWrite}>
+        <button type="button" className="action-button" onClick={onGenerate} disabled={!selectedVulnerabilityId || !canGeneratePacks}>
           <FileCheck2 size={16} aria-hidden /> Generate Signed Pack
         </button>
       </div>
@@ -1121,7 +1127,8 @@ export function DecisionWorkbench({
         </section>
       </div>
       {!vulnerabilities.length && <EmptyState title="No record available for compile" detail="Decision packs require a real ingested vulnerability record." />}
-      {!canWrite && <EmptyState title="Read-only role" detail="Decision compile actions require an assigned PatchForge write role." />}
+      {!canWrite && !canGeneratePacks && <EmptyState title="Read-only role" detail="Decision compile actions require an assigned PatchForge role." />}
+      {!canGeneratePacks && <p className="boundary-copy">Decision-pack generation requires a PatchForge Security Lead, CAB Approver, or Admin role.</p>}
     </section>
   );
 }

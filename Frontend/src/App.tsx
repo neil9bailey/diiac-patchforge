@@ -42,6 +42,7 @@ import {
   AdminConfig,
   AdminHealth,
   AdminPurgePlan,
+  AdminUatCleanupPlan,
   AssetDiscoveryOverview,
   AssetRecord,
   AgentGuidanceSnapshot,
@@ -182,6 +183,7 @@ const discoveryCollectorCategories = [
 
 const navItems: NavItem[] = [
   { label: "Patch & CVE Catalogue", icon: Gauge },
+  { label: "Vulnerability Queue", icon: ListFilter },
   { label: "Vendor Catalogue", icon: Radar },
   { label: "Customer Estate", icon: ServerCog },
   { label: "Ask PatchForge", icon: MessageSquareText },
@@ -233,7 +235,7 @@ const adminSections: AdminCapability[] = [
   { label: "Audit Logs", status: "Governed", tone: "teal", detail: "Write paths preserve actor, tenant, and lineage context for review." },
   { label: "Export Settings", status: "Report-bound", tone: "teal", detail: "DOCX/PDF output remains tied to signed packs and report QA metadata." },
   { label: "Backup / Restore", status: "Planned", tone: "steel", detail: "No self-service restore action is exposed in this production-demo surface." },
-  { label: "Data Retention", status: "Guarded", tone: "amber", detail: "Cleanup is available only through typed purge confirmation and preview." },
+  { label: "Data Retention", status: "Guarded", tone: "amber", detail: "Exact-ID UAT cleanup is bound to a tenant-scoped preview digest; broader purge remains separately previewed and typed-confirmed." },
   { label: "Feature Flags", status: "Runtime-only", tone: "steel", detail: "Unsafe or unavailable flags are not exposed as inert toggles." }
 ];
 
@@ -346,6 +348,9 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
   });
   const [purgeConfirm, setPurgeConfirm] = useState("");
   const [latestPurgePlan, setLatestPurgePlan] = useState<AdminPurgePlan | null>(null);
+  const [uatCleanupIdentifier, setUatCleanupIdentifier] = useState("");
+  const [uatCleanupConfirm, setUatCleanupConfirm] = useState("");
+  const [latestUatCleanupPlan, setLatestUatCleanupPlan] = useState<AdminUatCleanupPlan | null>(null);
   const selectedFinding = useMemo(
     () => state.findings.find((item) => item.vulnerability_id === selectedVulnerabilityId) || state.findings[0] || null,
     [selectedVulnerabilityId, state.findings]
@@ -1161,9 +1166,21 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
     try {
       const exported = await liveApi.exportDecisionPack(tenantId, packId);
       downloadJson(`${packId}.json`, exported);
-      setOperationMessage(`Decision pack ${packId} export prepared.`);
+      setOperationMessage(`Decision pack JSON prepared for ${packId}.`);
     } catch (error) {
-      setOperationError(error instanceof Error ? error.message : "Decision pack export failed.");
+      setOperationError(error instanceof Error ? error.message : "Decision pack JSON export failed.");
+    }
+  }
+
+  async function handleDownloadPackZip(packId: string) {
+    setOperationMessage(null);
+    setOperationError(null);
+    try {
+      const blob = await liveApi.downloadDecisionPackZip(tenantId, packId);
+      downloadBlob(`${packId}.zip`, blob);
+      setOperationMessage(`Signed decision-pack ZIP prepared for ${packId}.`);
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : "Signed decision-pack ZIP export failed.");
     }
   }
 
@@ -1218,6 +1235,47 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
       await loadLiveState();
     } catch (error) {
       setOperationError(error instanceof Error ? error.message : "Confirmed purge failed.");
+    }
+  }
+
+  async function handlePreviewUatCleanup() {
+    setOperationMessage(null);
+    setOperationError(null);
+    try {
+      const cleanup = await liveApi.adminUatCleanup(tenantId, {
+        identifier: uatCleanupIdentifier.trim(),
+        dry_run: true
+      });
+      setLatestUatCleanupPlan(cleanup);
+      setUatCleanupConfirm("");
+      setOperationMessage(`UAT cleanup preview found ${cleanup.total_records} exact-linked record(s) across ${cleanup.collections.length} collection(s).`);
+    } catch (error) {
+      setLatestUatCleanupPlan(null);
+      setOperationError(error instanceof Error ? error.message : "UAT cleanup preview failed.");
+    }
+  }
+
+  async function handleExecuteUatCleanup() {
+    setOperationMessage(null);
+    setOperationError(null);
+    const identifier = uatCleanupIdentifier.trim();
+    if (!latestUatCleanupPlan || latestUatCleanupPlan.identifier !== identifier) {
+      setOperationError("Preview this exact UAT identifier again before cleanup.");
+      return;
+    }
+    try {
+      const cleanup = await liveApi.adminUatCleanup(tenantId, {
+        identifier,
+        dry_run: false,
+        confirm: uatCleanupConfirm,
+        preview_token: latestUatCleanupPlan.preview_token
+      });
+      setLatestUatCleanupPlan(cleanup);
+      setUatCleanupConfirm("");
+      setOperationMessage(`Targeted UAT cleanup removed ${cleanup.total_removed || 0} record(s); audit event ${cleanup.audit_id || "recorded"}.`);
+      await loadLiveState();
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : "Targeted UAT cleanup failed.");
     }
   }
 
@@ -1435,6 +1493,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 }}
                 onRefreshCandidateCatalogue={(candidate) => handleRefreshVendorLensSource(candidateValue(candidate, "vendor_id") || undefined)}
                 canWrite={canWrite}
+                canGeneratePacks={canGeneratePacks}
               />
             )}
             {activePage === "Action Center" && (
@@ -1474,6 +1533,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 onDownloadReport={handleDownloadReport}
                 sraResult={sraResult}
                 canWrite={canWrite}
+                canGeneratePacks={canGeneratePacks}
                 evidenceQueue={findingEvidenceQueue?.vulnerability_id === evidenceVulnerabilityId ? findingEvidenceQueue : null}
                 evidenceLoading={findingEvidenceLoading}
                 evidenceError={findingEvidenceError}
@@ -1494,6 +1554,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 reportsPacks={state.reportsPacks}
                 onGenerate={handleGeneratePack}
                 onExportPack={handleExportPack}
+                onDownloadPackZip={handleDownloadPackZip}
                 onDownloadReport={handleDownloadReport}
                 canWrite={canGeneratePacks}
               />
@@ -1531,6 +1592,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 onBayesianAssess={handleBayesianAssess}
                 bayesian={state.bayesian}
                 canWrite={canWrite}
+                canGeneratePacks={canGeneratePacks}
               />
             )}
             {activePage === "Emergency Patch" && <EmergencyPatch vulnerabilities={state.vulnerabilities} />}
@@ -1538,7 +1600,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
             {activePage === "Compensating Controls" && <CompensatingControls />}
             {activePage === "SRA Research" && <SraResearch onRun={handleSraResearch} result={sraResult} canWrite={canWrite} />}
             {activePage === "Evidence Catalogue" && <EvidenceCatalogue vulnerabilities={state.vulnerabilities} />}
-            {activePage === "Decision Packs" && <DecisionPacks decisionPacks={state.decisionPacks} reports={state.reports} onExportPack={handleExportPack} onDownloadReport={handleDownloadReport} />}
+            {activePage === "Decision Packs" && <DecisionPacks decisionPacks={state.decisionPacks} reports={state.reports} onExportPack={handleExportPack} onDownloadPackZip={handleDownloadPackZip} onDownloadReport={handleDownloadReport} />}
             {activePage === "Source Feeds" && <SourceFeeds sourceFeedState={state.sourceFeedState} onRefresh={handleRefreshSourceFeed} canWrite={canWrite} />}
             {activePage === "Vendor & Threat Landscape" && <VendorThreatLandscape vendors={state.vendors} threatSummary={state.threatSummary} />}
             {activePage === "VendorLens" && (
@@ -1566,7 +1628,13 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
             {activePage === "Admin" && (
               isAdmin ? <Admin
                 tenantId={tenantId}
-                setTenantId={setTenantId}
+                setTenantId={(value) => {
+                  setTenantId(value);
+                  setLatestPurgePlan(null);
+                  setPurgeConfirm("");
+                  setLatestUatCleanupPlan(null);
+                  setUatCleanupConfirm("");
+                }}
                 adminEnvironment={adminEnvironment}
                 setAdminEnvironment={setAdminEnvironment}
                 adminTier={adminTier}
@@ -1581,6 +1649,17 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 latestPurgePlan={latestPurgePlan}
                 onPreviewPurge={handlePreviewPurge}
                 onExecutePurge={handleExecutePurge}
+                uatCleanupIdentifier={uatCleanupIdentifier}
+                setUatCleanupIdentifier={(value) => {
+                  setUatCleanupIdentifier(value);
+                  setUatCleanupConfirm("");
+                  setLatestUatCleanupPlan(null);
+                }}
+                uatCleanupConfirm={uatCleanupConfirm}
+                setUatCleanupConfirm={setUatCleanupConfirm}
+                latestUatCleanupPlan={latestUatCleanupPlan}
+                onPreviewUatCleanup={handlePreviewUatCleanup}
+                onExecuteUatCleanup={handleExecuteUatCleanup}
               /> : <PageBand icon={LockKeyhole} title="Admin" lines={["PatchForge.Admin role required", "Admin controls are read-only for non-admin users", "API app roles are enforced server-side"]} />
             )}
             </Suspense>

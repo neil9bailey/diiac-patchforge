@@ -11,6 +11,7 @@ import {
 import type {
   AdminHealth,
   AdminPurgePlan,
+  AdminUatCleanupPlan,
   DecisionPackRecord,
   FindingIntelligence,
   OpenAiAgentStatus,
@@ -60,7 +61,7 @@ const adminSections: AdminCapability[] = [
   { label: "Audit Logs", status: "Governed", tone: "teal", detail: "Write paths preserve actor, tenant, and lineage context for review." },
   { label: "Export Settings", status: "Report-bound", tone: "teal", detail: "DOCX/PDF output remains tied to signed packs and report QA metadata." },
   { label: "Backup / Restore", status: "Planned", tone: "steel", detail: "No self-service restore action is exposed in this production-demo surface." },
-  { label: "Data Retention", status: "Guarded", tone: "amber", detail: "Cleanup is available only through typed purge confirmation and preview." },
+  { label: "Data Retention", status: "Guarded", tone: "amber", detail: "Exact-ID UAT cleanup is bound to a tenant-scoped preview digest; broader purge remains separately previewed and typed-confirmed." },
   { label: "Feature Flags", status: "Runtime-only", tone: "steel", detail: "Unsafe or unavailable flags are not exposed as inert toggles." }
 ];
 
@@ -109,6 +110,7 @@ export function ReportsPacks({
   reportsPacks,
   onGenerate,
   onExportPack,
+  onDownloadPackZip,
   onDownloadReport,
   canWrite
 }: {
@@ -118,6 +120,7 @@ export function ReportsPacks({
   reportsPacks: ReportsPacksState;
   onGenerate: () => void;
   onExportPack: (packId: string) => void;
+  onDownloadPackZip: (packId: string) => void;
   onDownloadReport: (packId: string, reportType: string, format: "docx" | "pdf") => void;
   canWrite: boolean;
 }) {
@@ -232,7 +235,7 @@ export function ReportsPacks({
         </div>
         {!qualityReviews.length && <p className="boundary-copy">Content QA appears after a signed pack exists. It checks audience fit, known/unknown clarity, specific evidence gaps, metadata, final approval state, and governance-safe wording.</p>}
       </section>
-      <DecisionPacks decisionPacks={sortedPacks} reports={reports} onExportPack={onExportPack} onDownloadReport={onDownloadReport} selectedPackId={selectedPack?.pack_id || ""} onSelectPack={setSelectedPackId} hideReportDownloads />
+      <DecisionPacks decisionPacks={sortedPacks} reports={reports} onExportPack={onExportPack} onDownloadPackZip={onDownloadPackZip} onDownloadReport={onDownloadReport} selectedPackId={selectedPack?.pack_id || ""} onSelectPack={setSelectedPackId} hideReportDownloads />
       <Reports decisionPacks={sortedPacks} reports={reports} selectedPackId={selectedPack?.pack_id || ""} onDownloadReport={onDownloadReport} />
     </>
   );
@@ -242,6 +245,7 @@ export function DecisionPacks({
   decisionPacks,
   reports,
   onExportPack,
+  onDownloadPackZip,
   onDownloadReport,
   selectedPackId,
   onSelectPack,
@@ -250,6 +254,7 @@ export function DecisionPacks({
   decisionPacks: DecisionPackRecord[];
   reports: ReportCatalogItem[];
   onExportPack: (packId: string) => void;
+  onDownloadPackZip: (packId: string) => void;
   onDownloadReport: (packId: string, reportType: string, format: "docx" | "pdf") => void;
   selectedPackId?: string;
   onSelectPack?: (packId: string) => void;
@@ -293,8 +298,25 @@ export function DecisionPacks({
                         {selectedPackId === pack.pack_id ? "Selected" : "Use for reports"}
                       </button>
                     )}
-                    <button type="button" className="icon-button" title="Export signed JSON pack" aria-label={`Export ${pack.pack_id}`} onClick={() => onExportPack(pack.pack_id)}>
-                      <FileCheck2 size={16} aria-hidden />
+                    <button
+                      type="button"
+                      className="action-button compact-action"
+                      title={pack.verification?.verified ? "Download the verified signed decision-pack ZIP" : "Verification required before signed ZIP download"}
+                      aria-label={`Download signed ZIP ${pack.pack_id}`}
+                      onClick={() => onDownloadPackZip(pack.pack_id)}
+                      disabled={!pack.verification?.verified}
+                    >
+                      <Download size={16} aria-hidden /> Signed ZIP
+                    </button>
+                    <button
+                      type="button"
+                      className="action-button compact-action secondary-action"
+                      title={pack.verification?.verified ? "Export the verified decision-pack JSON record" : "Verification required before pack JSON export"}
+                      aria-label={`Export pack JSON ${pack.pack_id}`}
+                      onClick={() => onExportPack(pack.pack_id)}
+                      disabled={!pack.verification?.verified}
+                    >
+                      <FileCheck2 size={16} aria-hidden /> Pack JSON
                     </button>
                     {!hideReportDownloads && <>
                       <button type="button" className="icon-button" title={pack.verification?.verified ? "Download verified board DOCX" : "Verification required before report download"} aria-label={`Download DOCX ${pack.pack_id}`} onClick={() => defaultReport && onDownloadReport(pack.pack_id, defaultReport.report_type, "docx")} disabled={!defaultReport || !pack.verification?.verified}>
@@ -423,7 +445,14 @@ export function Admin({
   setPurgeConfirm,
   latestPurgePlan,
   onPreviewPurge,
-  onExecutePurge
+  onExecutePurge,
+  uatCleanupIdentifier,
+  setUatCleanupIdentifier,
+  uatCleanupConfirm,
+  setUatCleanupConfirm,
+  latestUatCleanupPlan,
+  onPreviewUatCleanup,
+  onExecuteUatCleanup
 }: {
   tenantId: string;
   setTenantId: (tenantId: string) => void;
@@ -441,10 +470,23 @@ export function Admin({
   latestPurgePlan: AdminPurgePlan | null;
   onPreviewPurge: () => void;
   onExecutePurge: () => void;
+  uatCleanupIdentifier: string;
+  setUatCleanupIdentifier: (value: string) => void;
+  uatCleanupConfirm: string;
+  setUatCleanupConfirm: (value: string) => void;
+  latestUatCleanupPlan: AdminUatCleanupPlan | null;
+  onPreviewUatCleanup: () => void;
+  onExecuteUatCleanup: () => void;
 }) {
   const healthPage = usePagination(adminHealth?.checks || [], 8, "admin-health");
   const sectionPage = usePagination(adminSections, 12, "admin-sections");
   const selectedPurgeScopeCount = Object.values(purgeScopes).filter(Boolean).length;
+  const normalizedUatIdentifier = uatCleanupIdentifier.trim();
+  const validUatIdentifier = /^UAT-PF-[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(normalizedUatIdentifier);
+  const currentUatPreview = latestUatCleanupPlan?.tenant_id === tenantId
+    && latestUatCleanupPlan.identifier === normalizedUatIdentifier
+    && latestUatCleanupPlan.dry_run
+    && Boolean(latestUatCleanupPlan.preview_token);
   const agentReady = Boolean(agentStatus?.enabled && agentStatus.configured);
   const agentLabel = agentStatus?.enabled ? (agentStatus.configured ? "Ready" : "Unavailable") : "Runtime disabled";
   const agentTone = agentReady ? "teal" : agentStatus?.enabled ? "amber" : "steel";
@@ -506,6 +548,67 @@ export function Admin({
           <PaginationControls {...healthPage} label="health checks" />
         </section>
       </div>
+
+      <section className="wide-band" aria-label="Targeted UAT cleanup">
+        <div>
+          <p className="eyebrow">UAT data lifecycle</p>
+          <h3>Preview and remove one exact UAT identifier</h3>
+          <p className="muted-copy">This Admin-only workflow accepts one identifier beginning with <code>UAT-PF-</code>. It discovers exact-linked records, shows every record ID, binds execution to an expiring tenant-scoped preview digest, and refuses if the set changes. Collection-wide selectors are never accepted; all audit events and other tenants remain preserved.</p>
+        </div>
+        <div className="purge-panel">
+          <label className="stacked-input">
+            <span>Exact UAT identifier</span>
+            <input
+              value={uatCleanupIdentifier}
+              onChange={(event) => setUatCleanupIdentifier(event.target.value)}
+              placeholder="UAT-PF-20260714-001"
+              aria-describedby="uat-cleanup-format"
+            />
+          </label>
+          <p id="uat-cleanup-format" className="boundary-copy">Letters, numbers, dot, underscore, colon, and hyphen only. Prefix matches or free-text searches are never used.</p>
+          <label className="stacked-input">
+            <span>Type the exact identifier after preview</span>
+            <input
+              value={uatCleanupConfirm}
+              onChange={(event) => setUatCleanupConfirm(event.target.value)}
+              placeholder={normalizedUatIdentifier || "UAT-PF-20260714-001"}
+              disabled={!currentUatPreview}
+            />
+          </label>
+          <div className="report-actions">
+            <button type="button" className="action-button secondary-action" onClick={onPreviewUatCleanup} disabled={!validUatIdentifier}>
+              <Search size={16} aria-hidden /> Preview Exact UAT Cleanup
+            </button>
+            <button
+              type="button"
+              className="action-button"
+              onClick={onExecuteUatCleanup}
+              disabled={!currentUatPreview || uatCleanupConfirm !== normalizedUatIdentifier}
+            >
+              <Archive size={16} aria-hidden /> Remove Exact UAT Records
+            </button>
+          </div>
+          {latestUatCleanupPlan && (
+            <div className="insight-list" aria-live="polite">
+              <StatusLine label="Selection" value="Exact identifier value" tone="trust" />
+              <StatusLine label="Records in scope" value={String(latestUatCleanupPlan.total_records)} tone={latestUatCleanupPlan.total_records ? "amber" : "teal"} />
+              <StatusLine label="Collections" value={latestUatCleanupPlan.collections.join(", ") || "No matching records"} tone="steel" />
+              <StatusLine label="Preview digest" value={latestUatCleanupPlan.preview_digest || "Unavailable"} tone={latestUatCleanupPlan.preview_digest ? "trust" : "amber"} />
+              <StatusLine label="Preview expires" value={latestUatCleanupPlan.preview_expires_at || "Unavailable"} tone="steel" />
+              <StatusLine label="Audit history" value="Preserved" tone="trust" />
+              {latestUatCleanupPlan.audit_id && <StatusLine label="Cleanup audit event" value={latestUatCleanupPlan.audit_id} tone="trust" />}
+              {Object.entries(latestUatCleanupPlan.record_ids).map(([collection, recordIds]) => (
+                <details key={collection} open>
+                  <summary>{collection}: {recordIds.length} exact record ID(s)</summary>
+                  <ul>
+                    {recordIds.map((recordId) => <li key={recordId}><code>{recordId}</code></li>)}
+                  </ul>
+                </details>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
 
       <section className="wide-band">
         <div>

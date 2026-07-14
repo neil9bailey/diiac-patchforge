@@ -1,0 +1,63 @@
+{
+  "schema": "patchforge-sanitized-signed-in-uat-summary-v1",
+  "sanitized": true,
+  "date": "2026-07-14",
+  "authentication": "microsoft_entra_signed_in",
+  "role_observed": "PatchForge.Admin",
+  "status": "partial",
+  "admin_health": {
+    "checks_observed": 13,
+    "checks_passed": 13,
+    "checks_failed": 0,
+    "status": "pass"
+  },
+  "report_docx": {
+    "status": "failed_closed",
+    "error_code": "signature_cryptographic_verification_failed",
+    "acceptance_effect": "blocking",
+    "closeout_branch_fix": {
+      "status": "implemented_tested_locally_not_live",
+      "root_cause": "Azure KeyType.ec and KeyCurveName.p_256 labels required strict normalization to EC and P-256.",
+      "legacy_compatibility": "full_es256_verification_retained",
+      "fail_closed_cases": ["unknown_alias", "unsupported_curve", "malformed_coordinates", "wrong_key", "tampered_signature", "short_signature"],
+      "production_report_acceptance": "open"
+    }
+  },
+  "workflow_gaps": [
+    {
+      "id": "ingest_navigation",
+      "status": "open_in_live_f51802d_implemented_tested_locally",
+      "detail": "The live signed-in review found an ingestion navigation gap. The closeout branch implements and tests direct navigation, but it is not deployed or live-accepted."
+    },
+    {
+      "id": "verified_zip_ui",
+      "status": "open_in_live_f51802d_implemented_tested_locally",
+      "detail": "The live signed-in review did not provide a complete verified ZIP journey. The closeout branch implements and tests that path, but it is not deployed or live-accepted."
+    },
+    {
+      "id": "exact_id_uat_cleanup",
+      "status": "open_in_production_implemented_tested_locally",
+      "detail": "Production proof is open. Local cleanup uses a server-issued tenant-scoped expiring preview token bound to a SHA-256 digest of displayed exact record IDs; direct/cross-tenant/drift/reuse attempts fail closed and audit is retained."
+    }
+  ],
+  "closeout_branch_follow_up": {
+    "branch": "codex/patchforge-release-closeout-20260714",
+    "production_deployment_performed": false,
+    "live_uat_performed": false,
+    "ingestion_navigation": "implemented_and_tested_locally",
+    "verified_zip_ui": "implemented_and_tested_locally",
+    "exact_id_uat_cleanup": {
+      "status": "implemented_and_tested_locally_not_live",
+      "preview_token": "server_issued_tenant_scoped_expiring",
+      "record_binding": "sha256_digest_of_displayed_exact_record_ids",
+      "fail_closed": ["direct_execution", "cross_tenant_use", "record_set_drift", "token_reuse"],
+      "audit_retained": true
+    }
+  },
+  "role_coverage": {
+    "admin": "partial_pass",
+    "other_roles": "not_evidenced_in_this_session"
+  },
+  "uat_or_record_ids_included": [],
+  "acceptance_decision": "partial_not_release_complete"
+}

@@ -50,3 +50,24 @@ def test_registry_login_precedes_signing_and_rollback_image_capture():
 
     assert registry_login < signing_preflight < rollback_capture
     assert '"--name", $RegistryName' in source[registry_login:signing_preflight]
+
+
+def test_readiness_accepts_serving_at_capacity_without_weakening_other_gates():
+    source = publisher_source()
+
+    assert '@("Running", "RunningAtMaxScale", "ScaledToZero") -notcontains $revision.runningState' in source
+    assert '$revision.healthState -ne "Healthy"' in source
+    assert '$revision.provisioningState -ne "Provisioned"' in source
+    assert '$revision.image -cne $ExpectedImage' in source
+    assert '$revision.name -ne $state.latestReadyRevisionName' in source
+    assert '[int]$target.weight -ne 100' in source
+
+
+def test_rollback_capture_returns_only_structured_records():
+    source = publisher_source()
+
+    assert 'Invoke-NativeStreaming -Command "docker" -Arguments @("pull", $image) | Out-Host' in source
+    assert (
+        'Invoke-NativeStreaming -Command "docker" -Arguments '
+        '@("save", "--output", $archivePath, $image) | Out-Host'
+    ) in source

@@ -886,17 +886,31 @@ def _public_jwk_from_key_vault_key(key: Any) -> dict[str, str]:
     y_value = getattr(jwk, "y", None)
     if x_value is None or y_value is None:
         raise GovernanceRuntimeError("Key Vault signing key must expose EC public key coordinates for local verification.")
+    key_type = _azure_enum_value(getattr(jwk, "kty", None) or getattr(jwk, "key_type", None))
+    curve = _azure_enum_value(getattr(jwk, "crv", None) or getattr(jwk, "curve", None))
+    if key_type not in {"EC", "EC-HSM", "KeyType.ec", "KeyType.ec_hsm"}:
+        raise GovernanceRuntimeError("Key Vault ES256 signing requires an EC key.")
+    if curve not in {"P-256", "KeyCurveName.p_256"}:
+        raise GovernanceRuntimeError("Key Vault ES256 signing requires the P-256 curve.")
+    x_bytes = _bytes_from_key_material(x_value)
+    y_bytes = _bytes_from_key_material(y_value)
+    if len(x_bytes) != 32 or len(y_bytes) != 32:
+        raise GovernanceRuntimeError("Key Vault ES256 public key coordinates must each contain 32 bytes.")
     return {
-        "kty": str(getattr(jwk, "kty", None) or getattr(jwk, "key_type", "EC")),
-        "crv": str(getattr(jwk, "crv", None) or getattr(jwk, "curve", "P-256")),
-        "x": _base64url_encode(_bytes_from_key_material(x_value)),
-        "y": _base64url_encode(_bytes_from_key_material(y_value)),
+        "kty": "EC",
+        "crv": "P-256",
+        "x": _base64url_encode(x_bytes),
+        "y": _base64url_encode(y_bytes),
     }
+
+
+def _azure_enum_value(value: Any) -> str:
+    return str(getattr(value, "value", value)) if value is not None else ""
 
 
 def _verify_es256_signature(sigmeta: dict[str, Any], signature: str, payload: bytes) -> bool:
     public_jwk = sigmeta.get("public_jwk")
-    if not public_jwk:
+    if not public_jwk or sigmeta.get("signature_encoding") != "base64url_raw_ecdsa":
         return False
     try:
         from cryptography.exceptions import InvalidSignature
@@ -905,22 +919,43 @@ def _verify_es256_signature(sigmeta: dict[str, Any], signature: str, payload: by
     except ImportError as exc:  # pragma: no cover - optional production path
         raise GovernanceRuntimeError("ES256 verification requires the cryptography package.") from exc
 
-    x = int.from_bytes(_base64url_decode(public_jwk["x"]), "big")
-    y = int.from_bytes(_base64url_decode(public_jwk["y"]), "big")
-    public_key = ec.EllipticCurvePublicNumbers(x, y, ec.SECP256R1()).public_key()
-    raw_signature = _base64url_decode(signature)
-    if len(raw_signature) == 64:
+    try:
+        normalized_jwk = _normalize_es256_public_jwk(public_jwk)
+        x = int.from_bytes(_strict_base64url_decode(normalized_jwk["x"], 32), "big")
+        y = int.from_bytes(_strict_base64url_decode(normalized_jwk["y"], 32), "big")
+        public_key = ec.EllipticCurvePublicNumbers(x, y, ec.SECP256R1()).public_key()
+        raw_signature = _strict_base64url_decode(signature, 64)
         r = int.from_bytes(raw_signature[:32], "big")
         s = int.from_bytes(raw_signature[32:], "big")
         signature_to_verify = utils.encode_dss_signature(r, s)
-    else:
-        signature_to_verify = raw_signature
-
-    try:
         public_key.verify(signature_to_verify, payload, ec.ECDSA(hashes.SHA256()))
         return True
-    except InvalidSignature:
+    except (InvalidSignature, GovernanceRuntimeError, KeyError, TypeError, ValueError):
         return False
+
+
+def _normalize_es256_public_jwk(value: Any) -> dict[str, str]:
+    if not isinstance(value, dict):
+        raise GovernanceRuntimeError("ES256 public JWK is required.")
+    key_type = str(value.get("kty") or "")
+    curve = str(value.get("crv") or "")
+    if key_type not in {"EC", "KeyType.ec", "KeyType.ec_hsm"}:
+        raise GovernanceRuntimeError("ES256 public JWK must use an EC key.")
+    if curve not in {"P-256", "KeyCurveName.p_256"}:
+        raise GovernanceRuntimeError("ES256 public JWK must use the P-256 curve.")
+    return {**value, "kty": "EC", "crv": "P-256"}
+
+
+def _strict_base64url_decode(value: Any, expected_length: int) -> bytes:
+    if not isinstance(value, str) or not value or any(
+        character not in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+        for character in value
+    ):
+        raise GovernanceRuntimeError("ES256 material must use unpadded base64url encoding.")
+    decoded = _base64url_decode(value)
+    if len(decoded) != expected_length or _base64url_encode(decoded) != value:
+        raise GovernanceRuntimeError("ES256 material has an invalid encoded length or noncanonical form.")
+    return decoded
 
 
 def _bytes_from_key_material(value: Any) -> bytes:

@@ -12,6 +12,13 @@ param environmentName string = 'prod'
 @description('Whether the bridge/API should use public ingress. Set false for private-only deployments.')
 param bridgeExternalIngress bool = true
 
+@allowed([
+  'cost-optimized'
+  'enterprise'
+])
+@description('Container App scaling profile. cost-optimized preserves the current zero-to-one production posture; enterprise enables the higher always-ready capacities defined by PatchForge.')
+param containerAppScaleProfile string = 'cost-optimized'
+
 @description('Whether to deploy Container Apps. Set false for the first infrastructure pass so ACR can be created and images pushed before app revisions are created.')
 param deployContainerApps bool = true
 
@@ -59,6 +66,9 @@ param postgresPasswordSecretName string = 'patchforge-postgres-admin-password'
 
 @description('Whether the Bridge/API should enable the optional OpenAI-native advisory agent layer.')
 param openAiAgentEnabled bool = false
+
+@description('Search/storage query mode supplied to non-frontend PatchForge components.')
+param searchMode string = 'postgres'
 
 @description('OpenAI model used by the optional Bridge/API advisory agent layer when enabled.')
 param openAiModel string = 'gpt-5.4'
@@ -217,6 +227,7 @@ module containerApps 'container-apps.bicep' = if (deployContainerApps) {
     acrLoginServer: registry.outputs.loginServer
     imageTag: imageTag
     bridgeExternalIngress: bridgeExternalIngress
+    scaleProfile: containerAppScaleProfile
     managedIdentityResourceIds: identities.outputs.resourceIds
     managedIdentityClientIds: identities.outputs.clientIds
     storageAccountName: storage.outputs.storageAccountName
@@ -230,6 +241,7 @@ module containerApps 'container-apps.bicep' = if (deployContainerApps) {
     entraAudience: entraAudience
     authRequired: authRequired
     openAiAgentEnabled: openAiAgentEnabled
+    searchMode: searchMode
     openAiModel: openAiModel
     openAiApiKeySecretName: openAiApiKeySecretName
     openAiApiKeyVaultUri: openAiApiKeyVaultUri

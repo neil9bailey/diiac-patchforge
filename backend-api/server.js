@@ -2,7 +2,11 @@ import http from "node:http";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { authorizeRequest, createAuthConfigFromEnv } from "./auth.js";
-import { PATCHFORGE_PURGE_CONFIRMATION, createPatchForgeStorage } from "./patchforge/storage.js";
+import {
+  PATCHFORGE_PURGE_CONFIRMATION,
+  PATCHFORGE_UAT_IDENTIFIER_PREFIX,
+  createPatchForgeStorage
+} from "./patchforge/storage.js";
 import { createSourceFeedClient } from "./patchforge/sourceFeeds.js";
 import { listSourceAdapters, syncSourceAdapter } from "./patchforge/sourceAdapters.js";
 import { importAssetsFromCsv, parseConfigEvidence, redactConfigInput } from "./patchforge/configParsers.js";
@@ -1404,6 +1408,32 @@ export function createServer(options = {}) {
           tenant_id: tenantContext.effective_tenant_id,
           tenant_context: tenantContext,
           purge
+        });
+      }
+
+      if (route === "POST /api/patchforge/admin/uat-cleanup") {
+        const body = await readJson(req);
+        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const cleanup = await storage.cleanupUatRecords(tenantContext.effective_tenant_id, {
+          ...body,
+          identifier: body.identifier,
+          dry_run: body.dry_run !== false,
+          confirm: body.confirm,
+          lineage: lineageFields(tenantContext, authorization)
+        });
+        if (cleanup.blocked || cleanup.error === "exact_identifier_confirmation_required") {
+          return sendJson(res, 400, {
+            tenant_id: tenantContext.effective_tenant_id,
+            tenant_context: tenantContext,
+            error: "exact_identifier_confirmation_required",
+            message: `Type the exact ${PATCHFORGE_UAT_IDENTIFIER_PREFIX} identifier to confirm this narrowly scoped cleanup.`,
+            cleanup
+          });
+        }
+        return sendJson(res, cleanup.dry_run ? 200 : 202, {
+          tenant_id: tenantContext.effective_tenant_id,
+          tenant_context: tenantContext,
+          cleanup
         });
       }
 

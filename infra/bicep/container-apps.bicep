@@ -14,6 +14,11 @@ param sourceCommitSha string = 'local'
 param productBaseline string = 'PF-LOCAL'
 param reportContextVersion string = 'patchforge-report-context.local.v1'
 param bridgeExternalIngress bool = true
+@allowed([
+  'cost-optimized'
+  'enterprise'
+])
+param scaleProfile string = 'cost-optimized'
 param managedIdentityResourceIds object
 param managedIdentityClientIds object
 param storageAccountName string
@@ -28,6 +33,7 @@ param entraTenantId string = '67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da'
 param entraAudience string = 'api://ec30b0eb-cfc4-48cc-a5f2-2a1345d96736'
 param authRequired bool = true
 param openAiAgentEnabled bool = false
+param searchMode string = 'postgres'
 param openAiModel string = 'gpt-5.4'
 param openAiApiKeySecretName string = ''
 param openAiApiKeyVaultUri string = ''
@@ -44,6 +50,7 @@ param environmentLabel string = 'prod'
 
 var openAiApiKeyVaultBaseUri = empty(openAiApiKeyVaultUri) ? keyVaultUri : openAiApiKeyVaultUri
 var normalizedOpenAiApiKeyVaultUri = endsWith(openAiApiKeyVaultBaseUri, '/') ? openAiApiKeyVaultBaseUri : '${openAiApiKeyVaultBaseUri}/'
+var enterpriseScale = scaleProfile == 'enterprise'
 
 var commonEnv = [
   {
@@ -239,8 +246,8 @@ var appDefinitions = [
     targetPort: 8080
     cpu: json('0.5')
     memory: '1Gi'
-    minReplicas: 1
-    maxReplicas: 3
+    minReplicas: enterpriseScale ? 1 : 0
+    maxReplicas: enterpriseScale ? 3 : 1
     role: 'frontend'
     customDomain: uiCustomDomain
     managedCertificateName: uiManagedCertificateName
@@ -257,8 +264,8 @@ var appDefinitions = [
     targetPort: 8080
     cpu: json('0.5')
     memory: '1Gi'
-    minReplicas: 1
-    maxReplicas: 5
+    minReplicas: enterpriseScale ? 1 : 0
+    maxReplicas: enterpriseScale ? 5 : 1
     role: 'bridge-api'
     customDomain: apiCustomDomain
     managedCertificateName: apiManagedCertificateName
@@ -275,8 +282,8 @@ var appDefinitions = [
     targetPort: 8080
     cpu: json('0.5')
     memory: '1Gi'
-    minReplicas: 1
-    maxReplicas: 3
+    minReplicas: enterpriseScale ? 1 : 0
+    maxReplicas: enterpriseScale ? 3 : 1
     role: 'runtime-governance'
     customDomain: ''
     managedCertificateName: ''
@@ -294,7 +301,7 @@ var appDefinitions = [
     cpu: json('0.5')
     memory: '1Gi'
     minReplicas: 0
-    maxReplicas: 3
+    maxReplicas: enterpriseScale ? 3 : 1
     role: 'sra-advisory-only'
     customDomain: ''
     managedCertificateName: ''
@@ -311,8 +318,8 @@ var appDefinitions = [
     targetPort: 8080
     cpu: json('0.5')
     memory: '1Gi'
-    minReplicas: 1
-    maxReplicas: 5
+    minReplicas: enterpriseScale ? 1 : 0
+    maxReplicas: enterpriseScale ? 5 : 1
     role: 'ingest-export-worker'
     customDomain: ''
     managedCertificateName: ''
@@ -423,11 +430,16 @@ resource containerApps 'Microsoft.App/containerApps@2024-03-01' = [for app in ap
               name: 'PATCHFORGE_COMPONENT'
               value: app.role
             }
-          ], app.role == 'bridge-api' ? [
             {
               name: 'PATCHFORGE_OPENAI_AGENT_ENABLED'
-              value: string(openAiAgentEnabled)
+              value: app.role == 'bridge-api' ? string(openAiAgentEnabled) : 'false'
             }
+          ], app.role != 'frontend' ? [
+            {
+              name: 'PATCHFORGE_SEARCH_MODE'
+              value: searchMode
+            }
+          ] : [], app.role == 'bridge-api' ? [
             {
               name: 'PATCHFORGE_OPENAI_MODEL'
               value: openAiModel

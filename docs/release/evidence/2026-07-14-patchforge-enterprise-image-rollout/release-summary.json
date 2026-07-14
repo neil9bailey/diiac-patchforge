@@ -1,0 +1,202 @@
+{
+  "schema": "patchforge-sanitized-enterprise-image-rollout-v1",
+  "sanitized": true,
+  "date": "2026-07-14",
+  "overall_acceptance": "partial",
+  "post_release_closeout_branch": {
+    "branch": "codex/patchforge-release-closeout-20260714",
+    "evidence_scope": "local_working_state_not_live",
+    "production_deployment_performed": false,
+    "local_implementation": {
+      "ingestion_navigation": "implemented_and_tested_locally",
+      "verified_zip_ui": "implemented_and_tested_locally",
+      "exact_id_uat_cleanup": {
+        "status": "implemented_and_tested_locally_not_live",
+        "preview_token": "server_issued_tenant_scoped_expiring",
+        "record_binding": "sha256_digest_of_displayed_exact_record_ids",
+        "fail_closed": ["direct_execution", "cross_tenant_use", "record_set_drift", "token_reuse"],
+        "audit_retained": true
+      },
+      "report_signature_fix": "implemented_and_tested_locally_not_live"
+    },
+    "report_signature_fix": {
+      "root_cause": "Azure enum labels KeyType.ec and KeyCurveName.p_256 required strict normalization to EC and P-256.",
+      "legacy_compatibility": "full_es256_cryptographic_verification_required",
+      "fail_closed_cases": ["unknown_alias", "unsupported_curve", "malformed_coordinates", "wrong_key", "tampered_signature", "short_signature"],
+      "production_report_acceptance": "open"
+    },
+    "validation": {
+      "python": "pass_53_of_53",
+      "backend_api": "pass_94_of_94",
+      "frontend": "pass_28_of_28",
+      "playwright_axe": "pass_2_of_2",
+      "windows_collector": "pass_8_of_8",
+      "frontend_build": "pass",
+      "frontend_entry_kb": 270.20,
+      "frontend_total_javascript_kb": 634.39,
+      "frontend_total_budget_kb": 650,
+      "iac": "pass"
+    },
+    "fresh_repaired_iac_what_if": {
+      "status": "succeeded_not_fully_determinate",
+      "resource_counts": {
+        "total": 43,
+        "destructive": 0,
+        "modify": 7,
+        "no_change": 20,
+        "ignore": 3,
+        "unsupported": 13
+      },
+      "semantic_results": {
+        "image_changes": 0,
+        "environment_removals": 0,
+        "scale_drift": 1,
+        "scale_drift_detail": "scheduler_min_replicas_0_to_1_required_for_in_process_timer",
+        "search_mode_removal": false,
+        "openai_agent_flag_removal": false,
+        "release_metadata_convergence_apps": 6,
+        "probe_additions": 12,
+        "probe_target_apps": 6
+      },
+      "full_apply_performed": false,
+      "separate_exact_approval_required": true
+    }
+  },
+  "release": {
+    "product_baseline": "PF-AZ-ENTERPRISE-AUTOMATION-20260714D",
+    "source_commit": "f51802d3544260259c252e6be88d6e7bae596868",
+    "image_tag": "pfaz-enterprise-20260714d-f51802d",
+    "report_context_version": "patchforge-report-context.pfaz-enterprise-20260714d.v1",
+    "deployment_method": "guarded_targeted_container_app_image_only_update",
+    "started_at_utc": "2026-07-14T15:30:01.0089402Z",
+    "completed_at_utc": "2026-07-14T16:15:02.8204674Z",
+    "execution_status": "succeeded"
+  },
+  "approval_and_attestation": {
+    "repository": "neil9bailey/diiac-patchforge",
+    "run_id": "29345354677",
+    "run_attempt": "1",
+    "run_url": "https://github.com/neil9bailey/diiac-patchforge/actions/runs/29345354677",
+    "run_invocation_url": "https://github.com/neil9bailey/diiac-patchforge/actions/runs/29345354677/attempts/1",
+    "approved_ref": "refs/heads/main",
+    "created_at_utc": "2026-07-14T15:27:07Z",
+    "explicit_environment_approval": true,
+    "production_environment_reviewer_count": 1,
+    "authorization_sha256": "d5b7470d8f8b76eb0a152d1c805dc4964f30725b471a3474787ad3763a806007",
+    "attestation_verified": true,
+    "attestation_workflow_ref": "neil9bailey/diiac-patchforge/.github/workflows/production-release-approval.yml@refs/heads/main",
+    "attestation_source_repository_digest": "d655f327e59a9ec5008162367f29ad44b6c3b99a"
+  },
+  "provenance": {
+    "schema": "patchforge-six-image-provenance-v1",
+    "manifest_sha256": "d9c8f265aaab5c7d10549f1730620a9681bb0b13ff10c8b870973f52c07b9615",
+    "algorithm": "ES256",
+    "key_id": "https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod/2e348fdeaaaf448ebba206130ef86b52",
+    "verified": true,
+    "signed_at_utc": "2026-07-14T15:38:32.7082676Z"
+  },
+  "apps": [
+    {
+      "app": "ca-patchforge-runtime-prod",
+      "repository": "diiac/patchforge-runtime",
+      "digest": "sha256:2b608109548e4596a8ab5195a17c0ac581cdf2fe4e0ed09cd4d2b9ec8fdf93ca",
+      "active_revision": "ca-patchforge-runtime-prod--0000031",
+      "latest_ready_aligned": true,
+      "health_state": "Healthy",
+      "provisioning_state": "Provisioned",
+      "running_state": "ScaledToZero",
+      "traffic_weight": 100
+    },
+    {
+      "app": "ca-patchforge-sra-prod",
+      "repository": "diiac/patchforge-sra-agent",
+      "digest": "sha256:44808c86c32816210d2086f173e77ff5b33bcf91c47fb578c2fb38c6f7fb994d",
+      "active_revision": "ca-patchforge-sra-prod--0000030",
+      "latest_ready_aligned": true,
+      "health_state": "Healthy",
+      "provisioning_state": "Provisioned",
+      "running_state": "ScaledToZero",
+      "traffic_weight": 100
+    },
+    {
+      "app": "ca-patchforge-worker-prod",
+      "repository": "diiac/patchforge-ingest-worker",
+      "digest": "sha256:f0585c19fabbf5ce9bc6d7dec01f7915ee342ab7e524df9384323da1b4f63ded",
+      "active_revision": "ca-patchforge-worker-prod--0000030",
+      "latest_ready_aligned": true,
+      "health_state": "Healthy",
+      "provisioning_state": "Provisioned",
+      "running_state": "ScaledToZero",
+      "traffic_weight": 100
+    },
+    {
+      "app": "ca-patchforge-scheduler-prod",
+      "repository": "diiac/patchforge-scheduler",
+      "digest": "sha256:11e58260e16c38636cfcc2804554ea58c4f3e954aa64a42b5075d60dba2af23f",
+      "active_revision": "ca-patchforge-scheduler-prod--0000030",
+      "latest_ready_aligned": true,
+      "health_state": "Healthy",
+      "provisioning_state": "Provisioned",
+      "running_state": "ScaledToZero",
+      "traffic_weight": 100
+    },
+    {
+      "app": "ca-patchforge-bridge-prod",
+      "repository": "diiac/patchforge-bridge",
+      "digest": "sha256:56a1b6b502594a5ebf18d0ab56467c2a2e2028fb4d0884d456542f864f3442bf",
+      "active_revision": "ca-patchforge-bridge-prod--0000040",
+      "latest_ready_aligned": true,
+      "health_state": "Healthy",
+      "provisioning_state": "Provisioned",
+      "running_state": "ScaledToZero",
+      "traffic_weight": 100
+    },
+    {
+      "app": "ca-patchforge-ui-prod",
+      "repository": "diiac/patchforge-frontend",
+      "digest": "sha256:88377ddcc4afe164ddb4206429b737f97935d8636f4f5f9ced0e09f8e7b1ff87",
+      "active_revision": "ca-patchforge-ui-prod--0000041",
+      "latest_ready_aligned": true,
+      "health_state": "Healthy",
+      "provisioning_state": "Provisioned",
+      "running_state": "ScaledToZero",
+      "traffic_weight": 100
+    }
+  ],
+  "public_smoke": [
+    {
+      "name": "ui",
+      "url": "https://patchforge.diiac.io/",
+      "expected_status": 200,
+      "actual_status": 200,
+      "checked_at_utc": "2026-07-14T16:14:38.7459393Z"
+    },
+    {
+      "name": "api-health",
+      "url": "https://api.patchforge.diiac.io/health",
+      "expected_status": 200,
+      "actual_status": 200,
+      "checked_at_utc": "2026-07-14T16:15:02.6076733Z"
+    },
+    {
+      "name": "api-readiness",
+      "url": "https://api.patchforge.diiac.io/readiness",
+      "expected_status": 200,
+      "actual_status": 200,
+      "readiness": {
+        "status": "ready",
+        "storage": "postgresql",
+        "auth_required": true,
+        "tenant_required": true
+      },
+      "checked_at_utc": "2026-07-14T16:15:02.6927119Z"
+    },
+    {
+      "name": "protected-route",
+      "url": "https://api.patchforge.diiac.io/api/patchforge/security-action-center",
+      "expected_status": 401,
+      "actual_status": 401,
+      "checked_at_utc": "2026-07-14T16:15:02.8191473Z"
+    }
+  ]
+}

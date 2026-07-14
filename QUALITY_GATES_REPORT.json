@@ -1,129 +1,213 @@
 {
-  "release": "PF-AZ-MODERN-UI-20260711",
-  "date": "2026-07-11",
-  "status": "partial_pass_signed_in_uat_pending",
-  "branch": "codex/patchforge-rebuild-20260601",
-  "source_commit": "907995fdf1ea290a7e551463e461af8a884cf44c",
-  "current_image_tag": "pfaz-modern-ui-20260711-907995f",
-  "report_context_version": "patchforge-report-context.pfaz-modern-ui-20260711.v1",
-  "deployment_method": "targeted_container_app_image_and_release_metadata_update",
-  "draft_pull_request": "https://github.com/neil9bailey/diiac-patchforge/pull/2",
+  "release": "PF-AZ-ENTERPRISE-AUTOMATION-20260714D",
+  "date": "2026-07-14",
+  "status": "partial_pass_image_rollout_succeeded_report_integrity_blocked",
+  "branch": "codex/patchforge-publisher-evidence-fix-20260714",
+  "source_commit": "f51802d3544260259c252e6be88d6e7bae596868",
+  "current_image_tag": "pfaz-enterprise-20260714d-f51802d",
+  "product_baseline": "PF-AZ-ENTERPRISE-AUTOMATION-20260714D",
+  "report_context_version": "patchforge-report-context.pfaz-enterprise-20260714d.v1",
+  "deployment_method": "guarded_targeted_container_app_image_only_update",
+  "state_boundary": {
+    "live_release_source_commit": "f51802d3544260259c252e6be88d6e7bae596868",
+    "live_release_scope": "six_container_app_images_only",
+    "closeout_branch": "codex/patchforge-release-closeout-20260714",
+    "closeout_branch_changes_live": false,
+    "closeout_branch_local_changes": [
+      "ingestion_navigation",
+      "verified_zip_ui",
+      "exact_id_uat_cleanup",
+      "report_signature_fix",
+      "repaired_iac"
+    ]
+  },
+  "approval": {
+    "run_id": "29345354677",
+    "run_attempt": "1",
+    "run_url": "https://github.com/neil9bailey/diiac-patchforge/actions/runs/29345354677",
+    "approved_ref": "refs/heads/main",
+    "approved_by": "neil9bailey",
+    "authorization_sha256": "d5b7470d8f8b76eb0a152d1c805dc4964f30725b471a3474787ad3763a806007",
+    "attestation_verified": true,
+    "production_environment_reviewer_count": 1
+  },
+  "provenance": {
+    "manifest_sha256": "d9c8f265aaab5c7d10549f1730620a9681bb0b13ff10c8b870973f52c07b9615",
+    "algorithm": "ES256",
+    "key_id": "https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod/2e348fdeaaaf448ebba206130ef86b52",
+    "verified": true
+  },
   "image_digests": {
-    "frontend": "sha256:50feacc4163fd54dc53218434108f598cec0d06780898c7cf078a86df6d15f49",
-    "bridge_api": "sha256:e0db40d5ccaaaff797142d74ada7053f5ba0c773f4b148a41d5f12a7e81105fb",
-    "runtime": "sha256:81a0c2bf505427583225000abb9f15cb64ffc4f4215c47bce911a509bdee0e3d",
-    "sra": "sha256:8c0f5db8b1144279ee54504354adf77dbdcec363848c0efb6c22fb24c0deafc7",
-    "worker": "sha256:2a9ef9a9ce8abdc87f577c78dda287b31430c448e1e152b067e5ad77e038a33d",
-    "scheduler": "sha256:88bd431c55e4fe1e4b5689ce904cce7fbf9f3b82dceac31ed6de5978a8336c22"
+    "frontend": "sha256:88377ddcc4afe164ddb4206429b737f97935d8636f4f5f9ced0e09f8e7b1ff87",
+    "bridge_api": "sha256:56a1b6b502594a5ebf18d0ab56467c2a2e2028fb4d0884d456542f864f3442bf",
+    "runtime": "sha256:2b608109548e4596a8ab5195a17c0ac581cdf2fe4e0ed09cd4d2b9ec8fdf93ca",
+    "sra": "sha256:44808c86c32816210d2086f173e77ff5b33bcf91c47fb578c2fb38c6f7fb994d",
+    "worker": "sha256:f0585c19fabbf5ce9bc6d7dec01f7915ee342ab7e524df9384323da1b4f63ded",
+    "scheduler": "sha256:11e58260e16c38636cfcc2804554ea58c4f3e954aa64a42b5075d60dba2af23f"
   },
   "current_active_revisions": {
-    "ui": "ca-patchforge-ui-prod--0000040",
-    "bridge_api": "ca-patchforge-bridge-prod--0000039",
-    "runtime": "ca-patchforge-runtime-prod--0000030",
-    "sra": "ca-patchforge-sra-prod--0000029",
-    "worker": "ca-patchforge-worker-prod--0000029",
-    "scheduler": "ca-patchforge-scheduler-prod--0000029"
+    "ui": "ca-patchforge-ui-prod--0000041",
+    "bridge_api": "ca-patchforge-bridge-prod--0000040",
+    "runtime": "ca-patchforge-runtime-prod--0000031",
+    "sra": "ca-patchforge-sra-prod--0000030",
+    "worker": "ca-patchforge-worker-prod--0000030",
+    "scheduler": "ca-patchforge-scheduler-prod--0000030"
   },
-  "test_results": {
-    "python_contracts_runtime": 30,
-    "backend_api": 62,
-    "frontend": 20,
-    "windows_collector": 5,
-    "github_required_checks": 8
+  "candidate_validation": {
+    "python": "pass_39_of_39",
+    "backend_api": "pass_89_of_89",
+    "frontend": "pass_24_of_24",
+    "playwright_axe": "pass_2_of_2",
+    "windows_collector": "pass_8_of_8_plus_lifecycle",
+    "container_security": "pass_three_images_zero_high_or_critical"
+  },
+  "closeout_branch_validation": {
+    "scope": "local_not_deployed_does_not_replace_f518_candidate_totals",
+    "python": "pass_53_of_53",
+    "backend_api": "pass_94_of_94",
+    "frontend": "pass_28_of_28",
+    "playwright_axe": "pass_2_of_2",
+    "windows_collector": "pass_8_of_8",
+    "frontend_build": "pass",
+    "frontend_entry_kb": 270.20,
+    "frontend_total_javascript_kb": 634.39,
+    "frontend_total_budget_kb": 650,
+    "iac": "pass"
   },
   "gates": [
     {
-      "name": "git_local_remote_alignment",
+      "name": "git_local_remote_alignment_for_release_source",
       "status": "pass",
-      "detail": "The deployed source commit was pushed before image build; final local and remote branch alignment is verified after release-evidence publication."
+      "detail": "The guarded publisher verified the release commit against its configured upstream before build and deployment."
     },
     {
-      "name": "github_pull_request_checks",
+      "name": "github_production_approval_and_attestation",
       "status": "pass",
-      "checks": 8,
-      "detail": "Backend API, Bicep, frontend, Python, Windows collector, and frontend/bridge/runtime Docker smoke checks passed; draft PR merge state is clean."
+      "detail": "Approval run 29345354677, attempt 1, explicitly authorized the exact commit, tag, baseline, and report context; the authorization checksum and GitHub attestation verified."
     },
     {
-      "name": "local_automated_tests",
+      "name": "local_candidate_validation",
       "status": "pass",
-      "detail": "Python 30, backend 62, frontend 20, and Windows collector 5 tests passed."
-    },
-    {
-      "name": "frontend_production_build",
-      "status": "pass_with_advisory",
-      "javascript_bundle_kb": 595.65,
-      "detail": "Vite build passed; chunk-size warning remains an optimization advisory."
-    },
-    {
-      "name": "dependency_audit",
-      "status": "pass_with_advisory",
-      "detail": "Backend has zero reported vulnerabilities; frontend has one low-severity dev-server-only esbuild advisory and no high or critical findings."
-    },
-    {
-      "name": "bicep_validation",
-      "status": "pass_with_advisory",
-      "detail": "Bicep build passed with an update advisory."
-    },
-    {
-      "name": "full_bicep_apply",
-      "status": "blocked_not_performed",
-      "what_if": {
-        "modify": 18,
-        "no_change": 9,
-        "unsupported": 13,
-        "ignore": 3
-      },
-      "reason": "The current template would risk topology and storage drift; targeted Container App updates were used instead."
+      "detail": "The f51802d candidate closure records Python 39/39, backend 89/89, frontend 24/24, Playwright/axe 2/2, collector 8/8 plus lifecycle, and zero high/critical findings across three unique images."
     },
     {
       "name": "acr_immutable_images",
       "status": "pass",
       "images": 6,
-      "detail": "Every exact ACR tag digest matches its local Docker RepoDigest."
+      "detail": "Six exact-tag ACR digests were read back and recorded in a signed six-image provenance manifest."
     },
     {
-      "name": "azure_targeted_rollout",
+      "name": "six_image_provenance",
+      "status": "pass",
+      "detail": "The ES256 six-image manifest verified with SHA-256 d9c8f265aaab5c7d10549f1730620a9681bb0b13ff10c8b870973f52c07b9615."
+    },
+    {
+      "name": "azure_targeted_image_rollout",
       "status": "pass",
       "apps": 6,
-      "detail": "All apps are Single revision mode, Succeeded, Running, Healthy, Provisioned, latest-ready aligned, and at 100 percent latest-revision traffic."
-    },
-    {
-      "name": "azure_release_metadata_readback",
-      "status": "pass",
-      "detail": "All six apps report the exact image tag, full commit, product baseline, renderer commit, and report-context version."
+      "detail": "All six apps use the candidate tag and are Succeeded, Healthy, Provisioned, latest-ready aligned, and at 100 percent latest-revision traffic."
     },
     {
       "name": "public_http_smoke",
       "status": "pass",
-      "detail": "UI and API health/readiness return 200; readiness confirms PostgreSQL, auth, and tenant requirements; protected route returns 401 without authentication."
+      "detail": "UI, API health, and API readiness returned 200; readiness reported PostgreSQL, authentication, and tenant requirements ready; the protected route returned the expected 401."
     },
     {
-      "name": "live_browser_signed_out_responsive_shell",
+      "name": "temporary_signing_rbac_revocation",
       "status": "pass",
-      "detail": "Production stylesheet index-D5y4kGcT.css verified at 1280x720 and 390x844 with no horizontal overflow or browser warnings/errors."
+      "detail": "Post-release readback found no direct signing-key scope assignment, and a signing-key data-plane read failed with ForbiddenByRbac/assignment not found."
     },
     {
-      "name": "signed_in_six_area_uat",
-      "status": "pending",
-      "reason": "The in-app browser had no authenticated PatchForge session; no account login was performed."
+      "name": "signed_in_admin_health_uat",
+      "status": "pass",
+      "checks": 13,
+      "detail": "A signed-in PatchForge.Admin session displayed 13 health checks and all 13 passed."
     },
     {
-      "name": "fresh_signed_pack_and_report_exports",
-      "status": "pending",
-      "reason": "No fresh signed pack or Customer, Board, and CAB DOCX/PDF proof is claimed for this baseline."
+      "name": "signed_in_role_uat",
+      "status": "partial",
+      "reason": "Admin health was exercised, but role-by-role Reader, Analyst/Lead, CAB, and Auditor journeys were not evidenced in this session."
     },
     {
-      "name": "production_validation_data_cleanup",
-      "status": "pending_not_applicable",
-      "reason": "No signed-in production validation records were created during this rollout."
+      "name": "fresh_docx_report_integrity",
+      "status": "fail_closed",
+      "reason": "DOCX report generation stopped with signature_cryptographic_verification_failed; no report acceptance claim is permitted."
+    },
+    {
+      "name": "closeout_report_signature_fix",
+      "status": "pass_local_not_live",
+      "root_cause": "Azure enum labels KeyType.ec and KeyCurveName.p_256 required strict normalization to standards-form EC and P-256 before JWK verification.",
+      "cryptographic_compatibility": "Legacy supported labels are normalized, but every artifact still requires full ES256 verification.",
+      "fail_closed_cases": [
+        "unknown_key_alias",
+        "unsupported_curve",
+        "malformed_coordinates",
+        "wrong_public_key",
+        "tampered_signature",
+        "short_signature"
+      ],
+      "production_report_acceptance": "open"
+    },
+    {
+      "name": "ingestion_navigation",
+      "status": "implemented_tested_locally_live_uat_open",
+      "reason": "The live f51802d journey exposed the gap. Direct navigation is implemented and tested on the closeout branch but is not deployed or live-accepted."
+    },
+    {
+      "name": "verified_zip_ui",
+      "status": "implemented_tested_locally_live_uat_open",
+      "reason": "The live f51802d journey did not provide complete verified ZIP export. The closeout branch implements and tests it locally, but it is not deployed or live-accepted."
+    },
+    {
+      "name": "exact_id_uat_cleanup",
+      "status": "implemented_tested_locally_live_proof_open",
+      "reason": "Server issues a tenant-scoped expiring preview token bound to the SHA-256 digest of displayed exact record IDs; direct execution, cross-tenant use, record drift, and token reuse fail closed, and audit is retained. Production proof remains open."
+    },
+    {
+      "name": "repaired_iac_what_if",
+      "status": "pass_not_fully_determinate",
+      "resource_counts": {
+        "total": 43,
+        "destructive": 0,
+        "modify": 7,
+        "no_change": 20,
+        "ignore": 3,
+        "unsupported": 13
+      },
+      "semantic_results": {
+        "image_changes": 0,
+        "environment_removals": 0,
+        "scale_drift": 1,
+        "scale_drift_detail": "scheduler_min_replicas_0_to_1_required_for_in_process_timer",
+        "search_mode_removal": false,
+        "openai_agent_flag_removal": false,
+        "release_metadata_convergence_apps": 6,
+        "probe_additions": 12,
+        "probe_target_apps": 6
+      },
+      "detail": "The repaired closeout IaC has zero image changes and zero environment removals. Its only scale delta is scheduler minReplicas 0 to 1 because the in-process timer must stay running. Thirteen unsupported resources prevent a fully determinate apply decision."
+    },
+    {
+      "name": "full_bicep_apply",
+      "status": "not_performed_separate_exact_approval_required",
+      "reason": "The fresh What-If proposes release-metadata convergence on six apps and 12 probe additions while preserving image, scale, and search/OpenAI semantics. Unsupported results must be resolved or explicitly approved, and the exact closeout source/configuration delta needs a new protected approval before apply."
+    },
+    {
+      "name": "azure_release_metadata_environment_readback",
+      "status": "fail_drift_open",
+      "reason": "All six images use the July 14 tag, but the six apps still expose the July 11 image tag, source commit, product baseline, renderer commit, and report-context environment values."
+    },
+    {
+      "name": "customer_collector_acceptance",
+      "status": "pending_external_human_gate",
+      "reason": "Trusted code signing, clean customer-machine proof, and representative customer acceptance remain open."
+    },
+    {
+      "name": "legal_and_licensing_review",
+      "status": "pending_human_gate",
+      "reason": "The repository still has no root LICENSE or completed legal/licensing review."
     }
   ],
-  "previous_validated_release": {
-    "release": "PF-AZ10-SIMPLIFIED-EXPERIENCE",
-    "image_tag": "pfaz10-20260530-e728ec0",
-    "commit": "e728ec0",
-    "status": "azure_live_browser_validated"
-  },
   "boundary_checks": {
     "source_bound_advisory_intelligence": true,
     "human_review_required": true,
@@ -135,9 +219,12 @@
     "autonomous_cab_approval_absent": true,
     "autonomous_risk_acceptance_absent": true
   },
+  "evidence_path": "docs/release/evidence/2026-07-14-patchforge-enterprise-image-rollout/",
   "remaining_notes": [
-    "Signed-in six-area UAT and fresh signed report proof remain explicit human gates.",
-    "The Bicep desired-state model must be reconciled with the live PostgreSQL topology before a full template apply is safe.",
-    "The draft pull request is clean but remains unmerged."
+    "The image-only release succeeded; overall product acceptance remains partial.",
+    "Deploy and live-prove the strict EC/P-256 normalization fix before accepting report workflows.",
+    "Deploy and live-prove the closeout-branch ingestion navigation, verified ZIP, exact-ID cleanup, and remaining role journeys.",
+    "Resolve or explicitly approve the 13 unsupported What-If resources, then obtain exact approval for the six-app metadata convergence and 12 probe additions before full apply.",
+    "Trusted collector signing/customer UAT and legal/licensing review remain open."
   ]
 }

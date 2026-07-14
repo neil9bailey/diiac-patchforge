@@ -458,7 +458,8 @@ export function AskPatchForge({
   onOpenVendorCatalogue,
   onSelectCandidate,
   onRefreshCandidateCatalogue,
-  canWrite
+  canWrite,
+  canGeneratePacks
 }: {
   question: string;
   setQuestion: (value: string) => void;
@@ -478,6 +479,7 @@ export function AskPatchForge({
   onSelectCandidate: (candidate: Record<string, unknown>) => void;
   onRefreshCandidateCatalogue: (candidate: Record<string, unknown>) => void;
   canWrite: boolean;
+  canGeneratePacks: boolean;
 }) {
   const response = answer?.response;
   const candidateMatches = (answer?.candidate_matches || []).slice(0, 5);
@@ -522,6 +524,7 @@ export function AskPatchForge({
           hasPatchComparison={Boolean(latestComparison)}
           candidateCount={candidateMatches.length}
           canWrite={canWrite}
+          canGeneratePacks={canGeneratePacks}
           onOpenCustomerEstate={onOpenCustomerEstate}
           onOpenVendorCatalogue={onOpenVendorCatalogue}
           onPatchCompare={onPatchCompare}
@@ -590,6 +593,7 @@ function AskRunPlan({
   hasPatchComparison,
   candidateCount,
   canWrite,
+  canGeneratePacks,
   onOpenCustomerEstate,
   onOpenVendorCatalogue,
   onPatchCompare,
@@ -603,6 +607,7 @@ function AskRunPlan({
   hasPatchComparison: boolean;
   candidateCount: number;
   canWrite: boolean;
+  canGeneratePacks: boolean;
   onOpenCustomerEstate: () => void;
   onOpenVendorCatalogue: () => void;
   onPatchCompare: () => void;
@@ -649,7 +654,7 @@ function AskRunPlan({
       icon: FileCheck2,
       actionLabel: "Generate Signed Pack",
       onClick: onGenerateReportPack,
-      disabled: !canWrite || !selectedVulnerabilityId
+      disabled: !canGeneratePacks || !selectedVulnerabilityId
     },
     {
       title: "Run stakeholder reports",

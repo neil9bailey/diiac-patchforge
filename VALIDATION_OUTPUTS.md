@@ -1,3 +1,99 @@
+# PF-AZ-ENTERPRISE-AUTOMATION-20260714D Validation Outputs
+
+## Current Validation Position
+
+Date: 2026-07-14
+
+Status: **PARTIAL PASS**. The guarded image-only Azure rollout succeeded for source `f51802d3544260259c252e6be88d6e7bae596868` and tag `pfaz-enterprise-20260714d-f51802d`. Production still runs that exact image state. The closeout branch locally fixes/tests the Azure EC/P-256 enum-label report mismatch and implements/tests navigation, verified ZIP, exact-ID cleanup, and repaired IaC; none of those follow-ups is live. Overall acceptance remains partial because the production DOCX path failed closed and live report/UAT/IaC-apply/collector/legal gates remain open.
+
+Deployed `f51802d` candidate validation recorded before rollout — unchanged:
+
+- Python: PASS, 39/39
+- Backend API: PASS, 89/89
+- Frontend: PASS, 24/24
+- Playwright/axe: PASS, 2/2
+- Windows collector: PASS, 8/8 plus lifecycle validation
+- Container security: PASS, three unique images with zero high/critical findings
+
+Closeout-branch validation — separate local evidence, not deployed:
+
+- Python: PASS, 53/53
+- Backend API: PASS, 94/94
+- Frontend: PASS, 28/28
+- Playwright/axe: PASS, 2/2
+- Windows collector: PASS, 8/8
+- Frontend build/bundle: PASS; entry `270.20 kB`, total JavaScript `634.39/650 kB`
+- IaC: PASS
+
+Release authorization and provenance:
+
+- GitHub approval run `29345354677`, attempt `1`: PASS
+- Exact commit/tag/baseline/report-context authorization: PASS
+- Authorization SHA-256: `d5b7470d8f8b76eb0a152d1c805dc4964f30725b471a3474787ad3763a806007`
+- GitHub attestation verification: PASS
+- ACR exact-tag digest readback: PASS, six images
+- Six-image ES256 provenance manifest: PASS
+- Manifest SHA-256: `d9c8f265aaab5c7d10549f1730620a9681bb0b13ff10c8b870973f52c07b9615`
+- Post-release temporary signing-key access revocation: PASS
+
+Azure image rollout:
+
+| Component | Digest | Active/latest-ready revision |
+| --- | --- | --- |
+| UI | `sha256:88377ddcc4afe164ddb4206429b737f97935d8636f4f5f9ced0e09f8e7b1ff87` | `ca-patchforge-ui-prod--0000041` |
+| Bridge/API | `sha256:56a1b6b502594a5ebf18d0ab56467c2a2e2028fb4d0884d456542f864f3442bf` | `ca-patchforge-bridge-prod--0000040` |
+| Runtime | `sha256:2b608109548e4596a8ab5195a17c0ac581cdf2fe4e0ed09cd4d2b9ec8fdf93ca` | `ca-patchforge-runtime-prod--0000031` |
+| SRA | `sha256:44808c86c32816210d2086f173e77ff5b33bcf91c47fb578c2fb38c6f7fb994d` | `ca-patchforge-sra-prod--0000030` |
+| Worker | `sha256:f0585c19fabbf5ce9bc6d7dec01f7915ee342ab7e524df9384323da1b4f63ded` | `ca-patchforge-worker-prod--0000030` |
+| Scheduler | `sha256:11e58260e16c38636cfcc2804554ea58c4f3e954aa64a42b5075d60dba2af23f` | `ca-patchforge-scheduler-prod--0000030` |
+
+Release completion readback:
+
+- Six apps use the exact candidate image tag: PASS
+- Succeeded/Healthy/Provisioned/latest-ready alignment: PASS, six apps
+- Latest-revision traffic: PASS, 100% on six apps
+- UI HTTP 200: PASS
+- API health HTTP 200: PASS
+- API readiness HTTP 200 with PostgreSQL/auth/tenant readiness: PASS
+- Protected route unauthenticated HTTP 401: PASS
+
+Signed-in Admin UAT:
+
+- Microsoft Entra authenticated Admin session: PASS
+- Displayed role `PatchForge.Admin`: PASS
+- Admin health: PASS, 13/13 checks
+- DOCX report generation in live `f51802d`: FAIL CLOSED, `signature_cryptographic_verification_failed`
+- Root cause: Azure enum labels `KeyType.ec` / `KeyCurveName.p_256` were not normalized to standards-form `EC` / `P-256` before download verification
+- Closeout fix: PASS locally; explicit supported-label normalization followed by unchanged full ES256 verification
+- Negative cryptographic coverage: PASS locally for unknown aliases/curves, malformed coordinates, wrong keys, tampered signatures, and short signatures
+- Production report acceptance: OPEN; fixed closeout source is not deployed and no fresh live report is accepted
+- Ingestion navigation in live `f51802d`: OPEN GAP; closeout-branch fix implemented/tested locally, not live
+- Verified ZIP UI journey in live `f51802d`: OPEN GAP; closeout-branch path implemented/tested locally, not live
+- Production cleanup/absence proof: OPEN; local closeout cleanup uses a server-issued tenant-scoped expiring preview token plus SHA-256 exact-record-ID digest, displays exact IDs, retains audit, and fails closed on direct/cross-tenant/drift/reuse attempts
+- Other role journeys: NOT EVIDENCED in this session
+
+IaC/configuration disposition:
+
+- Full Bicep apply: NOT PERFORMED
+- Fresh repaired-IaC What-If: PASS across 43 resources — 0 destructive, 7 modify, 20 no-change, 3 ignore, and 13 unsupported
+- Determinacy: PARTIAL; 13 unsupported resources require explicit resolution or approval before apply
+- Semantic readback: 0 image changes, 0 environment removals, and one intentional scale delta — scheduler `minReplicas` `0→1` because its in-process timer must remain running
+- Intended changes: release-metadata convergence on six apps and 12 probe additions across six apps
+- Candidate images are current, but live release-metadata environment values still identify the July 11 baseline and commit; the current approval covered the image-only `f51802d` rollout, not the repaired-IaC apply
+- Apply gate: separate exact approval for the closeout-branch source and reviewed configuration delta
+
+Remaining human/external gates:
+
+- trusted Windows collector signing;
+- clean customer-machine and representative customer UAT;
+- legal/licensing review and root license decision.
+
+Sanitized evidence path:
+
+`docs/release/evidence/2026-07-14-patchforge-enterprise-image-rollout/`
+
+Boundary note: the successful image rollout does not add scanning, exploit generation, patch deployment, autonomous evidence approval, autonomous CAB approval, or autonomous risk acceptance, and it does not convert the partial UAT result into full product acceptance.
+
 # PF-AZ11-CUSTOMER-DEMO-MATURITY Validation Outputs
 
 ## Current PF-AZ11 Validation Position

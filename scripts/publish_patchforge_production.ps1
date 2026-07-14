@@ -457,7 +457,7 @@ function Assert-AppReady {
         if ($revision.image -cne $ExpectedImage) { $problems.Add("active revision image mismatch") }
         if ($revision.healthState -ne "Healthy") { $problems.Add("healthState=$($revision.healthState)") }
         if ($revision.provisioningState -ne "Provisioned") { $problems.Add("revision provisioningState=$($revision.provisioningState)") }
-        if (@("Running", "ScaledToZero") -notcontains $revision.runningState) { $problems.Add("runningState=$($revision.runningState)") }
+        if (@("Running", "RunningAtMaxScale", "ScaledToZero") -notcontains $revision.runningState) { $problems.Add("runningState=$($revision.runningState)") }
     }
 
     $traffic = @($state.traffic)
@@ -520,7 +520,7 @@ function Backup-CurrentImages {
             throw "Current image '$image' for '$($app.App)' is outside expected repository '$expectedPrefix'."
         }
         Write-Host "Backing up current image for $($app.App): $image"
-        Invoke-NativeStreaming -Command "docker" -Arguments @("pull", $image)
+        Invoke-NativeStreaming -Command "docker" -Arguments @("pull", $image) | Out-Host
         $repoDigestsResult = Invoke-NativeCapture -Command "docker" -Arguments @("image", "inspect", $image, "--format", "{{json .RepoDigests}}")
         $repoDigests = @()
         if (-not [string]::IsNullOrWhiteSpace($repoDigestsResult.StdOut)) {
@@ -530,7 +530,7 @@ function Backup-CurrentImages {
             throw "No repository digest was available for rollback image '$image'."
         }
         $archivePath = Join-Path $BackupDirectory "$($app.App).docker-image.tar"
-        Invoke-NativeStreaming -Command "docker" -Arguments @("save", "--output", $archivePath, $image)
+        Invoke-NativeStreaming -Command "docker" -Arguments @("save", "--output", $archivePath, $image) | Out-Host
         $archiveHash = Get-Sha256Record -Path $archivePath
         $records += [pscustomobject][ordered]@{
             app = $app.App
