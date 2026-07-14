@@ -6,14 +6,16 @@ DIIaC™ PatchForge
 
 ## Control Summary
 
+The current live controlled baseline is the `f51802d` six-image `PF-AZ-ENTERPRISE-AUTOMATION-20260714D` rollout. Overall release acceptance remains **partial**. The closeout branch locally fixes/tests report verification and implements/tests navigation, verified ZIP, server-issued tenant-scoped token cleanup, and repaired IaC; none is live. Its separate validation is Python 53/53, backend 94/94, frontend 28/28, Playwright/axe 2/2, collector 8/8, frontend build/bundle PASS, and IaC PASS; deployed `f51802d` totals remain unchanged. The What-If has 0 destructive, 0 image, and 0 environment-removal changes; its only scale delta is scheduler `min0→1`, required by the in-process timer. Thirteen unsupported resources keep it not fully determinate. Production report acceptance, live UAT, full apply under exact approval, collector/customer acceptance, and legal/licensing closure remain open.
+
 | Document | Owner | Status | Version | Date |
 | --- | --- | --- | --- | --- |
-| README.md | DIIaC | Active | 0.3.0 | 2026-05-30 |
-| CURRENT_RELEASE.md | DIIaC | Active | 2.0.0 | 2026-06-04 |
-| RELEASE_BASELINE_MANIFEST.json | DIIaC | Active | 2.0.0 | 2026-06-04 |
-| QUALITY_GATES_REPORT.json | DIIaC | Active | 1.4.0 | 2026-06-04 |
-| VALIDATION_OUTPUTS.md | DIIaC | Active | 1.5.0 | 2026-06-04 |
-| PATCHFORGE_OPEN_GAPS_REGISTER.md | DIIaC | Active | 1.4.0 | 2026-06-04 |
+| README.md | DIIaC | Active | 0.4.0 | 2026-07-14 |
+| CURRENT_RELEASE.md | DIIaC | Active | 3.0.0 | 2026-07-14 |
+| RELEASE_BASELINE_MANIFEST.json | DIIaC | Active | 3.0.0 | 2026-07-14 |
+| QUALITY_GATES_REPORT.json | DIIaC | Active | 2.0.0 | 2026-07-14 |
+| VALIDATION_OUTPUTS.md | DIIaC | Active | 2.0.0 | 2026-07-14 |
+| PATCHFORGE_OPEN_GAPS_REGISTER.md | DIIaC | Active | 2.0.0 | 2026-07-14 |
 | governance/adr/ADR-PF-AZ12-001-operational-intelligence-value.md | DIIaC | Approved | 0.1.0 | 2026-06-04 |
 | docs/features/VENDORLENS_NETWORK_VENDOR_INTELLIGENCE.md | DIIaC | Active | 0.1.0 | 2026-05-27 |
 | docs/product/VENDORLENS_PRODUCT_BOUNDARY.md | DIIaC | Active | 0.1.0 | 2026-05-27 |
@@ -91,12 +93,14 @@ DIIaC™ PatchForge
 | docs/demos/PATCHFORGE_CUSTOMER_DEMONSTRATION_RUNBOOK.md | DIIaC | Updated | 0.2.0 | 2026-05-26 |
 | docs/release/evidence/patchforge-customer-demonstration/README.md | DIIaC | Updated | 0.2.0 | 2026-05-26 |
 | docs/validation/PATCHFORGE_VALIDATION_PLAN.md | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
-| docs/validation/PATCHFORGE_READINESS_SUMMARY.md | DIIaC | Active | 0.4.0 | 2026-06-04 |
+| docs/validation/PATCHFORGE_READINESS_SUMMARY.md | DIIaC | Active | 1.0.0 | 2026-07-14 |
+| docs/validation/PATCHFORGE_14_AREA_IMPROVEMENT_CLOSURE_2026-07-14.md | DIIaC | Active | 1.0.0 | 2026-07-14 |
+| docs/validation/PATCHFORGE_AUTOMATION_AND_UI_READINESS_REVIEW_2026-07-11.md | DIIaC | Active | 1.1.0 | 2026-07-14 |
 | .github/workflows/ci.yml | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | .dockerignore | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
 | requirements-dev.txt | DIIaC | Updated | 0.2.0 | 2026-05-26 |
 | requirements-runtime.txt | DIIaC | Baseline | 0.1.0 | 2026-05-26 |
-| docs/deployment/PATCHFORGE_DEPLOYMENT_READINESS.md | DIIaC | Updated | 0.6.0 | 2026-05-26 |
+| docs/deployment/PATCHFORGE_DEPLOYMENT_READINESS.md | DIIaC | Updated | 1.0.0 | 2026-07-14 |
 | docs/deployment/PATCHFORGE_AZURE_ACCESS_CHECKLIST.md | DIIaC | Updated | 0.2.0 | 2026-05-26 |
 | docs/deployment/PATCHFORGE_DIIAC_TENANT_REFERENCE.md | DIIaC | Active | 0.1.0 | 2026-05-26 |
 | docs/deployment/PATCHFORGE_DNS_CUTOVER_CHECKLIST.md | DIIaC | Updated | 0.5.0 | 2026-05-26 |
@@ -113,6 +117,7 @@ DIIaC™ PatchForge
 | docs/release/evidence/2026-05-26-patchforge-production-hardening/*.json | DIIaC | Evidence | 0.1.0 | 2026-05-26 |
 | docs/release/evidence/2026-05-26-patchforge-live-product/README.md | DIIaC | Evidence | 0.1.0 | 2026-05-26 |
 | docs/release/evidence/2026-05-26-patchforge-live-product/*.json | DIIaC | Evidence | 0.1.0 | 2026-05-26 |
+| docs/release/evidence/2026-07-14-patchforge-enterprise-image-rollout/** | DIIaC | Evidence | 0.1.0 | 2026-07-14 |
 | docs/release/evidence/2026-05-26-patchforge-pfaz5-intelligence-rollout/README.md | DIIaC | Evidence | 0.1.0 | 2026-05-26 |
 | docs/release/evidence/2026-05-26-patchforge-pfaz5-intelligence-rollout/** | DIIaC | Evidence | 0.1.0 | 2026-05-26 |
 | docs/release/PF_AZ5_RELEASE_BASELINE_MANIFEST.json | DIIaC | Active | 0.1.0 | 2026-05-26 |

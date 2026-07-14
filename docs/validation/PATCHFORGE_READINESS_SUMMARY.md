@@ -4,12 +4,14 @@ Date: 2026-07-14
 
 ## Current Decision
 
-PatchForge has a materially hardened local implementation candidate for the 14 requested improvement areas, but the candidate is **not yet evidenced as the current production release**.
+PatchForge now runs the approved `PF-AZ-ENTERPRISE-AUTOMATION-20260714D` six-image set in Azure, but overall acceptance is **partial**.
 
-- Areas 4-13 have implementation and local validation evidence in the working candidate.
-- Areas 1-3 remain signed-in production UAT, fresh report/artifact proof, and UAT-record cleanup gates.
-- Area 14 remains the clean Git/GitHub and approved Azure release gate.
-- The Windows collector implementation includes lifecycle and fail-closed package controls, but trusted PatchForge code signing and representative customer-machine acceptance remain human/external gates.
+- Area 14 passed for the guarded image-only rollout: approval run `29345354677`, attestation verification, six ACR digests, signed provenance, six healthy/latest-ready revisions, public smoke, and post-release signing-access revocation are evidenced.
+- Area 1 is partial: signed-in `PatchForge.Admin` access and 13/13 Admin health checks passed, but other role journeys were not evidenced.
+- Area 2 is fixed/tested locally but blocked in production: `KeyType.ec` / `KeyCurveName.p_256` are now strictly normalized to `EC` / `P-256` before full ES256 verification. Invalid aliases/curves, malformed coordinates, wrong keys, and tampered/short signatures fail. The fix and verified ZIP are not live-accepted.
+- Area 3 is local-only: cleanup uses a server-issued tenant-scoped expiring preview token bound to a SHA-256 digest of exact displayed record IDs; direct/cross-tenant/drift/reuse attempts fail closed and audit is retained. Production proof is open.
+- Area 4 remains open: What-If has 0 destructive/image/environment-removal changes; scheduler-only `min0→1` is intentional for its in-process timer. Thirteen unsupported resources prevent a fully determinate apply.
+- Trusted Windows collector signing, clean customer-machine UAT, representative customer acceptance, and legal/licensing review remain human/external gates.
 
 The authoritative per-area state and stop conditions are in the [14-Area Improvement Closure Matrix](PATCHFORGE_14_AREA_IMPROVEMENT_CLOSURE_2026-07-14.md).
 
@@ -30,43 +32,50 @@ The local candidate adds or strengthens:
 - keyboard, focus, mobile, responsive-table, live-region, explicit pack-selection, and partial-load recovery behavior;
 - updated operator, automation, release-readiness, and closure guidance.
 
-These are implementation statements, not live deployment claims.
+Separate closeout-branch validation passed locally: Python 53/53, backend 94/94, frontend 28/28, Playwright/axe 2/2, collector 8/8, frontend build/bundle PASS (`270.20 kB` entry; `634.39/650 kB` total), and IaC PASS. These results do not replace the deployed `f51802d` candidate totals.
+
+These implementation statements span two states: the live `f51802d` image-only rollout and subsequent closeout-branch changes that are locally implemented/tested but not live. They do not imply that the repaired IaC or every user workflow is production-accepted.
 
 ## Current Production Boundary
 
-The production service remains at the baseline recorded in the root release records until Area 14 succeeds and those records are refreshed from evidence:
+The live image set is attributable to source `f51802d3544260259c252e6be88d6e7bae596868` and tag `pfaz-enterprise-20260714d-f51802d`. The root release records contain the safe digest, revision, approval, provenance, and smoke evidence. Navigation, verified ZIP, exact-ID cleanup, and repaired IaC in the current closeout branch are not included in that live state.
 
-- `CURRENT_RELEASE.md`
-- `DOCUMENT_CONTROL.md`
-- `RELEASE_BASELINE_MANIFEST.json`
-- `QUALITY_GATES_REPORT.json`
-- `VALIDATION_OUTPUTS.md`
+The full desired-state contract is not live:
 
-Do not copy candidate commit, image tag, digest, revision, test count, or report-pack values into those files before the values exist and are read back from their authoritative systems.
+- all six apps retain the deliberate live scale posture `minReplicas=0`, `maxReplicas=1`;
+- live container probe arrays are absent;
+- the images use the July 14 tag, while release-metadata environment variables still report the July 11 tag, commit, baseline, and report context;
+- repaired closeout IaC has 0 image and 0 environment-removal changes; scheduler-only `min0→1` is intentional;
+- its 43-resource What-If reports 7 modify, 20 no-change, 3 ignore, 13 unsupported, and 0 destructive changes, with metadata convergence on six apps and 12 probe additions across six apps.
+
+Treat the current release as an image-only deployment. The 13 unsupported results leave the repaired plan not fully determinate; no full apply is authorized until they are resolved or explicitly approved and an exact closeout-source/configuration approval is issued.
 
 ## Remaining Closure Sequence
 
-1. Create a clean immutable commit without the raw June evidence directories.
-2. Push and require all GitHub CI/security/provenance checks to pass.
-3. Enforce main-branch protection and merge the reviewed candidate; the production environment reviewer is already configured.
-4. Obtain accountable approval for the exact commit, image tag, product baseline, and report context.
-5. Preserve local rollback images, publish immutable images, and record ACR digests/signatures.
-6. Apply the separately reviewed IaC changes and prove all six Container Apps healthy/latest-ready with the intended traffic, probes, scale, and metadata.
-7. Complete signed-in production role UAT.
-8. Generate, verify, render, and inspect fresh ZIP/DOCX/PDF outputs from an explicitly selected pack.
-9. Preview and remove only prefixed UAT records, then prove they are absent while audit evidence remains.
-10. Refresh the root release records and push the final closure evidence.
+1. Attribute and deploy the strict EC/P-256 normalization fix without weakening verification or bypassing the explicit selected-pack requirement.
+2. Repeat the live DOCX flow and complete exact-byte ZIP/DOCX/PDF verification plus visual report inspection.
+3. Attribute the closeout branch to a clean release source and obtain exact approval before deployment.
+4. Deploy the navigation, verified-ZIP, and exact-ID cleanup changes, then complete signed-in production proof and role-by-role UAT beyond Admin health.
+5. Preview and remove only the intended exact-ID UAT records, then prove absence while audit evidence remains.
+6. Resolve or individually approve the 13 unsupported What-If resources and review the seven intended modifications.
+7. Under a separate exact approval, apply the reviewed release-metadata and probe changes, then prove six-app metadata/readiness convergence.
+8. Obtain trusted collector signing, clean customer-machine proof, representative customer acceptance, and accountable legal/licensing review.
+9. Refresh the closure records again only after those gates pass.
 
 ## Hard Gates Still Open
 
 | Gate | Status | Required proof |
 | --- | --- | --- |
-| Combined local validation | Passed | Python 39/39; backend 89/89; frontend 24/24; Playwright/axe 2/2; collector 8/8 plus Windows lifecycle; Bicep/YAML/PowerShell; dependency audits; three image builds and zero high/critical findings |
-| Remote GitHub checks and protections | Partially configured; push pending | Production reviewer, secret scanning, push protection, Dependabot alerts/fixes are configured; green checks, SBOMs/attestations, main protection, and merge remain pending |
-| Azure rollout | What-if reviewed; approval/apply pending | Seven modifications only (six apps and one managed-environment expression delta), no create/delete/replace, PostgreSQL ignored; rollback evidence, ACR digests/signature, apply, and revision readback remain pending |
-| Signed-in UAT | Pending human session | Role-by-role permitted/denied action evidence through the six-area UI |
-| Fresh report proof | Pending | Verified pack, ZIP/DOCX/PDF exact bytes, digest checks, and visual render inspection |
-| UAT cleanup | Pending after UAT | Preview, typed confirmation, removal result, absence proof, and retained audit history |
+| Deployed `f51802d` candidate validation | Passed, unchanged | Python 39/39; backend 89/89; frontend 24/24; Playwright/axe 2/2; collector 8/8 plus Windows lifecycle; Bicep/YAML/PowerShell; dependency audits; three image builds and zero high/critical findings |
+| Closeout-branch validation | Passed locally; not live | Python 53/53; backend 94/94; frontend 28/28; Playwright/axe 2/2; collector 8/8; frontend build/bundle PASS at 270.20 kB entry and 634.39/650 kB total; IaC PASS |
+| Remote approval and provenance | Passed for image rollout | Approval run `29345354677`; attestation and authorization checksum verified; six-image ES256 manifest verified |
+| Azure image rollout | Passed | Six exact-tag digests and six healthy/latest-ready revisions at 100% latest-revision traffic; public smoke passed |
+| Repaired IaC What-If | Passed, not fully determinate | 43 resources: 0 destructive, 7 modify, 20 no-change, 3 ignore, 13 unsupported; 0 image changes; 0 environment removals; six-app metadata and 12 probes; scheduler-only intentional `min0→1` scale delta |
+| Full IaC/configuration apply | Not performed; separate exact approval required | Resolve/approve unsupported results, bind approval to exact closeout source and delta, apply, then prove metadata/probe readiness |
+| Signed-in UAT | Partial | Admin sign-in and 13/13 health checks passed; remaining roles and full operator journeys still require evidence |
+| Fresh report proof | Local fix passed; production open | Deploy strict EC/P-256 normalization, then verify selected-pack ZIP/DOCX/PDF exact bytes and visually inspect reports |
+| Ingestion and verified-ZIP UI | Implemented/tested locally; live proof open | Deploy the closeout source, then capture repeatable signed-in journeys and durable output evidence |
+| Exact-ID UAT cleanup | Implemented/tested locally; live proof open | Deploy, preview one exact identifier, use typed confirmation, prove record-ID removal and absence, and retain audit history |
 | Customer collector acceptance | Pending external/human gate | Trusted signature, clean Windows install, least-privilege auth, offline/retry recovery, revoke/uninstall, and representative customer acceptance |
 
 ## Product Boundary

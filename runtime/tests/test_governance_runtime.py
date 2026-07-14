@@ -1,6 +1,8 @@
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
+from azure.keyvault.keys import KeyCurveName, KeyType
 
 from runtime.governance_runtime import (
     GovernanceRuntimeError,
@@ -13,6 +15,8 @@ from runtime.governance_runtime import (
     sha256_bytes,
     verify_pack_locally,
     verify_signed_export_manifest,
+    _public_jwk_from_key_vault_key,
+    _verify_es256_signature,
 )
 from runtime.bayesian_patch_risk import assess_patch_risk, propose_prior_update
 
@@ -40,6 +44,47 @@ def accepted(ref, evidence_class, source_class="human_review"):
         "review_state": "reviewed",
         "evidence_state": "accepted_positive_evidence",
     }
+
+
+@pytest.mark.parametrize("key_type", [KeyType.ec, KeyType.ec_hsm])
+def test_key_vault_enum_public_jwk_uses_standards_labels(key_type):
+    key = SimpleNamespace(key=SimpleNamespace(
+        kty=key_type,
+        crv=KeyCurveName.p_256,
+        x=bytes(range(32)),
+        y=bytes(reversed(range(32))),
+    ))
+
+    public_jwk = _public_jwk_from_key_vault_key(key)
+
+    assert str(key_type).startswith("KeyType.")
+    assert str(KeyCurveName.p_256) == "KeyCurveName.p_256"
+    assert public_jwk["kty"] == "EC"
+    assert public_jwk["crv"] == "P-256"
+
+
+def test_key_vault_public_jwk_rejects_non_es256_curve():
+    key = SimpleNamespace(key=SimpleNamespace(
+        kty=KeyType.ec,
+        crv=KeyCurveName.p_384,
+        x=bytes(range(32)),
+        y=bytes(reversed(range(32))),
+    ))
+
+    with pytest.raises(GovernanceRuntimeError, match="P-256"):
+        _public_jwk_from_key_vault_key(key)
+
+
+def test_key_vault_public_jwk_rejects_malformed_coordinate_length():
+    key = SimpleNamespace(key=SimpleNamespace(
+        kty=KeyType.ec,
+        crv=KeyCurveName.p_256,
+        x=b"x" * 31,
+        y=b"y" * 32,
+    ))
+
+    with pytest.raises(GovernanceRuntimeError, match="32 bytes"):
+        _public_jwk_from_key_vault_key(key)
 
 
 def test_rejected_evidence_does_not_close_blockers():
@@ -401,6 +446,58 @@ def test_generate_and_verify_es256_signed_decision_pack(tmp_path: Path):
     assert result["verification"]["verified"] is True
     sigmeta = (Path(result["pack_dir"]) / "signed_export.sigmeta.json").read_text(encoding="utf-8")
     assert "azure_key_vault" in sigmeta
+
+
+def test_es256_runtime_verifier_matches_strict_download_contract():
+    from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.primitives.asymmetric import ec, utils
+
+    private_key = ec.generate_private_key(ec.SECP256R1())
+    public_numbers = private_key.public_key().public_numbers()
+    signed_payload = {"manifest_id": "PF-EXPORT-strict", "manifest_sha256": "a" * 64}
+    payload = canonical_json(signed_payload)
+    der_signature = private_key.sign(payload, ec.ECDSA(hashes.SHA256()))
+    r, s = utils.decode_dss_signature(der_signature)
+    signature = base64url(r.to_bytes(32, "big") + s.to_bytes(32, "big"))
+    standards_jwk = {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": base64url(public_numbers.x.to_bytes(32, "big")),
+        "y": base64url(public_numbers.y.to_bytes(32, "big")),
+    }
+
+    def metadata(public_jwk, encoding="base64url_raw_ecdsa"):
+        return {
+            "algorithm": "ES256",
+            "signature_encoding": encoding,
+            "signed_payload": signed_payload,
+            "public_jwk": public_jwk,
+        }
+
+    assert _verify_es256_signature(metadata(standards_jwk), signature, payload)
+    assert _verify_es256_signature(metadata({
+        **standards_jwk,
+        "kty": "KeyType.ec_hsm",
+        "crv": "KeyCurveName.p_256",
+    }), signature, payload)
+
+    invalid_metadata = [
+        metadata({**standards_jwk, "kty": "RSA"}),
+        metadata({**standards_jwk, "crv": "P-384"}),
+        metadata({**standards_jwk, "x": base64url(b"x" * 31)}),
+        metadata({**standards_jwk, "x": f"{standards_jwk['x']}!!"}),
+        metadata(standards_jwk, "base64url_der_ecdsa"),
+    ]
+    assert all(not _verify_es256_signature(item, signature, payload) for item in invalid_metadata)
+    wrong_numbers = ec.generate_private_key(ec.SECP256R1()).public_key().public_numbers()
+    wrong_jwk = {
+        **standards_jwk,
+        "x": base64url(wrong_numbers.x.to_bytes(32, "big")),
+        "y": base64url(wrong_numbers.y.to_bytes(32, "big")),
+    }
+    assert not _verify_es256_signature(metadata(wrong_jwk), signature, payload)
+    assert not _verify_es256_signature(metadata(standards_jwk), f"{signature}!!", payload)
+    assert not _verify_es256_signature(metadata(standards_jwk), base64url(der_signature), payload)
 
 
 def test_forbidden_boundary_keys_are_rejected(tmp_path: Path):

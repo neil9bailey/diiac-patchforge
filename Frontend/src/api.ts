@@ -767,6 +767,28 @@ export type AdminPurgePlan = {
   boundary?: Record<string, unknown>;
 };
 
+export type AdminUatCleanupPlan = {
+  tenant_id: string;
+  identifier: string;
+  dry_run: boolean;
+  selection_mode: "exact_identifier_value";
+  scanned_collections: string[];
+  collections: string[];
+  counts: Record<string, number>;
+  record_ids: Record<string, string[]>;
+  total_records: number;
+  removed?: Record<string, number>;
+  total_removed?: number;
+  required_confirmation: string;
+  preview_token?: string;
+  preview_digest?: string;
+  preview_expires_at?: string;
+  preview_id?: string;
+  audit_id?: string;
+  storage_mutation_executed?: boolean;
+  boundary?: Record<string, unknown>;
+};
+
 export type AdminConfig = Record<string, unknown>;
 
 export type PatchForgeApi = {
@@ -792,6 +814,7 @@ export type PatchForgeApi = {
   listDecisionPacks(tenantId: string): Promise<DecisionPackRecord[]>;
   generateDecisionPack(tenantId: string, payload: Record<string, unknown>): Promise<DecisionPackRecord>;
   exportDecisionPack(tenantId: string, packId: string): Promise<Record<string, unknown>>;
+  downloadDecisionPackZip(tenantId: string, packId: string): Promise<Blob>;
   reportCatalog(tenantId: string): Promise<ReportCatalogItem[]>;
   downloadDecisionPackReport(tenantId: string, packId: string, reportType: string, format: "docx" | "pdf"): Promise<Blob>;
   assessBayesianRisk(tenantId: string, payload: Record<string, unknown>): Promise<BayesianAssessment>;
@@ -825,6 +848,7 @@ export type PatchForgeApi = {
   sraResearch(tenantId: string, path: string, payload: Record<string, unknown>): Promise<Record<string, unknown>>;
   adminHealth(tenantId: string): Promise<AdminHealth>;
   adminPurge(tenantId: string, payload: Record<string, unknown>): Promise<AdminPurgePlan>;
+  adminUatCleanup(tenantId: string, payload: Record<string, unknown>): Promise<AdminUatCleanupPlan>;
   adminConfig(tenantId: string): Promise<AdminConfig>;
   saveAdminConfig(tenantId: string, payload: AdminConfig): Promise<AdminConfig>;
 };
@@ -1020,6 +1044,9 @@ export function createPatchForgeApi(getAccessToken: () => Promise<string>, confi
     async exportDecisionPack(tenantId, packId) {
       return request<Record<string, unknown>>(`/api/patchforge/decision-packs/${encodeURIComponent(packId)}/export`, tenantId);
     },
+    async downloadDecisionPackZip(tenantId, packId) {
+      return requestBlob(`/api/patchforge/decision-packs/${encodeURIComponent(packId)}/export.zip`, tenantId);
+    },
     async reportCatalog(tenantId) {
       const body = await request<{ reports: ReportCatalogItem[] }>("/api/patchforge/reports/catalog", tenantId);
       return body.reports || [];
@@ -1200,6 +1227,13 @@ export function createPatchForgeApi(getAccessToken: () => Promise<string>, confi
         body: JSON.stringify(payload)
       });
       return body.purge;
+    },
+    async adminUatCleanup(tenantId, payload) {
+      const body = await request<{ cleanup: AdminUatCleanupPlan }>("/api/patchforge/admin/uat-cleanup", tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return body.cleanup;
     },
     async adminConfig(tenantId) {
       const body = await request<{ config: AdminConfig }>("/api/patchforge/admin/config", tenantId);

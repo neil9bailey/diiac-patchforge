@@ -1,26 +1,54 @@
 {
   "product": "DIIaC PatchForge",
-  "baseline_id": "PF-AZ-MODERN-UI-20260711",
-  "baseline_name": "Modern enterprise user experience and governed automation readiness",
-  "baseline_date": "2026-07-11",
+  "baseline_id": "PF-AZ-ENTERPRISE-AUTOMATION-20260714D",
+  "baseline_name": "Enterprise automation image rollout with partial signed-in acceptance",
+  "baseline_date": "2026-07-14",
   "target_url": "https://patchforge.diiac.io",
   "api_url": "https://api.patchforge.diiac.io",
   "remote_target": "neil9bailey/diiac-patchforge",
-  "branch": "codex/patchforge-rebuild-20260601",
-  "draft_pull_request": "https://github.com/neil9bailey/diiac-patchforge/pull/2",
-  "source_commit": "907995fdf1ea290a7e551463e461af8a884cf44c",
-  "release_state": "azure_public_and_responsive_shell_validated_signed_in_uat_pending",
+  "release_branch": "codex/patchforge-publisher-evidence-fix-20260714",
+  "source_commit": "f51802d3544260259c252e6be88d6e7bae596868",
+  "release_state": "azure_image_rollout_succeeded_overall_acceptance_partial",
+  "state_boundary": {
+    "live_release_source_commit": "f51802d3544260259c252e6be88d6e7bae596868",
+    "live_release_scope": "six_container_app_images_only",
+    "closeout_branch": "codex/patchforge-release-closeout-20260714",
+    "closeout_branch_changes_live": false
+  },
   "deployment_performed": true,
-  "deployment_method": "targeted_container_app_image_and_release_metadata_update",
+  "deployment_method": "guarded_targeted_container_app_image_only_update",
   "full_bicep_apply_performed": false,
   "full_bicep_apply_disposition": {
-    "status": "blocked_due_to_live_topology_drift_risk",
-    "what_if": {
-      "modify": 18,
-      "no_change": 9,
-      "unsupported": 13,
-      "ignore": 3
-    }
+    "status": "not_performed_separate_exact_approval_required",
+    "reasons": [
+      "the current production approval covered the f51802d image-only rollout, not the repaired closeout IaC",
+      "13 unsupported What-If resources leave the plan not fully determinate",
+      "the intended six-app release-metadata convergence and 12 probe additions require exact approval and post-apply readback"
+    ]
+  },
+  "fresh_repaired_iac_what_if": {
+    "status": "succeeded_not_fully_determinate",
+    "resource_counts": {
+      "total": 43,
+      "destructive": 0,
+      "modify": 7,
+      "no_change": 20,
+      "ignore": 3,
+      "unsupported": 13
+    },
+    "semantic_results": {
+      "image_changes": 0,
+      "environment_removals": 0,
+      "scale_drift": 1,
+      "scale_drift_detail": "scheduler_min_replicas_0_to_1_required_for_in_process_timer",
+      "search_mode_removal": false,
+      "openai_agent_flag_removal": false,
+      "release_metadata_convergence_apps": 6,
+      "probe_additions": 12,
+      "probe_target_apps": 6
+    },
+    "full_apply_performed": false,
+    "approval_required": "new_exact_closeout_source_and_configuration_approval"
   },
   "uses_existing_azure_resources": true,
   "new_azure_resources_created_in_this_increment": false,
@@ -29,65 +57,104 @@
   "storage_state": "postgresql_live",
   "auth_state": "entra_rbac_required",
   "signing_state": "azure_key_vault_required_for_production_runtime",
-  "current_image_tag": "pfaz-modern-ui-20260711-907995f",
-  "report_context_version": "patchforge-report-context.pfaz-modern-ui-20260711.v1",
+  "current_image_tag": "pfaz-enterprise-20260714d-f51802d",
+  "report_context_version": "patchforge-report-context.pfaz-enterprise-20260714d.v1",
+  "approval": {
+    "run_id": "29345354677",
+    "run_attempt": "1",
+    "approved_ref": "refs/heads/main",
+    "explicit_environment_approval": true,
+    "authorization_sha256": "d5b7470d8f8b76eb0a152d1c805dc4964f30725b471a3474787ad3763a806007",
+    "attestation_verified": true
+  },
+  "provenance": {
+    "manifest_sha256": "d9c8f265aaab5c7d10549f1730620a9681bb0b13ff10c8b870973f52c07b9615",
+    "algorithm": "ES256",
+    "key_id": "https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod/2e348fdeaaaf448ebba206130ef86b52",
+    "verified": true
+  },
   "image_digests": {
-    "frontend": "sha256:50feacc4163fd54dc53218434108f598cec0d06780898c7cf078a86df6d15f49",
-    "bridge_api": "sha256:e0db40d5ccaaaff797142d74ada7053f5ba0c773f4b148a41d5f12a7e81105fb",
-    "runtime": "sha256:81a0c2bf505427583225000abb9f15cb64ffc4f4215c47bce911a509bdee0e3d",
-    "sra": "sha256:8c0f5db8b1144279ee54504354adf77dbdcec363848c0efb6c22fb24c0deafc7",
-    "worker": "sha256:2a9ef9a9ce8abdc87f577c78dda287b31430c448e1e152b067e5ad77e038a33d",
-    "scheduler": "sha256:88bd431c55e4fe1e4b5689ce904cce7fbf9f3b82dceac31ed6de5978a8336c22"
+    "frontend": "sha256:88377ddcc4afe164ddb4206429b737f97935d8636f4f5f9ced0e09f8e7b1ff87",
+    "bridge_api": "sha256:56a1b6b502594a5ebf18d0ab56467c2a2e2028fb4d0884d456542f864f3442bf",
+    "runtime": "sha256:2b608109548e4596a8ab5195a17c0ac581cdf2fe4e0ed09cd4d2b9ec8fdf93ca",
+    "sra": "sha256:44808c86c32816210d2086f173e77ff5b33bcf91c47fb578c2fb38c6f7fb994d",
+    "worker": "sha256:f0585c19fabbf5ce9bc6d7dec01f7915ee342ab7e524df9384323da1b4f63ded",
+    "scheduler": "sha256:11e58260e16c38636cfcc2804554ea58c4f3e954aa64a42b5075d60dba2af23f"
   },
   "current_active_revisions": {
-    "ui": "ca-patchforge-ui-prod--0000040",
-    "bridge_api": "ca-patchforge-bridge-prod--0000039",
-    "runtime": "ca-patchforge-runtime-prod--0000030",
-    "sra": "ca-patchforge-sra-prod--0000029",
-    "worker": "ca-patchforge-worker-prod--0000029",
-    "scheduler": "ca-patchforge-scheduler-prod--0000029"
+    "ui": "ca-patchforge-ui-prod--0000041",
+    "bridge_api": "ca-patchforge-bridge-prod--0000040",
+    "runtime": "ca-patchforge-runtime-prod--0000031",
+    "sra": "ca-patchforge-sra-prod--0000030",
+    "worker": "ca-patchforge-worker-prod--0000030",
+    "scheduler": "ca-patchforge-scheduler-prod--0000030"
   },
-  "scope": [
-    "modern enterprise shell with clear navigation, status, command, and account context",
-    "responsive signed-out and signed-in workspace behavior",
-    "Patch and CVE catalogue with evidence-led intelligence",
-    "vendor catalogue and customer estate workflows",
-    "Ask PatchForge governed advisory workflow",
-    "reports and signed action-pack workflows",
-    "admin operational intelligence and safe diagnostics",
-    "fail-closed build, image, deployment, and rollback workflow hardening"
-  ],
-  "top_level_navigation": [
-    "Patch & CVE Catalogue",
-    "Vendor Catalogue",
-    "Customer Estate",
-    "Ask PatchForge",
-    "Reports",
-    "Admin"
-  ],
   "current_validation": {
-    "python_tests": "pass_30",
-    "backend_tests": "pass_62",
-    "frontend_tests": "pass_20",
-    "windows_collector_tests": "pass_5",
-    "frontend_build": "pass_vite_595_65_kb_chunk_advisory_only",
-    "github_checks": "pass_8",
+    "candidate_python_tests": "pass_39_of_39",
+    "candidate_backend_tests": "pass_89_of_89",
+    "candidate_frontend_tests": "pass_24_of_24",
+    "candidate_playwright_axe": "pass_2_of_2",
+    "candidate_windows_collector_tests": "pass_8_of_8_plus_lifecycle",
+    "container_security": "pass_three_images_zero_high_or_critical",
+    "github_release_approval_attestation": "pass",
     "acr_image_digest_verification": "pass_6",
+    "six_image_manifest_signature": "pass",
     "container_app_revision_readback": "pass_6",
-    "container_app_release_metadata_readback": "pass_6",
     "ui_http_200": "pass",
     "api_health_http_200": "pass",
     "api_readiness_http_200_postgresql_auth_tenant": "pass",
     "protected_route_unauthenticated_401": "pass",
-    "live_signed_out_browser_desktop": "pass_1280x720",
-    "live_signed_out_browser_mobile": "pass_390x844_no_horizontal_overflow",
-    "browser_console_warnings_errors": "pass_none",
-    "signed_in_six_area_uat": "pending_not_claimed",
-    "fresh_signed_pack_generation": "pending_not_claimed",
-    "fresh_docx_pdf_report_review": "pending_not_claimed",
-    "production_validation_record_cleanup": "pending_not_applicable_until_uat_records_exist"
+    "signed_in_admin_health": "pass_13_of_13",
+    "signed_in_role_uat": "partial_admin_only",
+    "fresh_docx_report": "fail_closed_signature_cryptographic_verification_failed",
+    "verified_zip_ui": "implemented_tested_locally_live_uat_open",
+    "ingestion_navigation": "implemented_tested_locally_live_uat_open",
+    "exact_id_uat_cleanup": "implemented_tested_locally_live_proof_open",
+    "temporary_signing_rbac_revocation": "pass"
   },
-  "release_metadata_readback": {
+  "closeout_branch_validation": {
+    "scope": "local_not_deployed_does_not_replace_f518_candidate_totals",
+    "python": "pass_53_of_53",
+    "backend_api": "pass_94_of_94",
+    "frontend": "pass_28_of_28",
+    "playwright_axe": "pass_2_of_2",
+    "windows_collector": "pass_8_of_8",
+    "frontend_build": "pass",
+    "frontend_entry_kb": 270.20,
+    "frontend_total_javascript_kb": 634.39,
+    "frontend_total_budget_kb": 650,
+    "iac": "pass"
+  },
+  "closeout_branch_local_state": {
+    "branch": "codex/patchforge-release-closeout-20260714",
+    "production_deployment_performed": false,
+    "ingestion_navigation": "implemented_and_tested_locally",
+    "verified_zip_ui": "implemented_and_tested_locally",
+    "exact_id_uat_cleanup": {
+      "status": "implemented_and_tested_locally_not_live",
+      "preview_token": "server_issued_tenant_scoped_expiring",
+      "record_binding": "sha256_digest_of_displayed_exact_record_ids",
+      "fail_closed": ["direct_execution", "cross_tenant_use", "record_set_drift", "token_reuse"],
+      "audit_retained": true
+    },
+    "report_signature_fix": {
+      "status": "implemented_and_tested_locally_not_live",
+      "root_cause": "Azure KeyType.ec and KeyCurveName.p_256 labels required strict standards normalization.",
+      "normalization": "supported labels only to EC and P-256 before full ES256 verification",
+      "production_report_acceptance": "open"
+    },
+    "repaired_iac": "what_if_succeeded_not_fully_determinate"
+  },
+  "desired_release_metadata": {
+    "image_tag": "pfaz-enterprise-20260714d-f51802d",
+    "container_image_tag": "pfaz-enterprise-20260714d-f51802d",
+    "commit_sha": "f51802d3544260259c252e6be88d6e7bae596868",
+    "renderer_commit": "f51802d3544260259c252e6be88d6e7bae596868",
+    "product_baseline": "PF-AZ-ENTERPRISE-AUTOMATION-20260714D",
+    "report_context_version": "patchforge-report-context.pfaz-enterprise-20260714d.v1"
+  },
+  "live_environment_release_metadata": {
+    "status": "drift_open",
     "image_tag": "pfaz-modern-ui-20260711-907995f",
     "container_image_tag": "pfaz-modern-ui-20260711-907995f",
     "commit_sha": "907995fdf1ea290a7e551463e461af8a884cf44c",
@@ -95,39 +162,60 @@
     "product_baseline": "PF-AZ-MODERN-UI-20260711",
     "report_context_version": "patchforge-report-context.pfaz-modern-ui-20260711.v1"
   },
+  "live_configuration_posture": {
+    "min_replicas_all_apps": 0,
+    "max_replicas_all_apps": 1,
+    "container_probes_present": false,
+    "active_revisions_mode": "Single",
+    "latest_revision_traffic_weight": 100
+  },
+  "scope": [
+    "enterprise automation, evidence, report, UI, collector, and release improvements represented by source f51802d",
+    "guarded exact-tag publication of six immutable images",
+    "signed six-image provenance and accountable GitHub production authorization",
+    "targeted image-only rollout preserving the existing live configuration",
+    "public health/readiness smoke and signed-in Admin health UAT"
+  ],
   "evidence_paths": [
-    "docs/release/evidence/2026-07-11-patchforge-modern-ui/"
+    "docs/release/evidence/2026-07-14-patchforge-enterprise-image-rollout/"
   ],
   "known_blockers": [
     {
-      "id": "iac_live_state_reconciliation",
-      "status": "open",
-      "detail": "The full Bicep desired-state model must be reconciled with the live PostgreSQL topology before a broad template apply is safe."
+      "id": "report_signature_verification",
+      "status": "blocking",
+      "detail": "Live DOCX generation failed closed. A strict EC/P-256 enum-label normalization fix passes locally but is not deployed; production report acceptance remains open."
     },
     {
-      "id": "signed_in_uat_and_report_proof",
+      "id": "signed_in_role_coverage",
       "status": "open",
-      "detail": "Signed-in six-area UAT, a fresh signed pack, and Customer, Board, and CAB DOCX/PDF proof remain required human validation gates."
+      "detail": "Admin health passed, but role-by-role signed-in journeys were not completed."
+    },
+    {
+      "id": "ingestion_zip_and_cleanup_ui",
+      "status": "implemented_tested_locally_live_proof_open",
+      "detail": "Ingestion navigation, verified ZIP UI, and exact-ID cleanup are implemented/tested on the closeout branch, but are not deployed or production-accepted."
+    },
+    {
+      "id": "iac_and_release_metadata_reconciliation",
+      "status": "what_if_passed_full_apply_open",
+      "detail": "The 43-resource What-If has 0 destructive, 0 image, and 0 environment-removal changes; it proposes six-app metadata, 12 probes, and scheduler-only minReplicas 0 to 1 for the in-process timer. Thirteen unsupported results and full apply require separate exact approval."
+    },
+    {
+      "id": "collector_customer_acceptance",
+      "status": "open_external_human_gate",
+      "detail": "Trusted collector signing, clean customer-machine proof, and representative customer acceptance remain open."
+    },
+    {
+      "id": "legal_licensing_review",
+      "status": "open_human_gate",
+      "detail": "Legal/licensing review and a root license decision remain open."
     }
   ],
-  "previous_fully_signed_in_validated_release": {
-    "baseline_id": "PF-AZ10-SIMPLIFIED-EXPERIENCE",
-    "image_tag": "pfaz10-20260530-e728ec0",
-    "commit": "e728ec0",
-    "release_state": "azure_live_browser_validated"
+  "previous_release": {
+    "baseline_id": "PF-AZ-MODERN-UI-20260711",
+    "image_tag": "pfaz-modern-ui-20260711-907995f",
+    "commit": "907995fdf1ea290a7e551463e461af8a884cf44c"
   },
-  "report_stamp_fields": [
-    "report_template_version",
-    "report_renderer_commit",
-    "report_renderer_image_tag",
-    "generated_from_pack_id",
-    "generated_at_utc",
-    "product_baseline",
-    "report_context_version",
-    "final_approval_issued",
-    "signing_provider",
-    "verification_state"
-  ],
   "excluded_capabilities": [
     "vulnerability_scanner",
     "exploit_generation",

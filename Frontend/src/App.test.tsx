@@ -541,6 +541,7 @@ function createApi(overrides: Partial<PatchForgeApi> = {}): PatchForgeApi {
       final_approval_issued: false
     })),
     exportDecisionPack: vi.fn(async () => ({ pack_id: "PF-TEST-0001", source_pack_immutable: true })),
+    downloadDecisionPackZip: vi.fn(async () => new Blob(["zip"], { type: "application/zip" })),
     reportCatalog: vi.fn(async () => [{
       report_type: "customer_patch_governance_pack",
       title: "Customer Patch Governance Pack",
@@ -749,6 +750,23 @@ function createApi(overrides: Partial<PatchForgeApi> = {}): PatchForgeApi {
       total_records: 1,
       required_confirmation: "FACTORY_RESET_PATCHFORGE"
     })),
+    adminUatCleanup: vi.fn(async (_tenantId, payload) => ({
+      tenant_id: "diiac.io",
+      identifier: String(payload.identifier),
+      dry_run: payload.dry_run !== false,
+      selection_mode: "exact_identifier_value" as const,
+      scanned_collections: ["vulnerabilities", "decision_packs"],
+      collections: ["vulnerabilities"],
+      counts: { vulnerabilities: 1 },
+      record_ids: { vulnerabilities: [String(payload.identifier)] },
+      total_records: 1,
+      total_removed: payload.dry_run === false ? 1 : undefined,
+      required_confirmation: String(payload.identifier),
+      preview_token: payload.dry_run === false ? undefined : "preview-token-123",
+      preview_digest: "a".repeat(64),
+      preview_expires_at: "2026-07-14T19:00:00Z",
+      audit_id: payload.dry_run === false ? "audit-uat-cleanup" : undefined
+    })),
     adminConfig: vi.fn(async () => ({
       general: { environment: "Production", governance_tier: "Enterprise Strict" }
     })),
@@ -758,7 +776,7 @@ function createApi(overrides: Partial<PatchForgeApi> = {}): PatchForgeApi {
 }
 
 describe("PatchForge simplified customer experience", () => {
-  it("renders the six PatchForge top-level areas and the patch catalogue", async () => {
+  it("renders the seven PatchForge top-level areas and the patch catalogue", async () => {
     const api = createApi();
     render(<App auth={auth} api={api} />);
 
@@ -766,6 +784,7 @@ describe("PatchForge simplified customer experience", () => {
 
     expect(screen.getByRole("region", { name: "Patch & CVE Catalogue" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Patch & CVE Catalogue" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Vulnerability Queue" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Vendor Catalogue" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Customer Estate" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Ask PatchForge" })).toBeInTheDocument();
@@ -787,6 +806,25 @@ describe("PatchForge simplified customer experience", () => {
     expect(screen.getByRole("button", { name: "Ask PatchForge about selected record" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Needs review" }));
     expect(screen.getByRole("button", { name: "Needs review" })).toHaveAttribute("aria-pressed", "true");
+  }, 15000);
+
+  it("reaches manual vulnerability ingest from primary navigation", async () => {
+    const api = createApi();
+    render(<App auth={auth} api={api} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Vulnerability Queue" }));
+    expect(await screen.findByRole("heading", { name: "Governed Vulnerability Queue" }, { timeout: 10000 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Manual Exception Ingest" })).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Identifier"), { target: { value: "UAT-PF-20260714-001" } });
+    fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Operator-entered exception" } });
+    fireEvent.click(screen.getByRole("button", { name: "Ingest Record" }));
+
+    await waitFor(() => expect(api.ingestVulnerability).toHaveBeenCalledWith("diiac.io", expect.objectContaining({
+      vulnerability_id: "UAT-PF-20260714-001",
+      canonical_id: "UAT-PF-20260714-001",
+      title: "Operator-entered exception"
+    })));
   }, 15000);
 
   it("routes the global command search into the governed catalogue", async () => {
@@ -1064,6 +1102,12 @@ describe("PatchForge simplified customer experience", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Download Board Vulnerability Summary DOCX from PF-TEST-0001" }));
     await waitFor(() => expect(api.downloadDecisionPackReport).toHaveBeenCalledWith("diiac.io", "PF-TEST-0001", "board_vulnerability_remediation_summary", "docx"));
+
+    fireEvent.click(screen.getByRole("button", { name: "Download signed ZIP PF-TEST-0001" }));
+    await waitFor(() => expect(api.downloadDecisionPackZip).toHaveBeenCalledWith("diiac.io", "PF-TEST-0001"));
+
+    fireEvent.click(screen.getByRole("button", { name: "Export pack JSON PF-TEST-0001" }));
+    await waitFor(() => expect(api.exportDecisionPack).toHaveBeenCalledWith("diiac.io", "PF-TEST-0001"));
   });
 
   it("keeps an explicitly selected historical verified pack stable across refresh", async () => {
@@ -1118,6 +1162,8 @@ describe("PatchForge simplified customer experience", () => {
     expect(await screen.findByText("Report downloads remain blocked until a decision pack passes signature verification.")).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Verified decision pack" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Download Board Vulnerability Summary DOCX from selected pack" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Download signed ZIP PF-UNVERIFIED-1" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Export pack JSON PF-UNVERIFIED-1" })).toBeDisabled();
   }, 15000);
 
   it("supports finding evidence submission, reject conflict handling, expiry, and reopen", async () => {
@@ -1168,7 +1214,22 @@ describe("PatchForge simplified customer experience", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Reports" }));
     expect(await screen.findByRole("button", { name: "Generate Signed Pack" })).toBeEnabled();
     fireEvent.click(screen.getByRole("button", { name: "Patch & CVE Catalogue" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Open review queue" }));
+    expect(await screen.findByRole("button", { name: "Generate Signed Pack" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Refresh Analysis" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Patch & CVE Catalogue" }));
     expect(await screen.findByRole("button", { name: "Refresh KEV intelligence" })).toBeDisabled();
+  }, 15000);
+
+  it("keeps triage actions available without offering server-rejected pack generation", async () => {
+    const api = createApi();
+    const triageAuth = { ...auth, roles: ["PatchForge.TriageAnalyst"] };
+    render(<App auth={triageAuth} api={api} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Open review queue" }));
+    expect(await screen.findByRole("button", { name: "Refresh Analysis" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Generate Signed Pack" })).toBeDisabled();
+    expect(screen.getByText(/Decision-pack generation requires a PatchForge Security Lead, CAB Approver, or Admin role/)).toBeInTheDocument();
   }, 15000);
 
   it("refreshes source feeds from the simplified action center", async () => {
@@ -1200,12 +1261,57 @@ describe("PatchForge simplified customer experience", () => {
     expect(screen.getByText("Patch Deployment")).toBeInTheDocument();
     expect(screen.getAllByText("Blocked").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByRole("heading", { name: "Typed confirmation required before destructive data cleanup" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Preview and remove one exact UAT identifier" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Execute Confirmed Purge" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Preview Exact UAT Cleanup" })).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "admin sections page 2" }));
     expect(screen.getByText("Signing & Trust")).toBeInTheDocument();
     expect(container.textContent?.toLowerCase()).not.toContain("autonomous patching");
     expect(container.textContent?.toLowerCase()).not.toContain("exploit generation");
   });
+
+  it("previews and executes cleanup for one exact UAT identifier", async () => {
+    const api = createApi();
+    render(<App auth={auth} api={api} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Admin" }));
+    const identifier = "UAT-PF-20260714-001";
+    fireEvent.change(await screen.findByLabelText("Exact UAT identifier"), { target: { value: identifier } });
+    fireEvent.click(screen.getByRole("button", { name: "Preview Exact UAT Cleanup" }));
+
+    await waitFor(() => expect(api.adminUatCleanup).toHaveBeenCalledWith("diiac.io", {
+      identifier,
+      dry_run: true
+    }));
+    expect(await screen.findByText("Exact identifier value")).toBeInTheDocument();
+    expect(screen.getByText("Preserved")).toBeInTheDocument();
+    expect(screen.getByText(identifier)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Type the exact identifier after preview"), { target: { value: identifier } });
+    fireEvent.click(screen.getByRole("button", { name: "Remove Exact UAT Records" }));
+
+    await waitFor(() => expect(api.adminUatCleanup).toHaveBeenCalledWith("diiac.io", {
+      identifier,
+      dry_run: false,
+      confirm: identifier,
+      preview_token: "preview-token-123"
+    }));
+    expect(await screen.findByText("audit-uat-cleanup")).toBeInTheDocument();
+  }, 15000);
+
+  it("invalidates an exact-ID cleanup preview when the tenant changes", async () => {
+    const api = createApi();
+    render(<App auth={auth} api={api} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Admin" }));
+    fireEvent.change(await screen.findByLabelText("Exact UAT identifier"), { target: { value: "UAT-PF-TENANT-001" } });
+    fireEvent.click(screen.getByRole("button", { name: "Preview Exact UAT Cleanup" }));
+    expect(await screen.findByText("Exact identifier value")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Tenant name"), { target: { value: "other-tenant" } });
+    expect(screen.queryByText("Exact identifier value")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Remove Exact UAT Records" })).toBeDisabled();
+  }, 15000);
 
   it("shows the Entra sign-in gate when unauthenticated", () => {
     const { container } = render(<App auth={{ ...auth, status: "unauthenticated", accountName: null }} api={createApi()} />);

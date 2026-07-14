@@ -9,6 +9,7 @@ const ROUTE_ROLES = [
   { method: "GET", pattern: /^\/api\/patchforge\/admin\/health$/, roles: ["PatchForge.Admin", "PatchForge.Auditor"] },
   { method: "GET", pattern: /^\/api\/patchforge\/admin\/purge$/, roles: ["PatchForge.Admin", "PatchForge.Auditor"] },
   { method: "POST", pattern: /^\/api\/patchforge\/admin\/purge$/, roles: ["PatchForge.Admin"] },
+  { method: "POST", pattern: /^\/api\/patchforge\/admin\/uat-cleanup$/, roles: ["PatchForge.Admin"] },
   { method: "POST", pattern: /^\/api\/patchforge\/vulnerabilities\/ingest$/, roles: ["PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.Admin"] },
   { method: "POST", pattern: /^\/api\/patchforge\/vulnerabilities\/[^/]+\/review$/, roles: ["PatchForge.SecurityLead", "PatchForge.Admin"] },
   { method: "POST", pattern: /^\/api\/patchforge\/vulnerabilities\/[^/]+\/evidence$/, roles: ["PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.ServiceOwner", "PatchForge.Admin"] },

@@ -4,27 +4,29 @@
 
 Track PatchForge deployment readiness, live Azure bootstrap state, and remaining cutover gates.
 
-## Current Candidate Gate — 2026-07-14
+## Current Image Release Gate — 2026-07-14
 
-The 14-area improvement implementation is a local candidate, not a claimed Azure release. Follow the [14-Area Improvement Closure Matrix](../validation/PATCHFORGE_14_AREA_IMPROVEMENT_CLOSURE_2026-07-14.md) before any rollout. In particular:
+The approved image-only rollout for source commit `f51802d3544260259c252e6be88d6e7bae596868`, image tag `pfaz-enterprise-20260714d-f51802d`, baseline `PF-AZ-ENTERPRISE-AUTOMATION-20260714D`, and report context `patchforge-report-context.pfaz-enterprise-20260714d.v1` completed successfully. GitHub approval run `29345354677` was verified, the provenance manifest verified under ES256 with SHA-256 `d9c8f265aaab5c7d10549f1730620a9681bb0b13ff10c8b870973f52c07b9615`, and all six Container Apps reached healthy revisions with the approved image digests. Public UI, health, readiness, and protected-route smoke checks passed, and the temporary direct signing-key role assignment was absent after release.
 
-- Areas 1-3 (signed-in production UAT, fresh report/artifact proof, and UAT cleanup) remain pending.
-- Area 14 (clean Git/GitHub state, required checks, approval attestation, guarded Azure rollout, and live readback) remains pending.
-- A Bicep what-if must contain no unexplained replacement, deletion, database, storage, identity, or network changes.
-- The exact commit, tag, product baseline, and report context must match the protected production approval artifact.
-- All six rollback images must be preserved locally before production mutation.
-- Stop on any failed/ambiguous native command, digest/signature mismatch, unhealthy revision, readiness failure, or metadata disagreement.
+This is **not full production acceptance**. Signed-in `PatchForge.Admin` health UAT passed all 13 checks against live `f51802d`, but the DOCX report journey failed closed with `signature_cryptographic_verification_failed`. The closeout branch locally fixes the Azure `KeyType.ec` / `KeyCurveName.p_256` label mismatch by strictly normalizing recognized values to `EC` / `P-256` before full ES256 verification; negative cases remain fail-closed. It also implements/tests ingestion navigation, verified ZIP export, and exact-ID cleanup. None of these fixes is deployed or live-accepted, and broader role UAT remains required.
 
-The historical bootstrap details below describe already-established platform resources. They do not authorize or evidence the current candidate rollout.
+The publisher changed images only. Live remains six apps at `minReplicas=0`, with no probes and July 11 metadata. The latest What-If has 43 resources: 0 destructive, 7 modify, 20 no-change, 3 ignore, 13 unsupported; 0 image changes, 0 environment removals, metadata convergence on six apps, +12 probes, and one intentional scheduler `min0→1` change because its timer is in-process. Full Bicep was not applied and needs new exact approval.
+
+See the [14-Area Improvement Closure Matrix](../validation/PATCHFORGE_14_AREA_IMPROVEMENT_CLOSURE_2026-07-14.md), [Current Release](../../CURRENT_RELEASE.md), and [sanitized release evidence](../release/evidence/2026-07-14-patchforge-enterprise-image-rollout/README.md). The historical bootstrap details below describe already-established platform resources.
 
 ## Current Gate
 
 PatchForge Azure bootstrap is live in a dedicated production resource group. The identity, production signing key, PostgreSQL resource, DNS custom-domain, API RBAC, PostgreSQL storage, and runtime Key Vault signing gates are completed.
 
-PatchForge is not yet ready for full production cutover until the user confirms:
+PatchForge is not yet ready for full production acceptance. The remaining release gates are:
 
-- UI sign-in flow and client-side role UX
-- private networking design for PostgreSQL and storage
+- deploy the strict report-verification normalization fix and prove fresh live DOCX, ZIP, and signed-pack artifacts without weakening fail-closed checks;
+- deploy the closeout navigation, verified-ZIP, and exact-ID cleanup changes under an exact approval, then complete their signed-in production proof and representative role journeys;
+- resolve or explicitly approve the 13 unsupported What-If resources, then apply the reviewed metadata/probe changes under a separate exact approval;
+- complete trusted collector signing, clean customer-machine installation and lifecycle UAT, and representative customer acceptance; and
+- close legal/licensing actions, including the repository root licence position.
+
+Private-networking design for PostgreSQL and storage remains a separate production-hardening decision.
 
 Known non-secret tenant planning values are recorded in `docs/deployment/PATCHFORGE_DIIAC_TENANT_REFERENCE.md`:
 
@@ -113,7 +115,8 @@ Live custom-domain URLs:
 - Gate evidence: `docs/release/evidence/2026-05-26-patchforge-gates/`
 - DNS cutover evidence: `docs/release/evidence/2026-05-26-patchforge-dns-cutover/`
 - Production hardening evidence: `docs/release/evidence/2026-05-26-patchforge-production-hardening/`
-- Deployed image tag: `pfaz4-20260526`
+- Historical PF-AZ4 image tag: `pfaz4-20260526`
+- Current approved image tag: `pfaz-enterprise-20260714d-f51802d`
 
 HTTP smoke after gates:
 

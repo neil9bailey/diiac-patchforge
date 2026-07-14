@@ -44,7 +44,19 @@ The July 11 findings remain the review baseline. The current working candidate a
 | PF-AUTO-001 | Idempotency, leases, checkpoints, bounded retry, dead-letter/quarantine, replay/reconciliation, worker loop, SLOs, and alerts implemented locally | Final combined suite and live worker/scheduler health and backlog proof |
 | PF-QUAL-001 | Pinned CI, dependency/security scans, SBOMs, attestations, browser accessibility journey, bundle budget, and protected production approval workflow implemented locally | Remote workflow execution, branch/environment enforcement, and retained release evidence |
 
-This update does not claim that GitHub, Azure, or current production was changed. Areas 1-3 and 14 in the closure matrix remain pending until their evidence exists.
+The table above records the pre-release candidate state at the time of the implementation pass. The following dated update records the subsequent controlled rollout and signed-in UAT evidence.
+
+## Live Image Rollout and Signed-In UAT Update — 2026-07-14
+
+- Protected production approval run `29345354677` authorized source commit `f51802d3544260259c252e6be88d6e7bae596868`, image tag `pfaz-enterprise-20260714d-f51802d`, baseline `PF-AZ-ENTERPRISE-AUTOMATION-20260714D`, and report context `patchforge-report-context.pfaz-enterprise-20260714d.v1`.
+- The image-only publisher completed successfully for all six Container Apps. The release evidence records each immutable image digest and healthy revision, a verified ES256 provenance manifest with SHA-256 `d9c8f265aaab5c7d10549f1730620a9681bb0b13ff10c8b870973f52c07b9615`, successful public UI/health/readiness/protected-route smoke checks, and post-release removal of the direct signing-key role assignment.
+- Signed-in `PatchForge.Admin` health UAT passed 13 of 13 checks. Broader role-based UAT is not yet evidenced.
+- The DOCX report journey failed closed with `signature_cryptographic_verification_failed`. The high-confidence root cause is Azure enum labels `KeyType.ec` / `KeyCurveName.p_256` reaching a standards-form JWK verifier. The closeout branch strictly normalizes recognized values to `EC` / `P-256` and retains full ES256 verification; unknown aliases/curves, malformed coordinates, wrong keys, and tampered/short signatures fail. Navigation, verified ZIP export, and exact-ID cleanup are also implemented/tested locally. None of these changes is live.
+- Full Bicep was not applied. The latest What-If is 43 resources: 0 destructive, 7 modify, 20 no-change, 3 ignore, 13 unsupported; 0 image changes, 0 environment removals, metadata on six apps, +12 probes, and scheduler-only `min0→1` because its timer is in-process. Separate exact approval remains mandatory.
+- Separate closeout-branch validation passed locally: Python 53/53, backend 94/94, frontend 28/28, Playwright/axe 2/2, collector 8/8, frontend build/bundle PASS with entry `270.20 kB` and total `634.39/650 kB`, and IaC PASS. These totals do not replace the deployed `f51802d` candidate evidence.
+- Trusted collector signing, clean customer-machine/customer UAT, and legal/licensing closure remain open.
+
+Result: the controlled image rollout passed, but overall release acceptance remains **partial**. Details and sanitized evidence are in the [Current Release](../../CURRENT_RELEASE.md) and [2026-07-14 image rollout evidence](../release/evidence/2026-07-14-patchforge-enterprise-image-rollout/README.md).
 
 ## Intended Operating Flow
 

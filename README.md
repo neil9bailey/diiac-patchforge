@@ -37,7 +37,7 @@ PatchForge does not scan environments, exploit vulnerabilities, deploy patches, 
 
 ## Current Product Scope
 
-This repository now contains the PF-AZ11-CUSTOMER-DEMO-MATURITY production product line for PatchForge:
+Production runs the approved `f51802d` six-image `PF-AZ-ENTERPRISE-AUTOMATION-20260714D` baseline. The current closeout branch contains a locally tested strict normalization fix for Azure EC/P-256 enum labels plus navigation, verified-ZIP, exact-ID cleanup, and repaired-IaC improvements; none is live. Unknown labels/curves, malformed coordinates, wrong keys, and tampered or short signatures still fail cryptographic verification. Overall acceptance remains partial while production report proof, complete signed-in journeys, separately approved IaC application, trusted collector/customer UAT, and legal/licensing gates remain open:
 
 - product identity
 - product boundary
@@ -71,7 +71,7 @@ No scanner, exploit, or patch-deployment capability is created. PatchForge remai
 
 Start with [PatchForge Operational User Guide](docs/operations/PATCHFORGE_OPERATIONAL_USER_GUIDE.md) when helping end users understand how to use PatchForge correctly in day-to-day operations. It covers the six-area Patch & CVE Catalogue, Vendor Catalogue, Customer Estate, Ask PatchForge, Reports, and Admin experience plus finding-scoped evidence review, explicit pack selection, human approval boundaries, and credibility checks before customer or board reporting.
 
-For the current implementation-versus-live status, operator actions, evidence requirements, and release stop conditions, use the [PatchForge 14-Area Improvement Closure Matrix](docs/validation/PATCHFORGE_14_AREA_IMPROVEMENT_CLOSURE_2026-07-14.md). The candidate is not a claimed production release until its live and human gates are evidenced.
+For the controlled release tuple, immutable image evidence, current acceptance boundary, and open gates, use [Current Release](CURRENT_RELEASE.md). For operator actions, evidence requirements, and release stop conditions, use the [PatchForge 14-Area Improvement Closure Matrix](docs/validation/PATCHFORGE_14_AREA_IMPROVEMENT_CLOSURE_2026-07-14.md).
 
 ## Canonical Rebuild Blueprint
 

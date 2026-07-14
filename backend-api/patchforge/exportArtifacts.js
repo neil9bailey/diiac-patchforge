@@ -274,8 +274,11 @@ function verifyProductionSignature(record) {
   }
   if (metadata?.algorithm !== "ES256") return null;
   try {
-    const key = createPublicKey({ key: metadata.public_jwk, format: "jwk" });
-    const signature = Buffer.from(String(record.signature), "base64url");
+    if (metadata.signature_encoding !== "base64url_raw_ecdsa") {
+      throw new TypeError("ES256 signature encoding must be base64url raw ECDSA.");
+    }
+    const key = createPublicKey({ key: normalizeEs256PublicJwk(metadata.public_jwk), format: "jwk" });
+    const signature = decodeCanonicalBase64Url(record.signature, 64, "ES256 raw ECDSA signature");
     return verifyCryptoSignature(
       "sha256",
       Buffer.from(canonicalJson(metadata.signed_payload), "utf8"),
@@ -285,6 +288,34 @@ function verifyProductionSignature(record) {
   } catch {
     return false;
   }
+}
+
+function normalizeEs256PublicJwk(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new TypeError("ES256 public JWK is required.");
+  }
+  const keyType = String(value.kty || "");
+  const curve = String(value.crv || "");
+  const acceptedKeyTypes = new Set(["EC", "KeyType.ec", "KeyType.ec_hsm"]);
+  const acceptedCurves = new Set(["P-256", "KeyCurveName.p_256"]);
+  if (!acceptedKeyTypes.has(keyType) || !acceptedCurves.has(curve)) {
+    throw new TypeError("ES256 public JWK must use an EC P-256 key.");
+  }
+  decodeCanonicalBase64Url(value.x, 32, "ES256 public JWK x coordinate");
+  decodeCanonicalBase64Url(value.y, 32, "ES256 public JWK y coordinate");
+  return { ...value, kty: "EC", crv: "P-256" };
+}
+
+function decodeCanonicalBase64Url(value, expectedLength, label) {
+  const encoded = String(value || "");
+  if (!/^[A-Za-z0-9_-]+$/.test(encoded)) {
+    throw new TypeError(`${label} must use unpadded base64url encoding.`);
+  }
+  const decoded = Buffer.from(encoded, "base64url");
+  if (decoded.length !== expectedLength || decoded.toString("base64url") !== encoded) {
+    throw new TypeError(`${label} has an invalid length or noncanonical encoding.`);
+  }
+  return decoded;
 }
 
 function canonicalJson(value) {

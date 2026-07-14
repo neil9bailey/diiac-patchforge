@@ -1,5 +1,94 @@
 # Current Release
 
+## DIIaC PatchForge PF-AZ-ENTERPRISE-AUTOMATION-20260714D
+
+Release state: **image-only Azure rollout succeeded; overall acceptance remains partial**. Production still runs the exact six-image set built from `f51802d3544260259c252e6be88d6e7bae596868`, and public smoke passed. Signed-in Admin health passed 13/13 checks, but DOCX report generation failed closed and live report, ingestion, verified-ZIP, cleanup, infrastructure-apply, release-metadata, collector, and legal gates remain open. The current closeout branch contains a locally fixed/tested report-verification path plus navigation, verified-ZIP, exact-ID cleanup, and repaired-IaC changes; none of those follow-up changes is claimed live.
+
+Date: 2026-07-14
+
+Release identity:
+
+- Source commit: `f51802d3544260259c252e6be88d6e7bae596868`
+- Release branch recorded by the guarded publisher: `codex/patchforge-publisher-evidence-fix-20260714`
+- Image tag: `pfaz-enterprise-20260714d-f51802d`
+- Product baseline: `PF-AZ-ENTERPRISE-AUTOMATION-20260714D`
+- Report context: `patchforge-report-context.pfaz-enterprise-20260714d.v1`
+- GitHub production approval: run `29345354677`, attempt `1`, explicit environment approval
+- Authorization SHA-256: `d5b7470d8f8b76eb0a152d1c805dc4964f30725b471a3474787ad3763a806007`
+- GitHub attestation: PASS
+
+Immutable images and active revisions:
+
+| Component | Digest | Active/latest-ready revision |
+| --- | --- | --- |
+| UI | `sha256:88377ddcc4afe164ddb4206429b737f97935d8636f4f5f9ced0e09f8e7b1ff87` | `ca-patchforge-ui-prod--0000041` |
+| Bridge/API | `sha256:56a1b6b502594a5ebf18d0ab56467c2a2e2028fb4d0884d456542f864f3442bf` | `ca-patchforge-bridge-prod--0000040` |
+| Runtime | `sha256:2b608109548e4596a8ab5195a17c0ac581cdf2fe4e0ed09cd4d2b9ec8fdf93ca` | `ca-patchforge-runtime-prod--0000031` |
+| SRA | `sha256:44808c86c32816210d2086f173e77ff5b33bcf91c47fb578c2fb38c6f7fb994d` | `ca-patchforge-sra-prod--0000030` |
+| Worker | `sha256:f0585c19fabbf5ce9bc6d7dec01f7915ee342ab7e524df9384323da1b4f63ded` | `ca-patchforge-worker-prod--0000030` |
+| Scheduler | `sha256:11e58260e16c38636cfcc2804554ea58c4f3e954aa64a42b5075d60dba2af23f` | `ca-patchforge-scheduler-prod--0000030` |
+
+All six applications were `Succeeded`, `Healthy`, `Provisioned`, latest-ready aligned, and receiving 100% latest-revision traffic at release completion.
+
+Provenance and release controls:
+
+- Six-image manifest SHA-256: `d9c8f265aaab5c7d10549f1730620a9681bb0b13ff10c8b870973f52c07b9615`
+- Signing algorithm: ES256
+- Signing key ID: `https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod/2e348fdeaaaf448ebba206130ef86b52`
+- Manifest signature verification: PASS
+- Post-release temporary signing access revocation: PASS; direct key-scope assignments were empty and the release operator no longer had key data-plane access
+- Local rollback archives were retained outside the repository and are not copied into release evidence
+
+Public smoke:
+
+- `https://patchforge.diiac.io/`: HTTP 200
+- `https://api.patchforge.diiac.io/health`: HTTP 200
+- `https://api.patchforge.diiac.io/readiness`: HTTP 200 with `status=ready`, `storage=postgresql`, `auth_required=true`, and `tenant_required=true`
+- Unauthenticated protected route: expected HTTP 401
+
+Signed-in UAT disposition:
+
+- Microsoft Entra sign-in as `PatchForge.Admin`: PASS
+- Admin health: PASS, 13/13 checks
+- Broader role-by-role signed-in journeys: PARTIAL; only the Admin health journey is claimed
+- DOCX report in live `f51802d`: FAIL CLOSED with `signature_cryptographic_verification_failed`; no production report acceptance is claimed
+- High-confidence root cause: Azure Key Vault enum labels were serialized as `KeyType.ec` and `KeyCurveName.p_256`, while the download verifier required standards-form `EC` and `P-256` JWK labels
+- Closeout-branch fix: normalize only the explicit supported Azure/standards EC P-256 labels to `EC`/`P-256`, then perform the same full ES256 verification; legacy-label compatibility is not a verification bypass
+- Fail-closed coverage: unknown key aliases, unsupported curves, malformed coordinates, a wrong public key, tampered signatures, and short signatures are rejected
+- Ingestion navigation: OPEN in the live `f51802d` UAT; implemented and tested locally on the closeout branch, not live
+- Verified ZIP UI journey: OPEN in the live `f51802d` UAT; implemented and tested locally on the closeout branch, not live
+- Targeted UAT cleanup: OPEN in production; closeout branch uses a server-issued tenant-scoped expiring preview token bound to a SHA-256 digest of exact record IDs, shows those IDs, and retains the audit event. Direct execution, cross-tenant use, record-set drift, and token reuse fail closed. Not live.
+
+Closeout-branch validation — local only, not deployed:
+
+- Python: PASS, 53/53
+- Backend API: PASS, 94/94
+- Frontend: PASS, 28/28
+- Playwright/axe: PASS, 2/2
+- Windows collector: PASS, 8/8
+- Frontend build and bundle budget: PASS; entry `270.20 kB`, total JavaScript `634.39/650 kB`
+- IaC validation: PASS
+
+Infrastructure and configuration disposition:
+
+- The full Bicep template was not applied. The approved production mutation was limited to the six `f51802d` image updates.
+- Live scale remains `minReplicas=0`, `maxReplicas=1` for all six apps, live Container Apps have no configured probes, and live release-metadata environment variables still identify `PF-AZ-MODERN-UI-20260711`, commit `907995f...`, and the July 11 report context.
+- The repaired closeout-branch IaC preserves deployed images and environment values. Its only intentional scale change is scheduler `minReplicas` `0→1`, because the scheduler uses an in-process timer and must remain running.
+- A fresh repaired-IaC What-If succeeded across 43 resources: 0 destructive, 7 modify, 20 no-change, 3 ignore, and 13 unsupported. It reports 0 image changes, 0 environment removals, release-metadata convergence on six apps, 12 probe additions across six apps, and one intentional scale delta: scheduler `minReplicas` changes from live `0` to `1` because its in-process timer must stay running.
+- The 13 unsupported resources mean the What-If is not fully determinate. A full apply remains unperformed and requires separate exact approval for the reviewed closeout-branch source and intended configuration changes.
+
+Remaining external/human gates:
+
+- trusted PatchForge Windows collector code signing;
+- clean customer-machine and representative customer UAT;
+- legal/licensing review and a root license decision.
+
+Sanitized evidence:
+
+- `docs/release/evidence/2026-07-14-patchforge-enterprise-image-rollout/`
+
+PF-AZ-ENTERPRISE-AUTOMATION-20260714D does not add vulnerability scanning, exploit generation, procedural exploit steps, patch deployment, autonomous evidence-gate closure, autonomous CAB approval, or autonomous risk acceptance.
+
 ## DIIaC PatchForge PF-AZ-MODERN-UI-20260711
 
 Release state: deployed to Azure and validated through public HTTP plus responsive signed-out browser checks; signed-in six-area UAT and fresh signed report proof remain pending human gates.

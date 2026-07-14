@@ -1,0 +1,58 @@
+{
+  "schema": "patchforge-sanitized-iac-whatif-and-live-drift-summary-v2",
+  "sanitized": true,
+  "date": "2026-07-14",
+  "state_boundary": {
+    "live_release_source_commit": "f51802d3544260259c252e6be88d6e7bae596868",
+    "live_release_scope": "six_container_app_images_only",
+    "closeout_branch": "codex/patchforge-release-closeout-20260714",
+    "closeout_branch_changes_live": false
+  },
+  "live_state": {
+    "all_six_images_use_candidate_tag": true,
+    "all_six_min_replicas": 0,
+    "all_six_max_replicas": 1,
+    "all_six_container_probes_present": false,
+    "active_revisions_mode": "Single",
+    "latest_revision_traffic_weight": 100,
+    "release_metadata_status": "still_identifies_2026_07_11_release"
+  },
+  "fresh_repaired_iac_what_if": {
+    "status": "succeeded",
+    "fully_determinate": false,
+    "resource_counts": {
+      "total": 43,
+      "destructive": 0,
+      "modify": 7,
+      "no_change": 20,
+      "ignore": 3,
+      "unsupported": 13
+    },
+    "semantic_results": {
+      "image_changes": 0,
+      "environment_removals": 0,
+      "scale_drift": 1,
+      "scale_drift_detail": "scheduler_min_replicas_0_to_1_required_for_in_process_timer",
+      "search_mode_removal": false,
+      "openai_agent_flag_removal": false,
+      "search_and_openai_flags_preserved": true,
+      "release_metadata_convergence_apps": 6,
+      "probe_additions": 12,
+      "probe_target_apps": 6
+    }
+  },
+  "desired_release_metadata": {
+    "image_tag": "pfaz-enterprise-20260714d-f51802d",
+    "source_commit": "f51802d3544260259c252e6be88d6e7bae596868",
+    "product_baseline": "PF-AZ-ENTERPRISE-AUTOMATION-20260714D",
+    "report_context_version": "patchforge-report-context.pfaz-enterprise-20260714d.v1"
+  },
+  "live_environment_release_metadata": {
+    "image_tag": "pfaz-modern-ui-20260711-907995f",
+    "source_commit": "907995fdf1ea290a7e551463e461af8a884cf44c",
+    "product_baseline": "PF-AZ-MODERN-UI-20260711",
+    "report_context_version": "patchforge-report-context.pfaz-modern-ui-20260711.v1"
+  },
+  "full_iac_apply_performed": false,
+  "approval_gate": "Resolve or explicitly approve unsupported resources, bind a new protected approval to the exact closeout source and reviewed configuration delta, then verify six-app metadata and probe readiness after apply."
+}

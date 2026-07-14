@@ -47,10 +47,32 @@ const COLLECTIONS = [
   "patch_compare_reports",
   "signed_action_packs",
   "workflow_items",
+  "uat_cleanup_previews",
   "audit_events"
 ];
 
 export const PATCHFORGE_PURGE_CONFIRMATION = "FACTORY_RESET_PATCHFORGE";
+export const PATCHFORGE_UAT_IDENTIFIER_PREFIX = "UAT-PF-";
+
+const PATCHFORGE_UAT_IDENTIFIER_PATTERN = /^UAT-PF-[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
+const PATCHFORGE_UAT_CLEANUP_COLLECTIONS = COLLECTIONS.filter((collection) => ![
+  "audit_events",
+  "uat_cleanup_previews"
+].includes(collection));
+const PATCHFORGE_UAT_PREVIEW_TTL_MS = 15 * 60 * 1000;
+const PATCHFORGE_UAT_FORBIDDEN_SELECTORS = [
+  "all",
+  "scope",
+  "scopes",
+  "collection",
+  "collections",
+  "reports",
+  "catalogue",
+  "assets",
+  "uploads",
+  "logs",
+  "cache"
+];
 
 export const PATCHFORGE_PURGE_SCOPES = {
   reports: [
@@ -152,6 +174,7 @@ const COLLECTION_ID_FIELDS = {
   patch_compare_reports: "id",
   signed_action_packs: "id",
   workflow_items: "id",
+  uat_cleanup_previews: "preview_id",
   audit_events: "audit_id"
 };
 
@@ -542,6 +565,49 @@ export class PatchForgeJsonStorage {
       storage_mutation_executed: true,
       no_patch_deployment: true
     };
+  }
+
+  async cleanupUatRecords(tenantId, options = {}) {
+    const plan = await buildUatCleanupPlan(this, tenantId, options);
+    if (plan.dry_run) {
+      return issueUatCleanupPreview(this, plan);
+    }
+    if (options.confirm !== plan.identifier) {
+      return blockedUatCleanupPlan(plan);
+    }
+    const preview = await requireUatCleanupPreview(this, tenantId, plan, options.preview_token);
+
+    const removed = {};
+    for (const collection of plan.collections) {
+      const selectedIds = new Set(plan.record_ids[collection] || []);
+      const records = await this._read(collection);
+      const retained = records.filter((record) => {
+        if (record.tenant_id !== tenantId || !recordReferencesExactIdentifier(record, plan.identifier)) {
+          return true;
+        }
+        return !selectedIds.has(recordIdFor(collection, record));
+      });
+      const removedCount = records.length - retained.length;
+      if (removedCount > 0) {
+        await this._write(collection, retained);
+      }
+      removed[collection] = removedCount;
+    }
+
+    await this.replace("uat_cleanup_previews", (record) => (
+      record.tenant_id === tenantId && record.preview_id === preview.preview_id
+    ), (record) => ({
+      ...record,
+      status: "consumed",
+      consumed_at: new Date().toISOString()
+    }));
+
+    const auditRecord = await this.audit(
+      tenantId,
+      "patchforge_uat_cleanup_completed",
+      buildUatCleanupAuditDetails(plan, removed, options.lineage, preview)
+    );
+    return completedUatCleanupPlan(plan, removed, auditRecord.audit_id, preview);
   }
 
   async ingestVulnerability(tenantId, payload) {
@@ -1176,6 +1242,108 @@ export class PatchForgePostgresStorage extends PatchForgeJsonStorage {
     };
   }
 
+  async cleanupUatRecords(tenantId, options = {}) {
+    await this.ensureReady();
+    validateUatCleanupOptions(options);
+    const identifier = normalizeUatCleanupIdentifier(options.identifier);
+    const dryRun = options.dry_run !== false;
+
+    if (dryRun) {
+      const rows = await listPostgresUatCleanupRows(this.pool, tenantId);
+      const plan = buildUatCleanupPlanFromRows(tenantId, identifier, true, rows);
+      return issueUatCleanupPreview(this, plan);
+    }
+    if (options.confirm !== identifier) {
+      const rows = await listPostgresUatCleanupRows(this.pool, tenantId);
+      return blockedUatCleanupPlan(buildUatCleanupPlanFromRows(tenantId, identifier, false, rows));
+    }
+
+    const ownsClient = typeof this.pool.connect === "function";
+    const client = ownsClient ? await this.pool.connect() : this.pool;
+    try {
+      await client.query("begin");
+      await client.query("lock table patchforge_records in share row exclusive mode");
+      const preview = await requirePostgresUatCleanupPreview(client, tenantId, identifier, options.preview_token);
+      const candidateRows = await listPostgresUatCleanupRows(client, tenantId);
+      const candidatePlan = buildUatCleanupPlanFromRows(tenantId, identifier, false, candidateRows);
+      const lockedRows = [];
+
+      for (const collection of candidatePlan.collections) {
+        const recordIds = candidatePlan.record_ids[collection] || [];
+        if (!recordIds.length) {
+          continue;
+        }
+        const result = await client.query(
+          `select collection, record_id, record
+           from patchforge_records
+           where tenant_id = $1
+             and collection = $2
+             and record_id = any($3::text[])
+           for update`,
+          [tenantId, collection, recordIds]
+        );
+        lockedRows.push(...result.rows);
+      }
+
+      const plan = buildUatCleanupPlanFromRows(tenantId, identifier, false, lockedRows);
+      assertUatCleanupPreviewMatches(preview, plan);
+      const removed = {};
+      for (const collection of plan.collections) {
+        const recordIds = plan.record_ids[collection] || [];
+        if (!recordIds.length) {
+          continue;
+        }
+        const result = await client.query(
+          `delete from patchforge_records
+           where tenant_id = $1
+             and collection = $2
+             and record_id = any($3::text[])
+           returning record_id`,
+          [tenantId, collection, recordIds]
+        );
+        removed[collection] = result.rows?.length ?? result.rowCount ?? 0;
+      }
+
+      const consumedPreview = await client.query(
+        `update patchforge_records
+         set record = record || $1::jsonb, updated_at = now()
+         where tenant_id = $2
+           and collection = 'uat_cleanup_previews'
+           and record_id = $3`,
+        [JSON.stringify({ status: "consumed", consumed_at: new Date().toISOString() }), tenantId, preview.preview_id]
+      );
+      if (consumedPreview.rowCount !== 1) {
+        throw new Error("UAT cleanup preview could not be consumed atomically.");
+      }
+
+      const auditRecord = buildUatCleanupAuditRecord(
+        tenantId,
+        plan,
+        removed,
+        options.lineage,
+        preview
+      );
+      await client.query(
+        `insert into patchforge_records (tenant_id, collection, record_id, record)
+         values ($1, 'audit_events', $2, $3::jsonb)`,
+        [tenantId, auditRecord.audit_id, JSON.stringify(auditRecord)]
+      );
+      await client.query("commit");
+      return completedUatCleanupPlan(plan, removed, auditRecord.audit_id, preview);
+    } catch (error) {
+      try {
+        await client.query("rollback");
+      } catch {
+        // Preserve the original failure if rollback also fails.
+      }
+      throw error;
+    } finally {
+      if (ownsClient) {
+        client.release();
+      }
+    }
+  }
+
   async querySecurityActionCatalogue(tenantId, options = {}) {
     await this.ensureReady();
     const collections = Array.isArray(options.collections) && options.collections.length
@@ -1291,6 +1459,310 @@ async function buildPurgePlan(storage, tenantId, options = {}) {
       human_confirmation_required: true
     }
   };
+}
+
+async function buildUatCleanupPlan(storage, tenantId, options = {}) {
+  validateUatCleanupOptions(options);
+  const identifier = normalizeUatCleanupIdentifier(options.identifier);
+  const rows = [];
+  for (const collection of PATCHFORGE_UAT_CLEANUP_COLLECTIONS) {
+    const records = await storage.list(collection, tenantId);
+    rows.push(...records.map((record) => ({
+      collection,
+      record_id: recordIdFor(collection, record),
+      record
+    })));
+  }
+  return buildUatCleanupPlanFromRows(
+    tenantId,
+    identifier,
+    options.dry_run !== false,
+    rows
+  );
+}
+
+function buildUatCleanupPlanFromRows(tenantId, identifier, dryRun, rows = []) {
+  const recordIds = {};
+  for (const row of rows) {
+    if (!PATCHFORGE_UAT_CLEANUP_COLLECTIONS.includes(row.collection)) {
+      continue;
+    }
+    if (!recordReferencesExactIdentifier(row.record, identifier)) {
+      continue;
+    }
+    const recordId = String(row.record_id || recordIdFor(row.collection, row.record));
+    recordIds[row.collection] ||= [];
+    if (!recordIds[row.collection].includes(recordId)) {
+      recordIds[row.collection].push(recordId);
+    }
+  }
+
+  const collections = PATCHFORGE_UAT_CLEANUP_COLLECTIONS
+    .filter((collection) => (recordIds[collection] || []).length > 0);
+  const counts = Object.fromEntries(
+    collections.map((collection) => [collection, recordIds[collection].length])
+  );
+  return {
+    tenant_id: tenantId,
+    identifier,
+    generated_at: new Date().toISOString(),
+    dry_run: dryRun,
+    selection_mode: "exact_identifier_value",
+    scanned_collections: [...PATCHFORGE_UAT_CLEANUP_COLLECTIONS],
+    scanned_collection_count: PATCHFORGE_UAT_CLEANUP_COLLECTIONS.length,
+    collections,
+    counts,
+    record_ids: Object.fromEntries(
+      collections.map((collection) => [collection, [...recordIds[collection]].sort()])
+    ),
+    total_records: Object.values(counts).reduce((total, count) => total + count, 0),
+    required_confirmation: identifier,
+    preserves: [
+      "all records without an exact identifier value match",
+      "all audit events, including earlier UAT references",
+      "all other tenants",
+      "Git and deployment history"
+    ],
+    boundary: {
+      exact_identifier_required: true,
+      required_prefix: PATCHFORGE_UAT_IDENTIFIER_PREFIX,
+      collection_wide_selection_permitted: false,
+      audit_events_preserved: true,
+      human_confirmation_required: true,
+      server_issued_preview_required: true,
+      execution_rejected_on_preview_drift: true,
+      no_patch_deployment: true,
+      no_autonomous_approval: true,
+      final_approval_issued: false
+    }
+  };
+}
+
+async function issueUatCleanupPreview(storage, plan) {
+  const previewToken = randomUUID();
+  const previewDigest = uatCleanupPlanDigest(plan);
+  const issuedAt = new Date();
+  const expiresAt = new Date(issuedAt.getTime() + PATCHFORGE_UAT_PREVIEW_TTL_MS);
+  const preview = {
+    tenant_id: plan.tenant_id,
+    preview_id: `PF-UAT-PREVIEW-${sha256Text(`${plan.tenant_id}\0${plan.identifier}`).slice(0, 24)}`,
+    identifier: plan.identifier,
+    preview_token_sha256: sha256Text(previewToken),
+    preview_digest: previewDigest,
+    record_ids: plan.record_ids,
+    total_records: plan.total_records,
+    status: "pending",
+    issued_at: issuedAt.toISOString(),
+    expires_at: expiresAt.toISOString()
+  };
+  await storage.append("uat_cleanup_previews", preview);
+  return {
+    ...plan,
+    preview_token: previewToken,
+    preview_digest: previewDigest,
+    preview_expires_at: preview.expires_at
+  };
+}
+
+async function requireUatCleanupPreview(storage, tenantId, plan, token) {
+  const tokenHash = previewTokenHash(token);
+  const preview = (await storage.list("uat_cleanup_previews", tenantId))
+    .find((record) => record.preview_token_sha256 === tokenHash);
+  validateUatCleanupPreviewRecord(preview, tenantId, plan.identifier);
+  assertUatCleanupPreviewMatches(preview, plan);
+  return preview;
+}
+
+async function requirePostgresUatCleanupPreview(client, tenantId, identifier, token) {
+  const tokenHash = previewTokenHash(token);
+  const result = await client.query(
+    `select record
+     from patchforge_records
+     where tenant_id = $1
+       and collection = 'uat_cleanup_previews'
+       and record->>'preview_token_sha256' = $2
+     for update`,
+    [tenantId, tokenHash]
+  );
+  const preview = result.rows[0]?.record || null;
+  validateUatCleanupPreviewRecord(preview, tenantId, identifier);
+  return preview;
+}
+
+function previewTokenHash(value) {
+  if (typeof value !== "string" || !/^[0-9a-f-]{36}$/i.test(value)) {
+    throw uatCleanupInputError(
+      "uat_cleanup_preview_required",
+      "Execute cleanup only from a current server-issued preview token. Preview this exact UAT identifier again.",
+      400
+    );
+  }
+  return sha256Text(value);
+}
+
+function validateUatCleanupPreviewRecord(preview, tenantId, identifier) {
+  if (!preview || preview.tenant_id !== tenantId || preview.identifier !== identifier) {
+    throw uatCleanupInputError(
+      "uat_cleanup_preview_invalid",
+      "The UAT cleanup preview is invalid for this tenant or identifier. Preview again.",
+      409
+    );
+  }
+  if (preview.status !== "pending") {
+    throw uatCleanupInputError(
+      "uat_cleanup_preview_consumed",
+      "The UAT cleanup preview has already been used. Preview again.",
+      409
+    );
+  }
+  if (!preview.expires_at || Date.parse(preview.expires_at) <= Date.now()) {
+    throw uatCleanupInputError(
+      "uat_cleanup_preview_expired",
+      "The UAT cleanup preview has expired. Preview again.",
+      409
+    );
+  }
+}
+
+function assertUatCleanupPreviewMatches(preview, plan) {
+  const currentDigest = uatCleanupPlanDigest(plan);
+  if (preview.preview_digest !== currentDigest) {
+    throw uatCleanupInputError(
+      "uat_cleanup_preview_drift",
+      "Records linked to this UAT identifier changed after preview. No records were removed; preview again.",
+      409
+    );
+  }
+}
+
+function uatCleanupPlanDigest(plan) {
+  return sha256Text(JSON.stringify({
+    tenant_id: plan.tenant_id,
+    identifier: plan.identifier,
+    record_ids: plan.record_ids,
+    total_records: plan.total_records
+  }));
+}
+
+function sha256Text(value) {
+  return createHash("sha256").update(String(value), "utf8").digest("hex");
+}
+
+function validateUatCleanupOptions(options = {}) {
+  const selector = PATCHFORGE_UAT_FORBIDDEN_SELECTORS.find((key) => (
+    Object.prototype.hasOwnProperty.call(options, key)
+  ));
+  if (selector) {
+    throw uatCleanupInputError(
+      "collection_wide_selection_forbidden",
+      `UAT cleanup does not accept '${selector}'. Supply one exact UAT-PF- identifier only.`
+    );
+  }
+}
+
+function normalizeUatCleanupIdentifier(value) {
+  if (typeof value !== "string" || !value) {
+    throw uatCleanupInputError(
+      "uat_identifier_required",
+      `A single identifier beginning with ${PATCHFORGE_UAT_IDENTIFIER_PREFIX} is required.`
+    );
+  }
+  if (!PATCHFORGE_UAT_IDENTIFIER_PATTERN.test(value)) {
+    throw uatCleanupInputError(
+      "invalid_uat_identifier",
+      `The identifier must begin with ${PATCHFORGE_UAT_IDENTIFIER_PREFIX} and contain only letters, numbers, dot, underscore, colon, or hyphen.`
+    );
+  }
+  return value;
+}
+
+function uatCleanupInputError(publicError, publicMessage, statusCode = 400) {
+  const error = new Error(publicMessage);
+  error.statusCode = statusCode;
+  error.publicError = publicError;
+  error.publicMessage = publicMessage;
+  return error;
+}
+
+function recordReferencesExactIdentifier(value, identifier, seen = new WeakSet()) {
+  if (typeof value === "string") {
+    return value === identifier;
+  }
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  if (seen.has(value)) {
+    return false;
+  }
+  seen.add(value);
+  if (Array.isArray(value)) {
+    return value.some((item) => recordReferencesExactIdentifier(item, identifier, seen));
+  }
+  return Object.values(value)
+    .some((item) => recordReferencesExactIdentifier(item, identifier, seen));
+}
+
+function blockedUatCleanupPlan(plan) {
+  return {
+    ...plan,
+    blocked: true,
+    error: "exact_identifier_confirmation_required",
+    required_confirmation: plan.identifier,
+    storage_mutation_executed: false
+  };
+}
+
+function buildUatCleanupAuditDetails(plan, removed, lineage = {}, preview = null) {
+  return {
+    identifier: plan.identifier,
+    selection_mode: plan.selection_mode,
+    collections: plan.collections,
+    record_ids: plan.record_ids,
+    removed,
+    total_removed: Object.values(removed).reduce((total, count) => total + count, 0),
+    preview_id: preview?.preview_id || null,
+    preview_digest: preview?.preview_digest || null,
+    dry_run: false,
+    boundary: plan.boundary,
+    ...(lineage || {})
+  };
+}
+
+function buildUatCleanupAuditRecord(tenantId, plan, removed, lineage = {}, preview = null) {
+  return {
+    tenant_id: tenantId,
+    audit_id: `audit-${randomUUID()}`,
+    event_type: "patchforge_uat_cleanup_completed",
+    details: buildUatCleanupAuditDetails(plan, removed, lineage, preview),
+    created_at: new Date().toISOString()
+  };
+}
+
+function completedUatCleanupPlan(plan, removed, auditId, preview = null) {
+  return {
+    ...plan,
+    dry_run: false,
+    removed,
+    total_removed: Object.values(removed).reduce((total, count) => total + count, 0),
+    audit_id: auditId,
+    preview_id: preview?.preview_id || null,
+    preview_digest: preview?.preview_digest || null,
+    final_approval_issued: false,
+    storage_mutation_executed: true,
+    no_patch_deployment: true
+  };
+}
+
+async function listPostgresUatCleanupRows(client, tenantId) {
+  const result = await client.query(
+    `select collection, record_id, record
+     from patchforge_records
+     where tenant_id = $1
+       and collection = any($2::text[])
+     order by collection asc, created_at asc`,
+    [tenantId, PATCHFORGE_UAT_CLEANUP_COLLECTIONS]
+  );
+  return result.rows;
 }
 
 function resolvePurgeScopes(options = {}) {

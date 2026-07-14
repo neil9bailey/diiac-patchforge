@@ -1,0 +1,22 @@
+{
+  "schema": "patchforge-sanitized-rbac-revocation-summary-v1",
+  "sanitized": true,
+  "date": "2026-07-14",
+  "key_name": "pf-pack-signing-prod",
+  "key_vault": "kv-diiac-patchforge-prod",
+  "release_signing_preflight": {
+    "algorithm": "ES256",
+    "verified": true,
+    "key_id": "https://kv-diiac-patchforge-prod.vault.azure.net/keys/pf-pack-signing-prod/2e348fdeaaaf448ebba206130ef86b52",
+    "checked_at_utc": "2026-07-14T15:31:00.2685779Z"
+  },
+  "post_release_readback": {
+    "checked_at_utc": "2026-07-14T16:28:47.5730371Z",
+    "direct_key_scope_role_assignments": [],
+    "key_data_plane_read": "ForbiddenByRbac",
+    "assignment_result": "not_found"
+  },
+  "temporary_key_scope_crypto_access_revoked": true,
+  "operator_identity_included": false,
+  "raw_authorization_or_token_data_included": false
+}
