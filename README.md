@@ -48,8 +48,9 @@ This repository now contains the PF-AZ11-CUSTOMER-DEMO-MATURITY production produ
 - deterministic runtime governance and signed decision packs
 - Azure Key Vault production signing path
 - Microsoft Entra sign-in and token-backed frontend API use
-- Security Action Center for source-bound CVEs, vendor advisories, KEV/EPSS signals, customer match counts, and governance posture
-- Customer Operational Assets for customer devices/assets, services, config evidence, exposure matches, and Patch Compare
+- Patch & CVE Catalogue for source-bound CVEs, vendor advisories, KEV/EPSS signals, customer matches, evidence posture, and next actions
+- Vendor Catalogue for vendor/advisory context, selected customer asset applicability, and Patch Compare
+- Customer Estate for customer devices/assets, services, collector/config evidence, exposure matches, and lifecycle state
 - Ask PatchForge advisory workflow for vendor, device, feature, patch, and evidence questions
 - Reports consolidation for customer, board, CAB, technical appendix, signed pack, and verification outputs
 - deterministic search index across vulnerabilities, vendor advisories, vendor profiles, customer assets, applicability assessments, and source-feed records
@@ -57,7 +58,7 @@ This repository now contains the PF-AZ11-CUSTOMER-DEMO-MATURITY production produ
 - customer network asset, model, firmware, feature, and exposure evidence records
 - Ask PatchForge advisory chat with human accountability
 - source-bound SRA and agent finding intake
-- simplified Security Action Center, Vendors & Exploits Register, Customer Operational Assets, Patch / Hotfix Compare, Ask PatchForge, Reports, and Admin navigation
+- modern six-area Patch & CVE Catalogue, Vendor Catalogue, Customer Estate, Ask PatchForge, Reports, and Admin navigation
 - human-readable finding intelligence API
 - decision-grade DOCX/PDF board and CAB reports
 - signed-pack finding intelligence snapshots
@@ -68,11 +69,13 @@ No scanner, exploit, or patch-deployment capability is created. PatchForge remai
 
 ## Operational User Guide
 
-Start with [PatchForge Operational User Guide](docs/operations/PATCHFORGE_OPERATIONAL_USER_GUIDE.md) when helping end users understand how to use PatchForge correctly in day-to-day operations. It covers the Security Action Center, Vendors & Exploits Register, Customer Operational Assets, Patch / Hotfix Compare, Ask PatchForge, Reports, evidence discipline, human approval boundaries, and credibility checks before customer or board reporting.
+Start with [PatchForge Operational User Guide](docs/operations/PATCHFORGE_OPERATIONAL_USER_GUIDE.md) when helping end users understand how to use PatchForge correctly in day-to-day operations. It covers the six-area Patch & CVE Catalogue, Vendor Catalogue, Customer Estate, Ask PatchForge, Reports, and Admin experience plus finding-scoped evidence review, explicit pack selection, human approval boundaries, and credibility checks before customer or board reporting.
+
+For the current implementation-versus-live status, operator actions, evidence requirements, and release stop conditions, use the [PatchForge 14-Area Improvement Closure Matrix](docs/validation/PATCHFORGE_14_AREA_IMPROVEMENT_CLOSURE_2026-07-14.md). The candidate is not a claimed production release until its live and human gates are evidenced.
 
 ## Canonical Rebuild Blueprint
 
-The catalogue-first rebuild is governed by the [PatchForge Intelligence Rebuild Blueprint](docs/product/PATCHFORGE_INTELLIGENCE_REBUILD_BLUEPRINT.md). Implementation work after PF0 must remain aligned to this blueprint: Security Action Center first, Vendors & Exploits Register next, Customer Operational Assets, Patch / Hotfix Compare, Ask PatchForge, user-driven Reports, and Admin as System & Data Health.
+The catalogue-first rebuild is governed by the [PatchForge Intelligence Rebuild Blueprint](docs/product/PATCHFORGE_INTELLIGENCE_REBUILD_BLUEPRINT.md). The current six-area information architecture consolidates that blueprint into Patch & CVE Catalogue, Vendor Catalogue, Customer Estate, Ask PatchForge, user-driven Reports, and Admin as System & Data Health while preserving the same trust and product boundaries.
 
 ## Local Validation
 

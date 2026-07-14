@@ -56,6 +56,7 @@ resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2023-05-01'
     deleteRetentionPolicy: {
       enabled: true
       days: 30
+      allowPermanentDelete: false
     }
     containerDeleteRetentionPolicy: {
       enabled: true
@@ -69,6 +70,8 @@ resource blobContainers 'Microsoft.Storage/storageAccounts/blobServices/containe
   parent: blobService
   properties: {
     publicAccess: 'None'
+    defaultEncryptionScope: '$account-encryption-key'
+    denyEncryptionScopeOverride: false
     immutableStorageWithVersioning: {
       enabled: false
     }
@@ -88,4 +91,3 @@ resource blobContributorAssignments 'Microsoft.Authorization/roleAssignments@202
 output storageAccountName string = storageAccount.name
 output storageAccountId string = storageAccount.id
 output blobEndpoint string = storageAccount.properties.primaryEndpoints.blob
-

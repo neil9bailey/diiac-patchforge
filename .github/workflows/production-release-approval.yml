@@ -1,0 +1,107 @@
+name: PatchForge production release approval
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_commit:
+        description: Full immutable source commit to authorize
+        required: true
+        type: string
+      image_tag:
+        description: New immutable six-image ACR tag
+        required: true
+        type: string
+      product_baseline:
+        description: Product baseline stamped into reports and runtime metadata
+        required: true
+        type: string
+      report_context_version:
+        description: Report context contract version
+        required: true
+        type: string
+
+concurrency:
+  group: patchforge-production-release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  authorize-production-release:
+    name: Production release approval
+    environment:
+      name: production
+      url: https://patchforge.diiac.io
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    steps:
+      - name: Checkout approved ref
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate immutable release inputs
+        shell: bash
+        env:
+          SOURCE_COMMIT: ${{ inputs.source_commit }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+          PRODUCT_BASELINE: ${{ inputs.product_baseline }}
+          REPORT_CONTEXT_VERSION: ${{ inputs.report_context_version }}
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_COMMIT" =~ ^[a-f0-9]{40}$ ]] || { echo "source_commit must be a full lowercase SHA-1"; exit 1; }
+          [[ "$IMAGE_TAG" =~ ^[a-z0-9][a-z0-9._-]{7,127}$ ]] || { echo "image_tag format is invalid"; exit 1; }
+          [[ "$IMAGE_TAG" != *latest* && "$IMAGE_TAG" != *bootstrap* ]] || { echo "mutable/bootstrap image tags are forbidden"; exit 1; }
+          [[ "$IMAGE_TAG" == *"${SOURCE_COMMIT:0:7}"* ]] || { echo "image_tag must include the source commit short SHA"; exit 1; }
+          [[ "$PRODUCT_BASELINE" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$ ]] || { echo "product_baseline format is invalid"; exit 1; }
+          [[ "$REPORT_CONTEXT_VERSION" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$ ]] || { echo "report_context_version format is invalid"; exit 1; }
+          git cat-file -e "${SOURCE_COMMIT}^{commit}"
+          git merge-base --is-ancestor "$SOURCE_COMMIT" "$GITHUB_SHA" || {
+            echo "source_commit is not contained by the workflow ref"
+            exit 1
+          }
+
+      - name: Create release authorization record
+        shell: bash
+        env:
+          SOURCE_COMMIT: ${{ inputs.source_commit }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+          PRODUCT_BASELINE: ${{ inputs.product_baseline }}
+          REPORT_CONTEXT_VERSION: ${{ inputs.report_context_version }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/release-approval
+          jq -n \
+            --arg schema "patchforge-production-release-authorization-v1" \
+            --arg repository "$GITHUB_REPOSITORY" \
+            --arg source_commit "$SOURCE_COMMIT" \
+            --arg image_tag "$IMAGE_TAG" \
+            --arg product_baseline "$PRODUCT_BASELINE" \
+            --arg report_context_version "$REPORT_CONTEXT_VERSION" \
+            --arg approved_ref "$GITHUB_REF" \
+            --arg approved_by "$GITHUB_ACTOR" \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg run_attempt "$GITHUB_RUN_ATTEMPT" \
+            --arg created_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{schema:$schema,repository:$repository,source_commit:$source_commit,image_tag:$image_tag,product_baseline:$product_baseline,report_context_version:$report_context_version,approved_ref:$approved_ref,approved_by:$approved_by,run_id:$run_id,run_attempt:$run_attempt,created_at:$created_at,explicit_environment_approval:true}' \
+            > artifacts/release-approval/release-authorization.json
+          sha256sum artifacts/release-approval/release-authorization.json \
+            > artifacts/release-approval/SHA256SUMS
+
+      - name: Attest approved release authorization
+        uses: actions/attest@f6bf1532d7d6793fce74eac584813a8eee607999 # v4
+        with:
+          subject-path: artifacts/release-approval/release-authorization.json
+
+      - name: Upload approved release authorization
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: patchforge-production-release-${{ inputs.image_tag }}
+          path: artifacts/release-approval
+          if-no-files-found: error
+          retention-days: 90

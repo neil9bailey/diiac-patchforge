@@ -42,7 +42,19 @@
   "auth": {
     "bearerTokenEnv": "PATCHFORGE_COLLECTOR_TOKEN",
     "azureCliScope": "api://ec30b0eb-cfc4-48cc-a5f2-2a1345d96736/PatchForge.Access",
-    "azureTenantId": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da"
+    "azureTenantId": "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
+    "azureCliManagedIdentity": false,
+    "managedIdentityClientIdEnv": "PATCHFORGE_COLLECTOR_MANAGED_IDENTITY_CLIENT_ID"
+  },
+  "lifecycle": {
+    "heartbeatFile": "C:\\ProgramData\\PatchForge\\Collector\\collector-heartbeat.json",
+    "revocationFile": "C:\\ProgramData\\PatchForge\\Collector\\collector.revoked.json",
+    "spoolDirectory": "C:\\ProgramData\\PatchForge\\Collector\\spool",
+    "maxSpoolEntries": 100,
+    "maxSpoolEntryBytes": 8388608,
+    "maxReplayAttempts": 5,
+    "collectorVersion": "customer-managed",
+    "packageDigest": null
   },
   "adapters": [
     {

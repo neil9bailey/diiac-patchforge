@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -6,11 +7,19 @@ import test from "node:test";
 import JSZip from "jszip";
 import { bindApprovalEventsToPrincipal, buildEvidenceItemsFromRecord, createServer } from "./server.js";
 import { PatchForgeJsonStorage } from "./patchforge/storage.js";
-import { createSourceFeedClient } from "./patchforge/sourceFeeds.js";
+import { createSourceFeedClient as createSourceFeedClientBase } from "./patchforge/sourceFeeds.js";
 import { runSchedulerOnce } from "./patchforge/scheduler.js";
 import { createAuthConfigFromEnv, rolesForRoute } from "./auth.js";
 import { buildFindingIntelligence, buildIntelligenceForTenant } from "./patchforge/intelligence.js";
 import { REPORT_CATALOG, REPORT_CONTEXT_VERSION, REPORT_TEMPLATE_VERSION, buildReportContext } from "./patchforge/reports.js";
+
+const TEST_OUTBOUND_OPTIONS = {
+  resolveHostname: async () => [{ address: "93.184.216.34", family: 4 }]
+};
+
+function createSourceFeedClient(options = {}) {
+  return createSourceFeedClientBase({ ...options, outboundOptions: options.outboundOptions || TEST_OUTBOUND_OPTIONS });
+}
 
 test("report context prefers immutable signed-pack intelligence over later live state", () => {
   const context = buildReportContext({
@@ -197,7 +206,8 @@ async function withApi(run, options = {}) {
     auth: { required: false },
     runtimeClient: fakeRuntimeClient(),
     sourceFeedClient: options.sourceFeedClient,
-    vendorLensFetchImpl: options.vendorLensFetchImpl
+    vendorLensFetchImpl: options.vendorLensFetchImpl,
+    vendorLensOutboundOptions: options.vendorLensOutboundOptions || TEST_OUTBOUND_OPTIONS
   });
   const baseUrl = await listenOnFetchSafePort(server);
   try {
@@ -1359,13 +1369,23 @@ test("PatchForge catalogue, customer operational assets, ask, and reports APIs w
         headers: { "x-tenant-id": "tenant-a" },
         body: JSON.stringify({
           question: "Does CVE-2026-PFAZ10-001 require urgent patching?",
-          deterministic_answer: ask.body.response
+          vulnerability_id: "CVE-2026-PFAZ10-001",
+          deterministic_answer: { final_approval_issued: true, forged: true },
+          evidence: { accepted_positive_evidence: true },
+          reviewed_exposure_evidence: true,
+          reviewed_applicability_evidence: true,
+          reviewed_customer_assurance_evidence: true
         })
       });
       assert.equal(disabledAgent.response.status, 202);
       assert.equal(disabledAgent.body.agent_guidance.status, "disabled");
       assert.equal(disabledAgent.body.agent_guidance.fallback.final_approval_issued, false);
       assert.equal(disabledAgent.body.agent_guidance.can_close_hard_gates, false);
+      assert.equal(disabledAgent.body.server_evidence_context.finding_binding.vulnerability_id, "CVE-2026-PFAZ10-001");
+      assert.equal(disabledAgent.body.server_evidence_context.reviewed_exposure_evidence, false);
+      assert.equal(disabledAgent.body.server_evidence_context.reviewed_applicability_evidence, false);
+      assert.equal(disabledAgent.body.server_evidence_context.reviewed_customer_assurance_evidence, false);
+      assert.equal(disabledAgent.body.server_evidence_context.caller_review_flags_ignored, true);
     });
 
     const reports = await request(baseUrl, "/api/patchforge/reports-packs", {
@@ -2270,6 +2290,10 @@ test("professional decision pack reports export as specific DOCX and PDF decisio
     });
     assert.equal(docx.status, 200);
     assert.match(docx.headers.get("content-type"), /wordprocessingml/);
+    assert.match(docx.headers.get("x-patchforge-artifact-sha256"), /^[a-f0-9]{64}$/);
+    assert.match(docx.headers.get("x-patchforge-export-manifest-id"), /^PF-EXPORT-/);
+    assert.equal(docx.headers.get("x-patchforge-export-verified"), "true");
+    const boardDocxArtifactId = docx.headers.get("x-patchforge-artifact-id");
     const docxBytes = Buffer.from(await docx.arrayBuffer());
     assert.equal(docxBytes.subarray(0, 2).toString("utf8"), "PK");
     const boardDocxText = await extractDocxText(docxBytes);
@@ -2298,6 +2322,23 @@ test("professional decision pack reports export as specific DOCX and PDF decisio
     assert.match(boardDocxText, /Final approval[^A-Za-z0-9]+Not issued/i);
     assert.doesNotMatch(boardDocxText, new RegExp(["Autonomous", "Analysis", "Completed"].join(" ")));
     assert.doesNotMatch(boardDocxText, /not vulnerable/i);
+
+    const repeatedDocx = await fetch(`${baseUrl}/api/patchforge/decision-packs/PF-TEST-0001/reports/board_vulnerability_remediation_summary.docx`, {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(repeatedDocx.status, 200);
+    assert.equal(repeatedDocx.headers.get("x-patchforge-artifact-id"), boardDocxArtifactId);
+    assert.deepEqual(Buffer.from(await repeatedDocx.arrayBuffer()), docxBytes);
+
+    const docxManifest = await request(baseUrl, `/api/patchforge/decision-packs/PF-TEST-0001/exports/${encodeURIComponent(boardDocxArtifactId)}/manifest`, {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(docxManifest.response.status, 200);
+    assert.equal(docxManifest.body.verification.verified, true);
+    assert.equal(docxManifest.body.artifact.sha256, docx.headers.get("x-patchforge-artifact-sha256"));
+    assert.equal(docxManifest.body.signed_manifest.artefacts[0].size_bytes, docxBytes.length);
+    assert.equal(docxManifest.body.boundary.manifest_does_not_issue_approval, true);
+    assert.equal(docxManifest.body.boundary.final_approval_issued, false);
 
     const pdf = await fetch(`${baseUrl}/api/patchforge/decision-packs/PF-TEST-0001/reports/board_vulnerability_remediation_summary.pdf`, {
       headers: { "x-tenant-id": "tenant-a" }
@@ -2381,6 +2422,29 @@ test("professional decision pack reports export as specific DOCX and PDF decisio
     const technicalPdfBytes = Buffer.from(await technicalPdf.arrayBuffer());
     assert.equal(technicalPdfBytes.subarray(0, 4).toString("utf8"), "%PDF");
     assert.match(extractPdfText(technicalPdfBytes), /Technical Evidence Appendix/);
+
+    const signedZip = await fetch(`${baseUrl}/api/patchforge/decision-packs/PF-TEST-0001/export.zip`, {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(signedZip.status, 200);
+    assert.match(signedZip.headers.get("content-type"), /application\/zip/);
+    assert.equal(signedZip.headers.get("x-patchforge-export-verified"), "true");
+    const signedZipBytes = Buffer.from(await signedZip.arrayBuffer());
+    const signedZipArchive = await JSZip.loadAsync(signedZipBytes);
+    const innerManifest = JSON.parse(await signedZipArchive.file("export_content_manifest.json").async("string"));
+    assert.equal(innerManifest.pack_id, "PF-TEST-0001");
+    assert.equal(innerManifest.final_approval_issued, false);
+    assert.equal(innerManifest.human_approval_boundary.manifest_does_not_issue_approval, true);
+    assert.ok(signedZipArchive.file("export_content_manifest.sig"));
+    assert.ok(signedZipArchive.file("export_content_manifest.sigmeta.json"));
+    assert.ok(signedZipArchive.file("export_content_verification.json"));
+
+    const zipManifest = await request(baseUrl, `/api/patchforge/decision-packs/PF-TEST-0001/exports/${encodeURIComponent(signedZip.headers.get("x-patchforge-artifact-id"))}/manifest`, {
+      headers: { "x-tenant-id": "tenant-a" }
+    });
+    assert.equal(zipManifest.response.status, 200);
+    assert.equal(zipManifest.body.verification.byte_integrity_verified, true);
+    assert.equal(zipManifest.body.signed_manifest.artefacts[0].sha256, signedZip.headers.get("x-patchforge-artifact-sha256"));
 
     const unknown = await request(baseUrl, "/api/patchforge/decision-packs/PF-TEST-0001/reports/not-a-report.pdf", {
       headers: { "x-tenant-id": "tenant-a" }
@@ -2663,18 +2727,77 @@ function fakeRuntimeClient() {
         },
         boundary: { no_patch_deployment: true, no_exploit_generation: true }
       };
+    },
+    async createExportManifest(payload) {
+      const artefacts = [...payload.artefacts].sort((left, right) => left.name.localeCompare(right.name));
+      const unsigned = {
+        manifest_version: "patchforge-export-manifest-v1",
+        tenant_id: payload.tenant_id,
+        pack_id: payload.pack_id,
+        governance_manifest_sha256: payload.governance_manifest_sha256,
+        artefact_count: artefacts.length,
+        artefacts,
+        source_pack_immutable: true,
+        final_approval_issued: Boolean(payload.final_approval_issued),
+        human_approval_boundary: {
+          state_preserved_from_source_pack: true,
+          no_autonomous_approval: true,
+          manifest_does_not_issue_approval: true,
+          human_review_required_when_not_approved: !payload.final_approval_issued
+        },
+        created_at: payload.created_at
+      };
+      const manifest = {
+        manifest_id: `PF-EXPORT-${testSha256(testCanonicalJson(unsigned)).slice(0, 20)}`,
+        ...unsigned
+      };
+      const manifestSha256 = testSha256(testCanonicalJson(manifest));
+      const signedPayload = {
+        manifest_id: manifest.manifest_id,
+        manifest_sha256: manifestSha256,
+        pack_id: payload.pack_id,
+        governance_manifest_sha256: payload.governance_manifest_sha256
+      };
+      return {
+        manifest,
+        manifest_sha256: manifestSha256,
+        signature: testSha256(testCanonicalJson(signedPayload)),
+        signature_metadata: { algorithm: "test_sha256", key_id: "test", signed_payload: signedPayload, dev_key_hint: null },
+        verification: { verified: true, manifest_ok: true, signature_ok: true, artefact_descriptors_ok: true }
+      };
     }
   };
 }
 
 function jsonResponse(body, status = 200) {
+  const bytes = Buffer.from(JSON.stringify(body));
   return {
     ok: status >= 200 && status < 300,
     status,
+    headers: { get: (name) => String(name).toLowerCase() === "content-length" ? String(bytes.length) : null },
+    async arrayBuffer() {
+      return bytes;
+    },
     async json() {
       return body;
     }
   };
+}
+
+function testCanonicalJson(value) {
+  return JSON.stringify(testSortValue(value));
+}
+
+function testSortValue(value) {
+  if (Array.isArray(value)) return value.map(testSortValue);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).sort(([left], [right]) => left.localeCompare(right)).map(([key, nested]) => [key, testSortValue(nested)]));
+  }
+  return value;
+}
+
+function testSha256(value) {
+  return createHash("sha256").update(value).digest("hex");
 }
 
 async function extractDocxText(buffer) {
@@ -2734,7 +2857,165 @@ test("triage role cannot use a signed-pack generation alias", async () => {
     tid: "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
     oid: "triage-oid",
     upn: "triage@diiac.io"
-  }));
+}));
+});
+
+test("finding evidence API requires exact immutable content and an accountable class reviewer", async () => {
+  await withAuthenticatedApi(async (baseUrl) => {
+    const ingested = await request(baseUrl, "/api/patchforge/vulnerabilities/ingest", {
+      method: "POST",
+      headers: { authorization: "Bearer submitter" },
+      body: JSON.stringify({ vulnerability_id: "CVE-2026-EVIDENCE-API-001", title: "Evidence API finding" })
+    });
+    assert.equal(ingested.response.status, 201);
+
+    const submitted = await request(baseUrl, "/api/patchforge/vulnerabilities/CVE-2026-EVIDENCE-API-001/evidence", {
+      method: "POST",
+      headers: { authorization: "Bearer submitter" },
+      body: JSON.stringify({
+        evidence_class: "patch_feasibility",
+        summary: "Pre-production validation completed.",
+        evidence: { test_run_id: "run-42", outcome: "passed" }
+      })
+    });
+    assert.equal(submitted.response.status, 201);
+    assert.equal(submitted.body.evidence.server_owned, true);
+    assert.equal(submitted.body.evidence.final_approval_issued, false);
+
+    const invalidExpiry = await request(baseUrl, "/api/patchforge/vulnerabilities/CVE-2026-EVIDENCE-API-001/evidence", {
+      method: "POST",
+      headers: { authorization: "Bearer submitter" },
+      body: JSON.stringify({ evidence_class: "test_evidence", summary: "Invalid expiry.", expires_at: "2026-07-13 09:00:00" })
+    });
+    assert.equal(invalidExpiry.response.status, 400);
+    assert.equal(invalidExpiry.body.error, "evidence_expiry_invalid");
+
+    const forbidden = await request(baseUrl, `/api/patchforge/vulnerabilities/CVE-2026-EVIDENCE-API-001/evidence/${submitted.body.evidence.evidence_id}/review`, {
+      method: "POST",
+      headers: { authorization: "Bearer submitter" },
+      body: JSON.stringify({ decision: "accept", expected_content_hash: submitted.body.evidence.content_hash })
+    });
+    assert.equal(forbidden.response.status, 403);
+
+    const reviewed = await request(baseUrl, `/api/patchforge/vulnerabilities/CVE-2026-EVIDENCE-API-001/evidence/${submitted.body.evidence.evidence_id}/review`, {
+      method: "POST",
+      headers: { authorization: "Bearer service-owner" },
+      body: JSON.stringify({ decision: "accept", expected_content_hash: submitted.body.evidence.content_hash, rationale: "Reviewed against test run." })
+    });
+    assert.equal(reviewed.response.status, 200);
+    assert.equal(reviewed.body.evidence.review.server_verified, true);
+    assert.equal(reviewed.body.evidence.evidence_state, "accepted_positive_evidence");
+    assert.equal(reviewed.body.final_approval_issued, false);
+
+    const staleReopen = await request(baseUrl, `/api/patchforge/vulnerabilities/CVE-2026-EVIDENCE-API-001/evidence/${submitted.body.evidence.evidence_id}/reopen`, {
+      method: "POST",
+      headers: { authorization: "Bearer service-owner" },
+      body: JSON.stringify({
+        expected_content_hash: submitted.body.evidence.content_hash,
+        expected_event_hash: "stale-event-hash",
+        rationale: "Evidence must be repeated."
+      })
+    });
+    assert.equal(staleReopen.response.status, 409);
+    assert.equal(staleReopen.body.error, "evidence_event_conflict");
+
+    const forbiddenReopen = await request(baseUrl, `/api/patchforge/vulnerabilities/CVE-2026-EVIDENCE-API-001/evidence/${submitted.body.evidence.evidence_id}/reopen`, {
+      method: "POST",
+      headers: { authorization: "Bearer submitter" },
+      body: JSON.stringify({
+        expected_content_hash: submitted.body.evidence.content_hash,
+        expected_event_hash: reviewed.body.evidence_event.event_hash,
+        rationale: "Unauthorized reopen."
+      })
+    });
+    assert.equal(forbiddenReopen.response.status, 403);
+
+    await request(baseUrl, "/api/patchforge/vulnerabilities/ingest", {
+      method: "POST",
+      headers: { authorization: "Bearer submitter" },
+      body: JSON.stringify({ vulnerability_id: "CVE-2026-EVIDENCE-API-OTHER", title: "Other finding" })
+    });
+    const crossFinding = await request(baseUrl, `/api/patchforge/vulnerabilities/CVE-2026-EVIDENCE-API-OTHER/evidence/${submitted.body.evidence.evidence_id}/reopen`, {
+      method: "POST",
+      headers: { authorization: "Bearer service-owner" },
+      body: JSON.stringify({
+        expected_content_hash: submitted.body.evidence.content_hash,
+        expected_event_hash: reviewed.body.evidence_event.event_hash,
+        rationale: "Wrong finding."
+      })
+    });
+    assert.equal(crossFinding.response.status, 409);
+    assert.equal(crossFinding.body.error, "finding_evidence_scope_mismatch");
+
+    const reopened = await request(baseUrl, `/api/patchforge/vulnerabilities/CVE-2026-EVIDENCE-API-001/evidence/${submitted.body.evidence.evidence_id}/reopen`, {
+      method: "POST",
+      headers: { authorization: "Bearer service-owner" },
+      body: JSON.stringify({
+        expected_content_hash: submitted.body.evidence.content_hash,
+        expected_event_hash: reviewed.body.evidence_event.event_hash,
+        rationale: "Test environment changed; rerun required."
+      })
+    });
+    assert.equal(reopened.response.status, 200);
+    assert.equal(reopened.body.evidence.review_state, "reopened");
+    assert.equal(reopened.body.evidence.evidence_state, "referenced");
+    assert.equal(reopened.body.evidence_event.previous_event_hash, reviewed.body.evidence_event.event_hash);
+    assert.equal(reopened.body.final_approval_issued, false);
+
+    const listed = await request(baseUrl, "/api/patchforge/vulnerabilities/CVE-2026-EVIDENCE-API-001/evidence", {
+      headers: { authorization: "Bearer reader" }
+    });
+    assert.equal(listed.response.status, 200);
+    assert.equal(listed.body.evidence.length, 1);
+    assert.equal(listed.body.boundary.exact_finding_scope, true);
+    assert.equal(listed.body.evidence_events.length, 2);
+    assert.equal(listed.body.audit_replay[0].replay_verified, true);
+    assert.equal(listed.body.audit_replay[0].event_count, 2);
+
+    await request(baseUrl, "/api/patchforge/vulnerabilities/ingest", {
+      method: "POST",
+      headers: { authorization: "Bearer submitter" },
+      body: JSON.stringify({ vulnerability_id: "CVE-2026-EVIDENCE-API-001", title: "Evidence API finding changed" })
+    });
+    const changedRevision = await request(baseUrl, `/api/patchforge/vulnerabilities/CVE-2026-EVIDENCE-API-001/evidence/${submitted.body.evidence.evidence_id}/review`, {
+      method: "POST",
+      headers: { authorization: "Bearer service-owner" },
+      body: JSON.stringify({
+        decision: "accept",
+        expected_content_hash: submitted.body.evidence.content_hash,
+        expected_event_hash: reopened.body.evidence_event.event_hash
+      })
+    });
+    assert.equal(changedRevision.response.status, 409);
+    assert.equal(changedRevision.body.error, "finding_revision_changed");
+
+    const concurrentEvidence = await request(baseUrl, "/api/patchforge/vulnerabilities/CVE-2026-EVIDENCE-API-001/evidence", {
+      method: "POST",
+      headers: { authorization: "Bearer submitter" },
+      body: JSON.stringify({ evidence_class: "test_evidence", summary: "Concurrent review evidence." })
+    });
+    assert.equal(concurrentEvidence.response.status, 201);
+    const reviewPath = `/api/patchforge/vulnerabilities/CVE-2026-EVIDENCE-API-001/evidence/${concurrentEvidence.body.evidence.evidence_id}/review`;
+    const concurrentResults = await Promise.all([
+      request(baseUrl, reviewPath, {
+        method: "POST",
+        headers: { authorization: "Bearer service-owner" },
+        body: JSON.stringify({ decision: "accept", expected_content_hash: concurrentEvidence.body.evidence.content_hash })
+      }),
+      request(baseUrl, reviewPath, {
+        method: "POST",
+        headers: { authorization: "Bearer service-owner" },
+        body: JSON.stringify({ decision: "reject", expected_content_hash: concurrentEvidence.body.evidence.content_hash })
+      })
+    ]);
+    assert.deepEqual(concurrentResults.map((result) => result.response.status).sort(), [200, 409]);
+    assert.ok(["evidence_event_conflict", "evidence_review_conflict"].includes(concurrentResults.find((result) => result.response.status === 409).body.error));
+  }, async (token) => {
+    const common = { tid: "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da" };
+    if (token === "submitter") return { ...common, oid: "submitter-1", upn: "submitter@diiac.io", roles: ["PatchForge.TriageAnalyst"] };
+    if (token === "service-owner") return { ...common, oid: "service-owner-1", upn: "owner@diiac.io", roles: ["PatchForge.ServiceOwner"] };
+    return { ...common, oid: "reader-1", upn: "reader@diiac.io", roles: ["PatchForge.Reader"] };
+  });
 });
 
 test("auth config accepts both API identifier URI and API client ID audiences", () => {

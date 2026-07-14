@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { assessConfigApplicability } from "./configApplicability.js";
+import { guardedFetchJson, guardedFetchText } from "./outboundFetch.js";
 
 export const NETWORK_VENDOR_CATALOG = [
   vendor("cisco", "Cisco", "infrastructure_networking", "https://developer.cisco.com/psirt/", ["ASA", "Firepower", "IOS XE", "IOS XR", "NX-OS", "Catalyst", "AnyConnect", "Secure Client"]),
@@ -307,16 +308,16 @@ export async function compareAndStorePatchVersion(storage, tenantId, body = {}) 
   return comparison;
 }
 
-export async function refreshVendorLensSource({ storage, tenantId, body = {}, fetchImpl = globalThis.fetch }) {
+export async function refreshVendorLensSource({ storage, tenantId, body = {}, fetchImpl = globalThis.fetch, outboundOptions = {} }) {
   const adapter = String(body.adapter || body.source_type || body.feed_id || "nvd_cve_api").toLowerCase();
   try {
     if (adapter.includes("nvd")) {
-      return await refreshNvdCve({ storage, tenantId, body, fetchImpl });
+      return await refreshNvdCve({ storage, tenantId, body, fetchImpl, outboundOptions });
     }
     if (adapter.includes("cisco")) {
-      return await refreshCiscoPsirt({ storage, tenantId, body, fetchImpl });
+      return await refreshCiscoPsirt({ storage, tenantId, body, fetchImpl, outboundOptions });
     }
-    return await refreshGenericVendorSource({ storage, tenantId, body, fetchImpl });
+    return await refreshGenericVendorSource({ storage, tenantId, body, fetchImpl, outboundOptions });
   } catch (error) {
     return recordRun(storage, tenantId, {
       run_id: body.run_id || `run-vendorlens-${Date.now()}-${randomUUID().slice(0, 8)}`,
@@ -337,14 +338,14 @@ export async function refreshVendorLensSource({ storage, tenantId, body = {}, fe
   }
 }
 
-async function refreshNvdCve({ storage, tenantId, body, fetchImpl }) {
+async function refreshNvdCve({ storage, tenantId, body, fetchImpl, outboundOptions }) {
   const cve = firstValue(body.cve, body.cves);
   const startedAt = new Date().toISOString();
   if (!cve) {
-    return refreshNvdCatalogue({ storage, tenantId, body, fetchImpl, startedAt });
+    return refreshNvdCatalogue({ storage, tenantId, body, fetchImpl, outboundOptions, startedAt });
   }
   const requestUrl = `https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=${encodeURIComponent(cve)}`;
-  const payload = await fetchJson(requestUrl, fetchImpl);
+  const payload = await fetchJson(requestUrl, fetchImpl, outboundOptions);
   const records = Array.isArray(payload.vulnerabilities) ? payload.vulnerabilities : [];
   let ingested = 0;
   for (const item of records.slice(0, 10)) {
@@ -363,7 +364,7 @@ async function refreshNvdCve({ storage, tenantId, body, fetchImpl }) {
   });
 }
 
-async function refreshNvdCatalogue({ storage, tenantId, body, fetchImpl, startedAt }) {
+async function refreshNvdCatalogue({ storage, tenantId, body, fetchImpl, outboundOptions, startedAt }) {
   const vendors = await listNetworkVendors(storage, tenantId);
   const requestedVendor = normalizeVendorId(body.vendor_id || body.vendor_name || "all-vendors");
   const selectedVendors = requestedVendor && requestedVendor !== "all-vendors"
@@ -400,7 +401,7 @@ async function refreshNvdCatalogue({ storage, tenantId, body, fetchImpl, started
         sourceUrls.push(url);
         let payload;
         try {
-          payload = await fetchJson(url, fetchImpl);
+          payload = await fetchJson(url, fetchImpl, outboundOptions);
         } catch (error) {
           sourceFailures.push({
             vendor_id: vendorItem.vendor_id,
@@ -477,7 +478,7 @@ function nvdCatalogueKeywords(vendorItem, body = {}) {
   ]).filter(Boolean);
 }
 
-async function refreshCiscoPsirt({ storage, tenantId, body, fetchImpl }) {
+async function refreshCiscoPsirt({ storage, tenantId, body, fetchImpl, outboundOptions }) {
   const startedAt = new Date().toISOString();
   const sourceUrl = body.source_url || null;
   const credentialConfigured = Boolean(body.credentials_reference || body.access_token_reference || body.auth_required === false);
@@ -493,7 +494,7 @@ async function refreshCiscoPsirt({ storage, tenantId, body, fetchImpl }) {
       sourceUrl
     ));
   }
-  const payload = await fetchJson(sourceUrl, fetchImpl);
+  const payload = await fetchJson(sourceUrl, fetchImpl, outboundOptions);
   const records = recordsFromJsonPayload(payload);
   let ingested = 0;
   for (const item of records.slice(0, boundedLimit(body.limit, 10, 1, 50))) {
@@ -508,13 +509,13 @@ async function refreshCiscoPsirt({ storage, tenantId, body, fetchImpl }) {
   });
 }
 
-async function refreshGenericVendorSource({ storage, tenantId, body, fetchImpl }) {
+async function refreshGenericVendorSource({ storage, tenantId, body, fetchImpl, outboundOptions }) {
   const startedAt = new Date().toISOString();
   const sourceUrl = body.source_url;
   if (!sourceUrl) {
     return recordRun(storage, tenantId, runRecord(body, "vendorlens-generic", "VendorLens generic vendor source", body.vendor_id || "Vendor", "blocked", "Generic vendor advisory refresh requires a configured source_url.", startedAt));
   }
-  const responseText = await fetchText(sourceUrl, fetchImpl);
+  const responseText = await fetchText(sourceUrl, fetchImpl, outboundOptions);
   const records = parseGenericSource(responseText);
   let ingested = 0;
   for (const item of records.slice(0, boundedLimit(body.limit, 10, 1, 50))) {
@@ -840,7 +841,7 @@ function parseGenericSource(text) {
   }
 }
 
-async function fetchJson(url, fetchImpl) {
+async function fetchJson(url, fetchImpl, outboundOptions = {}) {
   const headers = {
     accept: "application/json",
     "user-agent": "DIIaC-PatchForge-VendorLens/1.0 source-bound-governance"
@@ -848,28 +849,16 @@ async function fetchJson(url, fetchImpl) {
   if (process.env.PATCHFORGE_NVD_API_KEY) {
     headers.apiKey = process.env.PATCHFORGE_NVD_API_KEY;
   }
-  const response = await fetchImpl(url, {
-    headers
-  });
-  if (!response.ok) {
-    const error = new Error(`VendorLens source request failed with HTTP ${response.status}`);
-    error.status = response.status;
-    throw error;
-  }
-  return response.json();
+  return guardedFetchJson(url, { ...outboundOptions, fetchImpl, headers });
 }
 
-async function fetchText(url, fetchImpl) {
-  const response = await fetchImpl(url, {
+async function fetchText(url, fetchImpl, outboundOptions = {}) {
+  return guardedFetchText(url, { ...outboundOptions, fetchImpl,
     headers: {
       accept: "application/json, application/rss+xml, application/xml, text/xml, text/plain",
       "user-agent": "DIIaC-PatchForge-VendorLens/1.0 source-bound-governance"
     }
   });
-  if (!response.ok) {
-    throw new Error(`VendorLens source request failed with HTTP ${response.status}`);
-  }
-  return response.text();
 }
 
 async function recordRun(storage, tenantId, run) {

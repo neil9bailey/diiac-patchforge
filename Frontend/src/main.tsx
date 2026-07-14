@@ -7,7 +7,20 @@ import { getPatchForgeConfig } from "./api";
 import { MsalPatchForgeAuthProvider, PatchForgeAuthSession } from "./auth";
 import "./styles.css";
 
-const localPreviewEnabled = import.meta.env.DEV && new URLSearchParams(window.location.search).get("preview") === "1";
+const previewParams = new URLSearchParams(window.location.search);
+const localPreviewEnabled = import.meta.env.DEV && previewParams.get("preview") === "1";
+const allowedPreviewRoles = [
+  "PatchForge.Reader",
+  "PatchForge.TriageAnalyst",
+  "PatchForge.SecurityLead",
+  "PatchForge.CABApprover",
+  "PatchForge.Auditor",
+  "PatchForge.Admin"
+] as const;
+const requestedPreviewRole = previewParams.get("previewRole");
+const localPreviewRole = localPreviewEnabled && allowedPreviewRoles.includes(requestedPreviewRole as typeof allowedPreviewRoles[number])
+  ? requestedPreviewRole as typeof allowedPreviewRoles[number]
+  : "PatchForge.Admin";
 const config = getPatchForgeConfig();
 const msalInstance = new PublicClientApplication({
   auth: {
@@ -26,7 +39,7 @@ await msalInstance.initialize();
 const localPreviewSession: PatchForgeAuthSession = {
   status: "authenticated",
   accountName: "preview.admin@diiac.io",
-  roles: ["PatchForge.Admin"],
+  roles: [localPreviewRole],
   signIn: async () => undefined,
   signOut: async () => {
     window.location.assign(window.location.pathname);

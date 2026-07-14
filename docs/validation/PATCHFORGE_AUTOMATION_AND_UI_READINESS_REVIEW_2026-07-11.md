@@ -27,6 +27,25 @@ Automation must stop at accountable human gates. PatchForge can automate intake,
 - Current information architecture: the approved `ADR-PF-UX-001` six-area flow supersedes older seven-area descriptions.
 - Cloud scope: no Azure, Entra, DNS, Key Vault, database, ACR, or production resource was changed during this review.
 
+## Implementation Progress Update — 2026-07-14
+
+The July 11 findings remain the review baseline. The current working candidate addresses the implementation portion of the ten backlog tickets, with live release and human acceptance still separate. See the [14-Area Improvement Closure Matrix](PATCHFORGE_14_AREA_IMPROVEMENT_CLOSURE_2026-07-14.md) for the detailed implementation, operator, validation, and stop-condition mapping.
+
+| Backlog ticket | Candidate status | Still required before closure |
+| --- | --- | --- |
+| PF-REL-001 | Release approval/provenance workflow and guarded publisher implemented locally | Clean commit, remote checks, approval attestation, Azure rollout/readback, signed-in UAT, report proof, cleanup, and canonical release-record refresh |
+| PF-IAC-001 | Existing/create/disabled PostgreSQL model and explicit live resource posture implemented locally | Final approved what-if and Azure readback; no database/storage replacement or deletion may be inferred as acceptable |
+| PF-OPS-001 | Probes, dependency-aware readiness, guarded release checks, rollback preparation, and operational SLO signals implemented locally | Injected-failure/recovery evidence and live six-app rollout/readback |
+| PF-EVID-001 | Server-owned, finding-scoped submission/review/reject/reopen/expiry workflow and UI queue implemented locally | Final combined suite plus signed-in role journey |
+| PF-SEC-001 | Outbound URL/DNS/IP/redirect/size/time controls and server-owned AI evidence context implemented locally | Final combined security suite and production configuration readback |
+| PF-REPORT-001 | Append-only exact-byte export records and JSON/ZIP/DOCX/PDF digest coverage implemented locally | Fresh production artifacts, byte/member verification, and visual DOCX/PDF review |
+| PF-UI-001 | Explicit verified-pack selector, finding evidence queue, stable context, partial-load retry, lazy areas, keyboard/focus, and responsive behavior implemented locally | Final clean build/E2E and signed-in production UAT |
+| PF-COLLECTOR-001 | Fail-closed package verification, least-privilege setup, heartbeat, lifecycle, upgrade/revoke/uninstall, and recovery controls implemented locally | Trusted PatchForge signature, clean Windows VM, offline/retry proof, and representative customer acceptance |
+| PF-AUTO-001 | Idempotency, leases, checkpoints, bounded retry, dead-letter/quarantine, replay/reconciliation, worker loop, SLOs, and alerts implemented locally | Final combined suite and live worker/scheduler health and backlog proof |
+| PF-QUAL-001 | Pinned CI, dependency/security scans, SBOMs, attestations, browser accessibility journey, bundle budget, and protected production approval workflow implemented locally | Remote workflow execution, branch/environment enforcement, and retained release evidence |
+
+This update does not claim that GitHub, Azure, or current production was changed. Areas 1-3 and 14 in the closure matrix remain pending until their evidence exists.
+
 ## Intended Operating Flow
 
 ```mermaid

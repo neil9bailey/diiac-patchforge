@@ -4,6 +4,7 @@ param(
 
   [string]$ConfigPath = "$env:ProgramData\PatchForge\Collector\patchforge-collector.config.json",
   [string]$InstallDirectory = "$env:ProgramFiles\PatchForge Collector",
+  [string]$ManifestPath = "",
   [string]$TaskName = "PatchForgeCollector",
   [int]$IntervalMinutes = 240,
   [string]$ApiBaseUrl = "https://api.patchforge.diiac.io",
@@ -14,11 +15,18 @@ param(
   [string]$Environment = "production",
   [bool]$EnableHyperV = $true,
   [bool]$EnableAzureCliInventory = $false,
+  [switch]$AzureCliManagedIdentity,
+  [string]$ManagedIdentityClientIdEnv = "PATCHFORGE_COLLECTOR_MANAGED_IDENTITY_CLIENT_ID",
   [string]$AzureSubscription = "",
   [string]$HttpJsonUrl = "",
   [string]$HttpJsonTokenEnv = "NMS_READONLY_TOKEN",
-  [ValidateSet("CurrentUser", "System")]
+  [ValidateSet("CurrentUser", "System", "ServiceAccount")]
   [string]$RunAs = "CurrentUser",
+  [string]$ServiceAccount = "",
+  [switch]$EnvironmentCredentialAvailable,
+  [switch]$AllowUnsignedDevelopmentPackage,
+  [switch]$Upgrade,
+  [switch]$Reactivate,
   [switch]$RunNow
 )
 
@@ -26,6 +34,10 @@ $ErrorActionPreference = "Stop"
 
 $configScript = Join-Path $PSScriptRoot "new_patchforge_collector_windows_config.ps1"
 $installScript = Join-Path $PSScriptRoot "install_patchforge_collector_windows.ps1"
+if ([string]::IsNullOrWhiteSpace($ManifestPath)) {
+  $ManifestPath = Join-Path (Split-Path -Parent $CollectorExePath) "collector-package-manifest.json"
+}
+$manifest = Get-Content -Raw -LiteralPath $ManifestPath | ConvertFrom-Json
 
 & $configScript `
   -OutputPath $ConfigPath `
@@ -35,6 +47,10 @@ $installScript = Join-Path $PSScriptRoot "install_patchforge_collector_windows.p
   -CollectorName $CollectorName `
   -Site $Site `
   -Environment $Environment `
+  -AzureCliManagedIdentity:$AzureCliManagedIdentity `
+  -ManagedIdentityClientIdEnv $ManagedIdentityClientIdEnv `
+  -CollectorVersion ([string]$manifest.package_version) `
+  -PackageDigest ([string]$manifest.exe_sha256) `
   -DisableHyperV:(!$EnableHyperV) `
   -EnableAzureCliInventory:$EnableAzureCliInventory `
   -AzureSubscription $AzureSubscription `
@@ -45,11 +61,16 @@ $installScript = Join-Path $PSScriptRoot "install_patchforge_collector_windows.p
   -CollectorExePath $CollectorExePath `
   -ConfigPath $ConfigPath `
   -InstallDirectory $InstallDirectory `
+  -ManifestPath $ManifestPath `
   -TaskName $TaskName `
   -IntervalMinutes $IntervalMinutes `
   -RunAs $RunAs `
+  -ServiceAccount $ServiceAccount `
+  -EnvironmentCredentialAvailable:$EnvironmentCredentialAvailable `
+  -AllowUnsignedDevelopmentPackage:$AllowUnsignedDevelopmentPackage `
+  -Upgrade:$Upgrade `
+  -Reactivate:$Reactivate `
   -RunNow:$RunNow
 
 Write-Host "PatchForge collector Windows setup complete."
-Write-Host "If PATCHFORGE_COLLECTOR_TOKEN is not set, sign in with Azure CLI as the scheduled-task user:"
-Write-Host "az login --tenant 67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da"
+Write-Host "Authentication is environment-only, managed identity, or the scheduled user's Azure CLI cache; no secret was written to config."

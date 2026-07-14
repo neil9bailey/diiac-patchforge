@@ -8,7 +8,10 @@ const COLLECTIONS = [
   "assets",
   "services",
   "reviews",
+  "finding_evidence",
+  "finding_evidence_events",
   "decision_packs",
+  "export_artifacts",
   "bayesian_assessments",
   "vendors",
   "vendor_advisories",
@@ -29,6 +32,12 @@ const COLLECTIONS = [
   "asset_discovery_policies",
   "asset_discovery_runs",
   "source_feed_runs",
+  "automation_work_items",
+  "automation_checkpoints",
+  "automation_failures",
+  "automation_dead_letters",
+  "automation_leases",
+  "automation_reconciliation_runs",
   "customers",
   "customer_estates",
   "customer_assets",
@@ -46,6 +55,7 @@ export const PATCHFORGE_PURGE_CONFIRMATION = "FACTORY_RESET_PATCHFORGE";
 export const PATCHFORGE_PURGE_SCOPES = {
   reports: [
     "decision_packs",
+    "export_artifacts",
     "signed_action_packs",
     "report_quality_reviews",
     "patch_compare_reports"
@@ -79,13 +89,18 @@ export const PATCHFORGE_PURGE_SCOPES = {
     "workflow_items"
   ],
   uploads: [
+    "finding_evidence",
+    "finding_evidence_events",
     "config_evidence",
     "vendorlens_chat_sessions",
     "vendorlens_chat_messages",
     "agent_guidance_snapshots"
   ],
   logs: [
-    "audit_events"
+    "audit_events",
+    "automation_failures",
+    "automation_dead_letters",
+    "automation_reconciliation_runs"
   ],
   cache: [
     "bayesian_assessments"
@@ -98,7 +113,10 @@ const COLLECTION_ID_FIELDS = {
   assets: "asset_id",
   services: "service_id",
   reviews: "review_id",
+  finding_evidence: "evidence_id",
+  finding_evidence_events: "evidence_event_id",
   decision_packs: "decision_pack_id",
+  export_artifacts: "artifact_id",
   bayesian_assessments: "assessment_id",
   vendors: "vendor_id",
   vendor_advisories: "advisory_id",
@@ -119,6 +137,12 @@ const COLLECTION_ID_FIELDS = {
   asset_discovery_policies: "policy_id",
   asset_discovery_runs: "run_id",
   source_feed_runs: "run_id",
+  automation_work_items: "work_id",
+  automation_checkpoints: "checkpoint_id",
+  automation_failures: "failure_id",
+  automation_dead_letters: "dead_letter_id",
+  automation_leases: "lease_id",
+  automation_reconciliation_runs: "reconciliation_id",
   customers: "id",
   customer_estates: "id",
   customer_assets: "id",
@@ -330,6 +354,7 @@ export class PatchForgeJsonStorage {
   constructor(rootDir = path.resolve("customer-config/default/patchforge")) {
     this.rootDir = rootDir;
     this.storageMode = "local-json";
+    this.immutableAppendQueue = Promise.resolve();
   }
 
   async ensureReady() {
@@ -417,6 +442,26 @@ export class PatchForgeJsonStorage {
     return record;
   }
 
+  async appendImmutable(collection, record) {
+    const operation = this.immutableAppendQueue.then(async () => {
+      const records = await this._read(collection);
+      const idField = COLLECTION_ID_FIELDS[collection];
+      const recordId = idField ? record[idField] || record.id : null;
+      if (!recordId) {
+        throw new Error(`Immutable collection ${collection} requires a stable record ID.`);
+      }
+      const existing = records.find((item) => item.tenant_id === record.tenant_id && String(item[idField] || item.id) === String(recordId));
+      if (existing) {
+        return { record: existing, created: false };
+      }
+      records.push(record);
+      await this._write(collection, records);
+      return { record, created: true };
+    });
+    this.immutableAppendQueue = operation.catch(() => undefined);
+    return operation;
+  }
+
   async replace(collection, predicate, updater) {
     const records = await this._read(collection);
     let updatedRecord = null;
@@ -429,6 +474,34 @@ export class PatchForgeJsonStorage {
     });
     await this._write(collection, updated);
     return updatedRecord;
+  }
+
+  async acquireAutomationLease(tenantId, leaseName, ownerId, ttlMs, now = new Date()) {
+    const observedAt = now instanceof Date ? now : new Date(now);
+    const leases = await this.list("automation_leases", tenantId);
+    const existing = leases.find((lease) => lease.lease_id === leaseName) || null;
+    const existingExpiry = Date.parse(existing?.expires_at || "");
+    if (existing && existing.owner_id !== ownerId && Number.isFinite(existingExpiry) && existingExpiry > observedAt.getTime() && existing.status === "active") {
+      return null;
+    }
+    const lease = {
+      tenant_id: tenantId,
+      lease_id: leaseName,
+      owner_id: ownerId,
+      acquired_at: observedAt.toISOString(),
+      expires_at: new Date(observedAt.getTime() + positiveNumber(ttlMs, 5 * 60 * 1000)).toISOString(),
+      status: "active"
+    };
+    await this.append("automation_leases", lease);
+    return lease;
+  }
+
+  async releaseAutomationLease(tenantId, leaseName, ownerId, now = new Date()) {
+    return this.replace(
+      "automation_leases",
+      (lease) => lease.tenant_id === tenantId && lease.lease_id === leaseName && lease.owner_id === ownerId,
+      (lease) => ({ ...lease, status: "released", released_at: (now instanceof Date ? now : new Date(now)).toISOString() })
+    );
   }
 
   async purgePatchForgeData(tenantId, options = {}) {
@@ -799,6 +872,8 @@ export class PatchForgeJsonStorage {
     await this.ensureReady();
     const config = await this.readAdminConfig(tenantId);
     const sourceFeedRuns = await this.list("source_feed_runs", tenantId);
+    const automationWorkItems = await this.list("automation_work_items", tenantId);
+    const automationDeadLetters = await this.list("automation_dead_letters", tenantId);
     const networkVendors = await this.list("network_vendors", tenantId);
     const networkAssets = await this.list("customer_network_assets", tenantId);
     const agentSources = (await this.list("sources", tenantId)).filter((source) =>
@@ -816,7 +891,23 @@ export class PatchForgeJsonStorage {
     const schedulerConfigured = parseEnvBoolean(process.env.PATCHFORGE_SCHEDULER_ENABLED, false)
       || process.env.PATCHFORGE_COMPONENT === "scheduler";
     const schedulerHealth = sourceFeedSchedulerHealth(lastSchedulerRun, schedulerConfigured);
-    const workerReady = Boolean(process.env.PATCHFORGE_WORKER_ENABLED || process.env.PATCHFORGE_COMPONENT === "ingest-export-worker" || this.storageMode === "postgresql");
+    const workerConfigured = parseEnvBoolean(process.env.PATCHFORGE_WORKER_ENABLED, false) || process.env.PATCHFORGE_COMPONENT === "ingest-export-worker";
+    const pendingWork = automationWorkItems.filter((item) => ["pending", "retry_scheduled", "running"].includes(item.status));
+    const openDeadLetters = automationDeadLetters.filter((item) => item.status === "open");
+    const quarantinedWork = automationDeadLetters.filter((item) => item.status === "quarantined");
+    const backlogSloMs = positiveNumber(process.env.PATCHFORGE_WORKER_BACKLOG_SLO_MS, 15 * 60 * 1000);
+    const oldestPendingMs = pendingWork
+      .map((item) => Date.parse(item.next_attempt_at || item.updated_at || item.created_at || ""))
+      .filter(Number.isFinite)
+      .sort((left, right) => left - right)[0] || 0;
+    const backlogAgeMs = oldestPendingMs ? Math.max(0, Date.now() - oldestPendingMs) : 0;
+    const backlogSloBreached = pendingWork.length > 0 && backlogAgeMs > backlogSloMs;
+    const workerAlerts = [
+      ...(openDeadLetters.length ? [`${openDeadLetters.length} open dead-letter item(s)`] : []),
+      ...(quarantinedWork.length ? [`${quarantinedWork.length} quarantined item(s)`] : []),
+      ...(backlogSloBreached ? [`backlog SLO breached at ${backlogAgeMs} ms (threshold ${backlogSloMs} ms)`] : [])
+    ];
+    const workerStatus = !workerConfigured ? "pending" : workerAlerts.length ? "degraded" : "ready";
     return {
       tenant_id: tenantId,
       live_azure_mutation_enabled: false,
@@ -842,8 +933,10 @@ export class PatchForgeJsonStorage {
         },
         {
           name: "Worker health",
-          status: workerReady ? "ready" : "pending",
-          mode: workerReady ? "ingest-export-worker" : "awaiting-worker-deployment"
+          status: workerStatus,
+          mode: workerConfigured
+            ? `ingest-export-worker; ${pendingWork.length} pending/running; ${workerAlerts.length ? workerAlerts.join("; ") : "no active alerts"}`
+            : "awaiting-worker-runtime-confirmation"
         },
         {
           name: "Scheduler health",
@@ -947,6 +1040,31 @@ export class PatchForgePostgresStorage extends PatchForgeJsonStorage {
     return record;
   }
 
+  async appendImmutable(collection, record) {
+    await this.ensureReady();
+    assertKnownCollection(collection);
+    const recordId = recordIdFor(collection, record);
+    const inserted = await this.pool.query(
+      `insert into patchforge_records (tenant_id, collection, record_id, record)
+       values ($1, $2, $3, $4::jsonb)
+       on conflict (tenant_id, collection, record_id) do nothing
+       returning record`,
+      [record.tenant_id, collection, recordId, JSON.stringify(record)]
+    );
+    if (inserted.rows.length) {
+      return { record: inserted.rows[0].record, created: true };
+    }
+    const existing = await this.pool.query(
+      `select record from patchforge_records
+       where tenant_id = $1 and collection = $2 and record_id = $3`,
+      [record.tenant_id, collection, recordId]
+    );
+    if (!existing.rows.length) {
+      throw new Error(`Immutable record ${recordId} could not be read after a concurrent insert.`);
+    }
+    return { record: existing.rows[0].record, created: false };
+  }
+
   async replace(collection, predicate, updater) {
     await this.ensureReady();
     assertKnownCollection(collection);
@@ -971,6 +1089,48 @@ export class PatchForgePostgresStorage extends PatchForgeJsonStorage {
       );
     }
     return updatedRecord;
+  }
+
+  async acquireAutomationLease(tenantId, leaseName, ownerId, ttlMs, now = new Date()) {
+    await this.ensureReady();
+    const observedAt = now instanceof Date ? now : new Date(now);
+    const expiresAt = new Date(observedAt.getTime() + positiveNumber(ttlMs, 5 * 60 * 1000));
+    const lease = {
+      tenant_id: tenantId,
+      lease_id: leaseName,
+      owner_id: ownerId,
+      acquired_at: observedAt.toISOString(),
+      expires_at: expiresAt.toISOString(),
+      status: "active"
+    };
+    const result = await this.pool.query(
+      `insert into patchforge_records (tenant_id, collection, record_id, record)
+       values ($1, 'automation_leases', $2, $3::jsonb)
+       on conflict (tenant_id, collection, record_id)
+       do update set record = excluded.record, updated_at = now()
+       where patchforge_records.record->>'owner_id' = $4
+          or patchforge_records.record->>'status' <> 'active'
+          or nullif(patchforge_records.record->>'expires_at', '')::timestamptz <= $5::timestamptz
+       returning record`,
+      [tenantId, leaseName, JSON.stringify(lease), ownerId, observedAt.toISOString()]
+    );
+    return result.rows[0]?.record || null;
+  }
+
+  async releaseAutomationLease(tenantId, leaseName, ownerId, now = new Date()) {
+    await this.ensureReady();
+    const releasedAt = (now instanceof Date ? now : new Date(now)).toISOString();
+    const result = await this.pool.query(
+      `update patchforge_records
+       set record = record || $1::jsonb, updated_at = now()
+       where tenant_id = $2
+         and collection = 'automation_leases'
+         and record_id = $3
+         and record->>'owner_id' = $4
+       returning record`,
+      [JSON.stringify({ status: "released", released_at: releasedAt }), tenantId, leaseName, ownerId]
+    );
+    return result.rows[0]?.record || null;
   }
 
   async purgePatchForgeData(tenantId, options = {}) {

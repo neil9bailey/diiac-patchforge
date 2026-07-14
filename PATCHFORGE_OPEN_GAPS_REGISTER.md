@@ -1,9 +1,12 @@
 # PatchForge Open Gaps Register
 
-Date: 2026-06-04
+Date: 2026-07-14
 
 | Gap | Status | Notes |
 | --- | --- | --- |
+| 14-area implementation candidate production closure | Open | Areas 4-13 have local implementation evidence. Areas 1-3 (signed-in UAT, fresh report/artifact proof, and UAT cleanup) plus Area 14 (clean GitHub/Azure release) remain pending; see `docs/validation/PATCHFORGE_14_AREA_IMPROVEMENT_CLOSURE_2026-07-14.md`. |
+| Windows collector trusted signing and customer acceptance | Open, human/external gate | Lifecycle, least-privilege authentication, heartbeat, durable offline spool/replay, upgrade, revoke, and uninstall controls are implemented locally. A trusted PatchForge signing certificate, clean Windows-machine proof, and representative customer acceptance are not yet evidenced. |
+| Documentation portfolio legal/licensing review | Open | The repository has no root `LICENSE` and no dedicated legal/compliance/current/closure taxonomy. Do not infer redistribution rights, legal approval, or compliance certification; resolve through accountable legal/product governance rather than generated claims. |
 | Live scanner integrations | Open | Product remains governance-only; no scanner connector is live unless separately integrated. |
 | Public source intelligence feeds | Closed for PF-AZ6 | CISA KEV and FIRST EPSS public feeds were validated through the live UI as source-bound pending-review inputs. |
 | Patch deployment | Permanently excluded | PatchForge does not deploy patches or mutate production systems. |
@@ -26,5 +29,5 @@ Date: 2026-06-04
 | Customer production validation | Not claimed | Evidence covers DIIaC live platform validation, not third-party customer signoff. |
 | Azure CLI custom API token consent | Open | Azure CLI token acquisition for the PatchForge API returned AADSTS65001; browser/MSAL validation succeeded and was used for the live user workflow. |
 | PF-AZ11 release truth drift | Closed for PF-AZ12.1 | Current-facing release, readiness, validation, manifest, quality-gate, and document-control records now distinguish PF-AZ11 deployed state from historical PF-AZ10/PF-AZ9A evidence. |
-| PF-AZ11 signed-in end-user UAT | Open | Public UI/API smoke and signed-out browser validation passed for PF-AZ11. Full signed-in seven-area UAT, Ask PatchForge protected workflow, fresh signed pack generation, DOCX/PDF export review, and validation-record cleanup are not yet claimed. |
+| Signed-in end-user UAT for the current candidate | Open | Earlier public UI/API and signed-out browser evidence does not close the current gate. Full signed-in six-area role UAT, finding evidence review, Ask PatchForge protected workflow, explicit verified-pack selection, fresh ZIP/DOCX/PDF proof, and validation-record cleanup are not yet claimed. |
 | PF-AZ12 operational intelligence value | Approved, not implemented | ADR `governance/adr/ADR-PF-AZ12-001-operational-intelligence-value.md` approves incremental improvements to UI clarity, reports/output credibility, deterministic advisor intelligence, and live UAT evidence while preserving advisory-only boundaries. |

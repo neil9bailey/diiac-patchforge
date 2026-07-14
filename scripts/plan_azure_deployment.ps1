@@ -65,7 +65,7 @@ Write-Host "- target region"
 Write-Host "- production/non-production sequence"
 Write-Host "- Key Vault signing strategy"
 Write-Host "- DNS plan for patchforge.diiac.io and api.patchforge.diiac.io"
-Write-Host "- PostgreSQL password supplied securely if createPostgres=true"
+Write-Host "- PostgreSQL password supplied securely if postgresMode=create"
 
 if (-not $RunWhatIf) {
     Write-Host ""

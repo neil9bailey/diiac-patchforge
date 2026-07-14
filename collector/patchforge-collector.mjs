@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { access, mkdir, readFile, readdir, rename, unlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { isSea } from "node:sea";
@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
+const bearerTokenCache = new WeakMap();
 
 const DEFAULT_CATEGORIES = [
   "network_device",
@@ -53,16 +54,53 @@ export async function runCollector(options = {}) {
   }
   const config = options.config || await loadConfig(options.configPath || env.PATCHFORGE_COLLECTOR_CONFIG, env);
   const normalized = normalizeConfig(config, env);
+  await assertCollectorNotRevoked(normalized.lifecycle.revocationFile);
   const now = options.now || (() => new Date());
   const startedAt = now().toISOString();
-  const discovery = await collectAssets({
-    config: normalized,
-    env,
-    fetchImpl,
-    commandRunner,
-    startedAt
-  });
   const runId = normalized.runId || `collector-run-${Date.now()}-${hashValue(startedAt).slice(0, 8)}`;
+  const dryRun = Boolean(options.dryRun || normalized.dryRun);
+  const replay = dryRun
+    ? emptyReplaySummary()
+    : await replayCollectorSpool(normalized, { fetchImpl, env, commandRunner });
+  const heartbeatBase = collectorHeartbeat(normalized, {
+    runId,
+    observedAt: startedAt,
+    state: dryRun ? "dry_run" : "running",
+    authMode: collectorAuthMode(normalized, env),
+    spoolPending: replay.remaining
+  });
+  await writeHeartbeatFile(normalized.lifecycle.heartbeatFile, heartbeatBase);
+
+  if (!dryRun) {
+    try {
+      await postJson(normalized, "/api/patchforge/discovery/collectors", heartbeatBase, fetchImpl, env, commandRunner);
+    } catch (error) {
+      if (!normalized.lifecycle.spoolDirectory || !isRetryableDeliveryError(error)) {
+        throw error;
+      }
+    }
+  }
+
+  let discovery;
+  try {
+    discovery = await collectAssets({
+      config: normalized,
+      env,
+      fetchImpl,
+      commandRunner,
+      startedAt
+    });
+  } catch (error) {
+    const failedHeartbeat = collectorHeartbeat(normalized, {
+      runId,
+      observedAt: now().toISOString(),
+      state: "failed",
+      authMode: collectorAuthMode(normalized, env),
+      message: error.message
+    });
+    await writeHeartbeatFile(normalized.lifecycle.heartbeatFile, failedHeartbeat);
+    throw error;
+  }
   const importPayload = {
     run_id: runId,
     collector_id: normalized.collector.collector_id,
@@ -74,7 +112,16 @@ export async function runCollector(options = {}) {
     correlation_id: runId
   };
 
-  if (options.dryRun || normalized.dryRun) {
+  if (dryRun) {
+    const completedHeartbeat = collectorHeartbeat(normalized, {
+      runId,
+      observedAt: now().toISOString(),
+      state: "dry_run_completed",
+      authMode: collectorAuthMode(normalized, env),
+      assetCount: discovery.assets.length,
+      warningCount: discovery.warnings.length
+    });
+    await writeHeartbeatFile(normalized.lifecycle.heartbeatFile, completedHeartbeat);
     return {
       mode: "dry_run",
       collector: normalized.collector,
@@ -85,26 +132,96 @@ export async function runCollector(options = {}) {
     };
   }
 
-  await postJson(normalized, "/api/patchforge/discovery/collectors", normalized.collector, fetchImpl, env, commandRunner);
-  await postJson(normalized, "/api/patchforge/discovery/policies", normalized.policy, fetchImpl, env, commandRunner);
-  if (!discovery.assets.length) {
+  const completedHeartbeat = collectorHeartbeat(normalized, {
+    runId,
+    observedAt: now().toISOString(),
+    state: discovery.assets.length ? "completed" : "completed_no_assets",
+    authMode: collectorAuthMode(normalized, env),
+    assetCount: discovery.assets.length,
+    warningCount: discovery.warnings.length,
+    spoolPending: replay.remaining
+  });
+
+  const submission = {
+    schema: "patchforge-collector-offline-submission-v1",
+    spool_id: `submission-${hashValue(`${normalized.tenantId}|${normalized.collector.collector_id}|${runId}`).slice(0, 32)}`,
+    tenant_id: normalized.tenantId,
+    collector_id: normalized.collector.collector_id,
+    run_id: runId,
+    created_at: startedAt,
+    attempts: 0,
+    completed_steps: [],
+    policy: normalized.policy,
+    import_payload: discovery.assets.length ? importPayload : null,
+    completed_heartbeat: completedHeartbeat
+  };
+
+  let delivery;
+  try {
+    delivery = await deliverCurrentSubmission(normalized, submission, replay, { fetchImpl, env, commandRunner });
+  } catch (error) {
+    const failedHeartbeat = collectorHeartbeat(normalized, {
+      runId,
+      observedAt: now().toISOString(),
+      state: "failed",
+      authMode: collectorAuthMode(normalized, env),
+      assetCount: discovery.assets.length,
+      warningCount: discovery.warnings.length,
+      message: error.message,
+      spoolPending: replay.remaining
+    });
+    await writeHeartbeatFile(normalized.lifecycle.heartbeatFile, failedHeartbeat);
+    throw error;
+  }
+
+  if (delivery.spooled) {
+    const deliveryState = delivery.quarantined ? "quarantined" : "queued_offline";
+    const queuedHeartbeat = collectorHeartbeat(normalized, {
+      runId,
+      observedAt: now().toISOString(),
+      state: deliveryState,
+      authMode: collectorAuthMode(normalized, env),
+      assetCount: discovery.assets.length,
+      warningCount: discovery.warnings.length,
+      message: delivery.message,
+      spoolPending: delivery.pending
+    });
+    await writeHeartbeatFile(normalized.lifecycle.heartbeatFile, queuedHeartbeat);
     return {
       mode: "push",
-      status: "no_assets_collected",
+      status: deliveryState,
       collector: normalized.collector.collector_id,
       policy: normalized.policy.policy_id,
+      discovered_asset_count: discovery.assets.length,
       imported_asset_count: 0,
+      rejected_asset_count: 0,
+      spool: {
+        queued: !delivery.quarantined,
+        pending: delivery.pending,
+        replayed: replay.replayed,
+        quarantined: replay.quarantined + (delivery.quarantined ? 1 : 0)
+      },
       warnings: discovery.warnings,
       boundary: collectorBoundary()
     };
   }
-  const imported = await postJson(normalized, "/api/patchforge/discovery/import", importPayload, fetchImpl, env, commandRunner);
+
+  const imported = delivery.imported || {};
+  completedHeartbeat.heartbeat_state = imported.run?.status === "rejected" ? "completed_with_rejections" : completedHeartbeat.heartbeat_state;
+  completedHeartbeat.last_asset_count = imported.run?.imported_asset_count ?? imported.imported_assets?.length ?? discovery.assets.length;
+  await writeHeartbeatFile(normalized.lifecycle.heartbeatFile, completedHeartbeat);
   return {
     mode: "push",
-    status: imported.run?.status || "submitted",
+    status: discovery.assets.length ? (imported.run?.status || "submitted") : "no_assets_collected",
     run: imported.run,
     imported_asset_count: imported.run?.imported_asset_count ?? imported.imported_assets?.length ?? 0,
     rejected_asset_count: imported.run?.rejected_asset_count ?? imported.rejected_assets?.length ?? 0,
+    spool: {
+      queued: false,
+      pending: replay.remaining,
+      replayed: replay.replayed,
+      quarantined: replay.quarantined
+    },
     warnings: discovery.warnings,
     boundary: imported.boundary || collectorBoundary()
   };
@@ -139,6 +256,9 @@ export function normalizeConfig(input = {}, env = process.env) {
   const adapters = (Array.isArray(input.adapters) ? input.adapters : [{ type: "local_host", enabled: true }])
     .filter((adapter) => adapter && adapter.enabled !== false)
     .map((adapter) => ({ ...adapter, type: normalizeAdapterType(adapter.type) }));
+  const managedIdentityClientIdEnv = input.auth?.managedIdentityClientIdEnv
+    || input.auth?.managed_identity_client_id_env
+    || "PATCHFORGE_COLLECTOR_MANAGED_IDENTITY_CLIENT_ID";
   return {
     apiBaseUrl,
     tenantId,
@@ -146,7 +266,20 @@ export function normalizeConfig(input = {}, env = process.env) {
     auth: {
       bearerTokenEnv: input.auth?.bearerTokenEnv || input.auth?.bearer_token_env || env.PATCHFORGE_COLLECTOR_TOKEN_ENV || "PATCHFORGE_COLLECTOR_TOKEN",
       azureCliScope: input.auth?.azureCliScope || input.auth?.azure_cli_scope || env.PATCHFORGE_COLLECTOR_AZURE_SCOPE || "",
-      azureTenantId: input.auth?.azureTenantId || input.auth?.azure_tenant_id || env.PATCHFORGE_COLLECTOR_AZURE_TENANT_ID || ""
+      azureTenantId: input.auth?.azureTenantId || input.auth?.azure_tenant_id || env.PATCHFORGE_COLLECTOR_AZURE_TENANT_ID || "",
+      azureCliManagedIdentity: Boolean(input.auth?.azureCliManagedIdentity || input.auth?.azure_cli_managed_identity || parseBoolean(env.PATCHFORGE_COLLECTOR_AZURE_CLI_MANAGED_IDENTITY, false)),
+      managedIdentityClientId: input.auth?.managedIdentityClientId || input.auth?.managed_identity_client_id || env[managedIdentityClientIdEnv] || "",
+      managedIdentityClientIdEnv
+    },
+    lifecycle: {
+      revocationFile: input.lifecycle?.revocationFile || input.lifecycle?.revocation_file || env.PATCHFORGE_COLLECTOR_REVOCATION_FILE || "",
+      heartbeatFile: input.lifecycle?.heartbeatFile || input.lifecycle?.heartbeat_file || env.PATCHFORGE_COLLECTOR_HEARTBEAT_FILE || "",
+      collectorVersion: input.lifecycle?.collectorVersion || input.lifecycle?.collector_version || env.PATCHFORGE_COLLECTOR_VERSION || "development",
+      packageDigest: input.lifecycle?.packageDigest || input.lifecycle?.package_digest || env.PATCHFORGE_COLLECTOR_PACKAGE_DIGEST || null,
+      spoolDirectory: input.lifecycle?.spoolDirectory || input.lifecycle?.spool_directory || env.PATCHFORGE_COLLECTOR_SPOOL_DIRECTORY || "",
+      maxSpoolEntries: boundedNumber(input.lifecycle?.maxSpoolEntries || input.lifecycle?.max_spool_entries || env.PATCHFORGE_COLLECTOR_MAX_SPOOL_ENTRIES, 100, 1, 10000),
+      maxSpoolEntryBytes: boundedNumber(input.lifecycle?.maxSpoolEntryBytes || input.lifecycle?.max_spool_entry_bytes || env.PATCHFORGE_COLLECTOR_MAX_SPOOL_ENTRY_BYTES, 8 * 1024 * 1024, 64 * 1024, 100 * 1024 * 1024),
+      maxReplayAttempts: boundedNumber(input.lifecycle?.maxReplayAttempts || input.lifecycle?.max_replay_attempts || env.PATCHFORGE_COLLECTOR_MAX_REPLAY_ATTEMPTS, 5, 1, 20)
     },
     collector: {
       collector_id: collectorId,
@@ -397,35 +530,284 @@ export function collectorBoundary() {
   };
 }
 
+function emptyReplaySummary() {
+  return { attempted: 0, replayed: 0, quarantined: 0, remaining: 0, blocked: false };
+}
+
+async function deliverCurrentSubmission(config, submission, replay, dependencies) {
+  if (!config.lifecycle.spoolDirectory) {
+    const delivered = await deliverSubmissionEntry(config, submission, dependencies);
+    return { spooled: false, imported: delivered.imported || null };
+  }
+
+  const queued = await enqueueCollectorSubmission(config, submission);
+  if (replay.remaining > 0 || replay.blocked) {
+    return {
+      spooled: true,
+      pending: await countCollectorSpool(config.lifecycle.spoolDirectory),
+      message: "A prior offline submission remains pending; this run was queued in FIFO order."
+    };
+  }
+
+  const outcome = await deliverSpoolFile(config, queued.path, dependencies);
+  if (outcome.delivered) {
+    return { spooled: false, imported: outcome.imported || null };
+  }
+  if (outcome.blocked) {
+    throw outcome.error;
+  }
+  return {
+    spooled: true,
+    quarantined: Boolean(outcome.quarantined),
+    pending: await countCollectorSpool(config.lifecycle.spoolDirectory),
+    message: outcome.quarantined
+      ? "The current submission exceeded bounded replay attempts and was quarantined for operator review."
+      : `PatchForge API delivery is unavailable; the run is durably queued for replay. ${outcome.error?.message || ""}`.trim()
+  };
+}
+
+export async function replayCollectorSpool(config, dependencies = {}) {
+  const spoolDirectory = config.lifecycle?.spoolDirectory || "";
+  if (!spoolDirectory) {
+    return emptyReplaySummary();
+  }
+  await mkdir(spoolDirectory, { recursive: true, mode: 0o700 });
+  const summary = emptyReplaySummary();
+  const files = await collectorSpoolFiles(spoolDirectory);
+  for (const file of files) {
+    summary.attempted += 1;
+    const outcome = await deliverSpoolFile(config, file, dependencies);
+    if (outcome.delivered) {
+      summary.replayed += 1;
+      continue;
+    }
+    if (outcome.quarantined) {
+      summary.quarantined += 1;
+      continue;
+    }
+    summary.blocked = Boolean(outcome.blocked);
+    break;
+  }
+  summary.remaining = await countCollectorSpool(spoolDirectory);
+  return summary;
+}
+
+async function enqueueCollectorSubmission(config, submission) {
+  const spoolDirectory = config.lifecycle.spoolDirectory;
+  await mkdir(spoolDirectory, { recursive: true, mode: 0o700 });
+  const fileName = `${submission.created_at.replace(/[^0-9A-Za-z]/g, "")}-${hashValue(submission.spool_id).slice(0, 24)}.json`;
+  const filePath = path.join(spoolDirectory, fileName);
+  try {
+    const existing = JSON.parse(await readFile(filePath, "utf8"));
+    const existingPayload = hashValue(JSON.stringify({ policy: existing.policy, import_payload: existing.import_payload }));
+    const requestedPayload = hashValue(JSON.stringify({ policy: submission.policy, import_payload: submission.import_payload }));
+    if (existing.spool_id !== submission.spool_id || existingPayload !== requestedPayload) {
+      throw new Error(`Collector spool collision detected for ${submission.spool_id}.`);
+    }
+    return { path: filePath, entry: existing, reused: true };
+  } catch (error) {
+    if (error.code !== "ENOENT") {
+      throw error;
+    }
+  }
+
+  const pending = await countCollectorSpool(spoolDirectory);
+  if (pending >= config.lifecycle.maxSpoolEntries) {
+    throw new Error(`Collector offline spool limit reached (${config.lifecycle.maxSpoolEntries}). Operator intervention is required before collecting more evidence.`);
+  }
+  await writeSpoolEntry(config, filePath, submission);
+  return { path: filePath, entry: submission, reused: false };
+}
+
+async function deliverSpoolFile(config, filePath, dependencies) {
+  let entry;
+  try {
+    entry = JSON.parse(await readFile(filePath, "utf8"));
+    assertSpoolEntry(config, entry);
+  } catch (error) {
+    await quarantineSpoolFile(config, filePath, "invalid");
+    return { delivered: false, quarantined: true, error };
+  }
+
+  try {
+    const delivered = await deliverSubmissionEntry(config, entry, dependencies, async (updated) => {
+      entry = updated;
+      await writeSpoolEntry(config, filePath, updated);
+    });
+    await unlink(filePath);
+    return { delivered: true, imported: delivered.imported || null };
+  } catch (error) {
+    entry = {
+      ...entry,
+      status: isRetryableDeliveryError(error) ? "pending_retry" : "blocked",
+      attempts: Number(entry.attempts || 0) + 1,
+      last_attempt_at: new Date().toISOString(),
+      last_error: String(error.message || error).slice(0, 500)
+    };
+    await writeSpoolEntry(config, filePath, entry);
+    if (isRetryableDeliveryError(error) && entry.attempts >= config.lifecycle.maxReplayAttempts) {
+      await quarantineSpoolFile(config, filePath, "replay-limit");
+      return { delivered: false, quarantined: true, error };
+    }
+    return { delivered: false, blocked: !isRetryableDeliveryError(error), error };
+  }
+}
+
+async function deliverSubmissionEntry(config, entry, dependencies = {}, onProgress = null) {
+  const fetchImpl = dependencies.fetchImpl || globalThis.fetch;
+  const env = dependencies.env || process.env;
+  const commandRunner = dependencies.commandRunner || runCommand;
+  const completed = new Set(entry.completed_steps || []);
+  let imported = null;
+
+  if (!completed.has("policy")) {
+    await postJson(config, "/api/patchforge/discovery/policies", entry.policy, fetchImpl, env, commandRunner);
+    completed.add("policy");
+    entry = await recordSpoolProgress(entry, completed, onProgress);
+  }
+  if (entry.import_payload && !completed.has("import")) {
+    imported = await postJson(config, "/api/patchforge/discovery/import", entry.import_payload, fetchImpl, env, commandRunner);
+    completed.add("import");
+    const importedCount = imported.run?.imported_asset_count ?? imported.imported_assets?.length;
+    entry = {
+      ...entry,
+      completed_heartbeat: {
+        ...entry.completed_heartbeat,
+        heartbeat_state: imported.run?.status === "rejected" ? "completed_with_rejections" : "completed",
+        ...(Number.isFinite(Number(importedCount)) ? { last_asset_count: Number(importedCount) } : {})
+      }
+    };
+    entry = await recordSpoolProgress(entry, completed, onProgress);
+  }
+  if (!completed.has("heartbeat")) {
+    await postJson(config, "/api/patchforge/discovery/collectors", entry.completed_heartbeat, fetchImpl, env, commandRunner);
+    completed.add("heartbeat");
+    entry = await recordSpoolProgress(entry, completed, onProgress);
+  }
+  return { entry, imported };
+}
+
+async function recordSpoolProgress(entry, completed, onProgress) {
+  const updated = {
+    ...entry,
+    status: "delivering",
+    completed_steps: [...completed],
+    updated_at: new Date().toISOString(),
+    last_error: null
+  };
+  if (onProgress) {
+    await onProgress(updated);
+  }
+  return updated;
+}
+
+function assertSpoolEntry(config, entry) {
+  if (entry?.schema !== "patchforge-collector-offline-submission-v1"
+      || !entry.spool_id
+      || entry.tenant_id !== config.tenantId
+      || entry.collector_id !== config.collector.collector_id
+      || !entry.policy
+      || !entry.completed_heartbeat) {
+    throw new Error("Collector spool entry is malformed or belongs to a different tenant/collector.");
+  }
+}
+
+async function writeSpoolEntry(config, filePath, entry) {
+  const content = `${JSON.stringify(entry, null, 2)}\n`;
+  if (Buffer.byteLength(content, "utf8") > config.lifecycle.maxSpoolEntryBytes) {
+    throw new Error(`Collector submission exceeds the configured offline spool entry limit (${config.lifecycle.maxSpoolEntryBytes} bytes).`);
+  }
+  const tempPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
+  await writeFile(tempPath, content, { encoding: "utf8", mode: 0o600 });
+  await rename(tempPath, filePath);
+}
+
+async function quarantineSpoolFile(config, filePath, reason) {
+  const quarantineDirectory = path.join(config.lifecycle.spoolDirectory, "quarantine");
+  await mkdir(quarantineDirectory, { recursive: true, mode: 0o700 });
+  const target = path.join(quarantineDirectory, `${path.basename(filePath, ".json")}.${reason}.${Date.now()}.json`);
+  await rename(filePath, target);
+  return target;
+}
+
+async function collectorSpoolFiles(spoolDirectory) {
+  try {
+    return (await readdir(spoolDirectory, { withFileTypes: true }))
+      .filter((entry) => entry.isFile() && entry.name.endsWith(".json"))
+      .map((entry) => path.join(spoolDirectory, entry.name))
+      .sort((left, right) => left.localeCompare(right));
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      return [];
+    }
+    throw error;
+  }
+}
+
+async function countCollectorSpool(spoolDirectory) {
+  return (await collectorSpoolFiles(spoolDirectory)).length;
+}
+
+function isRetryableDeliveryError(error) {
+  return error?.retryable !== false;
+}
+
 async function postJson(config, path, payload, fetchImpl, env, commandRunner) {
-  const response = await fetchImpl(apiUrl(config, path), {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-tenant-id": config.tenantId,
-      ...await authHeader(config, env, commandRunner)
-    },
-    body: JSON.stringify(payload)
-  });
+  let response;
+  try {
+    response = await fetchImpl(apiUrl(config, path), {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-tenant-id": config.tenantId,
+        ...await authHeader(config, env, commandRunner)
+      },
+      body: JSON.stringify(payload)
+    });
+  } catch (cause) {
+    const error = new Error(`PatchForge API delivery failed. ${cause.message || cause}`);
+    error.retryable = true;
+    error.cause = cause;
+    throw error;
+  }
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(body.message || body.error || `PatchForge API returned ${response.status}.`);
+    const error = new Error(body.message || body.error || `PatchForge API returned ${response.status}.`);
+    error.status = response.status;
+    error.retryable = response.status === 408 || response.status === 425 || response.status === 429 || response.status >= 500;
+    throw error;
   }
   return body;
 }
 
 async function authHeader(config, env, commandRunner = runCommand) {
+  const cached = bearerTokenCache.get(config);
+  if (cached) {
+    return { authorization: `Bearer ${cached}` };
+  }
   const token = env[config.auth.bearerTokenEnv];
   if (token) {
+    bearerTokenCache.set(config, token);
     return { authorization: `Bearer ${token}` };
   }
   const azureCliToken = await azureCliAccessToken(config, commandRunner);
+  if (azureCliToken) {
+    bearerTokenCache.set(config, azureCliToken);
+  }
   return azureCliToken ? { authorization: `Bearer ${azureCliToken}` } : {};
 }
 
 async function azureCliAccessToken(config, commandRunner) {
   if (!config.auth.azureCliScope) {
     return null;
+  }
+  if (config.auth.azureCliManagedIdentity) {
+    const managedIdentityClientId = config.auth.managedIdentityClientId || "";
+    const loginArgs = ["login", "--identity", "--allow-no-subscriptions", "--output", "none"];
+    if (managedIdentityClientId) {
+      loginArgs.splice(2, 0, "--client-id", managedIdentityClientId);
+    }
+    await commandRunner("az", loginArgs, { timeout: 20000 });
   }
   const args = [
     "account",
@@ -450,6 +832,66 @@ async function azureCliAccessToken(config, commandRunner) {
   } catch (error) {
     throw new Error(`PatchForge collector token unavailable. Set ${config.auth.bearerTokenEnv} or sign in with Azure CLI for scope ${config.auth.azureCliScope}. ${error.message}`);
   }
+}
+
+export function collectorHeartbeat(config, options = {}) {
+  const observedAt = options.observedAt || new Date().toISOString();
+  return {
+    ...config.collector,
+    status: ["failed", "queued_offline", "quarantined"].includes(options.state) ? "degraded" : "active",
+    last_seen_at: observedAt,
+    last_heartbeat_at: observedAt,
+    heartbeat_id: `heartbeat-${hashValue(`${config.collector.collector_id}|${options.runId}|${options.state}|${observedAt}`).slice(0, 20)}`,
+    heartbeat_state: options.state || "running",
+    last_run_id: options.runId || null,
+    last_message: options.message ? String(options.message).slice(0, 500) : null,
+    last_asset_count: Number(options.assetCount || 0),
+    last_warning_count: Number(options.warningCount || 0),
+    pending_spool_entries: Number(options.spoolPending || 0),
+    collector_version: config.lifecycle.collectorVersion,
+    package_digest: config.lifecycle.packageDigest,
+    auth_mode: options.authMode || "unavailable",
+    credential_mode: "environment_or_managed_identity_only",
+    advisory_only: true,
+    review_required: true,
+    no_vulnerability_scanning: true,
+    no_patch_deployment: true,
+    no_production_mutation: true,
+    final_approval_issued: false
+  };
+}
+
+export async function assertCollectorNotRevoked(revocationFile) {
+  if (!revocationFile) {
+    return;
+  }
+  try {
+    await access(revocationFile);
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      return;
+    }
+    throw error;
+  }
+  throw new Error(`PatchForge collector is locally revoked. Remove ${revocationFile} only through an approved reactivation workflow.`);
+}
+
+async function writeHeartbeatFile(heartbeatFile, heartbeat) {
+  if (!heartbeatFile) {
+    return;
+  }
+  await mkdir(path.dirname(heartbeatFile), { recursive: true });
+  await writeFile(heartbeatFile, `${JSON.stringify(heartbeat, null, 2)}\n`, { encoding: "utf8", mode: 0o600 });
+}
+
+function collectorAuthMode(config, env) {
+  if (env[config.auth.bearerTokenEnv]) {
+    return "environment_bearer";
+  }
+  if (config.auth.azureCliManagedIdentity) {
+    return "azure_cli_managed_identity";
+  }
+  return config.auth.azureCliScope ? "azure_cli_cached_identity" : "unavailable";
 }
 
 function apiUrl(config, path) {
@@ -593,6 +1035,13 @@ function list(value) {
 function boundedNumber(value, fallback, min, max) {
   const number = Number(value);
   return Number.isFinite(number) ? Math.max(min, Math.min(max, number)) : fallback;
+}
+
+function parseBoolean(value, fallback) {
+  if (value === undefined || value === null || value === "") {
+    return fallback;
+  }
+  return ["1", "true", "yes", "on"].includes(String(value).toLowerCase());
 }
 
 function stableAssetId(...parts) {

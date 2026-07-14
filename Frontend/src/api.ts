@@ -120,7 +120,29 @@ export type AssetCollectorRecord = {
   enabled_categories: string[];
   connection_mode: string;
   status: string;
+  health_status?: "pending" | "ready" | "stale" | "degraded" | "revoked" | string;
   last_seen_at?: string | null;
+  last_heartbeat_at?: string | null;
+  heartbeat_id?: string | null;
+  heartbeat_state?: string | null;
+  heartbeat_age_minutes?: number | null;
+  next_heartbeat_due_at?: string | null;
+  last_run_id?: string | null;
+  last_run_at?: string | null;
+  last_message?: string | null;
+  last_asset_count?: number;
+  last_warning_count?: number;
+  collector_version?: string | null;
+  package_digest?: string | null;
+  package_channel?: string | null;
+  auth_mode?: string | null;
+  credential_mode?: string | null;
+  stale_reason?: string | null;
+  degraded_reason?: string | null;
+  revoked_at?: string | null;
+  revoked_reason?: string | null;
+  created_at?: string;
+  updated_at?: string;
   advisory_only: boolean;
   review_required: boolean;
   no_vulnerability_scanning: boolean;
@@ -626,6 +648,54 @@ export type EvidenceSource = {
   evidence_state?: string;
 };
 
+export type FindingEvidenceRecord = {
+  tenant_id: string;
+  evidence_id: string;
+  vulnerability_id: string;
+  canonical_id?: string;
+  evidence_class: string;
+  summary: string;
+  evidence?: Record<string, unknown>;
+  source_refs?: string[];
+  content_hash: string;
+  finding_revision_hash: string;
+  expires_at?: string | null;
+  expired?: boolean;
+  expiry_evaluated_at?: string | null;
+  immutable?: boolean;
+  server_owned?: boolean;
+  review_state: string;
+  evidence_state: string;
+  review?: {
+    decision?: string;
+    reviewer_oid?: string | null;
+    reviewer_upn?: string | null;
+    reviewer_roles?: string[];
+    rationale?: string;
+    reviewed_at?: string;
+    server_verified?: boolean;
+  } | null;
+  latest_event_hash?: string | null;
+  event_count?: number;
+  replay_verified?: boolean;
+  replay_failures?: string[];
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  submitted_at?: string;
+  created_at?: string;
+  final_approval_issued?: boolean;
+};
+
+export type FindingEvidenceQueue = {
+  tenant_id: string;
+  vulnerability_id: string;
+  supported_evidence_classes: string[];
+  evidence: FindingEvidenceRecord[];
+  evidence_events?: Array<Record<string, unknown>>;
+  audit_replay?: Array<Record<string, unknown>>;
+  boundary?: Record<string, unknown>;
+};
+
 export type AssetRecord = {
   asset_id: string;
   asset_name?: string;
@@ -748,6 +818,10 @@ export type PatchForgeApi = {
   actionCenter(tenantId: string): Promise<FindingIntelligence[]>;
   findingIntelligence(tenantId: string, vulnerabilityId: string): Promise<FindingIntelligence>;
   analyseFinding(tenantId: string, vulnerabilityId: string, payload?: Record<string, unknown>): Promise<{ intelligence: FindingIntelligence; bayesian?: BayesianAssessment }>;
+  findingEvidence(tenantId: string, vulnerabilityId: string): Promise<FindingEvidenceQueue>;
+  submitFindingEvidence(tenantId: string, vulnerabilityId: string, payload: Record<string, unknown>): Promise<FindingEvidenceRecord>;
+  reviewFindingEvidence(tenantId: string, vulnerabilityId: string, evidenceId: string, payload: Record<string, unknown>): Promise<FindingEvidenceRecord>;
+  reopenFindingEvidence(tenantId: string, vulnerabilityId: string, evidenceId: string, payload: Record<string, unknown>): Promise<FindingEvidenceRecord>;
   sraResearch(tenantId: string, path: string, payload: Record<string, unknown>): Promise<Record<string, unknown>>;
   adminHealth(tenantId: string): Promise<AdminHealth>;
   adminPurge(tenantId: string, payload: Record<string, unknown>): Promise<AdminPurgePlan>;
@@ -811,7 +885,7 @@ export function createPatchForgeApi(getAccessToken: () => Promise<string>, confi
     const body = await response.json().catch(() => ({}));
     if (!response.ok) {
       const message = body.message || body.error || `PatchForge API returned HTTP ${response.status}`;
-      throw new Error(message);
+      throw Object.assign(new Error(message), { status: response.status, code: body.error || null });
     }
     return body as T;
   }
@@ -1086,6 +1160,30 @@ export function createPatchForgeApi(getAccessToken: () => Promise<string>, confi
         method: "POST",
         body: JSON.stringify(payload)
       });
+    },
+    async findingEvidence(tenantId, vulnerabilityId) {
+      return request<FindingEvidenceQueue>(`/api/patchforge/vulnerabilities/${encodeURIComponent(vulnerabilityId)}/evidence`, tenantId);
+    },
+    async submitFindingEvidence(tenantId, vulnerabilityId, payload) {
+      const body = await request<{ evidence: FindingEvidenceRecord }>(`/api/patchforge/vulnerabilities/${encodeURIComponent(vulnerabilityId)}/evidence`, tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return body.evidence;
+    },
+    async reviewFindingEvidence(tenantId, vulnerabilityId, evidenceId, payload) {
+      const body = await request<{ evidence: FindingEvidenceRecord }>(`/api/patchforge/vulnerabilities/${encodeURIComponent(vulnerabilityId)}/evidence/${encodeURIComponent(evidenceId)}/review`, tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return body.evidence;
+    },
+    async reopenFindingEvidence(tenantId, vulnerabilityId, evidenceId, payload) {
+      const body = await request<{ evidence: FindingEvidenceRecord }>(`/api/patchforge/vulnerabilities/${encodeURIComponent(vulnerabilityId)}/evidence/${encodeURIComponent(evidenceId)}/reopen`, tenantId, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return body.evidence;
     },
     async sraResearch(tenantId, path, payload) {
       return request<Record<string, unknown>>(path, tenantId, {

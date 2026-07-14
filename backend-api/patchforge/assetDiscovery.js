@@ -40,29 +40,47 @@ const RAW_SECRET_KEYS = [
   "raw_credentials"
 ];
 
-export async function listAssetCollectors(storage, tenantId) {
+export async function listAssetCollectors(storage, tenantId, options = {}) {
+  const now = options.now instanceof Date ? options.now.getTime() : Number(options.now || Date.now());
+  const staleAfterMs = positiveNumber(options.staleAfterMs || process.env.PATCHFORGE_COLLECTOR_STALE_AFTER_MS, 8 * 60 * 60 * 1000);
   return (await storage.list("asset_collectors", tenantId))
+    .map((collector) => collectorLifecycleState(collector, now, staleAfterMs))
     .sort((a, b) => String(b.updated_at || b.created_at || "").localeCompare(String(a.updated_at || a.created_at || "")));
 }
 
 export async function registerAssetCollector(storage, tenantId, body = {}) {
   assertNoRawSecrets(body);
   const now = new Date().toISOString();
+  const collectorId = body.collector_id || `collector-${randomUUID().slice(0, 12)}`;
+  const existing = (await storage.list("asset_collectors", tenantId)).find((item) => item.collector_id === collectorId) || null;
+  if (existing?.status === "revoked" && body.status !== "revoked") {
+    throw inputError("collector_revoked", "Collector is revoked and cannot heartbeat or import until an accountable reactivation is recorded.", 409);
+  }
   const categories = normalizeCategories(body.categories || body.enabled_categories);
   const record = {
+    ...(existing || {}),
     tenant_id: tenantId,
-    collector_id: body.collector_id || `collector-${randomUUID().slice(0, 12)}`,
-    name: body.name || body.collector_name || "PatchForge asset collector",
-    platform: normalizePlatform(body.platform),
-    site: body.site || null,
-    environment: body.environment || "production",
-    enabled_categories: categories.length ? categories : ["network_device", "security_appliance", "physical_server", "virtual_server", "hypervisor"],
+    collector_id: collectorId,
+    name: body.name || body.collector_name || existing?.name || "PatchForge asset collector",
+    platform: normalizePlatform(body.platform || existing?.platform),
+    site: body.site ?? existing?.site ?? null,
+    environment: body.environment || existing?.environment || "production",
+    enabled_categories: categories.length ? categories : existing?.enabled_categories || ["network_device", "security_appliance", "physical_server", "virtual_server", "hypervisor"],
     connection_mode: "outbound_only",
-    auth_mode: body.auth_mode || "collector_identity",
-    status: body.status || "registered",
-    last_seen_at: body.last_seen_at || null,
-    package_channel: body.package_channel || "manual_mvp",
-    credential_mode: "reference_only",
+    auth_mode: normalizeCollectorAuthMode(body.auth_mode || existing?.auth_mode),
+    status: normalizeCollectorStatus(body.status || existing?.status || "registered"),
+    last_seen_at: body.last_seen_at || body.last_heartbeat_at || existing?.last_seen_at || null,
+    last_heartbeat_at: body.last_heartbeat_at || body.last_seen_at || existing?.last_heartbeat_at || null,
+    heartbeat_id: body.heartbeat_id || existing?.heartbeat_id || null,
+    heartbeat_state: body.heartbeat_state || existing?.heartbeat_state || "awaiting_first_run",
+    last_run_id: body.last_run_id || existing?.last_run_id || null,
+    last_message: body.last_message || null,
+    last_asset_count: nonNegativeNumber(body.last_asset_count, existing?.last_asset_count || 0),
+    last_warning_count: nonNegativeNumber(body.last_warning_count, existing?.last_warning_count || 0),
+    collector_version: body.collector_version || existing?.collector_version || "unknown",
+    package_digest: body.package_digest || existing?.package_digest || null,
+    package_channel: body.package_channel || existing?.package_channel || "manual_mvp",
+    credential_mode: "environment_or_managed_identity_only",
     advisory_only: true,
     review_required: true,
     no_vulnerability_scanning: true,
@@ -70,7 +88,7 @@ export async function registerAssetCollector(storage, tenantId, body = {}) {
     no_patch_deployment: true,
     no_production_mutation: true,
     final_approval_issued: false,
-    created_at: body.created_at || now,
+    created_at: existing?.created_at || body.created_at || now,
     updated_at: now,
     ...lineageFromBody(body)
   };
@@ -82,6 +100,47 @@ export async function registerAssetCollector(storage, tenantId, body = {}) {
     ...lineageFromBody(body)
   });
   return record;
+}
+
+export async function recordAssetCollectorHeartbeat(storage, tenantId, body = {}) {
+  if (!body.collector_id) {
+    throw inputError("collector_id_required", "collector_id is required for collector heartbeat.");
+  }
+  return registerAssetCollector(storage, tenantId, {
+    ...body,
+    status: body.status || "active",
+    last_heartbeat_at: body.last_heartbeat_at || new Date().toISOString()
+  });
+}
+
+export async function revokeAssetCollector(storage, tenantId, body = {}) {
+  const collectorId = body.collector_id;
+  if (!collectorId) {
+    throw inputError("collector_id_required", "collector_id is required for collector revocation.");
+  }
+  const existing = (await storage.list("asset_collectors", tenantId)).find((item) => item.collector_id === collectorId);
+  if (!existing) {
+    throw inputError("collector_not_registered", "Collector is not registered for this tenant.", 404);
+  }
+  const now = new Date().toISOString();
+  const revoked = {
+    ...existing,
+    status: "revoked",
+    heartbeat_state: "revoked",
+    revoked_at: now,
+    revoked_reason: String(body.reason || "collector lifecycle revocation").slice(0, 500),
+    revoked_by: body.actor_upn || body.submitted_by || null,
+    updated_at: now,
+    final_approval_issued: false,
+    no_production_mutation: true
+  };
+  await storage.append("asset_collectors", revoked);
+  await storage.audit(tenantId, "asset_collector_revoked", {
+    collector_id: collectorId,
+    reason: revoked.revoked_reason,
+    ...lineageFromBody(body)
+  });
+  return revoked;
 }
 
 export async function listAssetDiscoveryPolicies(storage, tenantId) {
@@ -171,10 +230,13 @@ export async function importDiscoveredAssets(storage, tenantId, body = {}) {
   if (!assets.length) {
     throw inputError("asset_snapshot_required", "At least one asset snapshot is required.");
   }
-  const collectors = await listAssetCollectors(storage, tenantId);
+  const collectors = await storage.list("asset_collectors", tenantId);
   const collector = collectors.find((item) => item.collector_id === collectorId);
   if (!collector) {
     throw inputError("collector_not_registered", "Collector is not registered for this tenant.", 404);
+  }
+  if (collector.status === "revoked") {
+    throw inputError("collector_revoked", "Collector is revoked and imports are blocked.", 409);
   }
   const policies = await listAssetDiscoveryPolicies(storage, tenantId);
   const policy = body.policy_id ? policies.find((item) => item.policy_id === body.policy_id) : null;
@@ -186,6 +248,22 @@ export async function importDiscoveredAssets(storage, tenantId, body = {}) {
   }
   const now = new Date().toISOString();
   const runId = body.run_id || `discovery-run-${Date.now()}-${randomUUID().slice(0, 8)}`;
+  const sourceHash = hashObject({ collector_id: collector.collector_id, policy_id: policy?.policy_id || null, assets });
+  const existingRun = (await storage.list("asset_discovery_runs", tenantId)).find((item) => item.run_id === runId);
+  if (existingRun) {
+    if (existingRun.collector_id !== collector.collector_id || existingRun.source_hash !== sourceHash) {
+      throw inputError("collector_run_conflict", "The collector run_id was already used for a different source snapshot.", 409);
+    }
+    const importedAssets = (await storage.list("customer_network_assets", tenantId))
+      .filter((asset) => asset.collector_run_id === runId);
+    return {
+      run: { ...existingRun, idempotent_reuse: true },
+      imported_assets: importedAssets,
+      rejected_assets: existingRun.rejected || [],
+      idempotent_reuse: true,
+      boundary: discoveryBoundary()
+    };
+  }
   const imported = [];
   const rejected = [];
   for (const [index, asset] of assets.entries()) {
@@ -225,7 +303,7 @@ export async function importDiscoveredAssets(storage, tenantId, body = {}) {
     rejected_asset_count: rejected.length,
     categories: [...new Set(imported.map((asset) => asset.asset_category || "unknown"))],
     discovery_method: body.discovery_method || body.method || policy?.discovery_methods?.[0] || "manual_snapshot",
-    source_hash: hashObject({ collector_id: collector.collector_id, policy_id: policy?.policy_id || null, assets }),
+    source_hash: sourceHash,
     rejected,
     advisory_only: true,
     review_required: true,
@@ -341,6 +419,46 @@ function normalizePlatform(platform) {
     return value;
   }
   return "unknown";
+}
+
+function normalizeCollectorAuthMode(value) {
+  const normalized = String(value || "collector_identity").toLowerCase().replace(/[^a-z0-9]+/g, "_");
+  return ["environment_bearer", "azure_cli_managed_identity", "azure_cli_cached_identity", "collector_identity"].includes(normalized)
+    ? normalized
+    : "collector_identity";
+}
+
+function normalizeCollectorStatus(value) {
+  const normalized = String(value || "registered").toLowerCase();
+  return ["registered", "active", "degraded", "revoked"].includes(normalized) ? normalized : "registered";
+}
+
+function collectorLifecycleState(collector, now, staleAfterMs) {
+  if (collector.status === "revoked") {
+    return { ...collector, health_status: "revoked", heartbeat_age_minutes: null, next_heartbeat_due_at: null };
+  }
+  const heartbeatAt = Date.parse(collector.last_heartbeat_at || collector.last_seen_at || "");
+  if (!Number.isFinite(heartbeatAt)) {
+    return { ...collector, health_status: "pending", heartbeat_age_minutes: null, next_heartbeat_due_at: null };
+  }
+  const ageMs = Math.max(0, now - heartbeatAt);
+  const failed = ["failed", "completed_with_rejections"].includes(String(collector.heartbeat_state || "").toLowerCase());
+  return {
+    ...collector,
+    health_status: ageMs > staleAfterMs ? "stale" : failed || collector.status === "degraded" ? "degraded" : "ready",
+    heartbeat_age_minutes: Math.floor(ageMs / 60000),
+    next_heartbeat_due_at: new Date(heartbeatAt + staleAfterMs).toISOString()
+  };
+}
+
+function positiveNumber(value, fallback) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function nonNegativeNumber(value, fallback) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
 }
 
 function normalizeCategories(value) {

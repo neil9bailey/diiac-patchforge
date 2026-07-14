@@ -183,6 +183,10 @@ def build_evidence_register(evidence_items: list[dict[str, Any]]) -> dict[str, A
 def _accepted_positive(item: dict[str, Any], disallowed_sources: set[str]) -> bool:
     if item.get("review_state") == "rejected" or item.get("evidence_state") == "rejected":
         return False
+    if item.get("expired") is True or item.get("review_state") in {"expired", "reopened", "stale", "invalidated"}:
+        return False
+    if item.get("server_owned") is True and item.get("source_class") == "human_evidence_submission" and item.get("replay_verified") is not True:
+        return False
     if item.get("source_class") in disallowed_sources:
         return False
     if item.get("advisory_only") is True:
@@ -603,6 +607,139 @@ def verify_pack_locally(pack_dir: str | Path, dev_key: str | None = None) -> dic
     }
 
 
+def create_signed_export_manifest(
+    pack_id: str,
+    tenant_id: str,
+    artefacts: list[dict[str, Any]],
+    governance_manifest_sha256: str,
+    final_approval_issued: bool = False,
+    created_at: str | None = None,
+    signing_key: bytes | str | None = None,
+    key_vault_key_id: str | None = None,
+    signing_provider: SigningProvider | None = None,
+    dev_mode: bool = True,
+) -> dict[str, Any]:
+    """Sign exact exported-file descriptors without changing governance state."""
+    if not pack_id or not tenant_id:
+        raise GovernanceRuntimeError("Export manifests require tenant_id and pack_id.")
+    if not _is_sha256(governance_manifest_sha256):
+        raise GovernanceRuntimeError("Export manifests require a valid governance manifest SHA-256.")
+    if not isinstance(final_approval_issued, bool):
+        raise GovernanceRuntimeError("Export manifest final_approval_issued must be a boolean copied from the source pack.")
+    normalized_artefacts = _validate_export_artefacts(artefacts)
+    unsigned_manifest = {
+        "manifest_version": "patchforge-export-manifest-v1",
+        "tenant_id": str(tenant_id),
+        "pack_id": str(pack_id),
+        "governance_manifest_sha256": governance_manifest_sha256.lower(),
+        "artefact_count": len(normalized_artefacts),
+        "artefacts": normalized_artefacts,
+        "source_pack_immutable": True,
+        "final_approval_issued": final_approval_issued,
+        "human_approval_boundary": {
+            "state_preserved_from_source_pack": True,
+            "no_autonomous_approval": True,
+            "manifest_does_not_issue_approval": True,
+            "human_review_required_when_not_approved": not final_approval_issued,
+        },
+        "created_at": created_at or now_utc(),
+    }
+    manifest_id = f"PF-EXPORT-{sha256_json(unsigned_manifest)[:20]}"
+    manifest = {"manifest_id": manifest_id, **unsigned_manifest}
+    manifest_sha256 = sha256_json(manifest)
+    signed_payload = {
+        "manifest_id": manifest_id,
+        "manifest_sha256": manifest_sha256,
+        "pack_id": str(pack_id),
+        "governance_manifest_sha256": governance_manifest_sha256.lower(),
+    }
+    signature, sigmeta = _sign_payload(
+        signed_payload,
+        signing_key=signing_key,
+        key_vault_key_id=key_vault_key_id,
+        signing_provider=signing_provider,
+        dev_mode=dev_mode,
+    )
+    result = {
+        "manifest": manifest,
+        "manifest_sha256": manifest_sha256,
+        "signature": signature,
+        "signature_metadata": sigmeta,
+    }
+    result["verification"] = verify_signed_export_manifest(result, dev_key=sigmeta.get("dev_key_hint"))
+    return result
+
+
+def verify_signed_export_manifest(bundle: dict[str, Any], dev_key: str | None = None) -> dict[str, Any]:
+    manifest = bundle.get("manifest") if isinstance(bundle, dict) else None
+    sigmeta = bundle.get("signature_metadata") if isinstance(bundle, dict) else None
+    signature = bundle.get("signature") if isinstance(bundle, dict) else None
+    if not isinstance(manifest, dict) or not isinstance(sigmeta, dict) or not isinstance(signature, str):
+        return {"verified": False, "manifest_ok": False, "signature_ok": False, "artefact_descriptors_ok": False}
+    try:
+        normalized = _validate_export_artefacts(manifest.get("artefacts"))
+        descriptors_ok = normalized == manifest.get("artefacts") and manifest.get("artefact_count") == len(normalized)
+    except GovernanceRuntimeError:
+        descriptors_ok = False
+    actual_manifest_hash = sha256_json(manifest)
+    signed_payload = sigmeta.get("signed_payload") if isinstance(sigmeta.get("signed_payload"), dict) else {}
+    manifest_ok = bool(
+        bundle.get("manifest_sha256") == actual_manifest_hash
+        and signed_payload.get("manifest_sha256") == actual_manifest_hash
+        and signed_payload.get("manifest_id") == manifest.get("manifest_id")
+        and signed_payload.get("pack_id") == manifest.get("pack_id")
+        and signed_payload.get("governance_manifest_sha256") == manifest.get("governance_manifest_sha256")
+    )
+    signature_ok = _verify_signature(sigmeta, signature, dev_key=dev_key) if manifest_ok else False
+    return {
+        "verified": bool(manifest_ok and signature_ok and descriptors_ok),
+        "manifest_ok": manifest_ok,
+        "signature_ok": signature_ok,
+        "artefact_descriptors_ok": descriptors_ok,
+        "manifest_sha256": actual_manifest_hash,
+    }
+
+
+def _validate_export_artefacts(artefacts: Any) -> list[dict[str, Any]]:
+    if not isinstance(artefacts, list) or not artefacts:
+        raise GovernanceRuntimeError("Export manifests require at least one artefact descriptor.")
+    normalized: list[dict[str, Any]] = []
+    names: set[str] = set()
+    media_by_extension = {
+        ".zip": {"application/zip"},
+        ".docx": {"application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
+        ".pdf": {"application/pdf"},
+        ".json": {"application/json"},
+        ".sig": {"text/plain", "application/octet-stream"},
+    }
+    for item in artefacts:
+        if not isinstance(item, dict):
+            raise GovernanceRuntimeError("Export artefact descriptors must be objects.")
+        name = str(item.get("name") or "")
+        if not name or len(name) > 180 or name in {".", ".."} or "/" in name or "\\" in name or "\x00" in name:
+            raise GovernanceRuntimeError(f"Unsafe export artefact name: {name or 'missing'}")
+        if name in names:
+            raise GovernanceRuntimeError(f"Duplicate export artefact name: {name}")
+        extension = Path(name).suffix.lower()
+        media_type = str(item.get("media_type") or "").lower()
+        if extension not in media_by_extension or media_type not in media_by_extension[extension]:
+            raise GovernanceRuntimeError(f"Unsupported export artefact media type for {name}.")
+        digest = str(item.get("sha256") or "").lower()
+        if not _is_sha256(digest):
+            raise GovernanceRuntimeError(f"Invalid SHA-256 for export artefact {name}.")
+        size_bytes = item.get("size_bytes")
+        if isinstance(size_bytes, bool) or not isinstance(size_bytes, int) or size_bytes < 0 or size_bytes > 64 * 1024 * 1024:
+            raise GovernanceRuntimeError(f"Invalid size for export artefact {name}.")
+        names.add(name)
+        normalized.append({"name": name, "media_type": media_type, "sha256": digest, "size_bytes": size_bytes})
+    return sorted(normalized, key=lambda item: item["name"])
+
+
+def _is_sha256(value: Any) -> bool:
+    text = str(value or "")
+    return len(text) == 64 and all(character in "0123456789abcdefABCDEF" for character in text)
+
+
 def _items_by_class(evidence_items: list[dict[str, Any]], evidence_class: str) -> list[dict[str, Any]]:
     return [item for item in evidence_items if item.get("evidence_class") == evidence_class]
 
@@ -662,7 +799,7 @@ def _sign_payload(
     if not dev_mode:
         raise GovernanceRuntimeError("Production signing requires a Key Vault key ID or an Ed25519 signing key.")
 
-    dev_key = "patchforge-dev-test-key"
+    dev_key = os.getenv("PATCHFORGE_DEV_SIGNING_KEY", "patchforge-dev-test-key")
     signature = hmac.new(dev_key.encode("utf-8"), payload, hashlib.sha256).hexdigest()
     sigmeta = {
         "algorithm": "dev_hmac_sha256",

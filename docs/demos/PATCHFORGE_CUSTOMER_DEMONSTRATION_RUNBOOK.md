@@ -27,11 +27,14 @@ PatchForge does not scan, exploit, deploy patches, mutate production systems, re
 ## Live Flow
 
 1. Sign in through Microsoft Entra ID.
-2. Open Security Action Center and confirm the live tenant context.
+2. Open Patch & CVE Catalogue and confirm the live tenant, environment, account role, and source status.
 3. Ingest real source-bound records, or review records already ingested through the protected API.
-4. Review the grouped CVE/advisory catalogue, source state, evidence state, and customer match counts.
-5. Open Vendors & Exploits Register to explain vendor-level posture without showing exploit instructions or procedural exploit steps.
-6. Open Customer Operational Assets to review customer context, then use Patch / Hotfix Compare when current and proposed versions are known.
+4. Review the priority queue, source/evidence state, customer match counts, selected-record context, blockers, and next action.
+5. Open Vendor Catalogue, bind the exact customer asset and advisory, and explain applicability without showing exploit instructions or procedural exploit steps. Run Patch Compare only when current/proposed versions and source evidence are known.
+6. Open Customer Estate to review customer asset, service, collector, version, feature, exposure, ownership, and evidence context.
 7. Ask PatchForge a focused advisory question and confirm that final approval remains a human decision.
-8. Open Reports and verify the signed pack state, immutable source posture, readiness blockers, and final approval state.
-9. Close with the product boundary and the accountability model.
+8. Open Review & Approve for the selected finding. Show evidence IDs/hashes, expiry, review rationale, and role separation; do not accept customer evidence merely to make the demonstration appear complete.
+9. Open Reports, explicitly select the intended verified pack, and confirm pack/finding/time, immutable source posture, readiness blockers, report metadata, verification, and final approval state before download.
+10. Close with the product boundary and the accountability model.
+
+If temporary production UAT records are explicitly authorized, prefix them, capture the before state, and follow the Admin purge preview/typed-confirmation/absence-proof workflow after the report evidence is retained. Do not delete real customer records or audit evidence.

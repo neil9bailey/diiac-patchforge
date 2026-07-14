@@ -6,7 +6,7 @@ from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from uuid import uuid4
 
-from runtime.governance_runtime import GovernanceRuntimeError, create_signed_decision_pack
+from runtime.governance_runtime import GovernanceRuntimeError, create_signed_decision_pack, create_signed_export_manifest
 
 
 class PatchForgeRuntimeHandler(BaseHTTPRequestHandler):
@@ -30,6 +30,16 @@ class PatchForgeRuntimeHandler(BaseHTTPRequestHandler):
         self._send_json(404, {"error": "not_found"})
 
     def do_POST(self) -> None:
+        if self.path == "/api/runtime/export-manifests":
+            try:
+                payload = self._read_json_body()
+                bundle = self._create_export_manifest(payload)
+                self._send_json(201, bundle)
+            except GovernanceRuntimeError as exc:
+                self._send_json(400, {"error": "governance_boundary_violation", "message": str(exc)})
+            except Exception as exc:  # pragma: no cover - defensive runtime boundary
+                self._send_json(500, {"error": "runtime_error", "message": str(exc)})
+            return
         if self.path == "/api/runtime/decision-packs":
             try:
                 payload = self._read_json_body()
@@ -109,6 +119,23 @@ class PatchForgeRuntimeHandler(BaseHTTPRequestHandler):
                 "no_autonomous_approval": True,
             },
         }
+
+    def _create_export_manifest(self, payload: dict[str, object]) -> dict[str, object]:
+        key_vault_key_id = os.environ.get("PATCHFORGE_KEYVAULT_SIGNING_KEY_ID") or None
+        bundle = create_signed_export_manifest(
+            pack_id=str(payload.get("pack_id") or ""),
+            tenant_id=str(payload.get("tenant_id") or ""),
+            artefacts=_list_payload(payload.get("artefacts")),
+            governance_manifest_sha256=str(payload.get("governance_manifest_sha256") or ""),
+            final_approval_issued=payload.get("final_approval_issued", False),
+            created_at=_optional_str(payload.get("created_at")),
+            key_vault_key_id=key_vault_key_id,
+            dev_mode=not bool(key_vault_key_id),
+        )
+        signature_metadata = bundle.get("signature_metadata")
+        if isinstance(signature_metadata, dict):
+            signature_metadata["dev_key_hint"] = None
+        return bundle
 
     def _send_json(self, status: int, payload: dict[str, object]) -> None:
         body = json.dumps(payload, indent=2).encode("utf-8")

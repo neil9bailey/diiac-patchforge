@@ -9,6 +9,19 @@ param(
   [string]$CredentialReference = "customer-vault:patchforge/read-only-discovery",
   [string]$AzureTenantId = "67f8be6c-07da-4a7c-bb0a-d6bcb38cd6da",
   [string]$AzureCliScope = "api://ec30b0eb-cfc4-48cc-a5f2-2a1345d96736/PatchForge.Access",
+  [switch]$AzureCliManagedIdentity,
+  [string]$ManagedIdentityClientIdEnv = "PATCHFORGE_COLLECTOR_MANAGED_IDENTITY_CLIENT_ID",
+  [string]$CollectorVersion = "customer-managed",
+  [string]$PackageDigest = "",
+  [string]$HeartbeatFile = "$env:ProgramData\PatchForge\Collector\collector-heartbeat.json",
+  [string]$RevocationFile = "$env:ProgramData\PatchForge\Collector\collector.revoked.json",
+  [string]$SpoolDirectory = "$env:ProgramData\PatchForge\Collector\spool",
+  [ValidateRange(1, 10000)]
+  [int]$MaxSpoolEntries = 100,
+  [ValidateRange(65536, 104857600)]
+  [int]$MaxSpoolEntryBytes = 8388608,
+  [ValidateRange(1, 20)]
+  [int]$MaxReplayAttempts = 5,
   [switch]$DisableHyperV,
   [switch]$EnableAzureCliInventory,
   [string]$AzureSubscription = "",
@@ -106,6 +119,18 @@ $config = [ordered]@{
     bearerTokenEnv = "PATCHFORGE_COLLECTOR_TOKEN"
     azureCliScope = $AzureCliScope
     azureTenantId = $AzureTenantId
+    azureCliManagedIdentity = [bool]$AzureCliManagedIdentity
+    managedIdentityClientIdEnv = $ManagedIdentityClientIdEnv
+  }
+  lifecycle = [ordered]@{
+    heartbeatFile = $HeartbeatFile
+    revocationFile = $RevocationFile
+    spoolDirectory = $SpoolDirectory
+    maxSpoolEntries = $MaxSpoolEntries
+    maxSpoolEntryBytes = $MaxSpoolEntryBytes
+    maxReplayAttempts = $MaxReplayAttempts
+    collectorVersion = $CollectorVersion
+    packageDigest = if ([string]::IsNullOrWhiteSpace($PackageDigest)) { $null } else { $PackageDigest }
   }
   adapters = $adapters
 }
@@ -117,4 +142,4 @@ $config = [ordered]@{
 )
 
 Write-Host "Created PatchForge collector config: $OutputPath"
-Write-Host "No secrets were written. The collector will use PATCHFORGE_COLLECTOR_TOKEN if present, otherwise Azure CLI token acquisition for $AzureCliScope."
+Write-Host "No secrets were written. Authentication uses OS-injected PATCHFORGE_COLLECTOR_TOKEN, Azure managed identity, or the scheduled user's Azure CLI identity."

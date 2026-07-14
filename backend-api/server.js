@@ -27,6 +27,7 @@ import {
 } from "./patchforge/reports.js";
 import { getOpenAiAgentStatus, OPENAI_AGENT_NAMES, runOpenAiAgent } from "./patchforge/openaiAgentService.js";
 import { startScheduler } from "./patchforge/scheduler.js";
+import { startWorker } from "./patchforge/worker.js";
 import { handlePlatformRoutes } from "./routes/platformRoutes.js";
 import {
   buildAssetDiscoveryOverview,
@@ -62,6 +63,23 @@ import {
   upsertNetworkVendor
 } from "./patchforge/vendorLens.js";
 import { runSraTool } from "./sra/securityResearchAgent.js";
+import {
+  SUPPORTED_FINDING_EVIDENCE_CLASSES,
+  assertEvidenceEventPersisted,
+  compileFindingEvidenceItems,
+  createFindingEvidenceRecord,
+  createFindingEvidenceReopenEvent,
+  createFindingEvidenceReviewEvent,
+  projectFindingEvidenceRecord
+} from "./patchforge/evidenceReview.js";
+import {
+  buildSignedDecisionPackZip,
+  findStoredExportArtifact,
+  materializeSignedExportArtifact,
+  publicExportArtifact,
+  signedArtifactHeaders,
+  verifiedArtifact
+} from "./patchforge/exportArtifacts.js";
 
 const DEFAULT_PORT = Number(process.env.PORT || 8080);
 const MAX_REQUEST_BODY_BYTES = Number(process.env.PATCHFORGE_MAX_REQUEST_BODY_BYTES || 2 * 1024 * 1024);
@@ -127,6 +145,7 @@ export function createServer(options = {}) {
   const runtimeClient = options.runtimeClient || createRuntimeClientFromEnv();
   const sourceFeedClient = options.sourceFeedClient || createSourceFeedClient();
   const vendorLensFetchImpl = options.vendorLensFetchImpl || globalThis.fetch;
+  const vendorLensOutboundOptions = options.vendorLensOutboundOptions || {};
   const openAiAgentFetchImpl = options.openAiAgentFetchImpl || globalThis.fetch;
   const corsConfig = options.cors || createCorsConfigFromEnv();
 
@@ -216,6 +235,182 @@ export function createServer(options = {}) {
           withLineage({ ...body, reviewer }, tenantContext, authorization)
         );
         return result ? sendJson(res, 200, result) : sendJson(res, 404, { error: "vulnerability_not_found" });
+      }
+
+      const findingEvidenceMatch = url.pathname.match(/^\/api\/patchforge\/vulnerabilities\/([^/]+)\/evidence$/);
+      if (req.method === "GET" && findingEvidenceMatch) {
+        const vulnerabilityId = decodeURIComponent(findingEvidenceMatch[1]);
+        const vulnerability = await storage.getVulnerability(tenantId, vulnerabilityId);
+        if (!vulnerability) {
+          return sendJson(res, 404, { error: "vulnerability_not_found" });
+        }
+        const records = (await storage.list("finding_evidence", tenantId))
+          .filter((record) => String(record.vulnerability_id).toLowerCase() === String(vulnerability.vulnerability_id).toLowerCase());
+        const events = await storage.list("finding_evidence_events", tenantId);
+        const evidence = records.map((record) => projectFindingEvidenceRecord({
+          record,
+          vulnerability,
+          events: events.filter((event) => event.evidence_id === record.evidence_id)
+        }));
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          vulnerability_id: vulnerability.vulnerability_id,
+          supported_evidence_classes: SUPPORTED_FINDING_EVIDENCE_CLASSES,
+          evidence,
+          evidence_events: events.filter((event) => evidence.some((record) => record.evidence_id === event.evidence_id)),
+          audit_replay: evidence.map((record) => ({
+            evidence_id: record.evidence_id,
+            replay_verified: record.replay_verified,
+            replay_failures: record.replay_failures,
+            latest_event_hash: record.latest_event_hash,
+            event_count: record.event_count,
+            expired: record.expired
+          })),
+          boundary: {
+            server_owned: true,
+            exact_finding_scope: true,
+            immutable_submission: true,
+            authenticated_review_required: true,
+            final_approval_issued: false
+          }
+        });
+      }
+
+      if (req.method === "POST" && findingEvidenceMatch) {
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        const vulnerabilityId = decodeURIComponent(findingEvidenceMatch[1]);
+        const vulnerability = await storage.getVulnerability(tenantRequest.tenantId, vulnerabilityId);
+        if (!vulnerability) {
+          return sendJson(res, 404, { error: "vulnerability_not_found" });
+        }
+        const evidence = createFindingEvidenceRecord({
+          tenantId: tenantRequest.tenantId,
+          vulnerability,
+          body: tenantRequest.body,
+          lineage: tenantRequest.lineageFields()
+        });
+        const persisted = await storage.appendImmutable("finding_evidence", evidence);
+        if (!persisted.created || persisted.record.content_hash !== evidence.content_hash) {
+          throw Object.assign(new Error("Evidence submission conflicted with an existing immutable record."), {
+            statusCode: 409,
+            publicError: "finding_evidence_submission_conflict",
+            publicMessage: "Evidence submission conflicted with an existing immutable record."
+          });
+        }
+        await storage.audit(tenantRequest.tenantId, "finding_evidence_submitted", {
+          vulnerability_id: vulnerability.vulnerability_id,
+          evidence_id: evidence.evidence_id,
+          evidence_class: evidence.evidence_class,
+          content_hash: evidence.content_hash,
+          ...tenantRequest.lineageFields()
+        });
+        return sendJson(res, 201, {
+          tenant_id: tenantRequest.tenantId,
+          tenant_context: tenantRequest.tenantContext,
+          evidence: persisted.record,
+          final_approval_issued: false
+        });
+      }
+
+      const findingEvidenceReviewMatch = url.pathname.match(/^\/api\/patchforge\/vulnerabilities\/([^/]+)\/evidence\/([^/]+)\/review$/);
+      if (req.method === "POST" && findingEvidenceReviewMatch) {
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        const vulnerabilityId = decodeURIComponent(findingEvidenceReviewMatch[1]);
+        const evidenceId = decodeURIComponent(findingEvidenceReviewMatch[2]);
+        const vulnerability = await storage.getVulnerability(tenantRequest.tenantId, vulnerabilityId);
+        if (!vulnerability) {
+          return sendJson(res, 404, { error: "vulnerability_not_found" });
+        }
+        const records = await storage.list("finding_evidence", tenantRequest.tenantId);
+        const existing = records.find((record) => record.evidence_id === evidenceId);
+        if (!existing) {
+          return sendJson(res, 404, { error: "finding_evidence_not_found" });
+        }
+        const evidenceEvents = await storage.list("finding_evidence_events", tenantRequest.tenantId);
+        const event = createFindingEvidenceReviewEvent({
+          record: existing,
+          vulnerability,
+          events: evidenceEvents,
+          body: tenantRequest.body,
+          principal: authorization.principal,
+          lineage: tenantRequest.lineageFields()
+        });
+        const persisted = await storage.appendImmutable("finding_evidence_events", event);
+        const persistedEvent = assertEvidenceEventPersisted(event, persisted);
+        const evidence = projectFindingEvidenceRecord({
+          record: existing,
+          vulnerability,
+          events: [...evidenceEvents.filter((item) => item.evidence_event_id !== persistedEvent.evidence_event_id), persistedEvent]
+        });
+        await storage.audit(tenantRequest.tenantId, "finding_evidence_reviewed", {
+          vulnerability_id: vulnerability.vulnerability_id,
+          evidence_id: evidence.evidence_id,
+          evidence_class: evidence.evidence_class,
+          review_state: evidence.review_state,
+          evidence_event_id: persistedEvent.evidence_event_id,
+          event_hash: persistedEvent.event_hash,
+          previous_event_hash: persistedEvent.previous_event_hash,
+          reviewed_content_hash: persistedEvent.evidence_content_hash,
+          ...tenantRequest.lineageFields()
+        });
+        return sendJson(res, 200, {
+          tenant_id: tenantRequest.tenantId,
+          tenant_context: tenantRequest.tenantContext,
+          evidence,
+          evidence_event: persistedEvent,
+          final_approval_issued: false
+        });
+      }
+
+      const findingEvidenceReopenMatch = url.pathname.match(/^\/api\/patchforge\/vulnerabilities\/([^/]+)\/evidence\/([^/]+)\/reopen$/);
+      if (req.method === "POST" && findingEvidenceReopenMatch) {
+        const tenantRequest = await readTenantJson(req, url, authConfig, authorization);
+        const vulnerabilityId = decodeURIComponent(findingEvidenceReopenMatch[1]);
+        const evidenceId = decodeURIComponent(findingEvidenceReopenMatch[2]);
+        const vulnerability = await storage.getVulnerability(tenantRequest.tenantId, vulnerabilityId);
+        if (!vulnerability) {
+          return sendJson(res, 404, { error: "vulnerability_not_found" });
+        }
+        const records = await storage.list("finding_evidence", tenantRequest.tenantId);
+        const existing = records.find((record) => record.evidence_id === evidenceId);
+        if (!existing) {
+          return sendJson(res, 404, { error: "finding_evidence_not_found" });
+        }
+        const evidenceEvents = await storage.list("finding_evidence_events", tenantRequest.tenantId);
+        const event = createFindingEvidenceReopenEvent({
+          record: existing,
+          vulnerability,
+          events: evidenceEvents,
+          body: tenantRequest.body,
+          principal: authorization.principal,
+          lineage: tenantRequest.lineageFields()
+        });
+        const persisted = await storage.appendImmutable("finding_evidence_events", event);
+        const persistedEvent = assertEvidenceEventPersisted(event, persisted);
+        const evidence = projectFindingEvidenceRecord({
+          record: existing,
+          vulnerability,
+          events: [...evidenceEvents.filter((item) => item.evidence_event_id !== persistedEvent.evidence_event_id), persistedEvent]
+        });
+        await storage.audit(tenantRequest.tenantId, "finding_evidence_reopened", {
+          vulnerability_id: vulnerability.vulnerability_id,
+          evidence_id: evidence.evidence_id,
+          evidence_class: evidence.evidence_class,
+          evidence_event_id: persistedEvent.evidence_event_id,
+          event_hash: persistedEvent.event_hash,
+          previous_event_hash: persistedEvent.previous_event_hash,
+          rationale: persistedEvent.rationale,
+          final_approval_issued: false,
+          ...tenantRequest.lineageFields()
+        });
+        return sendJson(res, 200, {
+          tenant_id: tenantRequest.tenantId,
+          tenant_context: tenantRequest.tenantContext,
+          evidence,
+          evidence_event: persistedEvent,
+          final_approval_issued: false
+        });
       }
 
       if (route === "GET /api/patchforge/assets") {
@@ -618,15 +813,18 @@ export function createServer(options = {}) {
         }
         const body = await readJson(req);
         const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
+        const deterministicAnswer = await buildAskPatchForgeResponse({
+          storage,
+          tenantId: tenantContext.effective_tenant_id,
+          body: withLineage(body, tenantContext, authorization)
+        });
+        const serverEvidence = await buildServerOwnedAgentEvidence(storage, tenantContext.effective_tenant_id, body);
         const result = await runOpenAiAgent({
           agentName: OPENAI_AGENT_NAMES[agentKey],
           prompt: body.question || body.prompt || body.message || "",
           evidence: {
-            ...body.evidence,
-            deterministic_answer: body.deterministic_answer || null,
-            reviewed_exposure_evidence: Boolean(body.reviewed_exposure_evidence),
-            reviewed_applicability_evidence: Boolean(body.reviewed_applicability_evidence),
-            reviewed_customer_assurance_evidence: Boolean(body.reviewed_customer_assurance_evidence)
+            ...serverEvidence,
+            deterministic_answer: deterministicAnswer.response || deterministicAnswer
           },
           tenantId: tenantContext.effective_tenant_id,
           fetchImpl: openAiAgentFetchImpl
@@ -639,7 +837,15 @@ export function createServer(options = {}) {
         return sendJson(res, result.status === "verified" ? 200 : 202, {
           tenant_id: tenantContext.effective_tenant_id,
           tenant_context: tenantContext,
-          agent_guidance: result
+          agent_guidance: result,
+          server_evidence_context: {
+            finding_binding: serverEvidence.finding_binding,
+            accepted_evidence_count: serverEvidence.accepted_evidence_count,
+            reviewed_exposure_evidence: serverEvidence.reviewed_exposure_evidence,
+            reviewed_applicability_evidence: serverEvidence.reviewed_applicability_evidence,
+            reviewed_customer_assurance_evidence: serverEvidence.reviewed_customer_assurance_evidence,
+            caller_review_flags_ignored: true
+          }
         });
       }
 
@@ -776,7 +982,8 @@ export function createServer(options = {}) {
           storage,
           tenantId: tenantRequest.tenantId,
           body: tenantRequest.withLineage(),
-          fetchImpl: vendorLensFetchImpl
+          fetchImpl: vendorLensFetchImpl,
+          outboundOptions: vendorLensOutboundOptions
         });
         return sendJson(res, 202, {
           tenant_id: tenantRequest.tenantId,
@@ -893,6 +1100,18 @@ export function createServer(options = {}) {
         if (!pack) {
           return sendJson(res, 404, { error: "decision_pack_not_found" });
         }
+        if (pack.verification?.verified !== true) {
+          return sendJson(res, 409, {
+            error: "decision_pack_verification_required",
+            message: "Export is blocked until the source decision pack verifies successfully."
+          });
+        }
+        const exportArtifacts = (await storage.list("export_artifacts", tenantId))
+          .filter((record) => record.pack_id === pack.pack_id)
+          .map((record) => {
+            verifiedArtifact(record);
+            return publicExportArtifact(record);
+          });
         return sendJson(res, 200, {
           tenant_id: tenantId,
           tenant_context: baseTenantContext,
@@ -902,12 +1121,78 @@ export function createServer(options = {}) {
           verification: pack.verification || null,
           decision_pack: pack,
           artefacts: pack.artefacts || null,
+          signed_export_artifacts: exportArtifacts,
+          signed_zip_url: `/api/patchforge/decision-packs/${encodeURIComponent(pack.pack_id)}/export.zip`,
           boundary: {
             no_scanner: true,
             no_exploit_generation: true,
             no_patch_deployment: true,
             no_production_mutation: true,
             no_autonomous_approval: true
+          }
+        });
+      }
+
+      const decisionPackZipMatch = url.pathname.match(/^\/api\/patchforge\/decision-packs\/([^/]+)\/export\.zip$/);
+      if (req.method === "GET" && decisionPackZipMatch) {
+        const packId = decodeURIComponent(decisionPackZipMatch[1]);
+        const packs = await storage.list("decision_packs", tenantId);
+        const pack = packs.find((record) => record.pack_id === packId || record.decision_pack_id === packId);
+        if (!pack) {
+          return sendJson(res, 404, { error: "decision_pack_not_found" });
+        }
+        if (pack.verification?.verified !== true) {
+          return sendJson(res, 409, {
+            error: "decision_pack_verification_required",
+            message: "Signed ZIP export is blocked until the source decision pack verifies successfully."
+          });
+        }
+        let materialized;
+        const existing = await findStoredExportArtifact(storage, tenantId, pack.pack_id, "signed_decision_pack_zip");
+        if (existing) {
+          materialized = verifiedArtifact(existing);
+        } else {
+          const zip = await buildSignedDecisionPackZip({ runtimeClient, tenantId, pack });
+          materialized = await materializeSignedExportArtifact({
+            storage,
+            runtimeClient,
+            tenantId,
+            pack,
+            artifactKind: "signed_decision_pack_zip",
+            fileName: zip.fileName,
+            contentType: zip.contentType,
+            buffer: zip.buffer
+          });
+        }
+        return sendBinary(res, 200, materialized.buffer, {
+          contentType: materialized.record.content_type,
+          fileName: materialized.record.file_name,
+          headers: signedArtifactHeaders(materialized.record)
+        });
+      }
+
+      const exportManifestMatch = url.pathname.match(/^\/api\/patchforge\/decision-packs\/([^/]+)\/exports\/([^/]+)\/manifest$/);
+      if (req.method === "GET" && exportManifestMatch) {
+        const packId = decodeURIComponent(exportManifestMatch[1]);
+        const artifactId = decodeURIComponent(exportManifestMatch[2]);
+        const record = (await storage.list("export_artifacts", tenantId))
+          .find((item) => item.pack_id === packId && item.artifact_id === artifactId);
+        if (!record) {
+          return sendJson(res, 404, { error: "export_artifact_not_found" });
+        }
+        const materialized = verifiedArtifact(record);
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          artifact: publicExportArtifact(record),
+          signed_manifest: record.signed_manifest,
+          signature: record.signature,
+          signature_metadata: record.signature_metadata,
+          verification: materialized.verification,
+          boundary: {
+            source_pack_immutable: true,
+            manifest_does_not_issue_approval: true,
+            final_approval_issued: Boolean(record.final_approval_issued)
           }
         });
       }
@@ -922,7 +1207,23 @@ export function createServer(options = {}) {
         if (!pack) {
           return sendJson(res, 404, { error: "decision_pack_not_found" });
         }
+        if (pack.verification?.verified !== true) {
+          return sendJson(res, 409, {
+            error: "decision_pack_verification_required",
+            message: "Report export is blocked until the source decision pack verifies successfully."
+          });
+        }
         try {
+          const artifactKind = `report:${reportType}:${format}`;
+          const existing = await findStoredExportArtifact(storage, tenantId, pack.pack_id, artifactKind);
+          if (existing) {
+            const materialized = verifiedArtifact(existing);
+            return sendBinary(res, 200, materialized.buffer, {
+              contentType: materialized.record.content_type,
+              fileName: materialized.record.file_name,
+              headers: signedArtifactHeaders(materialized.record)
+            });
+          }
           const vulnerability = await storage.getVulnerability(tenantId, pack.vulnerability_id);
           const sourceFeedRuns = await storage.list("source_feed_runs", tenantId);
           const intelligence = vulnerability ? await buildIntelligenceForTenant({
@@ -939,12 +1240,23 @@ export function createServer(options = {}) {
             intelligence,
             sourceFeedRuns: sourceFeedRuns.slice(-10).reverse()
           });
-          return sendBinary(res, 200, report.buffer, {
+          const materialized = await materializeSignedExportArtifact({
+            storage,
+            runtimeClient,
+            tenantId,
+            pack,
+            artifactKind,
+            fileName: report.fileName,
             contentType: report.contentType,
-            fileName: report.fileName
+            buffer: report.buffer
+          });
+          return sendBinary(res, 200, materialized.buffer, {
+            contentType: materialized.record.content_type,
+            fileName: materialized.record.file_name,
+            headers: signedArtifactHeaders(materialized.record)
           });
         } catch (error) {
-          return sendJson(res, error.code === "unknown_report_type" ? 400 : 500, {
+          return sendJson(res, error.statusCode || (error.code === "unknown_report_type" ? 400 : 500), {
             error: error.code || "report_generation_failed",
             message: error.message,
             allowed_reports: REPORT_CATALOG.map((item) => item.report_type)
@@ -1480,18 +1792,19 @@ function sendJson(res, statusCode, payload) {
   res.end(`${body}\n`);
 }
 
-function sendBinary(res, statusCode, buffer, { contentType, fileName }) {
+function sendBinary(res, statusCode, buffer, { contentType, fileName, headers = {} }) {
   res.writeHead(statusCode, {
     "content-type": contentType,
     "content-length": buffer.length,
     "content-disposition": `attachment; filename="${fileName}"`,
     "cache-control": "no-store",
-    "x-content-type-options": "nosniff"
+    "x-content-type-options": "nosniff",
+    ...headers
   });
   res.end(buffer);
 }
 
-export function buildEvidenceItemsFromRecord(vulnerability) {
+export function buildEvidenceItemsFromRecord(vulnerability, findingEvidenceRecords = [], findingEvidenceEvents = [], options = {}) {
   const sourceEvidence = (vulnerability.sources || []).map((source) => ({
     evidence_ref: source.source_record_id,
     evidence_class: source.evidence_class || evidenceClassForSource(source),
@@ -1505,7 +1818,47 @@ export function buildEvidenceItemsFromRecord(vulnerability) {
 
   // Evidence state and class must be compiled from persisted tenant records.
   // Client-supplied evidence items are not trusted as hard-gate inputs.
-  return sourceEvidence;
+  return [...sourceEvidence, ...compileFindingEvidenceItems(vulnerability, findingEvidenceRecords, findingEvidenceEvents, options)];
+}
+
+export async function buildServerOwnedAgentEvidence(storage, tenantId, body = {}) {
+  const requestedId = String(body.vulnerability_id || body.cve || body.advisory_id || body.finding_id || "").trim();
+  const vulnerability = requestedId ? await storage.getVulnerability(tenantId, requestedId) : null;
+  const records = vulnerability ? await storage.list("finding_evidence", tenantId) : [];
+  const events = vulnerability ? await storage.list("finding_evidence_events", tenantId) : [];
+  const compiled = vulnerability ? compileFindingEvidenceItems(vulnerability, records, events) : [];
+  const accepted = compiled.filter((item) => item.server_owned === true
+    && item.server_verified_review === true
+    && item.review_state === "reviewed"
+    && item.evidence_state === "accepted_positive_evidence");
+  const classes = new Set(accepted.map((item) => item.evidence_class));
+  const reviewedExposure = ["affected_asset_scope", "affected_service_scope", "business_service_impact", "customer_impact"]
+    .some((evidenceClass) => classes.has(evidenceClass));
+  const reviewedApplicability = ["vulnerability_identity", "known_exploitation_or_urgency", "known_exploited_review", "patch_availability", "patch_feasibility"]
+    .some((evidenceClass) => classes.has(evidenceClass));
+  const reviewedCustomerAssurance = reviewedExposure && reviewedApplicability && classes.has("human_review_signoff");
+  return {
+    finding_binding: vulnerability ? {
+      vulnerability_id: vulnerability.vulnerability_id,
+      canonical_id: vulnerability.canonical_id || vulnerability.vulnerability_id,
+      finding_revision_hash: vulnerability.content_hash || null
+    } : null,
+    evidence_items: compiled.map((item) => ({
+      evidence_ref: item.evidence_ref,
+      evidence_class: item.evidence_class,
+      review_state: item.review_state,
+      evidence_state: item.evidence_state,
+      content_hash: item.content_hash,
+      finding_revision_hash: item.finding_revision_hash,
+      server_owned: item.server_owned,
+      server_verified_review: item.server_verified_review
+    })),
+    accepted_evidence_count: accepted.length,
+    reviewed_exposure_evidence: reviewedExposure,
+    reviewed_applicability_evidence: reviewedApplicability,
+    reviewed_customer_assurance_evidence: reviewedCustomerAssurance,
+    caller_review_flags_ignored: true
+  };
 }
 
 async function generateDecisionPackForRequest({ storage, runtimeClient, tenantContext, authorization, body }) {
@@ -1544,11 +1897,13 @@ async function generateDecisionPackForRequest({ storage, runtimeClient, tenantCo
     bayesianSnapshot: body.bayesian_snapshot || buildBayesianAssessment({ vulnerability })
   });
   const vendorLensContext = await buildVendorLensPackContext(storage, resolvedTenant, body, vulnerability);
+  const findingEvidenceRecords = await storage.list("finding_evidence", resolvedTenant);
+  const findingEvidenceEvents = await storage.list("finding_evidence_events", resolvedTenant);
 
   const runtimeResult = await runtimeClient.createDecisionPack({
     tenant_id: resolvedTenant,
     vulnerability,
-    evidence_items: buildEvidenceItemsFromRecord(vulnerability),
+    evidence_items: buildEvidenceItemsFromRecord(vulnerability, findingEvidenceRecords, findingEvidenceEvents),
     model_name: body.model_name || "vuln_patch_governance",
     requested_posture: body.requested_posture || body.decision_posture || null,
     patch_availability: body.patch_availability || null,
@@ -2147,26 +2502,32 @@ function slug(value) {
 
 export function createRuntimeClientFromEnv() {
   const baseUrl = DEFAULT_RUNTIME_URL.replace(/\/+$/, "");
+  async function postRuntime(pathname, payload) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), Number(process.env.PATCHFORGE_RUNTIME_TIMEOUT_MS || 45000));
+    try {
+      const response = await fetch(`${baseUrl}${pathname}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const message = body.message || body.error || `Runtime returned HTTP ${response.status}`;
+        throw new Error(message);
+      }
+      return body;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
   return {
     async createDecisionPack(payload) {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), Number(process.env.PATCHFORGE_RUNTIME_TIMEOUT_MS || 45000));
-      try {
-        const response = await fetch(`${baseUrl}/api/runtime/decision-packs`, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(payload),
-          signal: controller.signal
-        });
-        const body = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          const message = body.message || body.error || `Runtime returned HTTP ${response.status}`;
-          throw new Error(message);
-        }
-        return body;
-      } finally {
-        clearTimeout(timer);
-      }
+      return postRuntime("/api/runtime/decision-packs", payload);
+    },
+    async createExportManifest(payload) {
+      return postRuntime("/api/runtime/export-manifests", payload);
     }
   };
 }
@@ -2199,5 +2560,8 @@ if (isMain) {
   });
   if (process.env.PATCHFORGE_COMPONENT === "scheduler") {
     startScheduler();
+  }
+  if (process.env.PATCHFORGE_COMPONENT === "ingest-export-worker") {
+    startWorker();
   }
 }

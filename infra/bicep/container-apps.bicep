@@ -10,6 +10,9 @@ param logAnalyticsSharedKey string
 
 param acrLoginServer string
 param imageTag string = 'bootstrap'
+param sourceCommitSha string = 'local'
+param productBaseline string = 'PF-LOCAL'
+param reportContextVersion string = 'patchforge-report-context.local.v1'
 param bridgeExternalIngress bool = true
 param managedIdentityResourceIds object
 param managedIdentityClientIds object
@@ -128,6 +131,34 @@ var commonEnv = [
     value: 'true'
   }
   {
+    name: 'PATCHFORGE_WORKER_INTERVAL_MS'
+    value: '60000'
+  }
+  {
+    name: 'PATCHFORGE_WORKER_BATCH_SIZE'
+    value: '10'
+  }
+  {
+    name: 'PATCHFORGE_WORKER_LEASE_TTL_MS'
+    value: '300000'
+  }
+  {
+    name: 'PATCHFORGE_WORKER_MAX_REPLAYS'
+    value: '2'
+  }
+  {
+    name: 'PATCHFORGE_WORKER_BACKLOG_SLO_MS'
+    value: '900000'
+  }
+  {
+    name: 'PATCHFORGE_WORKER_CHECKPOINT_SLO_MS'
+    value: '43200000'
+  }
+  {
+    name: 'PATCHFORGE_WORKER_RUN_ON_START'
+    value: 'true'
+  }
+  {
     name: 'PATCHFORGE_SCHEDULER_ENABLED'
     value: 'true'
   }
@@ -142,6 +173,58 @@ var commonEnv = [
   {
     name: 'PATCHFORGE_SCHEDULER_EPSS_LIMIT'
     value: '10'
+  }
+  {
+    name: 'PATCHFORGE_SCHEDULER_LEASE_TTL_MS'
+    value: '1800000'
+  }
+  {
+    name: 'PATCHFORGE_SCHEDULER_MAX_ATTEMPTS'
+    value: '4'
+  }
+  {
+    name: 'PATCHFORGE_SCHEDULER_RUN_ON_START'
+    value: 'true'
+  }
+  {
+    name: 'PATCHFORGE_OUTBOUND_DNS_TIMEOUT_MS'
+    value: '5000'
+  }
+  {
+    name: 'PATCHFORGE_OUTBOUND_MAX_REDIRECTS'
+    value: '3'
+  }
+  {
+    name: 'PATCHFORGE_OUTBOUND_MAX_BYTES'
+    value: '8388608'
+  }
+  {
+    name: 'PATCHFORGE_OUTBOUND_TIMEOUT_MS'
+    value: '15000'
+  }
+  {
+    name: 'PATCHFORGE_IMAGE_TAG'
+    value: imageTag
+  }
+  {
+    name: 'CONTAINER_IMAGE_TAG'
+    value: imageTag
+  }
+  {
+    name: 'PATCHFORGE_COMMIT_SHA'
+    value: sourceCommitSha
+  }
+  {
+    name: 'PATCHFORGE_RENDERER_COMMIT'
+    value: sourceCommitSha
+  }
+  {
+    name: 'PATCHFORGE_PRODUCT_BASELINE'
+    value: productBaseline
+  }
+  {
+    name: 'PATCHFORGE_REPORT_CONTEXT_VERSION'
+    value: reportContextVersion
   }
 ]
 
@@ -161,6 +244,8 @@ var appDefinitions = [
     role: 'frontend'
     customDomain: uiCustomDomain
     managedCertificateName: uiManagedCertificateName
+    healthPath: '/health'
+    readinessPath: '/health'
   }
   {
     name: 'ca-patchforge-bridge-prod'
@@ -177,6 +262,8 @@ var appDefinitions = [
     role: 'bridge-api'
     customDomain: apiCustomDomain
     managedCertificateName: apiManagedCertificateName
+    healthPath: '/health'
+    readinessPath: '/readiness'
   }
   {
     name: 'ca-patchforge-runtime-prod'
@@ -193,6 +280,8 @@ var appDefinitions = [
     role: 'runtime-governance'
     customDomain: ''
     managedCertificateName: ''
+    healthPath: '/health'
+    readinessPath: '/readiness'
   }
   {
     name: 'ca-patchforge-sra-prod'
@@ -209,6 +298,8 @@ var appDefinitions = [
     role: 'sra-advisory-only'
     customDomain: ''
     managedCertificateName: ''
+    healthPath: '/health'
+    readinessPath: '/readiness'
   }
   {
     name: 'ca-patchforge-worker-prod'
@@ -220,11 +311,13 @@ var appDefinitions = [
     targetPort: 8080
     cpu: json('0.5')
     memory: '1Gi'
-    minReplicas: 0
+    minReplicas: 1
     maxReplicas: 5
     role: 'ingest-export-worker'
     customDomain: ''
     managedCertificateName: ''
+    healthPath: '/health'
+    readinessPath: '/readiness'
   }
   {
     name: 'ca-patchforge-scheduler-prod'
@@ -241,6 +334,8 @@ var appDefinitions = [
     role: 'scheduler'
     customDomain: ''
     managedCertificateName: ''
+    healthPath: '/health'
+    readinessPath: '/readiness'
   }
 ]
 
@@ -257,6 +352,11 @@ resource managedEnvironment 'Microsoft.App/managedEnvironments@2023-05-01' = {
       }
     }
     zoneRedundant: false
+    peerAuthentication: {
+      mtls: {
+        enabled: false
+      }
+    }
   }
 }
 
@@ -281,6 +381,12 @@ resource containerApps 'Microsoft.App/containerApps@2024-03-01' = [for app in ap
         targetPort: app.targetPort
         transport: 'auto'
         allowInsecure: false
+        traffic: [
+          {
+            latestRevision: true
+            weight: 100
+          }
+        ]
         customDomains: (!empty(app.customDomain) && !empty(app.managedCertificateName)) ? [
           {
             name: app.customDomain
@@ -344,11 +450,62 @@ resource containerApps 'Microsoft.App/containerApps@2024-03-01' = [for app in ap
             cpu: app.cpu
             memory: app.memory
           }
+          probes: [
+            {
+              type: 'Startup'
+              httpGet: {
+                path: app.healthPath
+                port: app.targetPort
+                scheme: 'HTTP'
+              }
+              initialDelaySeconds: 2
+              periodSeconds: 5
+              timeoutSeconds: 3
+              failureThreshold: 10
+              successThreshold: 1
+            }
+            {
+              type: 'Liveness'
+              httpGet: {
+                path: app.healthPath
+                port: app.targetPort
+                scheme: 'HTTP'
+              }
+              initialDelaySeconds: 10
+              periodSeconds: 30
+              timeoutSeconds: 3
+              failureThreshold: 3
+              successThreshold: 1
+            }
+            {
+              type: 'Readiness'
+              httpGet: {
+                path: app.readinessPath
+                port: app.targetPort
+                scheme: 'HTTP'
+              }
+              initialDelaySeconds: 5
+              periodSeconds: 10
+              timeoutSeconds: 5
+              failureThreshold: 6
+              successThreshold: 1
+            }
+          ]
         }
       ]
       scale: {
         minReplicas: app.minReplicas
         maxReplicas: app.maxReplicas
+        rules: [
+          {
+            name: 'http-requests'
+            http: {
+              metadata: {
+                concurrentRequests: '10'
+              }
+            }
+          }
+        ]
       }
     }
   }

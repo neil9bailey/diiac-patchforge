@@ -23,13 +23,16 @@ PatchForge remains advisory and governance-only. The collector is an asset-evide
 - PowerShell-driven collector configuration that writes local JSON with environment-backed token references.
 - Day-1 adapters for local host inventory, Hyper-V inventory where available, Azure CLI read-only inventory where configured, and HTTP JSON CMDB/NMS pull where configured.
 - Collector import run ledger.
+- Authenticode signing hook, package SHA-256 manifest, and fail-closed install verification.
+- Secretless unattended managed-identity configuration plus OS-injected environment credential support.
+- Non-secret local/API heartbeat, stale-state calculation, local revocation marker, and governed install/upgrade/uninstall/revoke scripts.
 - Normalisation into `customer_network_assets`.
 - UI visibility and collector configuration export in the Customer Estate flow.
 - Tests for safe import, categorisation, dedupe/upsert, tenant scoping, and advisory boundary.
 
 ## Future Increments
 
-1. Authenticode-signed Windows collector package.
+1. Production Authenticode certificate issuance and signed customer package publication through the implemented signing hook.
 2. Linux collector package.
 3. SNMPv3 read-only network device discovery with secure credential handling.
 4. SSH read-only network/firewall discovery with secure credential handling.
@@ -38,8 +41,8 @@ PatchForge remains advisory and governance-only. The collector is an asset-evide
 7. VMware vCenter and ESXi inventory.
 8. Cloud connectors for AWS/GCP read-only inventory.
 9. Customer vault integration for credential references.
-10. Collector auto-update and package signature verification.
-11. Collector health, heartbeat, and stale-asset alerts.
+10. Approved auto-update channel building on the implemented verified in-place upgrade flow.
+11. Alert delivery for the implemented collector heartbeat and stale-state model.
 
 ## Success Criteria
 
@@ -47,6 +50,9 @@ PatchForge remains advisory and governance-only. The collector is an asset-evide
 - No raw credentials are accepted or stored.
 - Collector configuration must reference tokens/secrets through environment variable names or external vault references, not literal values.
 - Windows EXE packaging must not embed tokens, tenant secrets, or customer configuration.
+- Install and upgrade must verify the package manifest digest and require valid Authenticode trust unless an explicit development-only override is supplied.
+- Unattended service identities must use managed identity or an OS-injected credential; raw secrets remain prohibited in JSON and command-line arguments.
+- A local revocation marker must block collection and API calls before an administrator completes remote identity revocation.
 - No exploit, patch deployment, or production mutation capability is introduced.
 - Asset category, source method, collector ID, policy ID, run ID, and import timestamp are preserved.
 - PatchForge can show which CVEs/advisories have candidate customer asset matches once the asset catalogue is populated.

@@ -2,6 +2,8 @@
 
 Date: 2026-06-10
 
+Current-status note, 2026-07-14: this document records the June product-readiness review. The current implementation/live/human-gate status is maintained in the [14-Area Improvement Closure Matrix](../validation/PATCHFORGE_14_AREA_IMPROVEMENT_CLOSURE_2026-07-14.md); the six-area information architecture supersedes the earlier seven-area wording below.
+
 ## Purpose
 
 This review frames PatchForge as advisory governance software for customer demonstrations and for integration with DIIaC IT Service / Enterprise Build workflows.
@@ -12,7 +14,7 @@ This document is product-readiness evidence, not release authorization. G4 real 
 
 ## Current Readiness Capability
 
-- Seven-area operating model: Security Action Center, Vendors & Exploits Register, Customer Operational Assets, Patch / Hotfix Compare, Ask PatchForge, Reports, and Admin.
+- Six-area operating model: Patch & CVE Catalogue, Vendor Catalogue, Customer Estate, Ask PatchForge, Reports, and Admin, with finding detail and Review & Approve opened from the selected context.
 - Microsoft Entra app-role enforcement on protected API routes.
 - Runtime readiness evidence reports the active tenant storage mode in the live readiness path.
 - Source-bound public intelligence, customer asset matching, patch/hotfix comparison, signed packs, and DOCX/PDF report exports.
@@ -57,7 +59,7 @@ Integration should remain API/event oriented. PatchForge should not become the s
 
 ## Remaining Readiness Work
 
-- Run real signed-in PatchForge.Admin UAT through the seven-area flow.
+- Run signed-in role-based UAT through the six-area flow, including evidence review, explicit verified-pack selection, report export, and Admin health/cleanup boundaries.
 - Validate optional OpenAI assistance in a configured non-production environment before enabling it for customer demonstrations.
 - Add integration documentation for IT Service / Enterprise Build handoff payloads and expected source-bound records.
 - Continue replacing any remaining inert UI affordances with either real protected actions or static status surfaces.

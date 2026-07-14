@@ -1,4 +1,4 @@
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Archive,
   BadgeCheck,
@@ -52,6 +52,8 @@ import {
   CustomerEstateState,
   CustomerNetworkAsset,
   DecisionPackRecord,
+  FindingEvidenceQueue,
+  FindingEvidenceRecord,
   FindingIntelligence,
   NetworkVendorProfile,
   OpenAiAgentStatus,
@@ -75,6 +77,29 @@ import {
   getPatchForgeConfig
 } from "./api";
 import { PatchForgeAuthSession, usePatchForgeAuth } from "./auth";
+
+const CustomerEstate = lazy(() => import("./areas/GuidedAreas").then((module) => ({ default: module.CustomerEstate })));
+const AskPatchForge = lazy(() => import("./areas/GuidedAreas").then((module) => ({ default: module.AskPatchForge })));
+const VendorLens = lazy(() => import("./areas/GuidedAreas").then((module) => ({ default: module.VendorLens })));
+const ReportsPacks = lazy(() => import("./areas/GovernanceAreas").then((module) => ({ default: module.ReportsPacks })));
+const DecisionPacks = lazy(() => import("./areas/GovernanceAreas").then((module) => ({ default: module.DecisionPacks })));
+const Admin = lazy(() => import("./areas/GovernanceAreas").then((module) => ({ default: module.Admin })));
+const ActionCenter = lazy(() => import("./areas/LegacyAreas").then((module) => ({ default: module.ActionCenter })));
+const FindingDetail = lazy(() => import("./areas/LegacyAreas").then((module) => ({ default: module.FindingDetail })));
+const ReviewApprove = lazy(() => import("./areas/LegacyAreas").then((module) => ({ default: module.ReviewApprove })));
+const CommandCenter = lazy(() => import("./areas/LegacyAreas").then((module) => ({ default: module.CommandCenter })));
+const Guide = lazy(() => import("./areas/LegacyAreas").then((module) => ({ default: module.Guide })));
+const VulnerabilityQueue = lazy(() => import("./areas/LegacyAreas").then((module) => ({ default: module.VulnerabilityQueue })));
+const AssetExposure = lazy(() => import("./areas/LegacyAreas").then((module) => ({ default: module.AssetExposure })));
+const DecisionWorkbench = lazy(() => import("./areas/LegacyAreas").then((module) => ({ default: module.DecisionWorkbench })));
+const EmergencyPatch = lazy(() => import("./areas/LegacyAreas").then((module) => ({ default: module.EmergencyPatch })));
+const RiskAcceptances = lazy(() => import("./areas/LegacyAreas").then((module) => ({ default: module.RiskAcceptances })));
+const CompensatingControls = lazy(() => import("./areas/LegacyAreas").then((module) => ({ default: module.CompensatingControls })));
+const SraResearch = lazy(() => import("./areas/LegacyAreas").then((module) => ({ default: module.SraResearch })));
+const EvidenceCatalogue = lazy(() => import("./areas/LegacyAreas").then((module) => ({ default: module.EvidenceCatalogue })));
+const SourceFeeds = lazy(() => import("./areas/LegacyAreas").then((module) => ({ default: module.SourceFeeds })));
+const VendorThreatLandscape = lazy(() => import("./areas/LegacyAreas").then((module) => ({ default: module.VendorThreatLandscape })));
+const UtilityRail = lazy(() => import("./areas/UtilityRail"));
 
 type PageKey =
   | "Patch & CVE Catalogue"
@@ -135,6 +160,12 @@ type LiveState = {
   adminHealth: AdminHealth | null;
   adminConfig: AdminConfig;
   discovery: AssetDiscoveryOverview | null;
+};
+
+type LiveLoadFailure = {
+  key: string;
+  label: string;
+  message: string;
 };
 
 const BRAND_MARK = "DIIaC\u2122";
@@ -271,11 +302,18 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
     && typeof window.matchMedia === "function"
     && window.matchMedia("(max-width: 820px)").matches
   ));
+  const navigationRef = useRef<HTMLElement>(null);
+  const navigationToggleRef = useRef<HTMLButtonElement>(null);
   const [tenantId, setTenantId] = useState(initialTenantId || config.tenantHeader);
   const [state, setState] = useState<LiveState>(() => emptyLiveState(tenantId));
   const [refreshing, setRefreshing] = useState(false);
+  const [loadFailures, setLoadFailures] = useState<LiveLoadFailure[]>([]);
   const [operationMessage, setOperationMessage] = useState<string | null>(null);
   const [operationError, setOperationError] = useState<string | null>(null);
+  const [findingEvidenceQueue, setFindingEvidenceQueue] = useState<FindingEvidenceQueue | null>(null);
+  const [findingEvidenceLoading, setFindingEvidenceLoading] = useState(false);
+  const [findingEvidenceError, setFindingEvidenceError] = useState<string | null>(null);
+  const [findingEvidenceConflict, setFindingEvidenceConflict] = useState<string | null>(null);
   const [vulnerabilityForm, setVulnerabilityForm] = useState(emptyForm);
   const [selectedVulnerabilityId, setSelectedVulnerabilityId] = useState("");
   const [selectedPosture, setSelectedPosture] = useState("defer_pending_evidence");
@@ -295,6 +333,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
   const [askQuestion, setAskQuestion] = useState("We use FortiGate 100F FortiOS 7.2.7 with SSL-VPN disabled. Does this CVE require urgent patching?");
   const canWrite = hasAnyRole(session.roles, ["PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.Admin"]);
   const canGeneratePacks = hasAnyRole(session.roles, ["PatchForge.SecurityLead", "PatchForge.CABApprover", "PatchForge.Admin"]);
+  const canSubmitEvidence = hasAnyRole(session.roles, ["PatchForge.TriageAnalyst", "PatchForge.SecurityLead", "PatchForge.ServiceOwner", "PatchForge.Admin"]);
   const isAdmin = hasAnyRole(session.roles, ["PatchForge.Admin"]);
   const canReadAdmin = hasAnyRole(session.roles, ["PatchForge.Admin", "PatchForge.Auditor"]);
   const [purgeScopes, setPurgeScopes] = useState<Record<string, boolean>>({
@@ -326,74 +365,182 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
     () => relevantPatchComparison(state.vendorLens.latestComparison, selectedAdvisoryId),
     [selectedAdvisoryId, state.vendorLens.latestComparison]
   );
+  const evidenceVulnerabilityId = selectedVulnerabilityId || selectedFinding?.vulnerability_id || "";
 
-  const loadLiveState = useCallback(async () => {
+  const loadFindingEvidence = useCallback(async (vulnerabilityId: string, preserveConflict = false) => {
+    if (!vulnerabilityId || session.status !== "authenticated") {
+      return;
+    }
+    setFindingEvidenceLoading(true);
+    setFindingEvidenceError(null);
+    try {
+      const queue = await liveApi.findingEvidence(tenantId, vulnerabilityId);
+      setFindingEvidenceQueue(queue);
+      if (!preserveConflict) {
+        setFindingEvidenceConflict(null);
+      }
+    } catch (error) {
+      setFindingEvidenceError(error instanceof Error ? error.message : "Finding evidence could not be loaded.");
+    } finally {
+      setFindingEvidenceLoading(false);
+    }
+  }, [liveApi, session.status, tenantId]);
+
+  useEffect(() => {
+    const isMobileNavigation = typeof window.matchMedia === "function" && window.matchMedia("(max-width: 820px)").matches;
+    const navigation = navigationRef.current;
+    if (navigationCollapsed || !isMobileNavigation || !navigation) {
+      return;
+    }
+
+    const navigationElement = navigation;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const focusableSelector = 'button:not([disabled]):not([tabindex="-1"]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    navigationElement.querySelector<HTMLElement>(".nav-mobile-close")?.focus();
+
+    function handleNavigationKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setNavigationCollapsed(true);
+        return;
+      }
+      if (event.key !== "Tab") {
+        return;
+      }
+      const focusable = Array.from(navigationElement.querySelectorAll<HTMLElement>(focusableSelector));
+      if (!focusable.length) {
+        event.preventDefault();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener("keydown", handleNavigationKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleNavigationKeyDown);
+      if (previousFocus?.isConnected) {
+        previousFocus.focus();
+      } else {
+        navigationToggleRef.current?.focus();
+      }
+    };
+  }, [navigationCollapsed]);
+
+  const loadLiveState = useCallback(async (retryKeys?: string[]) => {
     if (session.status !== "authenticated") {
       return;
     }
     setRefreshing(true);
     setOperationError(null);
     try {
-      const [metrics, securityActionCenter, customerEstate, reportsPacks, vulnerabilities, findings, assets, services, decisionPacks, reports, threatSummary, vendors, sourceFeedState, vendorLensDashboard, networkVendors, customerNetworkAssets, vendorSecurityAdvisories, discovery, openAiAgentStatus, adminHealth, adminConfig] = await Promise.all([
-        liveApi.metrics(tenantId),
-        liveApi.securityActionCenter(tenantId),
-        liveApi.customerEstate(tenantId),
-        liveApi.reportsPacks(tenantId),
-        liveApi.listVulnerabilities(tenantId),
-        liveApi.actionCenter(tenantId),
-        liveApi.listAssets(tenantId),
-        liveApi.listServices(tenantId),
-        liveApi.listDecisionPacks(tenantId),
-        liveApi.reportCatalog(tenantId),
-        liveApi.threatLandscapeSummary(tenantId),
-        liveApi.listVendors(tenantId),
-        liveApi.sourceFeeds(tenantId),
-        liveApi.vendorLensDashboard(tenantId),
-        liveApi.listNetworkVendors(tenantId),
-        liveApi.listCustomerNetworkAssets(tenantId),
-        liveApi.listVendorSecurityAdvisories(tenantId),
-        liveApi.assetDiscoveryOverview(tenantId),
-        liveApi.openAiAgentStatus(tenantId),
-        canReadAdmin ? liveApi.adminHealth(tenantId) : Promise.resolve(null),
-        canReadAdmin ? liveApi.adminConfig(tenantId) : Promise.resolve({} as AdminConfig)
-      ]);
+      const requests: Array<{ key: string; label: string; run: () => Promise<unknown> }> = [
+        { key: "metrics", label: "Dashboard metrics", run: () => liveApi.metrics(tenantId) },
+        { key: "securityActionCenter", label: "Patch & CVE catalogue", run: () => liveApi.securityActionCenter(tenantId) },
+        { key: "customerEstate", label: "Customer estate", run: () => liveApi.customerEstate(tenantId) },
+        { key: "reportsPacks", label: "Reports overview", run: () => liveApi.reportsPacks(tenantId) },
+        { key: "vulnerabilities", label: "Vulnerability records", run: () => liveApi.listVulnerabilities(tenantId) },
+        { key: "findings", label: "Action centre", run: () => liveApi.actionCenter(tenantId) },
+        { key: "assets", label: "Asset records", run: () => liveApi.listAssets(tenantId) },
+        { key: "services", label: "Service records", run: () => liveApi.listServices(tenantId) },
+        { key: "decisionPacks", label: "Decision packs", run: () => liveApi.listDecisionPacks(tenantId) },
+        { key: "reports", label: "Report catalogue", run: () => liveApi.reportCatalog(tenantId) },
+        { key: "threatSummary", label: "Threat landscape", run: () => liveApi.threatLandscapeSummary(tenantId) },
+        { key: "vendors", label: "Vendor catalogue", run: () => liveApi.listVendors(tenantId) },
+        { key: "sourceFeedState", label: "Source feeds", run: () => liveApi.sourceFeeds(tenantId) },
+        { key: "vendorLensDashboard", label: "VendorLens dashboard", run: () => liveApi.vendorLensDashboard(tenantId) },
+        { key: "networkVendors", label: "Network vendors", run: () => liveApi.listNetworkVendors(tenantId) },
+        { key: "customerNetworkAssets", label: "Customer network assets", run: () => liveApi.listCustomerNetworkAssets(tenantId) },
+        { key: "vendorSecurityAdvisories", label: "Vendor advisories", run: () => liveApi.listVendorSecurityAdvisories(tenantId) },
+        { key: "discovery", label: "Collector intake", run: () => liveApi.assetDiscoveryOverview(tenantId) },
+        { key: "openAiAgentStatus", label: "Agent status", run: () => liveApi.openAiAgentStatus(tenantId) },
+        { key: "adminHealth", label: "Admin health", run: () => canReadAdmin ? liveApi.adminHealth(tenantId) : Promise.resolve(null) },
+        { key: "adminConfig", label: "Admin configuration", run: () => canReadAdmin ? liveApi.adminConfig(tenantId) : Promise.resolve({} as AdminConfig) }
+      ];
+      const selectedRequests = retryKeys?.length
+        ? requests.filter((request) => retryKeys.includes(request.key))
+        : requests;
+      if (!selectedRequests.length) {
+        return;
+      }
+      const results = await Promise.allSettled(selectedRequests.map((request) => request.run()));
+      const values = new Map<string, unknown>();
+      const failures: LiveLoadFailure[] = [];
+      results.forEach((result, index) => {
+        const request = selectedRequests[index];
+        if (result.status === "fulfilled") {
+          values.set(request.key, result.value);
+        } else {
+          failures.push({
+            key: request.key,
+            label: request.label,
+            message: result.reason instanceof Error ? result.reason.message : "Request failed"
+          });
+        }
+      });
+      const value = <T,>(key: string, fallback: T): T => values.has(key) ? values.get(key) as T : fallback;
       setState((current) => ({
-        metrics,
-        securityActionCenter,
-        customerEstate,
-        reportsPacks,
-        findings,
-        vulnerabilities,
-        assets,
-        services,
-        decisionPacks,
-        reports,
-        threatSummary,
-        vendors,
-        sourceFeedState,
+        metrics: value("metrics", current.metrics),
+        securityActionCenter: value("securityActionCenter", current.securityActionCenter),
+        customerEstate: value("customerEstate", current.customerEstate),
+        reportsPacks: value("reportsPacks", current.reportsPacks),
+        findings: value("findings", current.findings),
+        vulnerabilities: value("vulnerabilities", current.vulnerabilities),
+        assets: value("assets", current.assets),
+        services: value("services", current.services),
+        decisionPacks: value("decisionPacks", current.decisionPacks),
+        reports: value("reports", current.reports),
+        threatSummary: value("threatSummary", current.threatSummary),
+        vendors: value("vendors", current.vendors),
+        sourceFeedState: value("sourceFeedState", current.sourceFeedState),
         vendorLens: {
-          dashboard: vendorLensDashboard,
-          vendors: networkVendors,
-          assets: customerNetworkAssets,
-          advisories: vendorSecurityAdvisories,
+          dashboard: value("vendorLensDashboard", current.vendorLens.dashboard),
+          vendors: value("networkVendors", current.vendorLens.vendors),
+          assets: value("customerNetworkAssets", current.vendorLens.assets),
+          advisories: value("vendorSecurityAdvisories", current.vendorLens.advisories),
           latestAssessment: current.vendorLens.latestAssessment,
           latestChat: current.vendorLens.latestChat,
           latestComparison: current.vendorLens.latestComparison
         },
         latestCustomerMatch: current.latestCustomerMatch,
         latestAskPatchForge: current.latestAskPatchForge,
-        openAiAgentStatus,
-        latestAgentGuidance: openAiAgentStatus.enabled && openAiAgentStatus.configured ? current.latestAgentGuidance : null,
+        openAiAgentStatus: value("openAiAgentStatus", current.openAiAgentStatus),
+        latestAgentGuidance: (() => {
+          const agentStatus = value("openAiAgentStatus", current.openAiAgentStatus);
+          return agentStatus?.enabled && agentStatus.configured ? current.latestAgentGuidance : null;
+        })(),
         bayesian: null,
-        adminHealth,
-        adminConfig,
-        discovery
+        adminHealth: value("adminHealth", current.adminHealth),
+        adminConfig: value("adminConfig", current.adminConfig),
+        discovery: value("discovery", current.discovery)
       }));
-      setSelectedVulnerabilityId((current) => current || vulnerabilities[0]?.vulnerability_id || "");
-      setSelectedCustomerAssetId((current) => current || customerEstate.assets[0]?.asset_id || customerNetworkAssets[0]?.asset_id || "");
-      const general = adminConfig.general as { environment?: string; governance_tier?: string } | undefined;
-      setAdminEnvironment(general?.environment || config.environmentLabel);
-      setAdminTier(general?.governance_tier || "Enterprise Strict");
+      setLoadFailures((current) => retryKeys?.length
+        ? [
+            ...current.filter((failure) => !retryKeys.includes(failure.key)),
+            ...failures
+          ]
+        : failures);
+      const vulnerabilities = values.get("vulnerabilities") as VulnerabilityRecord[] | undefined;
+      const customerEstate = values.get("customerEstate") as CustomerEstateState | undefined;
+      const customerNetworkAssets = values.get("customerNetworkAssets") as CustomerNetworkAsset[] | undefined;
+      setSelectedVulnerabilityId((current) => current || vulnerabilities?.[0]?.vulnerability_id || "");
+      setSelectedCustomerAssetId((current) => current || customerEstate?.assets[0]?.asset_id || customerNetworkAssets?.[0]?.asset_id || "");
+      const adminConfig = values.get("adminConfig") as AdminConfig | undefined;
+      if (adminConfig) {
+        const general = adminConfig.general as { environment?: string; governance_tier?: string } | undefined;
+        setAdminEnvironment(general?.environment || config.environmentLabel);
+        setAdminTier(general?.governance_tier || "Enterprise Strict");
+      }
+      if (failures.length === selectedRequests.length) {
+        setOperationError("Every PatchForge data source failed. Last-known workspace data has been retained.");
+      }
     } catch (error) {
       setOperationError(error instanceof Error ? error.message : "PatchForge API request failed.");
     } finally {
@@ -404,6 +551,16 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
   useEffect(() => {
     void loadLiveState();
   }, [loadLiveState]);
+
+  useEffect(() => {
+    if (activePage !== "Review & Approve" || !evidenceVulnerabilityId) {
+      return;
+    }
+    if (findingEvidenceQueue?.vulnerability_id !== evidenceVulnerabilityId) {
+      setFindingEvidenceQueue(null);
+    }
+    void loadFindingEvidence(evidenceVulnerabilityId);
+  }, [activePage, evidenceVulnerabilityId, loadFindingEvidence]);
 
   async function handleIngest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -562,6 +719,66 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
       setOperationMessage("SRA advisory research returned source-bound output.");
     } catch (error) {
       setOperationError(error instanceof Error ? error.message : "SRA advisory request failed.");
+    }
+  }
+
+  function recordFindingEvidenceFailure(error: unknown, fallback: string) {
+    const message = error instanceof Error ? error.message : fallback;
+    const apiError = error as { status?: number; code?: string };
+    setFindingEvidenceError(message);
+    if (apiError?.status === 409 || /conflict|revision|changed|expired/i.test(message)) {
+      setFindingEvidenceConflict(`${message} Refresh the queue before retrying against the current hashes.`);
+    }
+  }
+
+  async function handleSubmitFindingEvidence(payload: Record<string, unknown>) {
+    if (!evidenceVulnerabilityId) {
+      setFindingEvidenceError("Select a persisted finding before submitting evidence.");
+      return;
+    }
+    setFindingEvidenceError(null);
+    setFindingEvidenceConflict(null);
+    try {
+      const evidence = await liveApi.submitFindingEvidence(tenantId, evidenceVulnerabilityId, payload);
+      setOperationMessage(`Evidence ${evidence.evidence_id} submitted for review.`);
+      await loadFindingEvidence(evidenceVulnerabilityId);
+    } catch (error) {
+      recordFindingEvidenceFailure(error, "Finding evidence submission failed.");
+    }
+  }
+
+  async function handleReviewFindingEvidence(record: FindingEvidenceRecord, decision: "accept" | "reject", rationale: string) {
+    setFindingEvidenceError(null);
+    setFindingEvidenceConflict(null);
+    try {
+      await liveApi.reviewFindingEvidence(tenantId, record.vulnerability_id, record.evidence_id, {
+        decision,
+        rationale,
+        expected_content_hash: record.content_hash,
+        expected_event_hash: record.latest_event_hash || null
+      });
+      setOperationMessage(`Evidence ${record.evidence_id} ${decision === "accept" ? "accepted" : "rejected"}; final approval remains false.`);
+      await loadFindingEvidence(record.vulnerability_id);
+    } catch (error) {
+      recordFindingEvidenceFailure(error, "Finding evidence review failed.");
+      await loadFindingEvidence(record.vulnerability_id, true);
+    }
+  }
+
+  async function handleReopenFindingEvidence(record: FindingEvidenceRecord, rationale: string) {
+    setFindingEvidenceError(null);
+    setFindingEvidenceConflict(null);
+    try {
+      await liveApi.reopenFindingEvidence(tenantId, record.vulnerability_id, record.evidence_id, {
+        rationale,
+        expected_content_hash: record.content_hash,
+        expected_event_hash: record.latest_event_hash || null
+      });
+      setOperationMessage(`Evidence ${record.evidence_id} reopened for a new review event.`);
+      await loadFindingEvidence(record.vulnerability_id);
+    } catch (error) {
+      recordFindingEvidenceFailure(error, "Finding evidence reopen failed.");
+      await loadFindingEvidence(record.vulnerability_id, true);
     }
   }
 
@@ -1010,7 +1227,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
 
   return (
     <main className={`app-shell${navigationCollapsed ? " nav-collapsed" : ""}`}>
-      <aside id="patchforge-primary-navigation" className="side-nav" aria-label="PatchForge navigation" aria-hidden={navigationCollapsed}>
+      <aside ref={navigationRef} id="patchforge-primary-navigation" className="side-nav" aria-label="PatchForge navigation" aria-hidden={navigationCollapsed}>
         <button type="button" className="icon-button nav-mobile-close" aria-label="Close navigation" tabIndex={navigationCollapsed ? -1 : 0} onClick={() => setNavigationCollapsed(true)}>
           <X size={18} aria-hidden />
         </button>
@@ -1046,10 +1263,14 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
           </div>
         </div>
       </aside>
+      {!navigationCollapsed && (
+        <button type="button" className="nav-scrim" aria-label="Close navigation overlay" onClick={() => setNavigationCollapsed(true)} />
+      )}
 
       <section className="workspace">
         <header className="top-rail">
           <button
+            ref={navigationToggleRef}
             className="icon-button"
             aria-label="Toggle navigation"
             aria-controls="patchforge-primary-navigation"
@@ -1097,6 +1318,8 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
           <section className="primary-panel" aria-label={activePage}>
             {activePage !== "Patch & CVE Catalogue" && <h2 className="sr-only">{activePage}</h2>}
             <OperationMessages message={operationMessage} error={operationError} />
+            <LiveLoadFailures failures={loadFailures} refreshing={refreshing} onRetry={(keys) => void loadLiveState(keys)} />
+            <Suspense fallback={<AreaLoading label={activePage} />}>
             {selectedFinding && ["Action Center", "Finding Detail", "Review & Approve", "Reports"].includes(activePage) && (
               <FindingContextBanner finding={selectedFinding} />
             )}
@@ -1251,6 +1474,16 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 onDownloadReport={handleDownloadReport}
                 sraResult={sraResult}
                 canWrite={canWrite}
+                evidenceQueue={findingEvidenceQueue?.vulnerability_id === evidenceVulnerabilityId ? findingEvidenceQueue : null}
+                evidenceLoading={findingEvidenceLoading}
+                evidenceError={findingEvidenceError}
+                evidenceConflict={findingEvidenceConflict}
+                roles={session.roles}
+                canSubmitEvidence={canSubmitEvidence}
+                onRefreshEvidence={() => evidenceVulnerabilityId && void loadFindingEvidence(evidenceVulnerabilityId)}
+                onSubmitEvidence={handleSubmitFindingEvidence}
+                onReviewEvidence={handleReviewFindingEvidence}
+                onReopenEvidence={handleReopenFindingEvidence}
               />
             )}
             {activePage === "Reports" && (
@@ -1350,11 +1583,14 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 onExecutePurge={handleExecutePurge}
               /> : <PageBand icon={LockKeyhole} title="Admin" lines={["PatchForge.Admin role required", "Admin controls are read-only for non-admin users", "API app roles are enforced server-side"]} />
             )}
+            </Suspense>
           </section>
 
           {activePage !== "Patch & CVE Catalogue" && (
             <aside className="utility-rail" aria-label="PatchForge utility rail">
-              <UtilityRail session={session} metrics={state.metrics} decisionPacks={state.decisionPacks} sourceFeedState={state.sourceFeedState} adminHealth={state.adminHealth} />
+              <Suspense fallback={<div className="rail-section utility-rail-loading" role="status" aria-live="polite">Loading operational context…</div>}>
+                <UtilityRail session={session} metrics={state.metrics} decisionPacks={state.decisionPacks} sourceFeedState={state.sourceFeedState} adminHealth={state.adminHealth} />
+              </Suspense>
             </aside>
           )}
         </div>
@@ -1411,9 +1647,45 @@ function BoundaryPanel() {
 function OperationMessages({ message, error }: { message: string | null; error: string | null }) {
   return (
     <>
-      {message && <div className="notice success"><CheckCircle2 size={16} aria-hidden /> {message}</div>}
-      {error && <div className="notice error"><TriangleAlert size={16} aria-hidden /> {error}</div>}
+      {message && <div className="notice success" role="status" aria-live="polite"><CheckCircle2 size={16} aria-hidden /> {message}</div>}
+      {error && <div className="notice error" role="alert" aria-live="assertive"><TriangleAlert size={16} aria-hidden /> {error}</div>}
     </>
+  );
+}
+
+function LiveLoadFailures({ failures, refreshing, onRetry }: { failures: LiveLoadFailure[]; refreshing: boolean; onRetry: (keys?: string[]) => void }) {
+  if (!failures.length) {
+    return null;
+  }
+  return (
+    <section className="panel-load-warning" role="status" aria-live="polite" aria-label="Partially unavailable data sources">
+      <div>
+        <TriangleAlert size={17} aria-hidden />
+        <span><strong>{failures.length} data source{failures.length === 1 ? "" : "s"} unavailable</strong><small>Last-known-good panel data is retained.</small></span>
+      </div>
+      <ul>
+        {failures.map((failure) => (
+          <li key={failure.key}>
+            <span><strong>{failure.label}:</strong> {failure.message}</span>
+            <button type="button" className="inline-retry" onClick={() => onRetry([failure.key])} disabled={refreshing} aria-label={`Retry ${failure.label}`}>
+              Retry
+            </button>
+          </li>
+        ))}
+      </ul>
+      <button type="button" className="action-button secondary-action" onClick={() => onRetry(failures.map((failure) => failure.key))} disabled={refreshing}>
+        <RefreshCw size={16} aria-hidden /> {refreshing ? "Retrying…" : "Retry unavailable sources"}
+      </button>
+    </section>
+  );
+}
+
+function AreaLoading({ label }: { label: string }) {
+  return (
+    <div className="area-loading" role="status" aria-live="polite" aria-label={`Loading ${label}`}>
+      <span className="status-dot source-current" aria-hidden />
+      <span>Loading {label}…</span>
+    </div>
   );
 }
 
@@ -1429,35 +1701,6 @@ function FindingContextBanner({ finding }: { finding: FindingIntelligence }) {
       <span>Source-bound</span>
       <span>{scope}</span>
       <span>{approval}</span>
-    </section>
-  );
-}
-
-function NextActionCards() {
-  const cards = [
-    ["Confirm customer exposure", "Map affected assets, services, owner, and customer-facing status before a final remediation decision."],
-    ["Attach vendor patch evidence", "Add reviewed patch notes, affected version mapping, testing evidence, and rollback plan."],
-    ["Review source intelligence", "Accept, reject, or supersede CISA/CVE/vendor/SRA/agent records with a named reviewer event."],
-    ["Generate customer pack", "Export the customer assurance pack only after it clearly states what can and cannot be claimed."],
-    ["Request approval only after blockers close", "CAB, risk acceptance, patch closure, and customer remediation assurance remain human-approved."]
-  ];
-  return (
-    <section className="wide-band next-actions">
-      <div className="section-title">
-        <h3>Next Actions</h3>
-        <span className="pill amber">Human approval required</span>
-      </div>
-      <div className="next-action-grid">
-        {cards.map(([title, detail], index) => (
-          <article className="next-action-card" key={title}>
-            <strong>{index + 1}</strong>
-            <div>
-              <h4>{title}</h4>
-              <p>{detail}</p>
-            </div>
-          </article>
-        ))}
-      </div>
     </section>
   );
 }
@@ -1616,14 +1859,14 @@ function GlobalSecurityActionCenter({
                   const priority = cataloguePriority(row);
                   return (
                     <tr className={`priority-row${selected ? " selected" : ""}`} aria-selected={selected} key={`${row.record_type}-${row.id}`}>
-                      <td><button type="button" className="link-button" onClick={() => onSelectCve(row)}>{catalogueRecordId(row)}</button></td>
-                      <td><span className="cell-stack"><strong>{row.vendor_name || "Unknown vendor"}</strong><small>{row.product_family || "Product pending"}</small></span></td>
-                      <td><span className={`queue-status ${priority.tone}`}>{priority.label}</span></td>
-                      <td><span className="cell-stack"><strong>{catalogueExploitSignal(row)}</strong><small>{catalogueEpssLabel(row.epss_score)}</small></span></td>
-                      <td><span className="cell-stack"><strong>{catalogueCustomerScope(row)}</strong><small>{row.customer_match_count ? "Review matched scope" : "Estate mapping required"}</small></span></td>
-                      <td><span className="cell-stack"><strong>{row.patch_available ? "Patch recorded" : "No fix confirmed"}</strong><small>{(row.fixed_versions || []).join(", ") || "Version evidence pending"}</small></span></td>
-                      <td><span className={`evidence-state ${catalogueEvidenceVerified(row) ? "verified" : "pending"}`}>{catalogueEvidenceVerified(row) ? <CheckCircle2 size={15} aria-hidden /> : <Clock3 size={15} aria-hidden />}{catalogueEvidenceLabel(row)}</span></td>
-                      <td><span className="cell-stack"><strong>{catalogueNextAction(row)}</strong><small>{row.final_approval_issued ? "Approval issued" : "Approval not issued"}</small></span></td>
+                      <td data-label="CVE"><button type="button" className="link-button" onClick={() => onSelectCve(row)}>{catalogueRecordId(row)}</button></td>
+                      <td data-label="Vendor / product"><span className="cell-stack"><strong>{row.vendor_name || "Unknown vendor"}</strong><small>{row.product_family || "Product pending"}</small></span></td>
+                      <td data-label="Priority"><span className={`queue-status ${priority.tone}`}>{priority.label}</span></td>
+                      <td data-label="Exploit signal"><span className="cell-stack"><strong>{catalogueExploitSignal(row)}</strong><small>{catalogueEpssLabel(row.epss_score)}</small></span></td>
+                      <td data-label="Customer exposure"><span className="cell-stack"><strong>{catalogueCustomerScope(row)}</strong><small>{row.customer_match_count ? "Review matched scope" : "Estate mapping required"}</small></span></td>
+                      <td data-label="Remediation"><span className="cell-stack"><strong>{row.patch_available ? "Patch recorded" : "No fix confirmed"}</strong><small>{(row.fixed_versions || []).join(", ") || "Version evidence pending"}</small></span></td>
+                      <td data-label="Evidence"><span className={`evidence-state ${catalogueEvidenceVerified(row) ? "verified" : "pending"}`}>{catalogueEvidenceVerified(row) ? <CheckCircle2 size={15} aria-hidden /> : <Clock3 size={15} aria-hidden />}{catalogueEvidenceLabel(row)}</span></td>
+                      <td data-label="Next action"><span className="cell-stack"><strong>{catalogueNextAction(row)}</strong><small>{row.final_approval_issued ? "Approval issued" : "Approval not issued"}</small></span></td>
                     </tr>
                   );
                 })}
@@ -2116,556 +2359,6 @@ function PatchHotfixCompare({
   );
 }
 
-function CustomerEstate({
-  state,
-  discovery,
-  vendorLens,
-  deviceText,
-  setDeviceText,
-  extractedAsset,
-  assetForm,
-  setAssetForm,
-  selectedAssetId,
-  setSelectedAssetId,
-  selectedAdvisoryId,
-  setSelectedAdvisoryId,
-  patchCompareForm,
-  setPatchCompareForm,
-  latestMatch,
-  latestComparison,
-  onExtract,
-  onConfirmAsset,
-  onMatch,
-  onPatchCompare,
-  onRegisterCollector,
-  onCreateDiscoveryPolicy,
-  onDownloadCollectorConfig,
-  canWrite
-}: {
-  state: CustomerEstateState;
-  discovery: AssetDiscoveryOverview | null;
-  vendorLens: VendorLensState;
-  deviceText: string;
-  setDeviceText: (value: string) => void;
-  extractedAsset: CustomerAssetExtraction | null;
-  assetForm: typeof emptyNetworkAssetForm;
-  setAssetForm: (value: typeof emptyNetworkAssetForm) => void;
-  selectedAssetId: string;
-  setSelectedAssetId: (value: string) => void;
-  selectedAdvisoryId: string;
-  setSelectedAdvisoryId: (value: string) => void;
-  patchCompareForm: { current_version: string; proposed_version: string };
-  setPatchCompareForm: (value: { current_version: string; proposed_version: string }) => void;
-  latestMatch: CustomerEstateMatch | null;
-  latestComparison: VendorLensPatchComparison | null;
-  onExtract: () => void;
-  onConfirmAsset: () => void;
-  onMatch: () => void;
-  onPatchCompare: () => void;
-  onRegisterCollector: () => void;
-  onCreateDiscoveryPolicy: () => void;
-  onDownloadCollectorConfig: () => void;
-  canWrite: boolean;
-}) {
-  const assetsPage = usePagination(state.assets.length ? state.assets : vendorLens.assets, 6, "customer-estate-assets");
-  const matches = latestMatch?.matches || state.exposure_matches || [];
-  const matchPage = usePagination(matches, 6, "customer-estate-matches");
-  const assets = state.assets.length ? state.assets : vendorLens.assets;
-  const advisories = vendorLens.advisories;
-
-  return (
-    <>
-      <section className="wide-band">
-        <div className="section-title">
-          <div>
-            <p className="eyebrow">Asset discovery</p>
-            <h3>Collector Intake</h3>
-          </div>
-          <span className="pill teal">Outbound-only | review required</span>
-        </div>
-        <div className="split-grid">
-          <StatusLine label="Collectors" value={String(discovery?.metrics.collector_count || 0)} tone={discovery?.metrics.collector_count ? "trust" : "amber"} />
-          <StatusLine label="Enabled policies" value={String(discovery?.metrics.enabled_policy_count || 0)} tone={discovery?.metrics.enabled_policy_count ? "trust" : "steel"} />
-          <StatusLine label="Imported assets" value={String(discovery?.metrics.collector_imported_asset_count || 0)} tone="teal" />
-          <StatusLine label="Pending review" value={String(discovery?.metrics.pending_review_asset_count || 0)} tone="amber" />
-        </div>
-        <div className="report-actions">
-          <button type="button" className="action-button" onClick={onRegisterCollector} disabled={!canWrite}>
-            <ServerCog size={16} aria-hidden /> Register Collector
-          </button>
-          <button type="button" className="action-button secondary-action" onClick={onCreateDiscoveryPolicy} disabled={!canWrite}>
-            <ListFilter size={16} aria-hidden /> Create Policy
-          </button>
-          <button type="button" className="action-button" onClick={onDownloadCollectorConfig} disabled={!canWrite}>
-            <Download size={16} aria-hidden /> Download Collector Config
-          </button>
-        </div>
-        <div className="split-grid">
-          <section>
-            <h4>Supported categories</h4>
-            <p className="muted-copy">{(discovery?.categories || discoveryCollectorCategories).map(humanize).join(", ")}</p>
-          </section>
-          <section>
-            <h4>Collector boundary</h4>
-            <p className="muted-copy">Collector imports are source-bound evidence. PatchForge does not scan for exploits, deploy patches, mutate production systems, approve CAB, or accept risk.</p>
-          </section>
-        </div>
-        {discovery?.recent_runs?.[0] && (
-          <div className="insight-list">
-            <StatusLine label="Latest import" value={`${discovery.recent_runs[0].imported_asset_count} imported / ${discovery.recent_runs[0].rejected_asset_count} rejected`} tone={discovery.recent_runs[0].rejected_asset_count ? "amber" : "trust"} />
-            <StatusLine label="Run status" value={humanize(discovery.recent_runs[0].status)} tone="teal" />
-          </div>
-        )}
-      </section>
-
-      <section className="wide-band">
-        <div className="section-title">
-          <div>
-            <p className="eyebrow">Minimal input assistant</p>
-            <h3>Describe a Device</h3>
-          </div>
-          <span className="pill amber">Evidence state: user stated, unreviewed</span>
-        </div>
-        <label className="stacked-input">
-          <span>Describe a device, product, version, features, and exposure.</span>
-          <textarea rows={3} value={deviceText} onChange={(event) => setDeviceText(event.target.value)} />
-        </label>
-        <div className="report-actions">
-          <button type="button" className="action-button" onClick={onExtract} disabled={!canWrite}>
-            <Search size={16} aria-hidden /> Extract Fields
-          </button>
-          <button type="button" className="action-button secondary-action" onClick={onConfirmAsset} disabled={!canWrite}>
-            <CheckCircle2 size={16} aria-hidden /> Confirm Asset
-          </button>
-          <button type="button" className="action-button" onClick={onMatch} disabled={!canWrite || !assets.length}>
-            <Network size={16} aria-hidden /> Run CVE Match
-          </button>
-        </div>
-      </section>
-
-      <div className="split-grid">
-        <section className="data-band">
-          <h3>Confirm Extracted Fields</h3>
-          <div className="form-grid compact-form">
-            <label>Vendor<input value={assetForm.vendor_id} onChange={(event) => setAssetForm({ ...assetForm, vendor_id: event.target.value })} /></label>
-            <label>Product family<input value={assetForm.product_family} onChange={(event) => setAssetForm({ ...assetForm, product_family: event.target.value })} /></label>
-            <label>Model<input value={assetForm.model} onChange={(event) => setAssetForm({ ...assetForm, model: event.target.value })} /></label>
-            <label>Firmware<input value={assetForm.firmware_version} onChange={(event) => setAssetForm({ ...assetForm, firmware_version: event.target.value })} /></label>
-            <label>Management exposure<input value={assetForm.management_exposure} onChange={(event) => setAssetForm({ ...assetForm, management_exposure: event.target.value })} /></label>
-            <label>Enabled features<input value={assetForm.enabled_features} onChange={(event) => setAssetForm({ ...assetForm, enabled_features: event.target.value })} /></label>
-            <label>Disabled features<input value={assetForm.disabled_features} onChange={(event) => setAssetForm({ ...assetForm, disabled_features: event.target.value })} /></label>
-            <label>Evidence state<select value={assetForm.evidence_state} onChange={(event) => setAssetForm({ ...assetForm, evidence_state: event.target.value })}><option>user_stated_unreviewed</option><option>referenced</option><option>accepted_positive_evidence</option></select></label>
-          </div>
-          {extractedAsset && (
-            <div className="insight-list">
-              <StatusLine label="Extraction confidence" value={String(extractedAsset.extraction_confidence ?? "n/a")} tone="teal" />
-              <StatusLine label="Human review" value={extractedAsset.human_review_required ? "Required" : "Required"} tone="amber" />
-              <StatusLine label="Final approval" value={extractedAsset.final_approval_issued ? "Issued" : "False" } tone="amber" />
-            </div>
-          )}
-        </section>
-
-        <section className="data-band">
-          <h3>Patch Compare</h3>
-          <div className="form-grid compact-form">
-            <label>Asset<select value={selectedAssetId} onChange={(event) => setSelectedAssetId(event.target.value)}><option value="">Select asset</option>{assets.map((asset) => <option key={asset.asset_id} value={asset.asset_id}>{asset.asset_id} | {asset.product_family} {asset.firmware_version}</option>)}</select></label>
-            <label>Advisory / CVE<select value={selectedAdvisoryId} onChange={(event) => setSelectedAdvisoryId(event.target.value)}><option value="">Select advisory</option>{advisories.map((advisory) => <option key={advisory.advisory_id} value={advisory.advisory_id}>{advisory.cve || advisory.advisory_id}</option>)}</select></label>
-            <label>Current version<input value={patchCompareForm.current_version} onChange={(event) => setPatchCompareForm({ ...patchCompareForm, current_version: event.target.value })} /></label>
-            <label>Proposed version<input value={patchCompareForm.proposed_version} onChange={(event) => setPatchCompareForm({ ...patchCompareForm, proposed_version: event.target.value })} /></label>
-          </div>
-          <button type="button" className="action-button" onClick={onPatchCompare} disabled={!canWrite || !selectedAssetId || !selectedAdvisoryId}>
-            <Layers3 size={16} aria-hidden /> Run Patch Compare
-          </button>
-          {latestComparison && (
-            <div className="insight-list">
-              <StatusLine label="Current version" value={humanize(latestComparison.current_version_affected || latestComparison.current_version_status)} tone="amber" />
-              <StatusLine label="Proposed version" value={humanize(latestComparison.proposed_version_remediates || latestComparison.target_version_status)} tone="teal" />
-              <StatusLine label="Final approval" value={latestComparison.final_approval_issued ? "Issued" : "False"} tone="amber" />
-            </div>
-          )}
-        </section>
-      </div>
-
-      <section className="data-band table-band">
-        <div className="section-title">
-          <h3>Devices & Assets</h3>
-          <span className="pill teal">{assets.length} asset(s)</span>
-        </div>
-        <div className="table-scroll">
-          <table className="data-table estate-assets-table">
-            <thead><tr><th>Customer</th><th>Site</th><th>Vendor</th><th>Product family</th><th>Model</th><th>Firmware</th><th>Internet-facing</th><th>Management exposure</th><th>Enabled features</th><th>Disabled features</th><th>Evidence state</th><th>Matching CVEs</th><th>Highest urgency</th><th>Owner</th><th>Last checked</th></tr></thead>
-            <tbody>
-              {assetsPage.items.map((asset) => {
-                const assetMatches = matches.filter((match) => String(match.asset_id) === String(asset.asset_id));
-                return (
-                  <tr key={asset.asset_id}>
-                    <td>{asset.customer || asset.tenant_id || "Customer pending"}</td>
-                    <td>{asset.site || "Not recorded"}</td>
-                    <td>{asset.vendor_id}</td>
-                    <td>{asset.product_family || "Pending"}</td>
-                    <td>{asset.model || "Pending"}</td>
-                    <td>{asset.firmware_version || "Pending"}</td>
-                    <td>{asset.internet_facing ? "Yes" : "No"}</td>
-                    <td>{humanize(asset.management_exposure || "unknown")}</td>
-                    <td>{(asset.enabled_features || []).join(", ") || "None recorded"}</td>
-                    <td>{(asset.disabled_features || []).join(", ") || "None recorded"}</td>
-                    <td>{humanize(asset.evidence_state || "referenced")}</td>
-                    <td>{assetMatches.length}</td>
-                    <td>{humanize(assetMatches[0]?.urgency_posture || "unknown")}</td>
-                    <td>{asset.service_owner || "Owner pending"}</td>
-                    <td>{asset.updated_at ? new Date(asset.updated_at).toLocaleDateString() : "Pending"}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        <PaginationControls {...assetsPage} label="customer estate assets" />
-      </section>
-
-      <section className="data-band table-band">
-        <div className="section-title">
-          <h3>Exposure Matches</h3>
-          <span className="pill amber">{matches.length} governed match(es)</span>
-        </div>
-        <div className="table-scroll">
-          <table className="data-table exposure-table">
-            <thead><tr><th>CVE / advisory</th><th>Asset</th><th>Product</th><th>Feature</th><th>Applicability</th><th>Urgency</th><th>Evidence required</th><th>Final approval</th></tr></thead>
-            <tbody>
-              {matchPage.items.map((match, index) => (
-                <tr key={`${match.assessment_id || "match"}-${index}`}>
-                  <td>{String(match.cve || match.advisory_id || "Pending")}</td>
-                  <td>{String(match.asset_id || "Pending")}</td>
-                  <td>{String(match.product_family || "Pending")}</td>
-                  <td>{String(match.affected_feature || "Pending")}</td>
-                  <td>{humanize(String(match.applicability_posture || "unknown"))}</td>
-                  <td>{humanize(String(match.urgency_posture || "unknown"))}</td>
-                  <td>{(match.evidence_required || []).join(", ") || "Reviewed evidence required"}</td>
-                  <td>{match.final_approval_issued ? "Issued" : "False"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <PaginationControls {...matchPage} label="customer estate matches" />
-        {!matches.length && <EmptyState title="No exposure matches yet" detail="Add or select a device, then run current CVE/advisory matching." />}
-      </section>
-    </>
-  );
-}
-
-function AskPatchForge({
-  question,
-  setQuestion,
-  answer,
-  selectedAssetId,
-  selectedAdvisoryId,
-  latestComparison,
-  agentStatus,
-  agentGuidance,
-  selectedVulnerabilityId,
-  onAsk,
-  onPatchCompare,
-  onGenerateReportPack,
-  onOpenReports,
-  onOpenCustomerEstate,
-  onOpenVendorCatalogue,
-  onSelectCandidate,
-  onRefreshCandidateCatalogue,
-  canWrite
-}: {
-  question: string;
-  setQuestion: (value: string) => void;
-  answer: AskPatchForgeAnswer | null;
-  selectedAssetId: string;
-  selectedAdvisoryId: string;
-  latestComparison: VendorLensPatchComparison | null;
-  agentStatus: OpenAiAgentStatus | null;
-  agentGuidance: AgentGuidanceSnapshot | null;
-  selectedVulnerabilityId: string;
-  onAsk: () => void;
-  onPatchCompare: () => void;
-  onGenerateReportPack: () => void;
-  onOpenReports: () => void;
-  onOpenCustomerEstate: () => void;
-  onOpenVendorCatalogue: () => void;
-  onSelectCandidate: (candidate: Record<string, unknown>) => void;
-  onRefreshCandidateCatalogue: (candidate: Record<string, unknown>) => void;
-  canWrite: boolean;
-}) {
-  const response = answer?.response;
-  const candidateMatches = (answer?.candidate_matches || []).slice(0, 5);
-  const agentReady = Boolean(agentStatus?.enabled && agentStatus.configured);
-  const agentLabel = agentStatus?.enabled ? (agentStatus.configured ? "Ready" : "Unavailable") : "Runtime disabled";
-  const agentTone = agentReady ? "teal" : agentStatus?.enabled ? "amber" : "steel";
-  const answerMode = agentGuidance?.status === "verified" ? "Deterministic + verified AI" : "Deterministic";
-  return (
-    <>
-      <section className="wide-band ask-panel">
-        <div className="section-title">
-          <div>
-            <p className="eyebrow">Natural-language advisor</p>
-            <h3>Ask PatchForge</h3>
-          </div>
-          <span className="pill amber">Advisory-only | human approval required</span>
-        </div>
-        <label className="stacked-input">
-          <span>Ask about vendor, model, feature, CVE, patch, or evidence.</span>
-          <textarea rows={4} value={question} onChange={(event) => setQuestion(event.target.value)} />
-        </label>
-        <p className="boundary-copy">
-          {selectedAdvisoryId
-            ? `Using selected advisory context ${selectedAdvisoryId}${selectedAssetId ? ` and asset ${selectedAssetId}` : ""}.`
-            : "No CVE/advisory is selected. Include a CVE/advisory ID, select one in Patch & CVE Catalogue or Vendor Catalogue, or run Customer Estate matching first."}
-        </p>
-        <p className="boundary-copy">Defensive-use only: PatchForge can explain impact, exposure, patch, hotfix, mitigation, evidence, and reporting choices. It refuses exploit code, payloads, bypass steps, and attacker playbooks.</p>
-        <div className="report-actions">
-          <button type="button" className="action-button" onClick={onAsk} disabled={!canWrite}>
-            <MessageSquareText size={16} aria-hidden /> Ask PatchForge
-          </button>
-          <button type="button" className="action-button secondary-action" onClick={onPatchCompare} disabled={!canWrite || !selectedAssetId || !selectedAdvisoryId}>
-            <Layers3 size={16} aria-hidden /> Run Patch Compare
-          </button>
-        </div>
-        {latestComparison && <p className="boundary-copy">Patch Compare attached: current {humanize(latestComparison.current_version_affected || latestComparison.current_version_status)}, proposed {humanize(latestComparison.proposed_version_remediates || latestComparison.target_version_status)}. Final approval false.</p>}
-        <AskRunPlan
-          selectedAssetId={selectedAssetId}
-          selectedAdvisoryId={selectedAdvisoryId}
-          selectedVulnerabilityId={selectedVulnerabilityId}
-          hasAnswer={Boolean(response)}
-          hasPatchComparison={Boolean(latestComparison)}
-          candidateCount={candidateMatches.length}
-          canWrite={canWrite}
-          onOpenCustomerEstate={onOpenCustomerEstate}
-          onOpenVendorCatalogue={onOpenVendorCatalogue}
-          onPatchCompare={onPatchCompare}
-          onGenerateReportPack={onGenerateReportPack}
-          onOpenReports={onOpenReports}
-        />
-        <div className="agent-status-strip">
-          <StatusLine label="Displayed answer" value={answerMode} tone={agentGuidance?.status === "verified" ? "teal" : "trust"} />
-          <StatusLine label="OpenAI agent" value={agentLabel} tone={agentTone} detail={agentStatus?.model || "Status loads from protected API"} />
-          <StatusLine label="Verifier" value={agentStatus?.verifier_required ? "Required" : "Required"} tone="amber" />
-          <StatusLine label="Agent authority" value="Advisory only" tone="amber" />
-        </div>
-      </section>
-
-      {response ? (
-        <section className="data-band advisor-response">
-          <div className="section-title">
-            <h3>Response</h3>
-            <span className="pill amber">Final approval false</span>
-          </div>
-          <AdvisorBlock title="Short Answer" content={response.short_answer} />
-          <CandidateMatchList candidates={candidateMatches} onSelectCandidate={onSelectCandidate} onRefreshCandidateCatalogue={onRefreshCandidateCatalogue} canWrite={canWrite} />
-          <AdvisorBlock title="Current Governed Posture" content={humanize(response.current_governed_posture)} />
-          <AdvisorBlock title="Why" content={response.why} />
-          <AdvisorList title="What We Know" items={response.what_we_know} />
-          <AdvisorList title="What We Do Not Know" items={response.what_we_do_not_know} />
-          <AdvisorList title="Evidence Needed" items={response.evidence_needed} />
-          <AdvisorBlock title="Recommended Next Action" content={response.recommended_next_action} />
-          <AdvisorBlock title="Decision Not Allowed Yet" content={response.decision_not_allowed_yet} />
-          <div className="insight-list">
-            <StatusLine label="Human Approval Required" value={response.human_approval_required ? "Yes" : "Yes"} tone="amber" />
-            <StatusLine label="Final Approval Issued" value={response.final_approval_issued ? "True" : "False"} tone="amber" />
-          </div>
-          <section className="advisor-agent-panel">
-            <div className="section-title compact-title">
-              <h4>Optional AI-Assisted Answer</h4>
-              <span className={`pill ${agentGuidance?.status === "verified" ? "teal" : "steel"}`}>{agentGuidance?.status ? humanize(agentGuidance.status) : "Not used"}</span>
-            </div>
-            {agentGuidance?.status === "verified" && agentGuidance.output ? (
-              <>
-                <AdvisorBlock title="Verifier Status" content={humanize(agentGuidance.verifier_status)} />
-                <AdvisorBlock title="Recommended Next Action" content={agentGuidance.output.recommended_next_action || "Attach reviewed evidence and request human review."} />
-                <AdvisorBlock title="Decision Not Allowed Yet" content={agentGuidance.output.decision_not_allowed_yet || response.decision_not_allowed_yet} />
-              </>
-            ) : (
-              <div className="agent-readiness-grid">
-                <StatusLine label="Customer-facing answer" value="Deterministic answer active" tone="trust" />
-                <StatusLine label="AI assistance" value={agentLabel} tone={agentTone} />
-                <StatusLine label="Fallback" value={agentGuidance?.fallback?.message ? "Recorded" : "Deterministic"} tone="steel" detail={agentGuidance?.fallback?.message || "Verified AI guidance appears only after runtime enablement and verifier pass."} />
-              </div>
-            )}
-          </section>
-        </section>
-      ) : (
-        <EmptyState title="No advisor response yet" detail="Ask a governed PatchForge question. The response will stay advisory-only and will not approve, deploy, or accept risk." />
-      )}
-    </>
-  );
-}
-
-function AskRunPlan({
-  selectedAssetId,
-  selectedAdvisoryId,
-  selectedVulnerabilityId,
-  hasAnswer,
-  hasPatchComparison,
-  candidateCount,
-  canWrite,
-  onOpenCustomerEstate,
-  onOpenVendorCatalogue,
-  onPatchCompare,
-  onGenerateReportPack,
-  onOpenReports
-}: {
-  selectedAssetId: string;
-  selectedAdvisoryId: string;
-  selectedVulnerabilityId: string;
-  hasAnswer: boolean;
-  hasPatchComparison: boolean;
-  candidateCount: number;
-  canWrite: boolean;
-  onOpenCustomerEstate: () => void;
-  onOpenVendorCatalogue: () => void;
-  onPatchCompare: () => void;
-  onGenerateReportPack: () => void;
-  onOpenReports: () => void;
-}) {
-  const selectedContext = selectedAdvisoryId || selectedVulnerabilityId;
-  const runPlanItems: Array<{ title: string; detail: string; icon: typeof Search; actionLabel: string; onClick: () => void; disabled?: boolean }> = [
-    {
-      title: "Find the right CVE or patch",
-      detail: selectedContext
-        ? `Selected ${selectedContext}. PatchForge can now explain impact, urgency, evidence gaps, and next actions against that item.`
-        : candidateCount
-          ? `${candidateCount} candidate CVE, advisory, or patch scope matches are available below. Select one before comparing or reporting.`
-          : "Use the catalogue or ask a vendor/product question. PatchForge will offer candidate CVEs, advisories, or patch scopes when it can match them.",
-      icon: Search,
-      actionLabel: "Open Catalogue",
-      onClick: onOpenVendorCatalogue
-    },
-    {
-      title: "Confirm customer impact",
-      detail: selectedAssetId
-        ? `Using estate asset ${selectedAssetId}. Feature, exposure, firmware, and management-plane evidence still need review.`
-        : "Capture the customer device, firmware, enabled features, exposure, and evidence references so urgency is understandable.",
-      icon: ServerCog,
-      actionLabel: "Customer Estate",
-      onClick: onOpenCustomerEstate
-    },
-    {
-      title: "Compare the patch or mitigation",
-      detail: hasPatchComparison
-        ? "Patch Compare is attached, including current version, proposed version, security delta, operational delta, and evidence still needed."
-        : "Run Patch Compare after selecting an advisory and asset to see fixed-version evidence, operational risk, rollback needs, and must-do posture.",
-      icon: Layers3,
-      actionLabel: "Run Patch Compare",
-      onClick: onPatchCompare,
-      disabled: !canWrite || !selectedAssetId || !selectedAdvisoryId
-    },
-    {
-      title: "Create the decision pack",
-      detail: hasAnswer
-        ? "Generate the signed governance pack for customer, CAB, board, or steering group reporting. Final approval remains false until named human approval."
-        : "Ask PatchForge first so the pack includes the latest governed explanation, impact, risks, evidence needs, and recommended next action.",
-      icon: FileCheck2,
-      actionLabel: "Generate Signed Pack",
-      onClick: onGenerateReportPack,
-      disabled: !canWrite || !selectedVulnerabilityId
-    },
-    {
-      title: "Run stakeholder reports",
-      detail: "Use Reports for customer packs, board vulnerability summaries, CAB decision reports, evidence appendices, and signed ZIP exports.",
-      icon: FileText,
-      actionLabel: "Reports",
-      onClick: onOpenReports
-    }
-  ];
-
-  return (
-    <section className="wide-band next-actions ask-run-plan" aria-label="Ask PatchForge run plan">
-      <div className="section-title compact-title">
-        <div>
-          <p className="eyebrow">End-to-end governed flow</p>
-          <h3>Run Plan</h3>
-        </div>
-        <span className="pill amber">advisory-only</span>
-      </div>
-      <div className="next-action-grid vendorlens-next-grid">
-        {runPlanItems.map(({ title, detail, icon: Icon, actionLabel, onClick, disabled }) => (
-          <button key={title} type="button" className="next-action-card clickable-card" onClick={onClick} disabled={disabled}>
-            <Icon size={18} aria-hidden />
-            <span>
-              <h4>{title}</h4>
-              <p>{detail}</p>
-              <small>{actionLabel}</small>
-            </span>
-          </button>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function CandidateMatchList({
-  candidates,
-  onSelectCandidate,
-  onRefreshCandidateCatalogue,
-  canWrite
-}: {
-  candidates: Array<Record<string, unknown>>;
-  onSelectCandidate: (candidate: Record<string, unknown>) => void;
-  onRefreshCandidateCatalogue: (candidate: Record<string, unknown>) => void;
-  canWrite: boolean;
-}) {
-  if (!candidates.length) {
-    return null;
-  }
-  return (
-    <div className="advisor-block candidate-match-panel">
-      <h4>Candidate CVEs / Patches / Catalogue Scopes</h4>
-      <div className="candidate-match-list">
-        {candidates.map((candidate) => {
-          const id = candidateValue(candidate, "advisory_id", "cve", "cve_id", "id") || "candidate advisory";
-          const cve = candidateValue(candidate, "cve", "cve_id");
-          const candidateType = candidateValue(candidate, "candidate_type");
-          const selectable = candidate.selectable !== false && candidateType !== "vendor_catalogue" && Boolean(cve || candidateValue(candidate, "advisory_id"));
-          const product = [candidateValue(candidate, "vendor_name"), candidateValue(candidate, "product_family"), candidateValue(candidate, "model")].filter(Boolean).join(" ");
-          const fixedVersions = candidateList(candidate.fixed_versions);
-          const patchAvailable = Boolean(candidate.patch_available);
-          const patchText = patchAvailable
-            ? `Patch evidence available${fixedVersions.length ? `: ${fixedVersions.join(", ")}` : ""}`
-            : candidateType === "vendor_catalogue" ? "Refresh source-bound catalogue before selection" : "Patch evidence not confirmed";
-          return (
-            <article className="candidate-match-item" key={id}>
-              <div>
-                <strong>{cve || id}</strong>
-                <span>{product || "Product pending"}{candidateValue(candidate, "affected_feature") ? ` | ${candidateValue(candidate, "affected_feature")}` : ""}</span>
-                <small>{humanize(candidateValue(candidate, "severity") || "unknown")} severity | {humanize(candidateValue(candidate, "urgency_posture") || "unknown")} | {patchText}</small>
-                {candidateValue(candidate, "selection_prompt") && <small>{candidateValue(candidate, "selection_prompt")}</small>}
-              </div>
-              {selectable ? (
-                <button type="button" className="action-button secondary-action" onClick={() => onSelectCandidate(candidate)} disabled={!canWrite} aria-label={`Use advisory ${id}`}>
-                  <CheckCircle2 size={16} aria-hidden /> Use
-                </button>
-              ) : (
-                <button type="button" className="action-button secondary-action" onClick={() => onRefreshCandidateCatalogue(candidate)} disabled={!canWrite || !candidateValue(candidate, "vendor_id")} aria-label={`Refresh catalogue ${candidateValue(candidate, "vendor_name") || id}`}>
-                  <RefreshCw size={16} aria-hidden /> Refresh
-                </button>
-              )}
-            </article>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function AdvisorBlock({ title, content }: { title: string; content: string }) {
-  return <div className="advisor-block"><h4>{title}</h4><p>{content}</p></div>;
-}
-
-function AdvisorList({ title, items }: { title: string; items: string[] }) {
-  return (
-    <div className="advisor-block">
-      <h4>{title}</h4>
-      {(items || []).length ? items.map((item) => <p key={item}>{item}</p>) : <p>Not recorded.</p>}
-    </div>
-  );
-}
-
 function MetricCard({ icon: Icon, label, value, tone }: { icon: typeof Gauge; label: string; value: number | string; tone: string }) {
   return (
     <article className={`metric-card ${tone}`}>
@@ -2673,1754 +2366,6 @@ function MetricCard({ icon: Icon, label, value, tone }: { icon: typeof Gauge; la
       <span>{label}</span>
       <strong>{value}</strong>
     </article>
-  );
-}
-
-function ActionCenter({
-  metrics,
-  findings,
-  vulnerabilities,
-  decisionPacks,
-  sourceFeedState,
-  canWrite,
-  onSelectFinding,
-  onRefreshSourceFeed
-}: {
-  metrics: PatchForgeMetrics;
-  findings: FindingIntelligence[];
-  vulnerabilities: VulnerabilityRecord[];
-  decisionPacks: DecisionPackRecord[];
-  sourceFeedState: SourceFeedState;
-  canWrite: boolean;
-  onSelectFinding: (vulnerabilityId: string, page?: PageKey) => void;
-  onRefreshSourceFeed: (feedId: string) => void;
-}) {
-  const metricCards = [
-    { label: "Findings to govern", value: metrics.vulnerability_count, tone: "steel", icon: ListFilter },
-    { label: "Known exploited", value: metrics.known_exploited, tone: "amber", icon: ShieldAlert },
-    { label: "Critical exposure", value: metrics.critical_exposure, tone: "danger", icon: TriangleAlert },
-    { label: "Signed packs", value: metrics.signed_packs || decisionPacks.length, tone: "trust", icon: FileCheck2 }
-  ];
-  const findingsPage = usePagination(findings, 4, "action-findings");
-
-  return (
-    <>
-      <div className="metric-grid">
-        {metricCards.map(({ label, value, tone, icon: Icon }) => (
-          <article className={`metric-card ${tone}`} key={label}>
-            <Icon size={20} aria-hidden />
-            <span>{label}</span>
-            <strong>{value}</strong>
-          </article>
-        ))}
-      </div>
-
-      <section className="wide-band action-hero">
-        <div>
-          <p className="eyebrow">Automated governance analysis, human-approved decisions</p>
-          <h3>PatchForge has already translated the queue into decision-ready work.</h3>
-          <p className="muted-copy">
-            The engine reviews source-bound intelligence, exposure signals, Bayesian advisory output, vendor context, and signed-pack state. The user journey is to understand the finding, approve or withhold the governance decision, then export a board/CAB pack.
-          </p>
-        </div>
-        <div className="hero-actions">
-          <button type="button" className="action-button" onClick={() => onRefreshSourceFeed("cisa-kev")} disabled={!canWrite}>
-            <RefreshCw size={16} aria-hidden /> Refresh KEV
-          </button>
-          <button type="button" className="action-button secondary-action" onClick={() => onRefreshSourceFeed("first-epss")} disabled={!canWrite || !vulnerabilities.length}>
-            <Radar size={16} aria-hidden /> Refresh EPSS
-          </button>
-        </div>
-      </section>
-      <NextActionCards />
-
-      <div className="finding-grid">
-        {findingsPage.items.map((finding) => (
-          <article className="finding-card" key={finding.vulnerability_id}>
-            <div className="finding-card-head">
-              <span className={`pill ${severityTone(finding.severity)}`}>{humanize(finding.severity || "unknown")}</span>
-              <span className="pill teal">{postureLabel(finding)}</span>
-            </div>
-            <h3>{finding.vulnerability_id}</h3>
-            <p>{finding.summary.executive_readout}</p>
-            <div className="insight-list">
-              <StatusLine label="Next action" value={shortValue(finding.recommendation.next_best_action)} tone="trust" />
-              <StatusLine label="Evidence gaps" value={String(finding.evidence.gaps.length)} tone={finding.evidence.gaps.length ? "amber" : "trust"} />
-              <StatusLine label="Exploitability" value={finding.exploitability.known_exploited ? "Known exploited" : "Source-bound"} tone={finding.exploitability.known_exploited ? "danger" : "steel"} />
-            </div>
-            <div className="report-actions">
-              <button type="button" className="action-button" onClick={() => onSelectFinding(finding.vulnerability_id, "Finding Detail")}>
-                <ShieldAlert size={16} aria-hidden /> Understand
-              </button>
-              <button type="button" className="action-button secondary-action" onClick={() => onSelectFinding(finding.vulnerability_id, "Review & Approve")}>
-                <ClipboardCheck size={16} aria-hidden /> Review
-              </button>
-            </div>
-          </article>
-        ))}
-      </div>
-
-      <PaginationControls {...findingsPage} label="findings" />
-
-      {!findingsPage.items.length && (
-        <EmptyState
-          title="No governed findings yet"
-          detail={`Refresh live public intelligence or ingest a real finding. ${sourceFeedState.feeds.length} public source feeds are configured and all outputs remain source-bound pending review.`}
-        />
-      )}
-    </>
-  );
-}
-
-function FindingDetail({
-  finding,
-  vulnerabilities,
-  onSelectFinding,
-  onAnalyse,
-  canWrite
-}: {
-  finding: FindingIntelligence | null;
-  vulnerabilities: VulnerabilityRecord[];
-  onSelectFinding: (vulnerabilityId: string, page?: PageKey) => void;
-  onAnalyse: () => void;
-  canWrite: boolean;
-}) {
-  if (!finding) {
-    return (
-      <EmptyState
-        title="No finding selected"
-        detail={vulnerabilities.length ? "Select a finding from Action Center to open its plain-English decision view." : "Refresh live intelligence or ingest a real record first."}
-      />
-    );
-  }
-
-  return (
-    <>
-      <section className="wide-band finding-brief">
-        <div>
-          <p className="eyebrow">{finding.vendor || "Vendor pending"} | {finding.product || "Product pending"}</p>
-          <h3>{finding.vulnerability_id}: {finding.title}</h3>
-          <p>{finding.summary.plain_english}</p>
-        </div>
-        <div className="finding-score">
-          <span className={`pill ${severityTone(finding.severity)}`}>{humanize(finding.severity)}</span>
-          <strong>{postureLabel(finding)}</strong>
-          <small>{humanize(finding.recommendation.confidence)} confidence</small>
-        </div>
-      </section>
-      <NextActionCards />
-
-      <div className="split-grid">
-        <section className="data-band narrative-panel">
-          <h3>Why This Matters</h3>
-          <p>{finding.summary.why_now}</p>
-          <p>{finding.summary.operational_risk}</p>
-        </section>
-        <section className="data-band narrative-panel">
-          <h3>Exploitability Intelligence</h3>
-          <p>{finding.exploitability.safe_description}</p>
-          {finding.exploitability.kev_epss_interpretation && <p>{finding.exploitability.kev_epss_interpretation}</p>}
-          <p className="boundary-copy">{finding.exploitability.prohibited_detail}</p>
-        </section>
-      </div>
-
-      <section className="wide-band">
-        <div className="section-title">
-          <h3>Affected Scope</h3>
-          <span className={finding.exposure.unmapped_scope ? "pill amber" : "pill trust"}>{finding.exposure.unmapped_scope ? "Mapping incomplete" : "Mapped"}</span>
-        </div>
-        <p className="muted-copy">{finding.summary.what_it_affects}</p>
-        <div className="split-grid scope-readout">
-          <section>
-            <h4>Services</h4>
-            {finding.exposure.affected_services.map((service) => (
-              <StatusLine key={service.service_id} label={service.service_name} value={service.customer_facing ? "Customer-facing" : humanize(service.service_tier)} tone={service.customer_facing ? "amber" : "steel"} />
-            ))}
-            {!finding.exposure.affected_services.length && <p className="muted-copy">No reviewed service mapping attached.</p>}
-          </section>
-          <section>
-            <h4>Assets</h4>
-            {finding.exposure.affected_assets.map((asset) => (
-              <StatusLine key={asset.asset_id} label={asset.asset_name} value={humanize(asset.exposure)} tone={asset.exposure?.toLowerCase().includes("internet") ? "amber" : "steel"} />
-            ))}
-            {!finding.exposure.affected_assets.length && <p className="muted-copy">No reviewed asset mapping attached.</p>}
-          </section>
-        </div>
-      </section>
-
-      <section className="wide-band">
-        <div className="section-title">
-          <h3>Decision Options</h3>
-          <button type="button" className="action-button" onClick={onAnalyse} disabled={!canWrite}>
-            <Radar size={16} aria-hidden /> Re-run Analysis
-          </button>
-        </div>
-        <div className="decision-option-grid">
-          {finding.decision_options.map((option) => (
-            <article className={option.recommended ? "decision-option recommended" : "decision-option"} key={option.posture}>
-              <span className={option.recommended ? "pill trust" : "pill steel"}>{humanize(option.current_status || (option.recommended ? "recommended" : "available"))}</span>
-              <h4>{humanize(option.posture)}</h4>
-              <p>{option.reason || option.when_to_choose}</p>
-              <small>Evidence: {(option.required_evidence || option.evidence_needed).join(", ") || "Reviewed evidence required"}</small>
-              <small>Approval: {option.required_approval || (option.approval_needed ? "Required" : "Not required at this stage")}</small>
-            </article>
-          ))}
-        </div>
-        <button type="button" className="action-button large-action" onClick={() => onSelectFinding(finding.vulnerability_id, "Review & Approve")}>
-          <ClipboardCheck size={16} aria-hidden /> Continue to Review
-        </button>
-      </section>
-    </>
-  );
-}
-
-function ReviewApprove({
-  finding,
-  vulnerabilities,
-  selectedVulnerabilityId,
-  setSelectedVulnerabilityId,
-  selectedPosture,
-  setSelectedPosture,
-  decisionPacks,
-  reports,
-  onAnalyse,
-  onGenerate,
-  onSraResearch,
-  onDownloadReport,
-  sraResult,
-  canWrite
-}: {
-  finding: FindingIntelligence | null;
-  vulnerabilities: VulnerabilityRecord[];
-  selectedVulnerabilityId: string;
-  setSelectedVulnerabilityId: (value: string) => void;
-  selectedPosture: string;
-  setSelectedPosture: (value: string) => void;
-  decisionPacks: DecisionPackRecord[];
-  reports: ReportCatalogItem[];
-  onAnalyse: () => void;
-  onGenerate: () => void;
-  onSraResearch: () => void;
-  onDownloadReport: (packId: string, reportType: string, format: "docx" | "pdf") => void;
-  sraResult: Record<string, unknown> | null;
-  canWrite: boolean;
-}) {
-  const latestPack = finding?.latest_signed_pack
-    ? decisionPacks.find((pack) => pack.pack_id === finding.latest_signed_pack?.pack_id) || null
-    : decisionPacks.find((pack) => pack.vulnerability_id === finding?.vulnerability_id) || null;
-  const boardReport = reports.find((report) => report.report_type === "board_vulnerability_remediation_summary") || reports[0];
-  const cabReport = reports.find((report) => report.report_type === "cab_patch_decision_report") || reports[1] || boardReport;
-
-  return (
-    <>
-      <section className="wide-band review-runway">
-        <div>
-          <p className="eyebrow">Decision runway</p>
-          <h3>{finding ? `${finding.vulnerability_id}: ${postureLabel(finding)}` : "Select a finding to review"}</h3>
-          <p className="muted-copy">
-            PatchForge performs the analysis, keeps agent and source output advisory-only, and leaves the accountable decision to the user. Use this page to compile the signed pack and export professional DOCX/PDF reports.
-          </p>
-        </div>
-        <div className="decision-controls compact-controls">
-          <label>
-            Finding
-            <select value={selectedVulnerabilityId} onChange={(event) => setSelectedVulnerabilityId(event.target.value)}>
-              <option value="">Select ingested record</option>
-              {vulnerabilities.map((item) => <option key={item.vulnerability_id} value={item.vulnerability_id}>{item.vulnerability_id}</option>)}
-            </select>
-          </label>
-          <label>
-            Governance posture
-            <select value={selectedPosture} onChange={(event) => setSelectedPosture(event.target.value)}>
-              {postures.map((posture) => <option key={posture} value={posture}>{humanize(posture)}</option>)}
-            </select>
-          </label>
-        </div>
-      </section>
-      {finding && <NextActionCards />}
-
-      <div className="split-grid">
-        <section className="data-band">
-          <h3>Automated Governance Analysis Completed</h3>
-          <p className="boundary-copy">{finding?.recommendation.approval_notice || "Human approval remains required. PatchForge does not approve CAB decisions, risk acceptance, patch deployment, or closure autonomously."}</p>
-          {(finding?.automation.completed || ["Select a finding to load analysis."]).map((item) => (
-            <p className="rail-note" key={item}><CheckCircle2 size={15} aria-hidden /> {item}</p>
-          ))}
-        </section>
-        <section className="data-band">
-          <h3>Human Decisions Required</h3>
-          {(finding?.automation.remaining_human_decisions || ["Human approval cannot be automated."]).map((item) => (
-            <p className="rail-note" key={item}><TriangleAlert size={15} aria-hidden /> {item}</p>
-          ))}
-        </section>
-      </div>
-
-      <section className="wide-band">
-        <div className="section-title">
-          <h3>Execute Governed Outputs</h3>
-          <span className="pill trust">DOCX / PDF only</span>
-        </div>
-        <div className="report-actions">
-          <button type="button" className="action-button" onClick={onAnalyse} disabled={!selectedVulnerabilityId || !canWrite}>
-            <Radar size={16} aria-hidden /> Refresh Analysis
-          </button>
-          <button type="button" className="action-button secondary-action" onClick={onSraResearch} disabled={!selectedVulnerabilityId || !canWrite}>
-            <Radar size={16} aria-hidden /> Run SRA Advisory
-          </button>
-          <button type="button" className="action-button" onClick={onGenerate} disabled={!selectedVulnerabilityId || !canWrite}>
-            <FileCheck2 size={16} aria-hidden /> Generate Signed Pack
-          </button>
-          <button type="button" className="action-button" onClick={() => latestPack && boardReport && onDownloadReport(latestPack.pack_id, boardReport.report_type, "docx")} disabled={!latestPack || !boardReport}>
-            <FileText size={16} aria-hidden /> Board DOCX
-          </button>
-          <button type="button" className="action-button" onClick={() => latestPack && cabReport && onDownloadReport(latestPack.pack_id, cabReport.report_type, "pdf")} disabled={!latestPack || !cabReport}>
-            <Download size={16} aria-hidden /> CAB PDF
-          </button>
-        </div>
-        <div className="split-grid">
-          <StatusLine label="Latest signed pack" value={latestPack?.pack_id || "Generate after review"} tone={latestPack ? "trust" : "amber"} />
-          <StatusLine label="Final approval" value={latestPack?.final_approval_issued ? "Issued" : "Not issued"} tone={latestPack?.final_approval_issued ? "trust" : "amber"} />
-          <StatusLine label="SRA output" value={sraResult ? "Advisory returned" : "Not run this session"} tone="teal" />
-          <StatusLine label="Automated approval" value="Blocked" tone="amber" />
-        </div>
-      </section>
-
-      {!canWrite && <EmptyState title="Read-only role" detail="Review, pack generation, and report actions require a PatchForge write role." />}
-    </>
-  );
-}
-
-function ReportsPacks({
-  findings,
-  decisionPacks,
-  reports,
-  reportsPacks,
-  onGenerate,
-  onExportPack,
-  onDownloadReport,
-  canWrite
-}: {
-  findings: FindingIntelligence[];
-  decisionPacks: DecisionPackRecord[];
-  reports: ReportCatalogItem[];
-  reportsPacks: ReportsPacksState;
-  onGenerate: () => void;
-  onExportPack: (packId: string) => void;
-  onDownloadReport: (packId: string, reportType: string, format: "docx" | "pdf") => void;
-  canWrite: boolean;
-}) {
-  const preExport = reportsPacks.pre_export_state || {};
-  const qualityReviews = preExport.report_quality_reviews || [];
-  const sortedPacks = newestDecisionPacks(decisionPacks);
-  const latestPack = sortedPacks[0];
-  return (
-    <>
-      <section className="wide-band report-brief">
-        <div>
-          <p className="eyebrow">Reports</p>
-          <h3>Board, CAB, customer, and technical evidence outputs generated from signed packs.</h3>
-          <p className="muted-copy">Exports show pack ID, baseline, renderer commit, image tag, evidence state, customer context, VendorLens context, report currency, and final approval state before download.</p>
-        </div>
-        <div className="report-pack-selector">
-          <button type="button" className="action-button" onClick={onGenerate} disabled={!canWrite || !findings.length}>
-            <FileCheck2 size={16} aria-hidden /> Generate Signed Pack
-          </button>
-          <span className="pill trust">{sortedPacks.filter((pack) => pack.verification?.verified).length} verified packs</span>
-          <span className="pill teal">{findings.length} analysed findings</span>
-        </div>
-      </section>
-      <section className="data-band">
-        <div className="section-title">
-          <h3>Pre-Export Check</h3>
-          <span className="pill amber">{latestPack?.final_approval_issued ? "Final approval issued" : "Final approval false"}</span>
-        </div>
-        <div className="split-grid">
-          <StatusLine label="Pack ID" value={String(preExport.pack_id || latestPack?.pack_id || "Generate a pack")} tone={latestPack ? "trust" : "amber"} />
-          <StatusLine label="Baseline" value={String(preExport.baseline || latestPack?.product_baseline || "Not recorded by runtime")} tone="steel" />
-          <StatusLine label="Renderer commit" value={String(preExport.renderer_commit || latestPack?.report_renderer_commit || "not recorded")} tone="steel" />
-          <StatusLine label="Image tag" value={String(preExport.image_tag || latestPack?.report_renderer_image_tag || "not recorded")} tone="steel" />
-          <StatusLine label="Evidence state" value={humanize(String(preExport.evidence_state || "evidence_review_required"))} tone="amber" />
-          <StatusLine label="VendorLens context" value={preExport.vendorlens_context_included ? "Included" : "Not attached"} tone={preExport.vendorlens_context_included ? "teal" : "amber"} />
-          <StatusLine label="Customer context" value={preExport.customer_context_included ? "Included" : "Not attached"} tone={preExport.customer_context_included ? "teal" : "amber"} />
-          <StatusLine label="Verification" value={humanize(String(preExport.verification_state || (latestPack?.verification?.verified ? "verified" : "pending_or_not_recorded")))} tone={latestPack?.verification?.verified ? "trust" : "amber"} />
-        </div>
-        <p className="boundary-copy">{String(preExport.report_current_stale_warning || "Reports are generated from the selected signed pack state and current evidence still requires review.")}</p>
-      </section>
-      <section className="data-band">
-        <div className="section-title">
-          <h3>Report Content QA</h3>
-          <span className={`pill ${qualityReviews.every((review) => review.status === "PASS") && qualityReviews.length ? "trust" : "amber"}`}>{qualityReviews.length ? `${qualityReviews.filter((review) => review.status === "PASS").length}/${qualityReviews.length} PASS` : "Run after pack generation"}</span>
-        </div>
-        <div className="quality-grid">
-          {qualityReviews.map((review) => (
-            <article className="quality-item" key={review.review_id}>
-              <strong>{humanize(review.report_type)}</strong>
-              <span className={`pill ${review.status === "PASS" ? "trust" : "amber"}`}>{review.status}</span>
-              <p>{review.checks.filter((check) => check.status === "pass").length} of {review.checks.length} deterministic content checks passed. Final approval {review.final_approval_issued ? "issued" : "false"}.</p>
-            </article>
-          ))}
-        </div>
-        {!qualityReviews.length && <p className="boundary-copy">Content QA appears after a signed pack exists. It checks audience fit, known/unknown clarity, specific evidence gaps, metadata, final approval state, and governance-safe wording.</p>}
-      </section>
-      <DecisionPacks decisionPacks={sortedPacks} reports={reports} onExportPack={onExportPack} onDownloadReport={onDownloadReport} />
-      <Reports decisionPacks={sortedPacks} reports={reports} onDownloadReport={onDownloadReport} />
-    </>
-  );
-}
-
-function CommandCenter({
-  metrics,
-  vulnerabilities,
-  decisionPacks,
-  bayesian,
-  threatSummary,
-  sourceFeedState,
-  setActivePage
-}: {
-  metrics: PatchForgeMetrics;
-  vulnerabilities: VulnerabilityRecord[];
-  decisionPacks: DecisionPackRecord[];
-  bayesian: BayesianAssessment | null;
-  threatSummary: ThreatLandscapeSummary | null;
-  sourceFeedState: SourceFeedState;
-  setActivePage: (page: PageKey) => void;
-}) {
-  const metricCards = [
-    { label: "Critical exposure", value: metrics.critical_exposure, tone: "danger", icon: TriangleAlert },
-    { label: "Known exploited", value: metrics.known_exploited, tone: "amber", icon: ShieldAlert },
-    { label: "Patch overdue", value: metrics.patch_overdue, tone: "warning", icon: Clock3 },
-    { label: "Pending review", value: metrics.pending_review, tone: "steel", icon: ListFilter },
-    { label: "Signed packs", value: metrics.signed_packs, tone: "trust", icon: FileCheck2 },
-    { label: "Live source runs", value: metrics.source_feed_runs ?? sourceFeedState.recent_runs.length, tone: "teal", icon: RefreshCw }
-  ];
-  const topQueue = vulnerabilities.slice(0, 3);
-
-  return (
-    <>
-      <div className="metric-grid">
-        {metricCards.map(({ label, value, tone, icon: Icon }) => (
-          <article className={`metric-card ${tone}`} key={label}>
-            <Icon size={20} aria-hidden />
-            <span>{label}</span>
-            <strong>{value}</strong>
-          </article>
-        ))}
-      </div>
-
-      <section className="wide-band">
-        <div className="section-title">
-          <h3>Top Governed Actions</h3>
-          <div className="toolbar">
-            <button type="button" className="action-button" onClick={() => setActivePage("Source Feeds")}>
-              <RefreshCw size={16} aria-hidden /> Refresh Intelligence
-            </button>
-            <button type="button" className="action-button" onClick={() => setActivePage("Decision Workbench")}>
-              <ClipboardCheck size={16} aria-hidden /> Create Patch Decision
-            </button>
-            <button type="button" className="action-button" onClick={() => setActivePage("Reports")}>
-              <FileText size={16} aria-hidden /> Board Pack
-            </button>
-          </div>
-        </div>
-        {topQueue.length ? (
-          <ol className="action-list">
-            {topQueue.map((item) => (
-              <li key={item.vulnerability_id}>
-                <strong>{item.vulnerability_id}</strong> {humanize(item.severity || "unknown")} | {humanize(item.patch_status || "unknown")} | {item.review_state || "pending_review"}
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <EmptyState title="No vulnerability records ingested" detail="Refresh live public intelligence or connect approved advisory, MCP, Mythos, AGI-agent, asset, or service records to populate the queue." />
-        )}
-      </section>
-
-      <div className="split-grid">
-        <section className="data-band reviewer-next">
-          <h3>Reviewer Next Move</h3>
-          {topQueue[0] ? (
-            <>
-              <StatusLine label="Record" value={topQueue[0].vulnerability_id} tone="amber" />
-              <StatusLine label="Why now" value={signalLabel(topQueue[0])} tone="danger" />
-              <StatusLine label="Human action" value="Review sources and compile" tone="trust" />
-            </>
-          ) : (
-            <p className="muted-copy">Run live source feeds to populate the next reviewer action from public intelligence.</p>
-          )}
-        </section>
-        <section className="data-band">
-          <h3>Decision State</h3>
-          <StatusLine label="All records" value={String(metrics.vulnerability_count)} tone="steel" />
-          <StatusLine label="Accepted evidence" value={String(metrics.accepted_positive_evidence_sources)} tone="trust" />
-          <StatusLine label="Pending review" value={String(metrics.pending_review)} tone="amber" />
-          <StatusLine label="Signed packs" value={String(decisionPacks.length)} tone="trust" />
-        </section>
-        <section className="data-band">
-          <h3>Recent Signed Packs</h3>
-          {decisionPacks.slice(0, 4).map((pack) => (
-            <StatusLine
-              key={pack.pack_id}
-              label={pack.pack_id}
-              value={pack.verification?.verified ? "Verified" : "Pending"}
-              tone={pack.verification?.verified ? "trust" : "amber"}
-            />
-          ))}
-          {!decisionPacks.length && <p className="muted-copy">No signed packs have been generated for this tenant.</p>}
-        </section>
-      </div>
-      <section className="wide-band">
-        <div className="section-title">
-          <h3>Bayesian Advisory</h3>
-          <span className="pill teal">Advisory only</span>
-        </div>
-        <div className="split-grid">
-          <StatusLine label="Recommended posture" value={bayesian ? humanize(bayesian.recommended_governance_posture) : "Awaiting assessment"} tone="teal" />
-          <StatusLine label="Deferral risk posterior" value={bayesian ? String(bayesian.deferral_risk_posterior) : "Not assessed"} tone="amber" />
-        </div>
-      </section>
-      <section className="wide-band">
-        <div className="section-title">
-          <h3>Live Source Intelligence</h3>
-          <span className="pill amber">Source-bound pending review</span>
-        </div>
-        <div className="split-grid">
-          <StatusLine label="Configured public feeds" value={String(sourceFeedState.feeds.length)} tone="steel" />
-          <StatusLine label="Known exploited advisories" value={String(threatSummary?.metrics?.active_exploitation_count || 0)} tone="amber" />
-          <StatusLine label="Latest refresh" value={sourceFeedState.recent_runs[0]?.completed_at ? new Date(sourceFeedState.recent_runs[0].completed_at).toLocaleString() : "No run yet"} tone="teal" />
-        </div>
-      </section>
-    </>
-  );
-}
-
-function Guide() {
-  const workflow = [
-    ["1", "Agent-led intake", "MCP agents, Mythos, SRA, scanners, and advisory feeds submit real findings through protected intake paths. Manual entry is the exception path."],
-    ["2", "Evidence binding", "PatchForge normalises the finding, binds source provenance, and keeps every agent output source-bound pending review."],
-    ["3", "Exposure mapping", "Assets and services are linked so leading-class findings are governed against operational reality, not severity alone."],
-    ["4", "Human review", "The operator accepts, rejects, or supersedes sources and approves the decision. Agent output never approves risk or closes hard gates alone."],
-    ["5", "Signed decision", "The runtime compiles readiness, blockers, and final posture into a signed pack for CAB, board, customer, audit, or service-owner review."]
-  ];
-
-  const intelligence = [
-    "MCP Agent Intelligence researches, correlates, challenges, and enriches findings before human review.",
-    "Mythos and other AGI-agent findings are accepted as leading-class intelligence inputs, not unreviewed truth.",
-    "Agents can raise attention, expose contradictions, map likely exposure, and draft decision context.",
-    "Final governance comes from reviewed evidence, deterministic policy, signed packs, and accountable human approval."
-  ];
-
-  const humanModel = [
-    ["Human input", "Review, approve, reject, assign owner, record risk rationale"],
-    ["Agent input", "Research, correlate, source-map, flag contradiction, propose posture"],
-    ["Runtime input", "Apply evidence model, calculate readiness, preserve blockers, sign pack"],
-    ["Boundary", "No exploit generation, no patch deployment, no autonomous risk acceptance"]
-  ];
-
-  return (
-    <>
-      <section className="wide-band">
-        <div className="section-title">
-          <h3>Operational Walkthrough</h3>
-          <span className="pill trust">Real data only</span>
-        </div>
-        <div className="guide-flow">
-          {workflow.map(([step, title, detail]) => (
-            <article className="guide-step" key={step}>
-              <strong>{step}</strong>
-              <div>
-                <h4>{title}</h4>
-                <p>{detail}</p>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <div className="split-grid">
-        <section className="data-band">
-          <h3>MCP Agent Intelligence</h3>
-          <div className="line-stack">
-            {intelligence.map((line) => <p key={line}>{line}</p>)}
-          </div>
-        </section>
-        <section className="data-band">
-          <h3>Minimal Human Input Model</h3>
-          <div className="guide-facts">
-            {humanModel.map(([label, value]) => (
-              <article className="guide-fact" key={label}>
-                <strong>{label}</strong>
-                <p>{value}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-      </div>
-    </>
-  );
-}
-
-function VulnerabilityQueue({
-  vulnerabilities,
-  form,
-  setForm,
-  onIngest,
-  canWrite
-}: {
-  vulnerabilities: VulnerabilityRecord[];
-  form: typeof emptyForm;
-  setForm: (next: typeof emptyForm) => void;
-  onIngest: (event: FormEvent<HTMLFormElement>) => void;
-  canWrite: boolean;
-}) {
-  const queuePage = usePagination(vulnerabilities, 8, "vulnerability-queue");
-  return (
-    <>
-      <div className="section-title">
-        <h3>Governed Vulnerability Queue</h3>
-        <span className="pill steel">{vulnerabilities.length} live records</span>
-      </div>
-
-      <div className="table-wrap">
-        <table className="data-table queue-table">
-          <thead>
-            <tr>
-              <th>Vulnerability</th>
-              <th>Severity</th>
-              <th>Signals</th>
-              <th>Services</th>
-              <th>Assets</th>
-              <th>Patch</th>
-              <th>Review</th>
-              <th>SLA</th>
-            </tr>
-          </thead>
-          <tbody>
-            {queuePage.items.map((item) => (
-              <tr key={item.vulnerability_id}>
-                <td>
-                  <strong>{item.vulnerability_id}</strong>
-                  <small>{item.title || item.canonical_id || item.vulnerability_id}</small>
-                </td>
-                <td><span className={`pill ${severityTone(item.severity)}`}>{humanize(item.severity || "unknown")}</span></td>
-                <td>{signalLabel(item)}</td>
-                <td>{(item.affected_service_ids || []).join(", ") || "Unmapped"}</td>
-                <td>{(item.affected_asset_ids || []).join(", ") || "Unmapped"}</td>
-                <td>{humanize(item.patch_status || "unknown")}</td>
-                <td>{humanize(item.review_state || "pending_review")}</td>
-                <td>{item.sla_due_at ? new Date(item.sla_due_at).toLocaleDateString() : "Not set"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {!vulnerabilities.length && <EmptyState title="Queue is empty" detail="Use the ingest form below or the protected API to submit real tenant records." />}
-      </div>
-      <PaginationControls {...queuePage} label="vulnerabilities" />
-
-      {canWrite ? <section className="wide-band">
-        <div className="section-title">
-          <h3>Manual Exception Ingest</h3>
-          <span className="pill amber">Agent/API intake preferred</span>
-        </div>
-        <form className="ingest-form" onSubmit={onIngest}>
-          <div className="field-grid">
-            <label>
-              Identifier
-              <input value={form.vulnerability_id} onChange={(event) => setForm({ ...form, vulnerability_id: event.target.value })} required />
-            </label>
-            <label>
-              Title
-              <input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} />
-            </label>
-            <label>
-              Severity
-              <select value={form.severity} onChange={(event) => setForm({ ...form, severity: event.target.value })}>
-                {["critical", "high", "medium", "low", "unknown"].map((severity) => <option key={severity} value={severity}>{humanize(severity)}</option>)}
-              </select>
-            </label>
-            <label>
-              Patch status
-              <select value={form.patch_status} onChange={(event) => setForm({ ...form, patch_status: event.target.value })}>
-                {["patch_available", "patch_feasible", "overdue", "no_patch_available", "mitigation_only", "unknown"].map((status) => <option key={status} value={status}>{humanize(status)}</option>)}
-              </select>
-            </label>
-            <label>
-              Source class
-              <select value={form.source_class} onChange={(event) => setForm({ ...form, source_class: event.target.value })}>
-                {["vendor_advisory", "cve_record", "scanner_output", "kev_record", "epss_signal", "mcp_agent_finding", "mythos_finding", "agi_agent_finding", "human_review"].map((source) => <option key={source} value={source}>{humanize(source)}</option>)}
-              </select>
-            </label>
-            <label>
-              Source name
-              <input value={form.source_name} onChange={(event) => setForm({ ...form, source_name: event.target.value })} />
-            </label>
-            <label>
-              Source URL
-              <input value={form.source_url} onChange={(event) => setForm({ ...form, source_url: event.target.value })} />
-            </label>
-            <label>
-              Affected services
-              <input value={form.affected_service_ids} onChange={(event) => setForm({ ...form, affected_service_ids: event.target.value })} />
-            </label>
-            <label>
-              Affected assets
-              <input value={form.affected_asset_ids} onChange={(event) => setForm({ ...form, affected_asset_ids: event.target.value })} />
-            </label>
-          </div>
-          <div className="checkbox-grid">
-            <label><input type="checkbox" checked={form.known_exploited} onChange={(event) => setForm({ ...form, known_exploited: event.target.checked })} /> Known exploited</label>
-            <label><input type="checkbox" checked={form.internet_exposed} onChange={(event) => setForm({ ...form, internet_exposed: event.target.checked })} /> Internet exposed</label>
-            <label><input type="checkbox" checked={form.ot_relevant} onChange={(event) => setForm({ ...form, ot_relevant: event.target.checked })} /> OT relevant</label>
-          </div>
-          <button type="submit" className="action-button">
-            <Upload size={16} aria-hidden /> Ingest Record
-          </button>
-        </form>
-      </section> : <EmptyState title="Read-only role" detail="Write actions are hidden unless your token includes a PatchForge triage, security lead, or admin role." />}
-    </>
-  );
-}
-
-function AssetExposure({ assets, services }: { assets: AssetRecord[]; services: ServiceRecord[] }) {
-  const assetPage = usePagination(assets, 8, "asset-exposure-assets");
-  const servicePage = usePagination(services, 8, "asset-exposure-services");
-  return (
-    <div className="split-grid">
-      <section className="data-band">
-        <h3>Assets</h3>
-        {assetPage.items.map((asset) => (
-          <StatusLine key={asset.asset_id} label={asset.asset_name || asset.asset_id} value={humanize(asset.exposure || "unknown")} tone="steel" />
-        ))}
-        {!assets.length && <EmptyState title="No asset records" detail="Asset scope appears after real inventory records are ingested." />}
-        <PaginationControls {...assetPage} label="assets" />
-      </section>
-      <section className="data-band">
-        <h3>Services</h3>
-        {servicePage.items.map((service) => (
-          <StatusLine key={service.service_id} label={service.service_name || service.service_id} value={service.customer_facing ? "Customer-facing" : humanize(service.service_tier || "unknown")} tone={service.customer_facing ? "amber" : "steel"} />
-        ))}
-        {!services.length && <EmptyState title="No service records" detail="Service exposure appears after real service catalogue records are ingested." />}
-        <PaginationControls {...servicePage} label="services" />
-      </section>
-    </div>
-  );
-}
-
-function DecisionWorkbench({
-  vulnerabilities,
-  selectedVulnerabilityId,
-  setSelectedVulnerabilityId,
-  selectedPosture,
-  setSelectedPosture,
-  onGenerate,
-  onBayesianAssess,
-  bayesian,
-  canWrite
-}: {
-  vulnerabilities: VulnerabilityRecord[];
-  selectedVulnerabilityId: string;
-  setSelectedVulnerabilityId: (value: string) => void;
-  selectedPosture: string;
-  setSelectedPosture: (value: string) => void;
-  onGenerate: () => void;
-  onBayesianAssess: () => void;
-  bayesian: BayesianAssessment | null;
-  canWrite: boolean;
-}) {
-  return (
-    <section className="wide-band">
-      <div className="section-title">
-        <h3>Decision Compile</h3>
-        <span className="pill trust">Runtime signed pack</span>
-      </div>
-      <div className="decision-controls">
-        <label>
-          Vulnerability
-          <select value={selectedVulnerabilityId} onChange={(event) => setSelectedVulnerabilityId(event.target.value)}>
-            <option value="">Select ingested record</option>
-            {vulnerabilities.map((item) => (
-              <option key={item.vulnerability_id} value={item.vulnerability_id}>{item.vulnerability_id}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Posture
-          <select value={selectedPosture} onChange={(event) => setSelectedPosture(event.target.value)}>
-            {postures.map((posture) => <option key={posture} value={posture}>{humanize(posture)}</option>)}
-          </select>
-        </label>
-        <button type="button" className="action-button" onClick={onBayesianAssess} disabled={!selectedVulnerabilityId || !canWrite}>
-          <Radar size={16} aria-hidden /> Run Bayesian Advisory
-        </button>
-        <button type="button" className="action-button" onClick={onGenerate} disabled={!selectedVulnerabilityId || !canWrite}>
-          <FileCheck2 size={16} aria-hidden /> Generate Signed Pack
-        </button>
-      </div>
-      <div className="split-grid">
-        <section className="data-band">
-          <h3>Bayesian Patch Risk</h3>
-          <StatusLine label="Exploit probability" value={bayesian ? String(bayesian.exploit_probability_posterior) : "Not assessed"} tone="amber" />
-          <StatusLine label="Patch feasibility" value={bayesian ? String(bayesian.patch_feasibility_posterior) : "Not assessed"} tone="teal" />
-          <StatusLine label="Recommended posture" value={bayesian ? humanize(bayesian.recommended_governance_posture) : "Awaiting assessment"} tone="trust" />
-        </section>
-        <section className="data-band">
-          <h3>Advisory Boundary</h3>
-          <StatusLine label="Can close hard gates" value="No" tone="amber" />
-          <StatusLine label="Can approve risk" value="No" tone="amber" />
-          <StatusLine label="Human approval" value="Required" tone="trust" />
-        </section>
-      </div>
-      {!vulnerabilities.length && <EmptyState title="No record available for compile" detail="Decision packs require a real ingested vulnerability record." />}
-      {!canWrite && <EmptyState title="Read-only role" detail="Decision compile actions require an assigned PatchForge write role." />}
-    </section>
-  );
-}
-
-function EmergencyPatch({ vulnerabilities }: { vulnerabilities: VulnerabilityRecord[] }) {
-  const emergency = vulnerabilities.filter((item) => item.known_exploited && item.internet_exposed);
-  return (
-    <PageBand
-      icon={ShieldAlert}
-      title="Emergency Patch"
-      lines={[
-        `${emergency.length} internet-exposed known-exploited records`,
-        "Governance gates remain active",
-        "Human approvals and rollback evidence required"
-      ]}
-    />
-  );
-}
-
-function RiskAcceptances({ decisionPacks }: { decisionPacks: DecisionPackRecord[] }) {
-  const riskPacks = decisionPacks.filter((pack) => pack.decision_posture === "risk_accept_temporarily");
-  return <PageBand icon={Clock3} title="Risk Acceptances" lines={[`${riskPacks.length} signed risk-acceptance packs`, "Owner, rationale, expiry and controls required", "Final approval remains explicit"]} />;
-}
-
-function CompensatingControls() {
-  return <PageBand icon={Wrench} title="Compensating Controls" lines={["Controls are evidence records", "Accepted controls require human review", "Controls do not mutate production systems"]} />;
-}
-
-function SraResearch({ onRun, result, canWrite }: { onRun: () => void; result: Record<string, unknown> | null; canWrite: boolean }) {
-  return (
-    <section className="wide-band">
-      <div className="section-title">
-        <h3>Agent Intelligence</h3>
-        <span className="pill teal">Advisory only</span>
-      </div>
-      <div className="split-grid">
-        <section className="data-band">
-          <h3>SRA / MCP Controls</h3>
-          <StatusLine label="Source state" value="Source-bound" tone="amber" />
-          <StatusLine label="Can close hard gates" value="No" tone="amber" />
-          <StatusLine label="Human review" value="Required" tone="trust" />
-          <button type="button" className="action-button" onClick={onRun} disabled={!canWrite}>
-            <Radar size={16} aria-hidden /> Run Exploit-Risk Advisory
-          </button>
-        </section>
-        <section className="data-band">
-          <h3>Latest Advisory</h3>
-          {result ? <pre className="json-preview">{JSON.stringify(result, null, 2)}</pre> : <p className="muted-copy">No SRA advisory has been run in this session.</p>}
-        </section>
-      </div>
-    </section>
-  );
-}
-
-function EvidenceCatalogue({ vulnerabilities }: { vulnerabilities: VulnerabilityRecord[] }) {
-  const sourceCount = vulnerabilities.reduce((total, item) => total + (item.source_record_ids?.length || item.sources?.length || 0), 0);
-  return <PageBand icon={BookOpenCheck} title="Evidence Catalogue" lines={[`${sourceCount} source-bound evidence references`, "Scanner, SRA, MCP, Mythos, and AGI-agent output require review", "Rejected sources cannot count as positive evidence"]} />;
-}
-
-function SourceFeeds({
-  sourceFeedState,
-  onRefresh,
-  canWrite
-}: {
-  sourceFeedState: SourceFeedState;
-  onRefresh: (feedId: string) => void;
-  canWrite: boolean;
-}) {
-  const feedPage = usePagination(sourceFeedState.feeds, 4, "source-feeds");
-  const runPage = usePagination(sourceFeedState.recent_runs, 8, "source-feed-runs");
-
-  return (
-    <>
-      <div className="section-title">
-        <h3>Public Source Intelligence</h3>
-        <span className="pill amber">Live feeds, source-bound</span>
-      </div>
-
-      <div className="split-grid">
-        {feedPage.items.map((feed) => (
-          <section className="data-band source-feed-panel" key={feed.feed_id}>
-            <div className="section-title compact-title">
-              <h3>{feed.feed_name}</h3>
-              <span className="pill steel">{feed.provider}</span>
-            </div>
-            <StatusLine label="Source class" value={humanize(feed.source_class)} tone="steel" />
-            <StatusLine label="Authentication" value={humanize(feed.authentication)} tone="teal" />
-            <StatusLine label="Review required" value={feed.review_required ? "Yes" : "No"} tone="amber" />
-            <StatusLine label="Can close gates" value={feed.can_close_hard_gates_alone ? "Yes" : "No"} tone="amber" />
-            <button type="button" className="action-button" onClick={() => onRefresh(feed.feed_id)} disabled={!canWrite}>
-              <RefreshCw size={16} aria-hidden /> Refresh {feed.provider}
-            </button>
-          </section>
-        ))}
-      </div>
-      <PaginationControls {...feedPage} label="feeds" />
-
-      <section className="wide-band">
-        <div className="section-title">
-          <h3>Recent Feed Runs</h3>
-          <span className="pill teal">{sourceFeedState.recent_runs.length} recorded</span>
-        </div>
-        <div className="table-wrap">
-          <table className="data-table feed-runs-table">
-            <thead>
-              <tr>
-                <th>Run</th>
-                <th>Feed</th>
-                <th>Status</th>
-                <th>Seen</th>
-                <th>Ingested</th>
-                <th>Enriched</th>
-                <th>Completed</th>
-              </tr>
-            </thead>
-            <tbody>
-              {runPage.items.map((run) => (
-                <tr key={run.run_id}>
-                  <td>
-                    <strong>{run.run_id}</strong>
-                    <small>{run.message || "Source-bound refresh"}</small>
-                  </td>
-                  <td>{run.feed_name}</td>
-                  <td><span className={`pill ${run.status === "completed" ? "trust" : "amber"}`}>{humanize(run.status)}</span></td>
-                  <td>{run.records_seen ?? 0}</td>
-                  <td>{run.records_ingested ?? 0}</td>
-                  <td>{run.records_enriched ?? 0}</td>
-                  <td>{run.completed_at ? new Date(run.completed_at).toLocaleString() : "Not recorded"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {!sourceFeedState.recent_runs.length && <EmptyState title="No live source feed runs" detail="Refresh CISA KEV or FIRST EPSS to pull real public intelligence into the governed queue." />}
-        </div>
-        <PaginationControls {...runPage} label="feed runs" />
-      </section>
-
-      {!canWrite && <EmptyState title="Read-only role" detail="Source refresh actions require a PatchForge triage, security lead, or admin role." />}
-    </>
-  );
-}
-
-function VendorThreatLandscape({ vendors, threatSummary }: { vendors: VendorProfile[]; threatSummary: ThreatLandscapeSummary | null }) {
-  const vendorPage = usePagination(vendors, 10, "vendor-threat-vendors");
-  return (
-    <>
-      <div className="section-title">
-        <h3>Vendor & Threat Landscape</h3>
-        <span className="pill amber">Source-bound pending review</span>
-      </div>
-      <div className="split-grid">
-        <section className="data-band">
-          <h3>Landscape Metrics</h3>
-          <StatusLine label="Tracked vendors" value={String(threatSummary?.vendor_count || vendors.length)} tone="steel" />
-          <StatusLine label="Active exploitation" value={String(threatSummary?.metrics?.active_exploitation_count || 0)} tone="danger" />
-          <StatusLine label="Critical advisories" value={String(threatSummary?.metrics?.critical_open_advisory_count || 0)} tone="amber" />
-          <StatusLine label="Patch maturity" value={humanize(threatSummary?.metrics?.patch_maturity || "unknown")} tone="teal" />
-        </section>
-        <section className="data-band">
-          <h3>Top Exposed Vendors</h3>
-          {(threatSummary?.top_exposed_vendors || []).map((vendor) => (
-            <StatusLine key={vendor.vendor_id} label={humanize(vendor.vendor_id)} value={`${vendor.active_exploitation_count} exploited`} tone="amber" />
-          ))}
-          {!threatSummary?.top_exposed_vendors?.length && <p className="muted-copy">No reviewed vendor exposure records are present yet.</p>}
-        </section>
-      </div>
-      <div className="table-wrap">
-        <table className="data-table compact-table">
-          <thead>
-            <tr>
-              <th>Vendor</th>
-              <th>Category</th>
-              <th>Review</th>
-            </tr>
-          </thead>
-          <tbody>
-            {vendorPage.items.map((vendor) => (
-              <tr key={vendor.vendor_id}>
-                <td>{vendor.vendor_name}</td>
-                <td>{humanize(vendor.category)}</td>
-                <td>{humanize(vendor.review_state || "pending_review")}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <PaginationControls {...vendorPage} label="vendors" />
-    </>
-  );
-}
-
-const vendorLensTabs = [
-  "Network Vendors",
-  "Product Families",
-  "Advisories & CVEs",
-  "Customer Operational Asset Match",
-  "Config Applicability",
-  "Patch Compare",
-  "Urgency & Recommended Posture",
-  "Ask PatchForge",
-  "Vendor Evidence Packs",
-  "Admin: Vendor Sources"
-];
-
-function VendorLens({
-  vendorLens,
-  assetForm,
-  setAssetForm,
-  advisoryForm,
-  setAdvisoryForm,
-  question,
-  setQuestion,
-  selectedAssetId,
-  setSelectedAssetId,
-  selectedAdvisoryId,
-  setSelectedAdvisoryId,
-  onSaveAsset,
-  onIngestAdvisory,
-  onAssess,
-  onAsk,
-  onRefreshSource,
-  onComparePatch,
-  canWrite
-}: {
-  vendorLens: VendorLensState;
-  assetForm: typeof emptyNetworkAssetForm;
-  setAssetForm: (value: typeof emptyNetworkAssetForm) => void;
-  advisoryForm: typeof emptyVendorAdvisoryForm;
-  setAdvisoryForm: (value: typeof emptyVendorAdvisoryForm) => void;
-  question: string;
-  setQuestion: (value: string) => void;
-  selectedAssetId: string;
-  setSelectedAssetId: (value: string) => void;
-  selectedAdvisoryId: string;
-  setSelectedAdvisoryId: (value: string) => void;
-  onSaveAsset: (event: FormEvent<HTMLFormElement>) => void;
-  onIngestAdvisory: (event: FormEvent<HTMLFormElement>) => void;
-  onAssess: (assetId?: string, advisoryId?: string) => void;
-  onAsk: (assetId?: string, advisoryId?: string) => void;
-  onRefreshSource: (vendorId?: string) => void;
-  onComparePatch: (assetId?: string, advisoryId?: string) => void;
-  canWrite: boolean;
-}) {
-  const [activeTab, setActiveTab] = useState(vendorLensTabs[0]);
-  const [selectedVendorId, setSelectedVendorId] = useState(vendorLens.vendors[0]?.vendor_id || "");
-  const asset = vendorLens.assets.find((item) => item.asset_id === selectedAssetId) || vendorLens.assets[0];
-  const advisory = vendorLens.advisories.find((item) => item.advisory_id === selectedAdvisoryId) || vendorLens.advisories[0];
-  const contextAssetId = asset?.asset_id || "";
-  const contextAdvisoryId = advisory?.advisory_id || "";
-  const assessment = [vendorLens.latestAssessment, ...(vendorLens.dashboard?.recent_assessments || [])]
-    .find((item) => recordMatchesContext(item, contextAssetId, contextAdvisoryId)) || null;
-  const chat = recordMatchesContext(vendorLens.latestChat, contextAssetId, contextAdvisoryId) ? vendorLens.latestChat : null;
-  const comparison = recordMatchesContext(vendorLens.latestComparison, contextAssetId, contextAdvisoryId) ? vendorLens.latestComparison : null;
-  const selectedVendor = vendorLens.vendors.find((vendor) => vendor.vendor_id === selectedVendorId) || vendorLens.vendors[0] || null;
-  const cards = [
-    { label: "Vendors tracked", value: vendorLens.dashboard?.vendors_tracked || vendorLens.vendors.length, tone: "steel", icon: Network },
-    { label: "Active advisories", value: vendorLens.dashboard?.active_advisories || vendorLens.advisories.length, tone: "amber", icon: ShieldAlert },
-    { label: "Known exploited CVEs", value: vendorLens.dashboard?.known_exploited_vendor_cves || 0, tone: "danger", icon: TriangleAlert },
-    { label: "Estate matches", value: vendorLens.dashboard?.customer_estate_matches || 0, tone: "teal", icon: Layers3 },
-    { label: "Config unknown", value: vendorLens.dashboard?.config_unknown_count || 0, tone: "amber", icon: ListFilter },
-    { label: "Emergency attention", value: vendorLens.dashboard?.emergency_attention_required || 0, tone: "danger", icon: Clock3 }
-  ];
-  const vendorPage = usePagination(vendorLens.vendors, 8, "vendorlens-vendors");
-  const productVendorPage = usePagination(vendorLens.vendors, 6, "vendorlens-products");
-  const advisoryPage = usePagination(vendorLens.advisories, 8, "vendorlens-advisories");
-  const assetPage = usePagination(vendorLens.assets, 8, "vendorlens-assets");
-  const gapPage = usePagination(assessment?.evidence_gaps || [], 6, "vendorlens-gaps");
-  const compareAssetPage = usePagination(vendorLens.assets, 6, "vendorlens-compare-assets");
-  const compareAdvisoryPage = usePagination(vendorLens.advisories, 10, "vendorlens-compare-advisories");
-  const nextActions: Array<{ number: string; title: string; detail: string; onClick?: () => void }> = [
-    { number: "1", title: "Confirm customer exposure", detail: "Attach reviewed asset, service, internet exposure, and management-plane evidence.", onClick: () => setActiveTab("Customer Operational Asset Match") },
-    { number: "2", title: "Attach vendor advisory evidence", detail: "Use source-bound vendor/CVE evidence with review state visible.", onClick: () => setActiveTab("Advisories & CVEs") },
-    { number: "3", title: "Attach configuration evidence", detail: "Record firmware, enabled/disabled feature state, and evidence references.", onClick: () => setActiveTab("Customer Operational Asset Match") },
-    { number: "4", title: "Run config applicability", detail: "Compare product, version, feature, and exposure to the advisory.", onClick: () => setActiveTab("Config Applicability") },
-    { number: "5", title: "Ask PatchForge", detail: "Get advisory-only explanation of what the evidence means.", onClick: () => setActiveTab("Ask PatchForge") },
-    { number: "6", title: "Generate signed pack", detail: "Move to Review & Approve and compile the source-bound signed pack." },
-    { number: "7", title: "Export customer/board/CAB report", detail: "Use Reports after the signed pack is generated." }
-  ];
-
-  useEffect(() => {
-    if (!selectedVendorId && vendorLens.vendors[0]?.vendor_id) {
-      setSelectedVendorId(vendorLens.vendors[0].vendor_id);
-    }
-  }, [selectedVendorId, vendorLens.vendors]);
-
-  useEffect(() => {
-    if (vendorLens.assets[0]?.asset_id && !vendorLens.assets.some((item) => item.asset_id === selectedAssetId)) {
-      setSelectedAssetId(vendorLens.assets[0].asset_id);
-    }
-  }, [selectedAssetId, vendorLens.assets]);
-
-  useEffect(() => {
-    if (vendorLens.advisories[0]?.advisory_id && !vendorLens.advisories.some((item) => item.advisory_id === selectedAdvisoryId)) {
-      setSelectedAdvisoryId(vendorLens.advisories[0].advisory_id);
-    }
-  }, [selectedAdvisoryId, vendorLens.advisories]);
-
-  return (
-    <>
-      <div className="section-title">
-        <h3>Vendor Catalogue</h3>
-        <span className="pill amber">Source-bound advisory intelligence</span>
-      </div>
-
-      <div className="context-banner vendorlens-context" aria-label="VendorLens context">
-        <strong>{advisory?.cve || advisory?.advisory_id || "CVE pending"}</strong>
-        <span><b>Vendor</b>{advisory?.vendor_name || asset?.vendor_id || "pending"}</span>
-        <span><b>Product</b>{asset?.product_family || advisory?.product_family || "pending"}</span>
-        <span><b>Model</b>{asset?.model || "pending"}</span>
-        <span><b>Firmware</b>{asset?.firmware_version || "pending"}</span>
-        <span><b>Feature</b>{assessment?.affected_feature || advisory?.affected_features?.[0] || "pending"}</span>
-        <span><b>Exposure</b>{assessment?.exposure_status ? humanize(assessment.exposure_status) : "unconfirmed"}</span>
-        <span><b>Review</b>{humanize(asset?.review_state || advisory?.review_state || "pending_review")}</span>
-        <span><b>Final approval</b>{assessment?.final_approval_issued ? "issued" : "not issued"}</span>
-      </div>
-
-      <div className="metric-grid">
-        {cards.map(({ label, value, tone, icon: Icon }) => (
-          <article className={`metric-card ${tone}`} key={label}>
-            <Icon size={20} aria-hidden />
-            <span>{label}</span>
-            <strong>{value}</strong>
-          </article>
-        ))}
-      </div>
-
-      <section className="wide-band action-hero">
-        <div>
-          <p className="eyebrow">Config-aware network vendor governance</p>
-          <h3>Ask what the advisory means for a real firewall, gateway, or edge platform.</h3>
-          <p className="muted-copy">
-            VendorLens links public vendor/CVE intelligence to customer product, model, firmware, feature, and exposure evidence. It can recommend scope confirmation, patch governance, mitigation, or monitoring, but final decisions always require reviewed evidence and human approval.
-          </p>
-        </div>
-        <div className="hero-actions">
-          <button type="button" className="action-button" onClick={() => onRefreshSource("all-vendors")} disabled={!canWrite}>
-            <RefreshCw size={16} aria-hidden /> Refresh All NVD Vendors
-          </button>
-          <button type="button" className="action-button secondary-action" onClick={() => onAssess(asset?.asset_id, advisory?.advisory_id)} disabled={!canWrite || !asset || !advisory}>
-            <Gauge size={16} aria-hidden /> Assess
-          </button>
-          <button type="button" className="action-button secondary-action" onClick={() => onAsk(asset?.asset_id, advisory?.advisory_id)} disabled={!canWrite || !asset || !advisory}>
-            <MessageSquareText size={16} aria-hidden /> Ask PatchForge
-          </button>
-          <button type="button" className="action-button secondary-action" onClick={() => onComparePatch(asset?.asset_id, advisory?.advisory_id)} disabled={!canWrite || !asset || !advisory}>
-            <Layers3 size={16} aria-hidden /> Compare Patch
-          </button>
-        </div>
-      </section>
-
-      <section className="wide-band next-actions">
-        <div className="section-title compact-title">
-          <h3>Next Actions</h3>
-          <span className="pill steel">human approval remains required</span>
-        </div>
-        <div className="next-action-grid vendorlens-next-grid">
-          {nextActions.map(({ number, title, detail, onClick }) => (
-            <button key={title} type="button" className="next-action-card clickable-card" onClick={onClick} disabled={!onClick}>
-              <strong>{number}</strong>
-              <span>
-                <h4>{title}</h4>
-                <p>{detail}</p>
-              </span>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <div className="vendorlens-tabs" role="tablist" aria-label="VendorLens tabs">
-        {vendorLensTabs.map((tab) => (
-          <button key={tab} type="button" className={activeTab === tab ? "vendorlens-tab active" : "vendorlens-tab"} onClick={() => setActiveTab(tab)}>
-            {tab}
-          </button>
-        ))}
-      </div>
-
-      {activeTab === "Network Vendors" && (
-        <div className="split-grid">
-          <section className="data-band">
-            <div className="section-title compact-title">
-              <h3>Reference Catalogue</h3>
-              <span className="pill steel">{vendorLens.vendors.length} vendors</span>
-            </div>
-            <div className="reference-list">
-              {vendorPage.items.map((vendor) => (
-                <button key={vendor.vendor_id} type="button" className={selectedVendor?.vendor_id === vendor.vendor_id ? "reference-row active" : "reference-row"} onClick={() => setSelectedVendorId(vendor.vendor_id)}>
-                  <strong>{vendor.vendor_name}</strong>
-                  <span>{humanize(vendor.vendor_category)}</span>
-                  <small>{(vendor.product_families || []).slice(0, 3).join(", ") || "Families pending"}</small>
-                </button>
-              ))}
-            </div>
-            <PaginationControls {...vendorPage} label="vendors" />
-            {!vendorLens.vendors.length && <EmptyState title="Vendor catalogue unavailable" detail="VendorLens vendor catalogue loads from the protected PatchForge API." />}
-          </section>
-          <section className="data-band reference-detail">
-            <h3>{selectedVendor?.vendor_name || "Reference detail"}</h3>
-            <StatusLine label="Source type" value={humanize(selectedVendor?.advisory_source_type || "public_vendor_advisory")} tone="teal" />
-            <StatusLine label="Review state" value={humanize(selectedVendor?.source_review_state || "reference_catalogue")} tone="amber" />
-            <StatusLine label="Last refresh" value={selectedVendor?.last_refresh_at ? new Date(selectedVendor.last_refresh_at).toLocaleString() : "Not refreshed"} tone="steel" />
-            <p className="muted-copy url-copy">{selectedVendor?.advisory_source_url || "Source URL is configured in Admin."}</p>
-            <div className="report-actions">
-              {selectedVendor?.advisory_source_url && <a className="action-button" href={selectedVendor.advisory_source_url} target="_blank" rel="noreferrer">Open Source</a>}
-              <button type="button" className="action-button secondary-action" onClick={() => onRefreshSource(selectedVendor?.vendor_id)} disabled={!canWrite}>
-                <RefreshCw size={16} aria-hidden /> Refresh NVD Catalogue
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
-
-      {activeTab === "Product Families" && (
-        <div className="report-grid">
-          {productVendorPage.items.map((vendor) => (
-            <section className="data-band report-card" key={vendor.vendor_id}>
-              <div className="section-title compact-title">
-                <h3>{vendor.vendor_name}</h3>
-                <span className="pill steel">{humanize(vendor.vendor_category)}</span>
-              </div>
-              {(vendor.product_families || []).map((family) => <StatusLine key={family} label={family} value="Tracked" tone="teal" />)}
-            </section>
-          ))}
-          <PaginationControls {...productVendorPage} label="vendor family cards" />
-        </div>
-      )}
-
-      {activeTab === "Advisories & CVEs" && (
-        <div className="split-grid">
-          <section className="data-band">
-            <h3>Ingest Vendor Advisory</h3>
-            <form className="ingest-form" onSubmit={onIngestAdvisory}>
-              <div className="field-grid">
-                <label>Vendor<input value={advisoryForm.vendor_id} onChange={(event) => setAdvisoryForm({ ...advisoryForm, vendor_id: event.target.value })} /></label>
-                <label>CVE<input value={advisoryForm.cve} onChange={(event) => setAdvisoryForm({ ...advisoryForm, cve: event.target.value })} placeholder="CVE-2026-..." /></label>
-                <label>Severity<select value={advisoryForm.severity} onChange={(event) => setAdvisoryForm({ ...advisoryForm, severity: event.target.value })}><option>critical</option><option>high</option><option>medium</option><option>low</option></select></label>
-                <label>Product<input value={advisoryForm.product_family} onChange={(event) => setAdvisoryForm({ ...advisoryForm, product_family: event.target.value })} /></label>
-                <label>Affected versions<input value={advisoryForm.affected_versions} onChange={(event) => setAdvisoryForm({ ...advisoryForm, affected_versions: event.target.value })} /></label>
-                <label>Fixed versions<input value={advisoryForm.fixed_versions} onChange={(event) => setAdvisoryForm({ ...advisoryForm, fixed_versions: event.target.value })} /></label>
-                <label>Affected features<input value={advisoryForm.affected_features} onChange={(event) => setAdvisoryForm({ ...advisoryForm, affected_features: event.target.value })} placeholder="ssl_vpn, web_management" /></label>
-                <label>Source URL<input value={advisoryForm.source_url} onChange={(event) => setAdvisoryForm({ ...advisoryForm, source_url: event.target.value })} /></label>
-              </div>
-              <label>Title<input value={advisoryForm.title} onChange={(event) => setAdvisoryForm({ ...advisoryForm, title: event.target.value })} /></label>
-              <div className="checkbox-grid">
-                <label><input type="checkbox" checked={advisoryForm.known_exploited} onChange={(event) => setAdvisoryForm({ ...advisoryForm, known_exploited: event.target.checked })} /> Known exploited signal</label>
-                <label><input type="checkbox" checked={advisoryForm.patch_available} onChange={(event) => setAdvisoryForm({ ...advisoryForm, patch_available: event.target.checked })} /> Patch available</label>
-              </div>
-              <button type="submit" className="action-button" disabled={!canWrite}>Ingest Advisory</button>
-            </form>
-          </section>
-          <section className="data-band">
-            <h3>Current Advisory Queue</h3>
-            {advisoryPage.items.map((item) => (
-              <StatusLine key={item.advisory_id} label={item.cve || item.advisory_id} value={humanize(item.review_state || "pending_review")} tone={item.known_exploited ? "danger" : "amber"} detail={item.title || item.vendor_name} />
-            ))}
-            {!vendorLens.advisories.length && <p className="muted-copy">No vendor advisories are attached yet.</p>}
-            <PaginationControls {...advisoryPage} label="advisories" />
-          </section>
-        </div>
-      )}
-
-      {activeTab === "Customer Operational Asset Match" && (
-        <div className="split-grid">
-          <section className="data-band">
-            <h3>Customer Network Asset</h3>
-            <form className="ingest-form" onSubmit={onSaveAsset}>
-              <div className="field-grid">
-                <label>Vendor<input value={assetForm.vendor_id} onChange={(event) => setAssetForm({ ...assetForm, vendor_id: event.target.value })} /></label>
-                <label>Product<input value={assetForm.product_family} onChange={(event) => setAssetForm({ ...assetForm, product_family: event.target.value })} /></label>
-                <label>Model<input value={assetForm.model} onChange={(event) => setAssetForm({ ...assetForm, model: event.target.value })} /></label>
-                <label>Firmware<input value={assetForm.firmware_version} onChange={(event) => setAssetForm({ ...assetForm, firmware_version: event.target.value })} /></label>
-                <label>Site<input value={assetForm.site} onChange={(event) => setAssetForm({ ...assetForm, site: event.target.value })} /></label>
-                <label>Owner<input value={assetForm.service_owner} onChange={(event) => setAssetForm({ ...assetForm, service_owner: event.target.value })} /></label>
-                <label>Management exposure<select value={assetForm.management_exposure} onChange={(event) => setAssetForm({ ...assetForm, management_exposure: event.target.value })}><option>unknown</option><option>internet</option><option>public_management</option><option>internal</option><option>private</option></select></label>
-                <label>Review state<select value={assetForm.review_state} onChange={(event) => setAssetForm({ ...assetForm, review_state: event.target.value })}><option>pending_review</option><option>reviewed</option><option>rejected</option></select></label>
-              </div>
-              <label>Enabled features<input value={assetForm.enabled_features} onChange={(event) => setAssetForm({ ...assetForm, enabled_features: event.target.value })} placeholder="ipsec_vpn, snmp" /></label>
-              <label>Disabled features<input value={assetForm.disabled_features} onChange={(event) => setAssetForm({ ...assetForm, disabled_features: event.target.value })} placeholder="ssl_vpn, web_management" /></label>
-              <label>Configuration evidence refs<input value={assetForm.config_evidence_refs} onChange={(event) => setAssetForm({ ...assetForm, config_evidence_refs: event.target.value })} /></label>
-              <div className="checkbox-grid">
-                <label><input type="checkbox" checked={assetForm.internet_facing} onChange={(event) => setAssetForm({ ...assetForm, internet_facing: event.target.checked })} /> Internet facing</label>
-              </div>
-              <button type="submit" className="action-button" disabled={!canWrite}>Save Asset Evidence</button>
-            </form>
-          </section>
-          <section className="data-band">
-            <h3>Customer Operational Asset Records</h3>
-            {assetPage.items.map((item) => (
-              <StatusLine key={item.asset_id} label={`${item.vendor_id} ${item.model || item.product_family || ""}`} value={humanize(item.review_state || "pending_review")} tone={item.internet_facing ? "amber" : "steel"} detail={`${item.firmware_version || "version pending"} | ${item.management_exposure || "exposure pending"}`} />
-            ))}
-            {!vendorLens.assets.length && <p className="muted-copy">No customer network assets are attached yet.</p>}
-            <PaginationControls {...assetPage} label="assets" />
-          </section>
-        </div>
-      )}
-
-      {activeTab === "Config Applicability" && (
-        <div className="split-grid">
-          <section className="data-band">
-            <h3>Latest Applicability Assessment</h3>
-            <StatusLine label="Applicability" value={humanize(assessment?.applicability_posture || "not assessed")} tone="teal" />
-            <StatusLine label="Urgency" value={humanize(assessment?.urgency_posture || "not assessed")} tone={assessment?.urgency_posture === "emergency_patch_required" ? "danger" : "amber"} />
-            <StatusLine label="Version status" value={humanize(assessment?.affected_version_status || "not assessed")} tone="steel" />
-            <StatusLine label="Feature status" value={humanize(assessment?.feature_enabled_status || "not assessed")} tone="steel" />
-            <StatusLine label="Exposure status" value={humanize(assessment?.exposure_status || "not assessed")} tone="steel" />
-            <StatusLine label="Final approval" value={assessment?.final_approval_issued ? "Issued" : "Not issued"} tone="amber" />
-          </section>
-          <section className="data-band">
-            <h3>Evidence Gaps</h3>
-            {gapPage.items.map((gap) => (
-              <div className="guide-fact" key={gap.gap_id || gap.plain_english_gap}>
-                <strong>{gap.plain_english_gap || humanize(gap.gap_id || "Evidence gap")}</strong>
-                <p>{gap.required_evidence || "Reviewed evidence required."}</p>
-              </div>
-            ))}
-            {!assessment?.evidence_gaps?.length && <p className="muted-copy">Run an applicability assessment to populate evidence gaps.</p>}
-            <PaginationControls {...gapPage} label="evidence gaps" />
-          </section>
-        </div>
-      )}
-
-      {activeTab === "Patch Compare" && (
-        <div className="split-grid">
-          <section className="data-band">
-            <h3>Current vs Target Patch</h3>
-            <p className="muted-copy">Choose a reviewed customer device and a source-bound advisory. Large NVD catalogues stay paginated so the CISO comparison remains usable.</p>
-            <h4 className="subhead">Customer device</h4>
-            <div className="reference-list compact-reference-list">
-              {compareAssetPage.items.map((item) => (
-                <button key={item.asset_id} type="button" className={asset?.asset_id === item.asset_id ? "reference-row active" : "reference-row"} onClick={() => setSelectedAssetId(item.asset_id)}>
-                  <strong>{`${item.vendor_id} ${item.model || item.product_family || item.asset_id}`}</strong>
-                  <span>{item.firmware_version || "Version pending"}</span>
-                  <small>{item.management_exposure || "Exposure pending"}</small>
-                </button>
-              ))}
-            </div>
-            {!vendorLens.assets.length && <p className="muted-copy">No customer network asset evidence is attached yet.</p>}
-            <PaginationControls {...compareAssetPage} label="comparison assets" />
-            <h4 className="subhead">Advisory or CVE</h4>
-            <div className="reference-list compact-reference-list">
-              {compareAdvisoryPage.items.map((item) => (
-                <button key={item.advisory_id} type="button" className={advisory?.advisory_id === item.advisory_id ? "reference-row active" : "reference-row"} onClick={() => setSelectedAdvisoryId(item.advisory_id)}>
-                  <strong>{item.cve || item.advisory_id}</strong>
-                  <span>{item.vendor_name || item.vendor_id || "Vendor pending"}</span>
-                  <small>{item.title || "Source-bound advisory pending review"}</small>
-                </button>
-              ))}
-            </div>
-            {!vendorLens.advisories.length && <p className="muted-copy">No source-bound vendor advisory records are attached yet.</p>}
-            <PaginationControls {...compareAdvisoryPage} label="comparison advisories" />
-            <StatusLine label="Asset" value={asset?.asset_id || "No asset selected"} tone="steel" />
-            <StatusLine label="Advisory" value={advisory?.cve || advisory?.advisory_id || "No advisory selected"} tone="amber" />
-            <StatusLine label="Running version" value={comparison?.current_version || asset?.firmware_version || "Version pending"} tone="steel" />
-            <StatusLine label="Target fixed version" value={comparison?.target_version || advisory?.fixed_versions?.[0] || "Fixed version pending"} tone="teal" />
-            <StatusLine label="Current status" value={humanize(comparison?.current_version_status || "not compared")} tone="amber" />
-            <StatusLine label="Target status" value={humanize(comparison?.target_version_status || "not compared")} tone="teal" />
-            <button type="button" className="action-button" onClick={() => onComparePatch(asset?.asset_id, advisory?.advisory_id)} disabled={!canWrite || !asset || !advisory}>
-              <Layers3 size={16} aria-hidden /> Run Patch Compare
-            </button>
-          </section>
-          <section className="data-band">
-            <h3>CISO Review Summary</h3>
-            <p className="muted-copy">{comparison?.ciso_summary || "Run patch compare to prepare a CISO-ready summary from source-bound advisory and customer asset evidence."}</p>
-            <p className="boundary-copy">Export the CISO Patch Version Comparison Report from Reports after generating a signed pack with this comparison attached.</p>
-            {(comparison?.evidence_required || []).slice(0, 6).map((item) => <p className="rail-note" key={item}><FileCheck2 size={15} aria-hidden /> {item}</p>)}
-          </section>
-        </div>
-      )}
-
-      {activeTab === "Urgency & Recommended Posture" && (
-        <section className="wide-band review-runway">
-          <div>
-            <p className="eyebrow">Recommended posture remains advisory</p>
-            <h3>{humanize(assessment?.urgency_posture || "Urgent scope confirmation required")}</h3>
-            <p className="muted-copy">{assessment?.decision_not_allowed_yet || "PatchForge cannot approve patching, risk acceptance, closure, or not-applicable status without reviewed evidence and named human approval."}</p>
-          </div>
-          <div className="finding-score">
-            <strong>{humanize(assessment?.applicability_posture || "requires_review")}</strong>
-            <small>Applicability posture</small>
-          </div>
-        </section>
-      )}
-
-      {activeTab === "Ask PatchForge" && (
-        <section className="wide-band">
-          <div className="section-title">
-            <h3>Ask PatchForge</h3>
-            <span className="pill teal">SRA/AIP advisory only</span>
-          </div>
-          <div className="chat-layout">
-            <label>
-              Question
-              <textarea value={question} onChange={(event) => setQuestion(event.target.value)} rows={4} />
-            </label>
-            <button type="button" className="action-button" onClick={() => onAsk(asset?.asset_id, advisory?.advisory_id)} disabled={!canWrite || !asset || !advisory}>
-              <MessageSquareText size={16} aria-hidden /> Ask PatchForge
-            </button>
-          </div>
-          <div className="data-band">
-            <h3>Latest Answer</h3>
-            <p className="muted-copy">{chat?.latest_response?.short_answer || "No VendorLens chat response yet."}</p>
-            <StatusLine label="Governed posture" value={humanize(chat?.latest_response?.current_governed_posture || "not assessed")} tone="amber" />
-            <StatusLine label="Human review" value={chat?.latest_response?.human_review_required === false ? "Not recorded" : "Required"} tone="trust" />
-            <StatusLine label="Final approval" value={chat?.latest_response?.final_approval_issued ? "Issued" : "False"} tone="amber" />
-          </div>
-        </section>
-      )}
-
-      {activeTab === "Vendor Evidence Packs" && (
-        <section className="wide-band">
-          <h3>Vendor Evidence Pack Inputs</h3>
-          <p className="muted-copy">Signed packs can now include network vendor profile, customer network asset, vendor advisory, config applicability, patch comparison, VendorLens decision context, and SRA/AIP chat artefacts.</p>
-          <div className="decision-option-grid">
-            {["network_vendor_profile_snapshot.json", "customer_network_asset_snapshot.json", "vendor_security_advisory_snapshot.json", "config_applicability_assessment.json", "vendorlens_patch_comparison.json", "sra_config_chat_session.json", "vendorlens_decision_context.json"].map((artefact) => (
-              <div className="decision-option" key={artefact}>
-                <h4>{artefact}</h4>
-                <p>Preserved in signed pack when VendorLens context is attached to pack generation.</p>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {activeTab === "Admin: Vendor Sources" && (
-        <section className="wide-band">
-          <h3>VendorLens Sources</h3>
-          <p className="muted-copy">NVD CVE 2.0 metadata enrichment, Cisco PSIRT with credentials reference, and configured vendor RSS/JSON sources are source-bound. Credentials are referenced only and secret values are never displayed.</p>
-          <div className="decision-option-grid">
-            <div className="decision-option"><h4>NVD CVE API</h4><p>On-demand CVE metadata enrichment. Public source-bound records start pending review.</p></div>
-            <div className="decision-option"><h4>Cisco PSIRT</h4><p>Credential-reference gated. Refresh records run ledger entries when credentials or source URLs are missing.</p></div>
-            <div className="decision-option"><h4>Generic Vendor RSS/JSON</h4><p>Admin-configured source URLs for Fortinet, Palo Alto, Juniper, F5, Citrix/NetScaler, Check Point, SonicWall, and other vendors.</p></div>
-          </div>
-        </section>
-      )}
-
-      {!canWrite && <EmptyState title="Read-only role" detail="VendorLens asset, advisory, refresh, assessment, and chat actions require a PatchForge write role." />}
-    </>
-  );
-}
-
-function DecisionPacks({
-  decisionPacks,
-  reports,
-  onExportPack,
-  onDownloadReport
-}: {
-  decisionPacks: DecisionPackRecord[];
-  reports: ReportCatalogItem[];
-  onExportPack: (packId: string) => void;
-  onDownloadReport: (packId: string, reportType: string, format: "docx" | "pdf") => void;
-}) {
-  const defaultReport = reports.find((report) => report.report_type === "board_vulnerability_remediation_summary") || reports[0];
-  const sortedPacks = newestDecisionPacks(decisionPacks);
-  const packPage = usePagination(sortedPacks, 8, "decision-packs");
-  return (
-    <>
-      <div className="section-title">
-        <h3>Decision Packs</h3>
-        <span className="pill trust">{sortedPacks.filter((pack) => pack.verification?.verified).length} verified</span>
-      </div>
-      <div className="table-wrap">
-        <table className="data-table decision-packs-table">
-          <thead>
-            <tr>
-              <th>Pack ID</th>
-              <th>Vulnerability</th>
-              <th>Posture</th>
-              <th>Readiness</th>
-              <th>Verified</th>
-              <th>Created</th>
-              <th>Exports</th>
-            </tr>
-          </thead>
-          <tbody>
-            {packPage.items.map((pack) => (
-              <tr key={pack.pack_id}>
-                <td>{pack.pack_id}</td>
-                <td>{pack.vulnerability_id}</td>
-                <td>{humanize(pack.decision_posture || "unknown")}</td>
-                <td>{humanize(pack.readiness?.readiness_state || "pending")}</td>
-                <td>{pack.verification?.verified ? "Yes" : "Pending"}</td>
-                <td>{pack.created_at ? new Date(pack.created_at).toLocaleString() : "Not recorded"}</td>
-                <td>
-                  <div className="export-actions">
-                    <button type="button" className="icon-button" title="Export signed JSON pack" aria-label={`Export ${pack.pack_id}`} onClick={() => onExportPack(pack.pack_id)}>
-                      <FileCheck2 size={16} aria-hidden />
-                    </button>
-                    <button type="button" className="icon-button" title={pack.verification?.verified ? "Download verified board DOCX" : "Verification required before report download"} aria-label={`Download DOCX ${pack.pack_id}`} onClick={() => defaultReport && onDownloadReport(pack.pack_id, defaultReport.report_type, "docx")} disabled={!defaultReport || !pack.verification?.verified}>
-                      <FileText size={16} aria-hidden />
-                    </button>
-                    <button type="button" className="icon-button" title={pack.verification?.verified ? "Download verified board PDF" : "Verification required before report download"} aria-label={`Download PDF ${pack.pack_id}`} onClick={() => defaultReport && onDownloadReport(pack.pack_id, defaultReport.report_type, "pdf")} disabled={!defaultReport || !pack.verification?.verified}>
-                      <Download size={16} aria-hidden />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {!decisionPacks.length && <EmptyState title="No decision packs" detail="Signed packs appear after the workbench compiles a real tenant record." />}
-      </div>
-      <PaginationControls {...packPage} label="decision packs" />
-    </>
-  );
-}
-
-function Reports({
-  decisionPacks,
-  reports,
-  onDownloadReport
-}: {
-  decisionPacks: DecisionPackRecord[];
-  reports: ReportCatalogItem[];
-  onDownloadReport: (packId: string, reportType: string, format: "docx" | "pdf") => void;
-}) {
-  const sortedPacks = newestDecisionPacks(decisionPacks);
-  const verifiedPacks = sortedPacks.filter((pack) => pack.verification?.verified);
-  // Reports must never present or download an unverified pack as a signed output.
-  // A dedicated pack selector remains required for deliberate historical selection.
-  const latestPack = verifiedPacks[0] || null;
-  const latestPackHasVendorLens = Boolean(latestPack?.artefacts && (
-    latestPack.artefacts["config_applicability_assessment.json"]
-    || latestPack.artefacts["customer_network_asset_snapshot.json"]
-    || latestPack.artefacts["vendor_security_advisory_snapshot.json"]
-    || latestPack.artefacts["sra_config_chat_session.json"]
-  ));
-  const latestBaseline = latestPack?.product_baseline || "Not recorded by runtime";
-  const latestReportVersion = latestPack?.report_template_version || "Recorded when the pack is generated";
-  const latestContextVersion = latestPack?.report_context_version || "Recorded when the pack is generated";
-  const reportPage = usePagination(reports, 6, "reports-catalog");
-  return (
-    <>
-      <div className="section-title">
-        <h3>Decision Reports</h3>
-        <span className="pill trust">DOCX / PDF only</span>
-      </div>
-      <section className="wide-band report-brief">
-        <div>
-          <p className="eyebrow">Signed governance outputs</p>
-          <h3>Four practical reports for customer, board, CAB, and audit review</h3>
-          <p className="muted-copy">
-            Reports are generated from the signed decision-pack record, preserving the source-pack/current-state distinction, evidence readiness, advisory status, and no-autonomous-action boundary.
-          </p>
-        </div>
-        <div className="report-pack-selector">
-          <span className="pill steel">{verifiedPacks.length} verified packs</span>
-          <span className="pill teal">{reports.length} active reports</span>
-        </div>
-      </section>
-
-      <section className="data-band report-version-panel">
-        <div className="section-title compact-title">
-          <h3>Current Report Context</h3>
-          <span className="pill teal">{latestBaseline}</span>
-        </div>
-        <div className="decision-option-grid compact-status-grid">
-          <StatusLine label="Pack ID" value={latestPack?.pack_id || "No verified pack available"} tone={latestPack ? "trust" : "amber"} />
-          <StatusLine label="Report version" value={latestReportVersion} tone="steel" />
-          <StatusLine label="Context version" value={latestContextVersion} tone="steel" />
-          <StatusLine label="Final approval" value={latestPack?.final_approval_issued ? "Issued" : "False"} tone="amber" />
-          <StatusLine label="VendorLens context" value={latestPackHasVendorLens ? "Included in pack" : "Not attached to selected pack"} tone={latestPackHasVendorLens ? "teal" : "amber"} />
-          <StatusLine label="Verification" value={latestPack?.verification?.verified ? "Verified" : "Required before report download"} tone={latestPack ? "trust" : "amber"} />
-        </div>
-        {!latestPackHasVendorLens && latestPack && <p className="boundary-copy">Selected pack can still export reports, but VendorLens sections will clearly state that network vendor applicability evidence was not attached.</p>}
-      </section>
-
-      <div className="report-grid">
-        {reportPage.items.map((report) => (
-          <section className="data-band report-card" key={report.report_type}>
-            <div className="section-title compact-title">
-              <h3>{report.title}</h3>
-              <span className="pill steel">{report.audience}</span>
-            </div>
-            <StatusLine label="Source" value={latestPack ? "Verified signed decision pack" : "No verified pack selected"} tone={latestPack ? "trust" : "amber"} />
-            <StatusLine label="Formats" value="DOCX and PDF" tone="teal" />
-            <StatusLine label="Boundary" value="No deployment or approval" tone="amber" />
-            <div className="report-actions">
-              <button type="button" className="action-button" disabled={!latestPack} onClick={() => latestPack && onDownloadReport(latestPack.pack_id, report.report_type, "docx")}>
-                <FileText size={16} aria-hidden /> DOCX
-              </button>
-              <button type="button" className="action-button secondary-action" disabled={!latestPack} onClick={() => latestPack && onDownloadReport(latestPack.pack_id, report.report_type, "pdf")}>
-                <Download size={16} aria-hidden /> PDF
-              </button>
-            </div>
-          </section>
-        ))}
-      </div>
-      <PaginationControls {...reportPage} label="reports" />
-      {!reports.length && <EmptyState title="No report catalogue" detail="Active report outputs load from the protected PatchForge API." />}
-      {!decisionPacks.length && <EmptyState title="No signed pack available" detail="Generate a signed decision pack before producing board packs or customer reports." />}
-      {decisionPacks.length > 0 && !verifiedPacks.length && <EmptyState title="No verified pack available" detail="Report downloads remain blocked until a decision pack passes signature verification." />}
-    </>
-  );
-}
-
-function Admin({
-  tenantId,
-  setTenantId,
-  adminEnvironment,
-  setAdminEnvironment,
-  adminTier,
-  setAdminTier,
-  adminHealth,
-  agentStatus,
-  onSave,
-  purgeScopes,
-  setPurgeScopes,
-  purgeConfirm,
-  setPurgeConfirm,
-  latestPurgePlan,
-  onPreviewPurge,
-  onExecutePurge
-}: {
-  tenantId: string;
-  setTenantId: (tenantId: string) => void;
-  adminEnvironment: string;
-  setAdminEnvironment: (value: string) => void;
-  adminTier: string;
-  setAdminTier: (value: string) => void;
-  adminHealth: AdminHealth | null;
-  agentStatus: OpenAiAgentStatus | null;
-  onSave: () => void;
-  purgeScopes: Record<string, boolean>;
-  setPurgeScopes: (value: Record<string, boolean>) => void;
-  purgeConfirm: string;
-  setPurgeConfirm: (value: string) => void;
-  latestPurgePlan: AdminPurgePlan | null;
-  onPreviewPurge: () => void;
-  onExecutePurge: () => void;
-}) {
-  const healthPage = usePagination(adminHealth?.checks || [], 8, "admin-health");
-  const sectionPage = usePagination(adminSections, 12, "admin-sections");
-  const selectedPurgeScopeCount = Object.values(purgeScopes).filter(Boolean).length;
-  const agentReady = Boolean(agentStatus?.enabled && agentStatus.configured);
-  const agentLabel = agentStatus?.enabled ? (agentStatus.configured ? "Ready" : "Unavailable") : "Runtime disabled";
-  const agentTone = agentReady ? "teal" : agentStatus?.enabled ? "amber" : "steel";
-
-  return (
-    <>
-      <div className="section-title">
-        <h3>System & Data Health</h3>
-        <span className="pill trust">Production guarded</span>
-      </div>
-
-      <section className="wide-band">
-        <div>
-          <p className="eyebrow">Defensive-use boundary</p>
-          <h3>Governed intelligence and human-reviewable action packs</h3>
-          <p className="muted-copy">PatchForge sits above scanners, EDR, SIEM, SOAR, ITSM, CMDB, patch-management, cloud-management, and monitoring systems. It explains risk, maps exposure, compares patch or hotfix choices, and produces signed evidence packs without exploit mechanics, production mutation, or autonomous approval.</p>
-        </div>
-      </section>
-
-      <div className="admin-layout">
-        <section className="config-panel" aria-label="Admin configuration">
-          <h4>Tenant Configuration</h4>
-          <label>
-            Tenant
-            <input value={tenantId} onChange={(event) => setTenantId(event.target.value)} aria-label="Tenant name" />
-          </label>
-          <label>
-            Environment
-            <input value={adminEnvironment} onChange={(event) => setAdminEnvironment(event.target.value)} aria-label="Environment" />
-          </label>
-          <label>
-            Governance tier
-            <input value={adminTier} onChange={(event) => setAdminTier(event.target.value)} aria-label="Governance tier" />
-          </label>
-          <div className="toggle-row">
-            <span>SRA advisory only</span>
-            <strong className="pill teal">Locked</strong>
-          </div>
-          <div className="toggle-row">
-            <span>Live Azure mutation</span>
-            <strong className="pill amber">Blocked</strong>
-          </div>
-          <StatusLine label="Ask PatchForge deterministic" value="Active" tone="trust" />
-          <StatusLine label="AI assistance" value={agentLabel} tone={agentTone} detail={agentStatus?.model || "Runtime status unavailable"} />
-          <StatusLine label="AI verifier" value="Required" tone="amber" />
-          <button type="button" className="action-button" onClick={onSave}>
-            <CheckCircle2 size={16} aria-hidden /> Save Admin Configuration
-          </button>
-        </section>
-
-        <section className="config-panel" aria-label="Admin health dashboard">
-          <h4>Health Checks</h4>
-          <div className="health-list">
-            {healthPage.items.map((check) => (
-              <StatusLine key={check.name} label={check.name} value={humanize(check.status)} tone={healthTone(check.status)} detail={check.mode} />
-            ))}
-            {!adminHealth?.checks?.length && <p className="muted-copy">Health checks load from the protected bridge API.</p>}
-          </div>
-          <PaginationControls {...healthPage} label="health checks" />
-        </section>
-      </div>
-
-      <section className="wide-band">
-        <div>
-          <p className="eyebrow">Factory reset and purge</p>
-          <h3>Typed confirmation required before destructive data cleanup</h3>
-          <p className="muted-copy">Preview generated reports, catalogue, asset, upload, log, and cache cleanup before execution. Git history, restore tags, signing/verifier core, RBAC, Azure deployment scripts, tests, and release evidence are preserved.</p>
-        </div>
-        <div className="purge-panel">
-          <div className="toggle-grid">
-            {purgeScopeOptions.map((scope) => (
-              <label className="check-option" key={scope.key}>
-                <input
-                  type="checkbox"
-                  checked={Boolean(purgeScopes[scope.key])}
-                  onChange={(event) => setPurgeScopes({ ...purgeScopes, [scope.key]: event.target.checked })}
-                />
-                <span>{scope.label}</span>
-              </label>
-            ))}
-          </div>
-          <label className="stacked-input">
-            <span>Typed confirmation</span>
-            <input value={purgeConfirm} onChange={(event) => setPurgeConfirm(event.target.value)} placeholder="FACTORY_RESET_PATCHFORGE" />
-          </label>
-          <div className="report-actions">
-            <button type="button" className="action-button secondary-action" onClick={onPreviewPurge} disabled={!selectedPurgeScopeCount}>
-              <Search size={16} aria-hidden /> Preview Purge
-            </button>
-            <button type="button" className="action-button" onClick={onExecutePurge} disabled={!selectedPurgeScopeCount || purgeConfirm !== "FACTORY_RESET_PATCHFORGE"}>
-              <Archive size={16} aria-hidden /> Execute Confirmed Purge
-            </button>
-          </div>
-          {latestPurgePlan && (
-            <div className="insight-list">
-              <StatusLine label="Dry run" value={latestPurgePlan.dry_run ? "Yes" : "No"} tone={latestPurgePlan.dry_run ? "steel" : "amber"} />
-              <StatusLine label="Scopes" value={latestPurgePlan.scopes.join(", ") || "None selected"} tone="steel" />
-              <StatusLine label="Records in scope" value={String(latestPurgePlan.total_records)} tone={latestPurgePlan.total_records ? "amber" : "teal"} />
-              <StatusLine label="Confirmation" value={latestPurgePlan.required_confirmation} tone="trust" />
-            </div>
-          )}
-        </div>
-      </section>
-
-      <div className="admin-grid admin-section-grid">
-        {sectionPage.items.map((section) => (
-          <article className="admin-tile admin-status-tile" key={section.label}>
-            <KeyRound size={17} aria-hidden />
-            <div>
-              <strong>{section.label}</strong>
-              <span className={`pill ${section.tone}`}>{section.status}</span>
-              <p>{section.detail}</p>
-            </div>
-          </article>
-        ))}
-      </div>
-      <PaginationControls {...sectionPage} label="admin sections" />
-    </>
   );
 }
 
@@ -4509,55 +2454,6 @@ function pageNumbers(current: number, total: number): Array<number | "gap"> {
   const values = new Set([1, total, current - 1, current, current + 1]);
   const sorted = Array.from(values).filter((value) => value >= 1 && value <= total).sort((a, b) => a - b);
   return sorted.flatMap((value, index) => index > 0 && value - sorted[index - 1] > 1 ? ["gap" as const, value] : [value]);
-}
-
-function UtilityRail({
-  session,
-  metrics,
-  decisionPacks,
-  sourceFeedState,
-  adminHealth
-}: {
-  session: PatchForgeAuthSession;
-  metrics: PatchForgeMetrics;
-  decisionPacks: DecisionPackRecord[];
-  sourceFeedState: SourceFeedState;
-  adminHealth: AdminHealth | null;
-}) {
-  const signing = adminHealth?.checks?.find((check) => check.name === "Signing trust");
-  const signingStatus = signing?.status || "unknown";
-  return (
-    <>
-      <section className="rail-section">
-        <h3>Session</h3>
-        <p className="rail-note"><BadgeCheck size={15} aria-hidden /> {session.accountName || "Signed in"}</p>
-        <p className="rail-note"><LockKeyhole size={15} aria-hidden /> App roles enforced by API</p>
-        <p className="rail-note"><KeyRound size={15} aria-hidden /> {session.roles.length ? session.roles.join(", ") : "No PatchForge role in token"}</p>
-      </section>
-      <section className="rail-section">
-        <h3>Queue</h3>
-        <StatusLine label="Records" value={String(metrics.vulnerability_count)} tone="steel" />
-        <StatusLine label="Pending review" value={String(metrics.pending_review)} tone="amber" />
-      </section>
-      <section className="rail-section">
-        <h3>Source Feeds</h3>
-        <StatusLine label="Feeds" value={String(sourceFeedState.feeds.length)} tone="steel" />
-        <StatusLine label="Runs" value={String(sourceFeedState.recent_runs.length)} tone="teal" />
-      </section>
-      <section className="rail-section">
-        <h3>Signing Trust</h3>
-        <StatusLine label="Verifier" value={decisionPacks.some((pack) => pack.verification?.verified) ? "Verified pack present" : "No verified pack"} tone={decisionPacks.some((pack) => pack.verification?.verified) ? "trust" : "amber"} />
-        <StatusLine label="Trust" value={humanize(signingStatus)} tone={healthTone(signingStatus)} detail={signing?.mode || "Admin health status unavailable or restricted"} />
-      </section>
-      <section className="rail-section">
-        <h3>Recent Packs</h3>
-        {decisionPacks.slice(0, 3).map((pack) => (
-          <p className="rail-note" key={pack.pack_id}><CheckCircle2 size={15} aria-hidden /> {pack.pack_id}</p>
-        ))}
-        {!decisionPacks.length && <p className="muted-copy">No packs yet.</p>}
-      </section>
-    </>
-  );
 }
 
 function EmptyState({ title, detail }: { title: string; detail: string }) {
