@@ -11,7 +11,14 @@ COPY contracts ./contracts
 COPY pyproject.toml ./
 COPY requirements-runtime.txt ./
 
-RUN python -m pip install --no-cache-dir -r requirements-runtime.txt \
+# Patch base-image library CVEs (util-linux TOCTOU family: CVE-2026-53612..53615,
+# CVE-2026-14456) before pinning the non-root user. Base image digest stays pinned;
+# only the vulnerable distro packages are upgraded.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        bsdutils libblkid1 libmount1 libsmartcols1 libuuid1 mount util-linux \
+    && rm -rf /var/lib/apt/lists/* \
+    && python -m pip install --no-cache-dir -r requirements-runtime.txt \
     && groupadd --system --gid 10001 patchforge \
     && useradd --system --uid 10001 --gid patchforge --home-dir /nonexistent --shell /usr/sbin/nologin patchforge
 
