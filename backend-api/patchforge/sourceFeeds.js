@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { guardedFetchJson } from "./outboundFetch.js";
+import { parseSecurityBoolean } from "./securityBooleans.js";
 
 export const CISA_KEV_FEED_URL = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json";
 export const FIRST_EPSS_API_URL = "https://api.first.org/data/v1/epss";
@@ -96,8 +97,8 @@ async function refreshCisaKev({ storage, tenantId, feed, body, fetchImpl, outbou
       description: item.shortDescription || "",
       severity: severityFromKev(item),
       known_exploited: true,
-      internet_exposed: Boolean(body.internet_exposed),
-      ot_relevant: isOtVendor(vendorProject) || Boolean(body.ot_relevant),
+      internet_exposed: parseSecurityBoolean(body.internet_exposed),
+      ot_relevant: isOtVendor(vendorProject) || parseSecurityBoolean(body.ot_relevant),
       patch_status: "unknown",
       sla_due_at: item.dueDate || null,
       review_state: "pending_review",

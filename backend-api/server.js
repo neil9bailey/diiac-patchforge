@@ -9,6 +9,7 @@ import {
 } from "./patchforge/storage.js";
 import { createSourceFeedClient } from "./patchforge/sourceFeeds.js";
 import { listSourceAdapters, syncSourceAdapter } from "./patchforge/sourceAdapters.js";
+import { parseSecurityBoolean } from "./patchforge/securityBooleans.js";
 import { importAssetsFromCsv, parseConfigEvidence, redactConfigInput } from "./patchforge/configParsers.js";
 import {
   buildPriorityIndex,
@@ -666,7 +667,7 @@ export function createServer(options = {}) {
               firmware_version: body.firmware_version || null,
               software_packages: Array.isArray(body.software_packages) ? body.software_packages : [],
               cpe: body.cpe || null,
-              internet_exposed: Boolean(body.internet_exposed),
+              internet_exposed: parseSecurityBoolean(body.internet_exposed),
               criticality: body.criticality || "unknown",
               source: body.source || "manual",
               source_confidence: body.source_confidence ?? 0.75,
@@ -1758,9 +1759,9 @@ async function ingestAgentFinding(storage, tenantId, body) {
     description: body.description || body.finding_summary || "",
     severity: body.severity || "unknown",
     cvss_score: body.cvss_score ?? null,
-    known_exploited: Boolean(body.known_exploited),
-    internet_exposed: Boolean(body.internet_exposed),
-    ot_relevant: Boolean(body.ot_relevant),
+    known_exploited: parseSecurityBoolean(body.known_exploited),
+    internet_exposed: parseSecurityBoolean(body.internet_exposed),
+    ot_relevant: parseSecurityBoolean(body.ot_relevant),
     affected_service_ids: Array.isArray(body.affected_service_ids) ? body.affected_service_ids : [],
     affected_asset_ids: Array.isArray(body.affected_asset_ids) ? body.affected_asset_ids : [],
     patch_status: body.patch_status || "unknown",
@@ -2141,31 +2142,31 @@ function buildBayesianAssessment(body = {}) {
   ), 0, 1);
   const priors = defaultBayesianPriors();
   const exploitSignals = [
-    Boolean(vulnerability.known_exploited || body.known_exploited) ? 0.32 : 0,
-    Boolean(body.exploit_code_available) ? 0.12 : 0,
-    Boolean(body.active_exploitation_reports) ? 0.18 : 0,
-    Boolean(vulnerability.internet_exposed || body.internet_exposed) ? 0.12 : 0,
+    parseSecurityBoolean(vulnerability.known_exploited ?? body.known_exploited) ? 0.32 : 0,
+    parseSecurityBoolean(body.exploit_code_available) ? 0.12 : 0,
+    parseSecurityBoolean(body.active_exploitation_reports) ? 0.18 : 0,
+    parseSecurityBoolean(vulnerability.internet_exposed ?? body.internet_exposed) ? 0.12 : 0,
     epss * 0.2,
     cvss >= 9 ? 0.06 : cvss >= 7 ? 0.03 : 0
   ].reduce((sum, value) => sum + value, priors.exploit_probability_prior);
   const businessImpact = priors.business_impact_prior
-    + (Boolean(vulnerability.customer_facing || body.customer_facing) ? 0.2 : 0)
+    + (parseSecurityBoolean(vulnerability.customer_facing ?? body.customer_facing) ? 0.2 : 0)
     + (String(body.service_tier || vulnerability.service_tier || "").toLowerCase().includes("1") ? 0.16 : 0)
     + (String(body.asset_criticality || vulnerability.asset_criticality || "").toLowerCase().includes("critical") ? 0.16 : 0)
-    + (Boolean(vulnerability.ot_relevant || body.ot_relevant) ? 0.12 : 0);
+    + (parseSecurityBoolean(vulnerability.ot_relevant ?? body.ot_relevant) ? 0.12 : 0);
   const patchFeasibility = priors.patch_feasibility_prior
     + (["patch_available", "patch_feasible"].includes(String(vulnerability.patch_status || body.patch_status)) ? 0.22 : -0.18)
-    + (Boolean(body.test_evidence_complete) ? 0.1 : -0.05)
-    + (Boolean(body.rollback_evidence) ? 0.08 : -0.05)
-    + (Boolean(body.vendor_patch_note) ? 0.05 : 0);
+    + (parseSecurityBoolean(body.test_evidence_complete) ? 0.1 : -0.05)
+    + (parseSecurityBoolean(body.rollback_evidence) ? 0.08 : -0.05)
+    + (parseSecurityBoolean(body.vendor_patch_note) ? 0.05 : 0);
   const changeRisk = priors.change_risk_prior
-    + (Boolean(vulnerability.ot_relevant || body.ot_relevant) ? 0.2 : 0)
-    + (Boolean(body.rollback_evidence) ? -0.08 : 0.12)
-    + (Boolean(body.test_evidence_complete) ? -0.06 : 0.08);
+    + (parseSecurityBoolean(vulnerability.ot_relevant ?? body.ot_relevant) ? 0.2 : 0)
+    + (parseSecurityBoolean(body.rollback_evidence) ? -0.08 : 0.12)
+    + (parseSecurityBoolean(body.test_evidence_complete) ? -0.06 : 0.08);
   const deferralRisk = priors.deferral_risk_prior
     + exploitSignals * 0.35
     + businessImpact * 0.25
-    - (Boolean(body.compensating_controls) ? 0.08 : 0);
+    - (parseSecurityBoolean(body.compensating_controls) ? 0.08 : 0);
   const assessment = {
     assessment_id: `bayes-${Date.now()}`,
     generated_at: new Date().toISOString(),
@@ -2262,10 +2263,13 @@ async function ingestVendorAdvisory(storage, tenantId, vendorId, body) {
     severity: body.severity || "unknown",
     source_class: body.source_class || "vendor_advisory",
     source_url: body.source_url || null,
-    known_exploited: Boolean(body.known_exploited),
-    patch_available: Boolean(body.patch_available),
+    known_exploited: parseSecurityBoolean(body.known_exploited),
+    patch_available: parseSecurityBoolean(body.patch_available),
     superseded_by: body.superseded_by || null,
-    superseded: Boolean(body.superseded || body.superseded_by),
+    superseded: parseSecurityBoolean(
+      body.superseded ?? (body.superseded_by !== undefined && body.superseded_by !== null),
+      false
+    ),
     review_state: body.review_state || "pending_review",
     evidence_state: body.evidence_state || "referenced",
     source_state: "source_bound",

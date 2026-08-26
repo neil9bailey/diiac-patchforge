@@ -1,5 +1,6 @@
 import { assessConfigApplicability } from "./configApplicability.js";
 import { NETWORK_VENDOR_CATALOG } from "./vendorLens.js";
+import { parseSecurityBoolean } from "./securityBooleans.js";
 
 const SEVERITY_RANK = {
   critical: 5,
@@ -247,7 +248,12 @@ export function extractCustomerAssetDescription(description = "", overrides = {}
     ...detectMentionedFeatures(text).filter((feature) => !disabledFeatures.includes(feature))
   ]);
   const managementExposure = overrides.management_exposure || detectManagementExposure(lower);
-  const internetFacing = overrides.internet_facing ?? detectInternetFacing(lower, managementExposure);
+  // F5 fix: semantic parsing. An explicit override is honored only when it parses as
+  // affirmative; false-like/structured values stay false. Absent overrides fall back to
+  // text detection (which itself yields strict booleans).
+  const internetFacing = overrides.internet_facing === undefined || overrides.internet_facing === null
+    ? Boolean(detectInternetFacing(lower, managementExposure))
+    : parseSecurityBoolean(overrides.internet_facing, false);
 
   return {
     customer: overrides.customer || overrides.customer_name || null,
@@ -260,7 +266,7 @@ export function extractCustomerAssetDescription(description = "", overrides = {}
     enabled_features: enabledFeatures,
     disabled_features: disabledFeatures,
     management_exposure: managementExposure,
-    internet_facing: Boolean(internetFacing),
+    internet_facing: internetFacing,
     evidence_state: "user_stated_unreviewed",
     review_state: "pending_review",
     source_state: "source_bound",
@@ -316,7 +322,7 @@ export async function matchCustomerEstate({ storage, tenantId, body = {}, persis
 export function summarizePatchComparison(comparison = {}, body = {}) {
   const currentStatus = String(comparison.current_version_status || "").toLowerCase();
   const targetStatus = String(comparison.target_version_status || "").toLowerCase();
-  const evidenceReviewed = Boolean(body.reviewed_evidence || body.evidence_reviewed)
+  const evidenceReviewed = parseSecurityBoolean(body.reviewed_evidence ?? body.evidence_reviewed, false)
     || list(body.evidence_refs, body.reviewed_evidence_refs).length > 0
     || String(body.evidence_state || "").toLowerCase() === "accepted_positive_evidence";
   const currentVersionAffected = currentStatus.includes("potentially_affected") || currentStatus === "affected"

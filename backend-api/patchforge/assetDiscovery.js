@@ -374,7 +374,7 @@ function normalizeCollectorAsset({ tenantId, asset, index, collector, policy, ru
     environment: asset.environment || collector.environment || "production",
     site: asset.site || collector.site || null,
     service_owner: asset.service_owner || asset.owner || null,
-    internet_facing: Boolean(asset.internet_facing),
+    internet_facing: parseExposureBoolean(asset.internet_facing),
     management_exposure: asset.management_exposure || asset.exposure || "unknown",
     enabled_features: list(asset.enabled_features || asset.features),
     disabled_features: list(asset.disabled_features),
@@ -527,6 +527,30 @@ function lineageFromBody(body = {}) {
     source: body.source || "patchforge-discovery",
     correlation_id: body.correlation_id || null
   };
+}
+
+// Semantic exposure parsing for collector-supplied internet_facing values.
+// Fail-closed: absent/blank/malformed (arrays, objects, unknown strings) is FALSE —
+// only affirmative true-like values may mark an asset as internet-exposed.
+const EXPOSURE_TRUE_LIKE = new Set(["1", "true", "yes", "on"]);
+
+function parseExposureBoolean(value) {
+  if (typeof value === "boolean") {
+    return value;
+  }
+  if (value === undefined || value === null || value === "") {
+    return false;
+  }
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) return false;
+    return value === 1;
+  }
+  if (typeof value !== "string") {
+    return false;
+  }
+  const normalized = value.trim().toLowerCase();
+  if (EXPOSURE_TRUE_LIKE.has(normalized)) return true;
+  return false;
 }
 
 function inputError(code, message, statusCode = 400) {
