@@ -455,7 +455,7 @@ export function mapHttpJsonAsset(item = {}, adapter = {}, index = 0, config = {}
     environment: read("environment", "environment") || config.collector?.environment,
     site: read("site", "site", "location") || config.collector?.site,
     service_owner: read("service_owner", "owner", "service_owner"),
-    internet_facing: Boolean(read("internet_facing", "internet_facing", "public", "publiclyExposed")),
+    internet_facing: parseBoolean(read("internet_facing", "internet_facing", "public", "publiclyExposed"), false),
     management_exposure: read("management_exposure", "management_exposure", "exposure") || "unknown",
     enabled_features: list(read("enabled_features", "enabled_features", "features")),
     ip_addresses: list(read("ip_addresses", "ip_addresses", "ip", "ip_address", "management_ip")),

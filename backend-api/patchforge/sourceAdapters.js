@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import { parseSecurityBoolean, parseSecurityBooleanAny } from "./securityBooleans.js";
 
 const NOW_FALLBACK = "2026-06-01T00:00:00.000Z";
 
@@ -343,8 +344,14 @@ export function normalizeSourceRecord(adapterInfo, input = {}, fetchedAt = new D
     fetched_at: fetchedAt,
     freshness: freshness(lastModified, fetchedAt),
     confidence: confidenceFor(adapterInfo, input),
-    kev: Boolean(input.kev || input.known_exploited),
-    active_exploitation: Boolean(input.active_exploitation || input.known_exploited || input.kev),
+    // Semantically OR-combine aliases so an affirmative signal on any alias is
+    // never masked by a false-like value on another (Codex P1 review finding).
+    kev: parseSecurityBooleanAny(input.kev, input.known_exploited),
+    active_exploitation: parseSecurityBooleanAny(
+      input.active_exploitation,
+      input.known_exploited,
+      input.kev
+    ),
     ransomware_association: first(input.ransomware_association, input.knownRansomwareCampaignUse, "unknown"),
     epss_probability: numberOrNull(first(input.epss_probability, input.epss_score, input.epss)),
     epss_percentile: numberOrNull(first(input.epss_percentile, input.percentile)),
@@ -417,8 +424,14 @@ function list(...values) {
 function first(...values) {
   for (const value of values) {
     if (Array.isArray(value)) {
-      const nested = value.find((item) => item !== undefined && item !== null && item !== "");
-      if (nested !== undefined) return nested;
+      // F3 guard: an array is a structured value, not its first element. Only
+      // single-element arrays unwrap; multi-element or empty arrays are not a
+      // scalar and must reach the type-specific parsers as-is so they fail closed.
+      if (value.length === 1) {
+        const item = value[0];
+        if (item !== undefined && item !== null && item !== "") return item;
+      }
+      continue;
     } else if (value !== undefined && value !== null && value !== "") {
       return value;
     }
@@ -427,6 +440,14 @@ function first(...values) {
 }
 
 function numberOrNull(value) {
+  if (value === undefined || value === null || (typeof value === "string" && value.trim() === "")) {
+    return null;
+  }
+  // Fail-closed on non-numeric types: a boolean or structured value is not a score,
+  // and coercing it would invent risk evidence that no source ever stated.
+  if (typeof value === "boolean" || typeof value === "object") {
+    return null;
+  }
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric : null;
 }

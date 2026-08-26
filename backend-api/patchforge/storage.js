@@ -1,6 +1,7 @@
 ﻿import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { parseSecurityBoolean } from "./securityBooleans.js";
 
 const COLLECTIONS = [
   "vulnerabilities",
@@ -685,14 +686,14 @@ export class PatchForgeJsonStorage {
       cvss_score: payload.cvss_score ?? existingVulnerability?.cvss_score ?? null,
       epss_score: payload.epss_score ?? payload.epss ?? existingVulnerability?.epss_score ?? null,
       epss_percentile: payload.epss_percentile ?? existingVulnerability?.epss_percentile ?? null,
-      kev: Boolean(payload.kev ?? existingVulnerability?.kev ?? false),
-      known_exploited: Boolean(payload.known_exploited ?? existingVulnerability?.known_exploited ?? false),
-      internet_exposed: Boolean(payload.internet_exposed ?? existingVulnerability?.internet_exposed ?? false),
-      ot_relevant: Boolean(payload.ot_relevant ?? existingVulnerability?.ot_relevant ?? false),
+      kev: parseSecurityBoolean(payload.kev ?? existingVulnerability?.kev, false),
+      known_exploited: parseSecurityBoolean(payload.known_exploited ?? existingVulnerability?.known_exploited, false),
+      internet_exposed: parseSecurityBoolean(payload.internet_exposed ?? existingVulnerability?.internet_exposed, false),
+      ot_relevant: parseSecurityBoolean(payload.ot_relevant ?? existingVulnerability?.ot_relevant, false),
       affected_service_ids: payload.affected_service_ids ?? existingVulnerability?.affected_service_ids ?? [],
       affected_asset_ids: payload.affected_asset_ids ?? existingVulnerability?.affected_asset_ids ?? [],
       patch_status: payload.patch_status ?? existingVulnerability?.patch_status ?? "unknown",
-      patch_available: Boolean(payload.patch_available ?? existingVulnerability?.patch_available ?? false),
+      patch_available: parseSecurityBoolean(payload.patch_available ?? existingVulnerability?.patch_available, false),
       workaround_status: payload.workaround_status ?? existingVulnerability?.workaround_status ?? "unknown",
       source_feed: payload.source_feed ?? existingVulnerability?.source_feed ?? null,
       source_name: payload.source_name || sourceInputs[0]?.source_name || existingVulnerability?.source_name || null,
@@ -834,7 +835,7 @@ export class PatchForgeJsonStorage {
       service_id: payload.service_id || `service-${randomUUID()}`,
       service_name: payload.service_name || payload.service_id || "Unnamed service",
       service_tier: payload.service_tier || "unknown",
-      customer_facing: Boolean(payload.customer_facing),
+      customer_facing: parseSecurityBoolean(payload.customer_facing),
       owner: payload.owner || null,
       affected_asset_ids: payload.affected_asset_ids || [],
       vulnerability_ids: payload.vulnerability_ids || [],

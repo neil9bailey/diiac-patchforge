@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { assessConfigApplicability } from "./configApplicability.js";
 import { guardedFetchJson, guardedFetchText } from "./outboundFetch.js";
+import { parseSecurityBoolean, parseSecurityBooleanAny } from "./securityBooleans.js";
 
 export const NETWORK_VENDOR_CATALOG = [
   vendor("cisco", "Cisco", "infrastructure_networking", "https://developer.cisco.com/psirt/", ["ASA", "Firepower", "IOS XE", "IOS XR", "NX-OS", "Catalyst", "AnyConnect", "Secure Client"]),
@@ -79,9 +80,9 @@ export async function upsertCustomerNetworkAsset(storage, tenantId, body = {}) {
     environment: body.environment || "production",
     site: body.site || null,
     service_owner: body.service_owner || null,
-    internet_facing: Boolean(body.internet_facing),
+    internet_facing: parseSecurityBoolean(body.internet_facing, false),
     management_exposure: body.management_exposure || "unknown",
-    not_in_estate: Boolean(body.not_in_estate),
+    not_in_estate: parseSecurityBoolean(body.not_in_estate, false),
     enabled_features: list(body.enabled_features),
     disabled_features: list(body.disabled_features),
     config_evidence_refs: list(body.config_evidence_refs),
@@ -148,10 +149,18 @@ export async function ingestVendorSecurityAdvisory(storage, tenantId, body = {})
     fixed_versions: list(body.fixed_versions),
     affected_features: list(body.affected_features || body.affected_feature || body.feature),
     workaround_status: body.workaround_status || "unverified",
-    known_exploited: Boolean(body.known_exploited || body.kev),
+    // Semantically OR-combine so an affirmative on either alias survives a
+    // false-like value on the other (Codex P1 review finding).
+    known_exploited: parseSecurityBooleanAny(body.known_exploited, body.kev),
     epss_score: body.epss_score ?? null,
-    patch_available: Boolean(body.patch_available || list(body.fixed_versions).length),
-    superseded: Boolean(body.superseded || body.superseded_by),
+    patch_available: body.patch_available === undefined
+      ? list(body.fixed_versions).length > 0
+      : parseSecurityBoolean(body.patch_available, false),
+    // A populated replacement reference implies supersedence even though an
+    // advisory id is not itself a boolean string.
+    superseded: body.superseded !== undefined && body.superseded !== null
+      ? parseSecurityBoolean(body.superseded, false)
+      : Boolean(body.superseded_by),
     superseded_by: body.superseded_by || null,
     review_state: body.review_state || "pending_review",
     evidence_state: body.evidence_state || "referenced",

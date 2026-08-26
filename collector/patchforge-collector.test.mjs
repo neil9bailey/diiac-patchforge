@@ -54,6 +54,17 @@ test("collector maps CMDB or NMS JSON records into PatchForge asset snapshots", 
   assert.deepEqual(asset.enabled_features, ["ipsec_vpn", "ssl_vpn"]);
 });
 
+test("collector preserves false-like internet exposure values from JSON sources", () => {
+  for (const internetFacing of [false, 0, "false", "0", "no", "off"]) {
+    const asset = mapHttpJsonAsset({ internet_facing: internetFacing }, {}, 0, {
+      tenantId: "tenant-a",
+      collector: { collector_id: "collector-a" }
+    });
+
+    assert.equal(asset.internet_facing, false, `expected ${JSON.stringify(internetFacing)} to remain false`);
+  }
+});
+
 test("collector dry-run gathers local host evidence without pushing to API", async () => {
   const config = normalizeConfig({
     apiBaseUrl: "http://127.0.0.1:3000",
