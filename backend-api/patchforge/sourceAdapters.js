@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import { parseSecurityBoolean, parseSecurityBooleanAny } from "./securityBooleans.js";
 
 const NOW_FALLBACK = "2026-06-01T00:00:00.000Z";
 
@@ -343,10 +344,13 @@ export function normalizeSourceRecord(adapterInfo, input = {}, fetchedAt = new D
     fetched_at: fetchedAt,
     freshness: freshness(lastModified, fetchedAt),
     confidence: confidenceFor(adapterInfo, input),
-    kev: parseSecurityBoolean(first(input.kev, input.known_exploited), false),
-    active_exploitation: parseSecurityBoolean(
-      first(input.active_exploitation, input.known_exploited, input.kev),
-      false
+    // Semantically OR-combine aliases so an affirmative signal on any alias is
+    // never masked by a false-like value on another (Codex P1 review finding).
+    kev: parseSecurityBooleanAny(input.kev, input.known_exploited),
+    active_exploitation: parseSecurityBooleanAny(
+      input.active_exploitation,
+      input.known_exploited,
+      input.kev
     ),
     ransomware_association: first(input.ransomware_association, input.knownRansomwareCampaignUse, "unknown"),
     epss_probability: numberOrNull(first(input.epss_probability, input.epss_score, input.epss)),
@@ -446,35 +450,6 @@ function numberOrNull(value) {
   }
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric : null;
-}
-
-// Semantic boolean parsing for source-supplied security flags. Absent/blank falls back
-// to the caller's default; false-like values ("false", "0", "no", "off", 0, false)
-// are FALSE rather than truthy; anything else is true. Prevents string values such
-// as "false" from manufacturing known-exploited threat signals.
-const TRUE_LIKE = new Set(["1", "true", "yes", "on"]);
-const FALSE_LIKE = new Set(["0", "false", "no", "off"]);
-
-export function parseSecurityBoolean(value, fallback = false) {
-  if (value === undefined || value === null || (typeof value === "string" && value.trim() === "")) {
-    return fallback;
-  }
-  if (typeof value === "boolean") {
-    return value;
-  }
-  if (typeof value === "number") {
-    if (!Number.isFinite(value)) return fallback;
-    if (value === 1) return true;
-    if (value === 0) return false;
-    return fallback;
-  }
-  if (typeof value !== "string") {
-    return fallback;
-  }
-  const normalized = value.trim().toLowerCase();
-  if (TRUE_LIKE.has(normalized)) return true;
-  if (FALSE_LIKE.has(normalized)) return false;
-  return fallback;
 }
 
 function boundedLimit(value, fallback, min, max) {

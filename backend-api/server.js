@@ -9,7 +9,7 @@ import {
 } from "./patchforge/storage.js";
 import { createSourceFeedClient } from "./patchforge/sourceFeeds.js";
 import { listSourceAdapters, syncSourceAdapter } from "./patchforge/sourceAdapters.js";
-import { parseSecurityBoolean } from "./patchforge/securityBooleans.js";
+import { parseSecurityBoolean, parseSecurityBooleanAny } from "./patchforge/securityBooleans.js";
 import { importAssetsFromCsv, parseConfigEvidence, redactConfigInput } from "./patchforge/configParsers.js";
 import {
   buildPriorityIndex,
@@ -2142,25 +2142,27 @@ function buildBayesianAssessment(body = {}) {
   ), 0, 1);
   const priors = defaultBayesianPriors();
   const exploitSignals = [
-    parseSecurityBoolean(vulnerability.known_exploited ?? body.known_exploited) ? 0.32 : 0,
-    parseSecurityBoolean(body.exploit_code_available) ? 0.12 : 0,
-    parseSecurityBoolean(body.active_exploitation_reports) ? 0.18 : 0,
-    parseSecurityBoolean(vulnerability.internet_exposed ?? body.internet_exposed) ? 0.12 : 0,
+    // OR-combine nested and top-level signals semantically so a false-like value
+    // on either can never mask an affirmative on the other (Codex review finding).
+    parseSecurityBooleanAny(vulnerability.known_exploited, body.known_exploited) ? 0.32 : 0,
+    parseSecurityBooleanAny(vulnerability.exploit_code_available, body.exploit_code_available) ? 0.12 : 0,
+    parseSecurityBooleanAny(vulnerability.active_exploitation_reports, body.active_exploitation_reports) ? 0.18 : 0,
+    parseSecurityBooleanAny(vulnerability.internet_exposed, body.internet_exposed) ? 0.12 : 0,
     epss * 0.2,
     cvss >= 9 ? 0.06 : cvss >= 7 ? 0.03 : 0
   ].reduce((sum, value) => sum + value, priors.exploit_probability_prior);
   const businessImpact = priors.business_impact_prior
-    + (parseSecurityBoolean(vulnerability.customer_facing ?? body.customer_facing) ? 0.2 : 0)
+    + (parseSecurityBooleanAny(vulnerability.customer_facing, body.customer_facing) ? 0.2 : 0)
     + (String(body.service_tier || vulnerability.service_tier || "").toLowerCase().includes("1") ? 0.16 : 0)
     + (String(body.asset_criticality || vulnerability.asset_criticality || "").toLowerCase().includes("critical") ? 0.16 : 0)
-    + (parseSecurityBoolean(vulnerability.ot_relevant ?? body.ot_relevant) ? 0.12 : 0);
+    + (parseSecurityBooleanAny(vulnerability.ot_relevant, body.ot_relevant) ? 0.12 : 0);
   const patchFeasibility = priors.patch_feasibility_prior
     + (["patch_available", "patch_feasible"].includes(String(vulnerability.patch_status || body.patch_status)) ? 0.22 : -0.18)
     + (parseSecurityBoolean(body.test_evidence_complete) ? 0.1 : -0.05)
     + (parseSecurityBoolean(body.rollback_evidence) ? 0.08 : -0.05)
     + (parseSecurityBoolean(body.vendor_patch_note) ? 0.05 : 0);
   const changeRisk = priors.change_risk_prior
-    + (parseSecurityBoolean(vulnerability.ot_relevant ?? body.ot_relevant) ? 0.2 : 0)
+    + (parseSecurityBooleanAny(vulnerability.ot_relevant, body.ot_relevant) ? 0.2 : 0)
     + (parseSecurityBoolean(body.rollback_evidence) ? -0.08 : 0.12)
     + (parseSecurityBoolean(body.test_evidence_complete) ? -0.06 : 0.08);
   const deferralRisk = priors.deferral_risk_prior
@@ -2263,13 +2265,14 @@ async function ingestVendorAdvisory(storage, tenantId, vendorId, body) {
     severity: body.severity || "unknown",
     source_class: body.source_class || "vendor_advisory",
     source_url: body.source_url || null,
-    known_exploited: parseSecurityBoolean(body.known_exploited),
+    known_exploited: parseSecurityBooleanAny(body.known_exploited, body.kev),
     patch_available: parseSecurityBoolean(body.patch_available),
     superseded_by: body.superseded_by || null,
-    superseded: parseSecurityBoolean(
-      body.superseded ?? (body.superseded_by !== undefined && body.superseded_by !== null),
-      false
-    ),
+    // Require a NONBLANK replacement reference; a blank string must not imply
+    // supersedence (Codex P2 review finding).
+    superseded: body.superseded !== undefined && body.superseded !== null
+      ? parseSecurityBoolean(body.superseded)
+      : Boolean(body.superseded_by),
     review_state: body.review_state || "pending_review",
     evidence_state: body.evidence_state || "referenced",
     source_state: "source_bound",

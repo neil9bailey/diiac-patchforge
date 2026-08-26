@@ -51,12 +51,8 @@ export function parseSecurityBoolean(value, fallback = false) {
  * @returns {boolean}
  */
 export function parseSecurityBooleanAny(...values) {
-  let sawFallbackOnly = true;
   for (const value of values) {
-    const parsed = parseSecurityBoolean(value, undefined);
-    if (parsed === undefined) continue;
-    sawFallbackOnly = false;
-    if (parsed === true) return true;
+    if (parseSecurityBoolean(value, false) === true) return true;
   }
-  return sawFallbackOnly ? false : false;
+  return false;
 }

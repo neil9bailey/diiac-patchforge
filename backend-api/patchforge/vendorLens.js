@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { assessConfigApplicability } from "./configApplicability.js";
 import { guardedFetchJson, guardedFetchText } from "./outboundFetch.js";
-import { parseSecurityBoolean } from "./securityBooleans.js";
+import { parseSecurityBoolean, parseSecurityBooleanAny } from "./securityBooleans.js";
 
 export const NETWORK_VENDOR_CATALOG = [
   vendor("cisco", "Cisco", "infrastructure_networking", "https://developer.cisco.com/psirt/", ["ASA", "Firepower", "IOS XE", "IOS XR", "NX-OS", "Catalyst", "AnyConnect", "Secure Client"]),
@@ -149,12 +149,18 @@ export async function ingestVendorSecurityAdvisory(storage, tenantId, body = {})
     fixed_versions: list(body.fixed_versions),
     affected_features: list(body.affected_features || body.affected_feature || body.feature),
     workaround_status: body.workaround_status || "unverified",
-    known_exploited: parseSecurityBoolean(body.known_exploited ?? body.kev, false),
+    // Semantically OR-combine so an affirmative on either alias survives a
+    // false-like value on the other (Codex P1 review finding).
+    known_exploited: parseSecurityBooleanAny(body.known_exploited, body.kev),
     epss_score: body.epss_score ?? null,
     patch_available: body.patch_available === undefined
       ? list(body.fixed_versions).length > 0
       : parseSecurityBoolean(body.patch_available, false),
-    superseded: parseSecurityBoolean(body.superseded ?? body.superseded_by, false),
+    // A populated replacement reference implies supersedence even though an
+    // advisory id is not itself a boolean string.
+    superseded: body.superseded !== undefined && body.superseded !== null
+      ? parseSecurityBoolean(body.superseded, false)
+      : Boolean(body.superseded_by),
     superseded_by: body.superseded_by || null,
     review_state: body.review_state || "pending_review",
     evidence_state: body.evidence_state || "referenced",
