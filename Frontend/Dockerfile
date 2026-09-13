@@ -13,7 +13,9 @@ RUN npm run build
 
 FROM nginx:1.30.3-alpine3.23-slim@sha256:d5b51cfc7d55fc7a7bcf4d1d577b9c3738331df56d68f0b1d8ac9795b9470a5a
 
-RUN sed -i 's#^pid .*;#pid /tmp/nginx.pid;#' /etc/nginx/nginx.conf \
+# Keep the pinned base and apply Alpine's OpenSSL security updates.
+RUN apk upgrade --no-cache libcrypto3 libssl3 \
+    && sed -i 's#^pid .*;#pid /tmp/nginx.pid;#' /etc/nginx/nginx.conf \
     && chown -R nginx:nginx /var/cache/nginx
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
