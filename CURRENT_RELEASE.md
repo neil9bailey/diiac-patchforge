@@ -1,5 +1,7 @@
 # Current Release
 
+September 13 review: Azure still shows the July `pfaz-enterprise-20260714d-f51802d` tag on all six apps. The scheduler had zero running replicas. Latest remote source and enterprise-review improvements are not live. See the [dated review](docs/product/PATCHFORGE_ENTERPRISE_REVIEW_2026-09-13.md) and [validation evidence](docs/validation/PATCHFORGE_ENTERPRISE_REVIEW_VALIDATION_2026-09-13.md). Entries below remain historical release records.
+
 ## DIIaC PatchForge PF-AZ-ENTERPRISE-AUTOMATION-20260714D
 
 Release state: **image-only Azure rollout succeeded; overall acceptance remains partial**. Production still runs the exact six-image set built from `f51802d3544260259c252e6be88d6e7bae596868`, and public smoke passed. Signed-in Admin health passed 13/13 checks, but DOCX report generation failed closed and live report, ingestion, verified-ZIP, cleanup, infrastructure-apply, release-metadata, collector, and legal gates remain open. The current closeout branch contains a locally fixed/tested report-verification path plus navigation, verified-ZIP, exact-ID cleanup, and repaired-IaC changes; none of those follow-up changes is claimed live.

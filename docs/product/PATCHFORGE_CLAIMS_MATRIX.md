@@ -4,17 +4,32 @@
 
 This matrix controls product, sales, UI, report, and documentation claims for DIIaC™ PatchForge.
 
-## Approved Claims
+Reviewed: 2026-09-13. Capability wording is not commercial, legal or production acceptance. Use the [Enterprise Offer](PATCHFORGE_ENTERPRISE_OFFER.md) for pilot admission and evidence requirements.
+
+## Capability Wording
 
 | Claim | Status | Required qualifier |
 | --- | --- | --- |
 | PatchForge is a vulnerability and patch governance intelligence layer. | Approved | Must describe governance, not discovery or deployment. |
 | PatchForge supports governed patch, mitigation, deferral, risk acceptance, go-live block, and closure decisions. | Approved | Must state that final approval is human-governed. |
 | PatchForge produces evidence-bound decision artefacts. | Approved | Evidence may be pending, rejected, accepted, or superseded. |
-| PatchForge produces signed patch-decision packs. | Approved for planned/runtime features | Must not imply signature proves vulnerability truth or compliance. |
+| PatchForge implements signed patch-decision pack generation. | Implementation claim | Any claim about a delivered, verified pack requires proof for that exact artifact and release. A signature does not prove source truth or compliance. |
 | PatchForge supports SRA-assisted research. | Approved | Must state advisory only and pending review by default. |
 | PatchForge can support IT and OT remediation governance. | Approved | OT safety and operational constraints require evidence and human review. |
-| PatchForge can integrate with DIIaC™ IT Enterprise / IT Services. | Approved | Integration is optional and does not remove dedicated product boundary. |
+| PatchForge is designed to complement DIIaC™ IT Enterprise / IT Services. | Portfolio positioning | API/event integration is proposed; do not imply a deployed connector, shared runtime, shared tenant provisioning or customer-accepted handoff. |
+| PatchForge provides customer-side asset evidence intake through its collector. | Implementation claim | Read-only inventory evidence is not vulnerability scanning. Customer distribution requires the package, identity and acceptance checks for the intended deployment. |
+
+## Evidence Levels
+
+| Level | Evidence required | What it does not establish |
+| --- | --- | --- |
+| Proposed | Named scope, accountable owner and acceptance criteria | Implementation, availability or a contractual entitlement |
+| Implemented | Source and applicable contracts in a named revision | Successful testing or deployment |
+| Validated | Relevant checks against that exact revision | Current production behaviour or customer usability |
+| Live verified | Exact image/revision readback and relevant live workflow evidence | Acceptance for another tenant, role, environment or report |
+| Customer accepted | Named customer, agreed scope and retained acceptance evidence | General availability, certification or measured benefit outside that scope |
+
+On 2026-09-13, readback confirmed the six production applications configured with tag `pfaz-enterprise-20260714d-f51802d`, latest-ready with provisioning succeeded, plus public UI/health/readiness HTTP 200. Image digests and source provenance were not freshly attested. The reviewed source baseline `a102f69` is not the live release. These checks establish configured deployment and basic service availability only. They do not close the outstanding live report, role-journey, collector or customer acceptance gaps. Historical test totals remain evidence of their named historical candidates.
 
 ## Conditional Claims
 
@@ -25,6 +40,10 @@ This matrix controls product, sales, UI, report, and documentation claims for DI
 | Azure-hosted production is live. | Only after explicit Azure deployment evidence exists. |
 | Entra RBAC is enforced. | Only after Entra app roles and API authorization are implemented and validated. |
 | Customer assurance pack is audit-ready. | Only for the exported evidence and decision scope; never as a whole-environment certification. |
+| PatchForge automates governance preparation. | Name the configured, tested tasks such as intake, correlation, compilation or alerting. Continuous execution requires live scheduler/worker evidence; human review and approval remain required. |
+| PatchForge reduces effort or decision delay. | Report a customer-approved measurement, sample, baseline and observation period. Until then describe the intended outcome only. |
+| PatchForge is enterprise or OT ready. | Name the deployment and accepted scope, with relevant security, recovery, role, operating and customer evidence. Infrastructure health alone is insufficient. |
+| PatchForge integrates with another product. | Name a shipped adapter/contract, tested identity and tenant mapping, failure behaviour, data permissions and accepted end-to-end journey. Shared branding or similar signed-pack concepts are insufficient. |
 
 ## Prohibited Claims
 
@@ -37,6 +56,13 @@ This matrix controls product, sales, UI, report, and documentation claims for DI
 | PatchForge autonomously approves emergency change. | CAB and emergency approvals remain human-governed. |
 | PatchForge autonomously accepts risk. | Risk acceptance requires accountable human ownership. |
 | PatchForge certifies systems as secure, safe, or compliant. | PatchForge preserves evidence and decisions; it is not a certification authority. |
+| PatchForge is the only or uniquely capable vulnerability governance product. | The reviewed evidence does not establish market exclusivity; adjacent products have overlapping capabilities. |
+| All features are live, fully autonomous, or generally available. | Source implementation, deployment, customer acceptance and commercial availability are separate states. |
+| A security scan, signed pack or Entra configuration proves regulatory certification. | Each is scoped technical evidence, not independent certification or legal approval. |
+
+## Maintaining Claims
+
+The product owner maintains the claim register; engineering supplies revision and validation evidence; the release owner supplies live evidence; customer success records customer acceptance; legal approves commercial, licensing and regulatory wording. Any unproven capability should carry a visible proposed or pending status. Do not invent pricing, service levels, redistribution rights, customer references, certifications or integration availability.
 
 ## Required Boundary Language
 
@@ -45,4 +71,3 @@ Use this wording in UI/report surfaces where space permits:
 ```text
 PatchForge governs vulnerability and patch decisions. It does not scan, exploit, deploy patches, mutate production systems, or autonomously approve risk.
 ```
-

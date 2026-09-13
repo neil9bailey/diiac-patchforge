@@ -211,7 +211,7 @@ async function withApi(run, options = {}) {
   });
   const baseUrl = await listenOnFetchSafePort(server);
   try {
-    await run(baseUrl);
+    await run(baseUrl, storage);
   } finally {
     await new Promise((resolve) => server.close(resolve));
     await rm(storageRoot, { recursive: true, force: true });
@@ -1660,7 +1660,7 @@ test("asset discovery collectors import categorized assets as source-bound pendi
   });
 });
 
-test("priority, patch compare, workflow, and action packs remain human approved", async () => {
+test("priority and review workflows preserve human decisions while auxiliary pack issuance is retired", async () => {
   await withApi(async (baseUrl) => {
     const priority = await request(baseUrl, "/api/patchforge/priority/index", {
       method: "POST",
@@ -1713,9 +1713,10 @@ test("priority, patch compare, workflow, and action packs remain human approved"
     const transitioned = await request(baseUrl, `/api/patchforge/workflow/items/${workflow.body.workflow_item.id}/transition`, {
       method: "POST",
       headers: { "x-tenant-id": "tenant-a" },
-      body: JSON.stringify({ status: "verified_fixed", owner: "security-lead" })
+      body: JSON.stringify({ status: "triage", owner: "security-lead" })
     });
-    assert.equal(transitioned.body.workflow_item.status, "verified_fixed");
+    assert.equal(transitioned.body.workflow_item.status, "triage");
+    assert.equal(transitioned.body.workflow_item.final_approval_issued, false);
     assert.equal(transitioned.body.workflow_item.audit_trail.length, 2);
 
     const pack = await request(baseUrl, "/api/patchforge/action-packs", {
@@ -1723,12 +1724,11 @@ test("priority, patch compare, workflow, and action packs remain human approved"
       headers: { "x-tenant-id": "tenant-a" },
       body: JSON.stringify({ customer_id: "cust-a", report_type: "CAB Patch Decision Report", evidence_refs: ["src-nvd-fixture"], source_hashes: ["abc123"] })
     });
-    assert.equal(pack.response.status, 201);
-    assert.equal(pack.body.signed_action_pack.verifier_result.verified, true);
-    const verified = await request(baseUrl, `/api/patchforge/action-packs/${pack.body.signed_action_pack.id}/verify`, {
-      headers: { "x-tenant-id": "tenant-a" }
-    });
-    assert.equal(verified.body.verifier_result.verified, true);
+    // ADR-PF-ENTERPRISE-001 retires public digests labelled as signed packs.
+    assert.equal(pack.response.status, 410);
+    assert.equal(pack.body.error, "action_pack_issuance_unavailable");
+    assert.equal(pack.body.decision_pack_endpoint, "/api/patchforge/decision-packs/generate");
+    assert.equal(pack.body.verified, false);
 
     const legacyReportsEndpoint = await request(baseUrl, "/api/patchforge/reports", {
       method: "POST",
@@ -2070,7 +2070,7 @@ test("manual source refresh history does not prove that the scheduler is configu
 });
 
 test("admin purge previews and requires typed confirmation before deleting records", async () => {
-  await withApi(async (baseUrl) => {
+  await withApi(async (baseUrl, storage) => {
     await request(baseUrl, "/api/patchforge/vulnerabilities/ingest", {
       method: "POST",
       headers: { "x-tenant-id": "tenant-a" },
@@ -2081,23 +2081,16 @@ test("admin purge previews and requires typed confirmation before deleting recor
         sources: [{ source_name: "Synthetic", evidence_state: "accepted_positive_evidence" }]
       })
     });
-    const pack = await request(baseUrl, "/api/patchforge/action-packs", {
-      method: "POST",
-      headers: { "x-tenant-id": "tenant-a" },
-      body: JSON.stringify({
-        report: { title: "Synthetic report" },
+    // Historical rows remain purgeable after ADR-PF-ENTERPRISE-001 retires issuance.
+    await storage.append("signed_action_packs", {
+      tenant_id: "tenant-a",
+      id: "historical-purge-fixture",
+      payload: {
+        report: { title: "Synthetic historical report" },
         selected_scope: { cves: ["CVE-2099-PURGE-001"] },
-        source_evidence: [],
-        cve_records: [],
-        vendor_advisories: [],
-        asset_matches: [],
-        patch_compare: {},
-        confidence: "synthetic",
-        evidence_gaps: [],
-        human_approval_state: "not_approved"
-      })
+        final_approval_issued: false
+      }
     });
-    assert.equal(pack.response.status, 201);
 
     const dryRun = await request(baseUrl, "/api/patchforge/admin/purge", {
       method: "POST",
@@ -2107,6 +2100,7 @@ test("admin purge previews and requires typed confirmation before deleting recor
     assert.equal(dryRun.response.status, 200);
     assert.equal(dryRun.body.purge.dry_run, true);
     assert.ok(dryRun.body.purge.total_records >= 2);
+    assert.equal(dryRun.body.purge.counts.signed_action_packs, 1);
 
     const blocked = await request(baseUrl, "/api/patchforge/admin/purge", {
       method: "POST",
@@ -2115,6 +2109,7 @@ test("admin purge previews and requires typed confirmation before deleting recor
     });
     assert.equal(blocked.response.status, 400);
     assert.equal(blocked.body.error, "typed_confirmation_required");
+    assert.equal((await storage.list("signed_action_packs", "tenant-a")).length, 1);
 
     const confirmed = await request(baseUrl, "/api/patchforge/admin/purge", {
       method: "POST",
@@ -2124,6 +2119,7 @@ test("admin purge previews and requires typed confirmation before deleting recor
     assert.equal(confirmed.response.status, 202);
     assert.equal(confirmed.body.purge.dry_run, false);
     assert.equal(confirmed.body.purge.final_approval_issued, false);
+    assert.equal((await storage.list("signed_action_packs", "tenant-a")).length, 0);
 
     const vulnerabilities = await request(baseUrl, "/api/patchforge/vulnerabilities", {
       headers: { "x-tenant-id": "tenant-a" }

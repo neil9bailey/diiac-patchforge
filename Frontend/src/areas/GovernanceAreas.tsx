@@ -48,7 +48,7 @@ const adminSections: AdminCapability[] = [
   { label: "Source Feeds", status: "Runtime-backed", tone: "trust", detail: "Public advisory refresh and run history are exposed in the live source feed surfaces." },
   { label: "VendorLens Sources", status: "Runtime-backed", tone: "trust", detail: "Vendor, product, advisory, and customer-estate intelligence feed the advisory workflow." },
   { label: "Evidence Models", status: "Runtime-backed", tone: "trust", detail: "Reviewed evidence, rejected evidence, and gaps stay visible before report export." },
-  { label: "Policy Packs", status: "Baseline-bound", tone: "steel", detail: "Current policy behavior follows the approved PF-AZ12 governance baseline." },
+  { label: "Policy Packs", status: "Baseline-bound", tone: "steel", detail: "Inspect signed pack metadata for the exact policy and release baseline used for a decision." },
   { label: "Decision State Rules", status: "Human-gated", tone: "amber", detail: "Final approval, closure, and assurance claims require reviewed evidence and a named human." },
   { label: "Risk Acceptance Rules", status: "Human-only", tone: "amber", detail: "PatchForge records posture guidance but does not autonomously accept risk." },
   { label: "SLA / Ageing Rules", status: "Visible", tone: "steel", detail: "Ageing and priority signals are surfaced in queue and reporting contexts." },
@@ -125,7 +125,6 @@ export function ReportsPacks({
   canWrite: boolean;
 }) {
   const preExport = reportsPacks.pre_export_state || {};
-  const qualityReviews = preExport.report_quality_reviews || [];
   const sortedPacks = newestDecisionPacks(decisionPacks);
   const verifiedPacks = sortedPacks.filter((pack) => pack.verification?.verified);
   const [selectedPackId, setSelectedPackId] = useState("");
@@ -138,7 +137,10 @@ export function ReportsPacks({
     ));
   }, [verifiedPackIds]);
   const selectedPack = verifiedPacks.find((pack) => pack.pack_id === selectedPackId) || verifiedPacks[0] || null;
-  const selectedPreExport = !preExport.pack_id || preExport.pack_id === selectedPack?.pack_id;
+  const selectedPreExport = Boolean(selectedPack && preExport.pack_id === selectedPack.pack_id);
+  const qualityReviews = selectedPreExport
+    ? (preExport.report_quality_reviews || []).filter((review) => review.pack_id === selectedPack?.pack_id)
+    : [];
   const selectedPackArtifacts = selectedPack?.artefacts || {};
   const selectedVendorLensContext = selectedPreExport
     ? Boolean(preExport.vendorlens_context_included)
@@ -198,8 +200,11 @@ export function ReportsPacks({
           <StatusLine label="Decision posture" value={humanize(selectedPack?.decision_posture || "not recorded")} tone="steel" />
           <StatusLine label="Created" value={formatPackDate(selectedPack?.created_at)} tone="steel" detail={selectedPack ? packFreshness(selectedPack).detail : undefined} />
         </div>
-        {selectedPack && !selectedPreExport && (
+        {selectedPack && !selectedPreExport && Boolean(preExport.pack_id) && (
           <p className="boundary-copy">Historical pack selected. The current pre-export runtime snapshot belongs to {String(preExport.pack_id)}; downloads below remain bound to {selectedPack.pack_id}.</p>
+        )}
+        {selectedPack && !preExport.pack_id && (
+          <p className="boundary-copy">The pre-export snapshot has no pack identifier. Its evidence and quality checks cannot be attributed to this selection.</p>
         )}
       </section>
       <section className="data-band">
@@ -222,7 +227,7 @@ export function ReportsPacks({
       <section className="data-band">
         <div className="section-title">
           <h3>Report Content QA</h3>
-          <span className={`pill ${qualityReviews.every((review) => review.status === "PASS") && qualityReviews.length ? "trust" : "amber"}`}>{qualityReviews.length ? `${qualityReviews.filter((review) => review.status === "PASS").length}/${qualityReviews.length} PASS` : "Run after pack generation"}</span>
+          <span className={`pill ${qualityReviews.every((review) => review.status === "PASS") && qualityReviews.length ? "trust" : "amber"}`}>{qualityReviews.length ? `${qualityReviews.filter((review) => review.status === "PASS").length}/${qualityReviews.length} PASS` : "No QA bound to selected pack"}</span>
         </div>
         <div className="quality-grid">
           {qualityReviews.map((review) => (
@@ -233,7 +238,7 @@ export function ReportsPacks({
             </article>
           ))}
         </div>
-        {!qualityReviews.length && <p className="boundary-copy">Content QA appears after a signed pack exists. It checks audience fit, known/unknown clarity, specific evidence gaps, metadata, final approval state, and governance-safe wording.</p>}
+        {!qualityReviews.length && <p className="boundary-copy">No content QA result is available for the selected pack. Signature verification confirms pack integrity; it does not establish report quality, evidence completeness, or final approval.</p>}
       </section>
       <DecisionPacks decisionPacks={sortedPacks} reports={reports} onExportPack={onExportPack} onDownloadPackZip={onDownloadPackZip} onDownloadReport={onDownloadReport} selectedPackId={selectedPack?.pack_id || ""} onSelectPack={setSelectedPackId} hideReportDownloads />
       <Reports decisionPacks={sortedPacks} reports={reports} selectedPackId={selectedPack?.pack_id || ""} onDownloadReport={onDownloadReport} />
@@ -269,7 +274,7 @@ export function DecisionPacks({
         <h3>Decision Packs</h3>
         <span className="pill trust">{sortedPacks.filter((pack) => pack.verification?.verified).length} verified</span>
       </div>
-      <div className="table-wrap">
+      <div className="table-wrap" role="region" aria-label="Decision pack records" tabIndex={0}>
         <table className="data-table decision-packs-table">
           <thead>
             <tr>
@@ -495,7 +500,7 @@ export function Admin({
     <>
       <div className="section-title">
         <h3>System & Data Health</h3>
-        <span className="pill trust">Production guarded</span>
+        <span className="pill steel">Protected Admin API</span>
       </div>
 
       <section className="wide-band">

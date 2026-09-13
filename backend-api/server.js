@@ -13,7 +13,7 @@ import { parseSecurityBoolean, parseSecurityBooleanAny } from "./patchforge/secu
 import { importAssetsFromCsv, parseConfigEvidence, redactConfigInput } from "./patchforge/configParsers.js";
 import {
   buildPriorityIndex,
-  buildSignedActionPack,
+  ACTION_PACK_ISSUANCE_GUIDANCE,
   comparePatchActions,
   createWorkflowItem,
   transitionWorkflowItem,
@@ -1277,19 +1277,7 @@ export function createServer(options = {}) {
       }
 
       if (route === "POST /api/patchforge/action-packs") {
-        const body = await readJson(req);
-        const tenantContext = resolveTenantContext(req, url, body, authConfig, authorization.principal);
-        const pack = buildSignedActionPack(body);
-        await storage.append("signed_action_packs", {
-          tenant_id: tenantContext.effective_tenant_id,
-          ...pack,
-          ...lineageFields(tenantContext, authorization)
-        });
-        return sendJson(res, 201, {
-          tenant_id: tenantContext.effective_tenant_id,
-          tenant_context: tenantContext,
-          signed_action_pack: pack
-        });
+        return sendJson(res, 410, ACTION_PACK_ISSUANCE_GUIDANCE);
       }
 
       const actionPackVerifyMatch = url.pathname.match(/^\/api\/patchforge\/action-packs\/([^/]+)\/verify$/);
@@ -1297,9 +1285,22 @@ export function createServer(options = {}) {
         const packId = decodeURIComponent(actionPackVerifyMatch[1]);
         const packs = await storage.list("signed_action_packs", tenantId);
         const pack = packs.find((item) => item.id === packId || item.pack_id === packId);
-        return pack
-          ? sendJson(res, 200, { tenant_id: tenantId, tenant_context: baseTenantContext, verifier_result: verifySignedActionPack(pack), signed_action_pack: pack })
-          : sendJson(res, 404, { error: "signed_action_pack_not_found" });
+        if (!pack) return sendJson(res, 404, { error: "signed_action_pack_not_found" });
+        const verification = verifySignedActionPack(pack);
+        return sendJson(res, 200, {
+          tenant_id: tenantId,
+          tenant_context: baseTenantContext,
+          verifier_result: verification,
+          signed_action_pack: {
+            ...pack,
+            verified: false,
+            signature_ok: false,
+            final_approval_issued: false,
+            legacy_content_untrusted: true,
+            verifier_result: verification,
+            replay_metadata: { ...pack.replay_metadata, replayable: false }
+          }
+        });
       }
 
       if (route === "GET /api/patchforge/workflow/items") {
@@ -1318,7 +1319,7 @@ export function createServer(options = {}) {
           tenant_id: tenantContext.effective_tenant_id
         });
         await storage.append("workflow_items", item);
-        await storage.audit(tenantContext.effective_tenant_id, "workflow_item_created", { id: item.id, status: item.status });
+        await storage.audit(tenantContext.effective_tenant_id, "workflow_item_created", { id: item.id, status: item.status, ...lineageFields(tenantContext, authorization) });
         return sendJson(res, 201, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, workflow_item: item });
       }
 
@@ -1333,7 +1334,7 @@ export function createServer(options = {}) {
         }
         const item = transitionWorkflowItem(existing, withLineage(body, tenantContext, authorization));
         await storage.append("workflow_items", item);
-        await storage.audit(tenantContext.effective_tenant_id, "workflow_item_transitioned", { id: item.id, status: item.status });
+        await storage.audit(tenantContext.effective_tenant_id, "workflow_item_transitioned", { id: item.id, status: item.status, ...lineageFields(tenantContext, authorization) });
         return sendJson(res, 200, { tenant_id: tenantContext.effective_tenant_id, tenant_context: tenantContext, workflow_item: item });
       }
 

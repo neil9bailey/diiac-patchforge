@@ -4,8 +4,14 @@ PatchForge documentation is organised around the product boundary, architecture,
 
 ## Start here
 
+Latest assessment: [September 13 Enterprise Product Review](product/PATCHFORGE_ENTERPRISE_REVIEW_2026-09-13.md), including source/live drift, implemented corrections and the prioritised enterprise roadmap.
+
+Candidate testing: [September 13 User Acceptance Checklist](validation/PATCHFORGE_ENTERPRISE_USER_ACCEPTANCE_2026-09-13.md) provides practical UI tests, pass criteria and separate operator checks. Confirm the deployed candidate before using it as acceptance evidence.
+
 | Audience | Primary document | Use it for |
 | --- | --- | --- |
+| Buyer, portfolio owner, partner or procurement reviewer | [Enterprise Offer and Pilot Framework](product/PATCHFORGE_ENTERPRISE_OFFER.md) | Proposed packages, measurable pilot acceptance, portfolio boundaries and accountable procurement work |
+| Product, sales or demonstration owner | [Product Positioning](product/PATCHFORGE_PRODUCT_POSITIONING.md) and [Claims Matrix](product/PATCHFORGE_CLAIMS_MATRIX.md) | Buyer outcomes, evidenced differentiation, capability status and limits on availability/integration claims |
 | End user, service owner, security lead, CAB, or assurance reviewer | [Operational User Guide](operations/PATCHFORGE_OPERATIONAL_USER_GUIDE.md) | The six-area UI, evidence review, explicit pack selection, reports, role boundaries, and support information |
 | Collector or platform operator | [Collector and Automation Runbook](operations/PATCHFORGE_COLLECTOR_AND_AUTOMATION_RUNBOOK.md) | Signed Windows package lifecycle, authentication, heartbeat, scheduler/worker recovery, and safe intervention |
 | Release owner or approver | [14-Area Improvement Closure Matrix](validation/PATCHFORGE_14_AREA_IMPROVEMENT_CLOSURE_2026-07-14.md) | Implementation evidence, operator actions, validation, live gates, human gates, and stop conditions |

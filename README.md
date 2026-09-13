@@ -37,6 +37,8 @@ PatchForge does not scan environments, exploit vulnerabilities, deploy patches, 
 
 ## Current Product Scope
 
+For the September 13 source/live comparison, trust corrections and commercial roadmap, see the [Enterprise Product Review](docs/product/PATCHFORGE_ENTERPRISE_REVIEW_2026-09-13.md) and [Enterprise Offer](docs/product/PATCHFORGE_ENTERPRISE_OFFER.md). Review changes are local until published and deployed; historical release evidence does not establish current customer acceptance.
+
 Production runs the approved `f51802d` six-image `PF-AZ-ENTERPRISE-AUTOMATION-20260714D` baseline. The current closeout branch contains a locally tested strict normalization fix for Azure EC/P-256 enum labels plus navigation, verified-ZIP, exact-ID cleanup, and repaired-IaC improvements; none is live. Unknown labels/curves, malformed coordinates, wrong keys, and tampered or short signatures still fail cryptographic verification. Overall acceptance remains partial while production report proof, complete signed-in journeys, separately approved IaC application, trusted collector/customer UAT, and legal/licensing gates remain open:
 
 - product identity

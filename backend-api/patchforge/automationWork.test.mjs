@@ -7,7 +7,8 @@ import {
   automationHealth,
   enqueueSourceFeedWork,
   executeSourceFeedWork,
-  reconcileAutomationWork
+  reconcileAutomationWork,
+  runPendingAutomationWork
 } from "./automationWork.js";
 import { PatchForgeJsonStorage } from "./storage.js";
 import { runWorkerOnce } from "./worker.js";
@@ -238,6 +239,118 @@ test("scheduler defers when another instance owns the tenant lease", async () =>
     });
     assert.equal(result.status, "lease_contended");
     assert.equal(result.deferred, true);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+for (const feedId of ["cisa-kev", "first-epss"]) {
+  test(`scheduler retries an incomplete cycle after a ${feedId} work lease is released`, async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "patchforge-scheduler-work-lease-"));
+    const storage = new PatchForgeJsonStorage(root);
+    const calls = [];
+    try {
+      await storage.ingestVulnerability("tenant-a", {
+        vulnerability_id: "CVE-2026-2000", title: "Work lease test", sources: []
+      });
+      const work = await enqueueSourceFeedWork(storage, "tenant-a", {
+        cycleId: "cycle-work-lease", feedId,
+        ...(feedId === "first-epss" ? { cve: "CVE-2026-2000" } : {})
+      });
+      const leaseId = `automation-work:${work.work_id}`;
+      await storage.acquireAutomationLease("tenant-a", leaseId, "other-worker", 60000, new Date());
+      const options = {
+        storage, tenantId: "tenant-a", cycleId: "cycle-work-lease", leaseOwner: "scheduler-instance",
+        sourceFeedClient: { async refresh({ body }) {
+          calls.push(body.feed_id);
+          return { status: "completed", records_ingested: 1 };
+        } }
+      };
+      const incomplete = await runSchedulerOnce(options);
+      assert.equal(incomplete.status, "incomplete");
+      assert.equal(incomplete.completed_at, null);
+      assert.ok(incomplete.finished_at);
+      assert.equal(incomplete.deferred, true);
+      assert.deepEqual(incomplete.incomplete_work_items, [{
+        work_id: work.work_id, feed_id: feedId, status: "pending", reason: "lease_contended"
+      }]);
+      assert.equal((await storage.list("automation_checkpoints", "tenant-a"))
+        .some((item) => item.checkpoint_id === "scheduler-cycle-cycle-work-lease"), false);
+      assert.equal(calls.includes(feedId), false);
+
+      await storage.releaseAutomationLease("tenant-a", leaseId, "other-worker", new Date());
+      const completed = await runSchedulerOnce(options);
+      assert.equal(completed.status, "completed");
+      assert.deepEqual(completed.incomplete_work_items, []);
+      assert.ok(completed.completed_at);
+      assert.equal(calls.filter((id) => id === "cisa-kev").length, 1);
+      assert.equal(calls.filter((id) => id === "first-epss").length, 1);
+      assert.equal((await runSchedulerOnce(options)).status, "skipped_idempotent");
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+}
+
+test("scheduler does not checkpoint a dead-lettered or exhausted cycle as completed", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "patchforge-scheduler-dead-cycle-"));
+  const storage = new PatchForgeJsonStorage(root);
+  let calls = 0;
+  try {
+    const options = {
+      storage, tenantId: "tenant-a", cycleId: "cycle-dead-letter", maxAttempts: 1,
+      sourceFeedClient: { async refresh() { calls += 1; throw new Error("Feed unavailable"); } }
+    };
+    const failed = await runSchedulerOnce(options);
+    assert.equal(failed.status, "incomplete");
+    assert.equal(failed.completed_at, null);
+    assert.equal(failed.failures.length, 1);
+    assert.equal(failed.incomplete_work_items[0].status, "dead_lettered");
+    const exhausted = await runSchedulerOnce(options);
+    assert.equal(exhausted.status, "incomplete");
+    assert.equal(exhausted.completed_at, null);
+    assert.equal(exhausted.incomplete_work_items[0].status, "dead_lettered");
+    assert.equal(exhausted.incomplete_work_items[0].reason, "reconciliation_required");
+    assert.equal((await storage.list("automation_work_items", "tenant-a"))[0].status, "dead_lettered");
+    assert.equal(calls, 1);
+    assert.equal((await storage.list("automation_checkpoints", "tenant-a")).length, 0);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("scheduler includes earlier cycle work after the CVE priority sample changes", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "patchforge-scheduler-cycle-scope-"));
+  const storage = new PatchForgeJsonStorage(root);
+  try {
+    await storage.ingestVulnerability("tenant-a", {
+      vulnerability_id: "CVE-2026-2000", title: "Original sample", severity: "low", sources: []
+    });
+    const work = await enqueueSourceFeedWork(storage, "tenant-a", {
+      cycleId: "cycle-changing-sample", feedId: "first-epss", cve: "CVE-2026-2000"
+    });
+    const leaseId = `automation-work:${work.work_id}`;
+    await storage.acquireAutomationLease("tenant-a", leaseId, "other-worker", 60000, new Date());
+    const options = {
+      storage, tenantId: "tenant-a", cycleId: "cycle-changing-sample", epssLimit: 1,
+      sourceFeedClient: { async refresh({ body }) {
+        return { status: body.cve === "CVE-2026-2000" ? "completed_with_warnings" : "completed" };
+      } }
+    };
+    assert.equal((await runSchedulerOnce(options)).status, "incomplete");
+    await storage.ingestVulnerability("tenant-a", {
+      vulnerability_id: "CVE-2026-3000", title: "Higher priority", severity: "critical", known_exploited: true, sources: []
+    });
+    const changed = await runSchedulerOnce(options);
+    assert.equal(changed.status, "incomplete");
+    assert.ok(changed.incomplete_work_items.some((item) => item.work_id === work.work_id));
+    assert.equal(changed.work_items.length, 3);
+    assert.equal((await storage.list("automation_checkpoints", "tenant-a"))
+      .some((item) => item.checkpoint_id === "scheduler-cycle-cycle-changing-sample"), false);
+
+    await storage.releaseAutomationLease("tenant-a", leaseId, "other-worker", new Date());
+    await runPendingAutomationWork(options);
+    assert.equal((await runSchedulerOnce(options)).status, "completed_with_warnings");
   } finally {
     await rm(root, { recursive: true, force: true });
   }

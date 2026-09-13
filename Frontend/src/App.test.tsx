@@ -1,7 +1,7 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import App from "./App";
-import { FindingEvidenceQueue, FindingIntelligence, PatchForgeApi, PatchForgeMetrics } from "./api";
+import { DecisionPackRecord, FindingEvidenceQueue, FindingIntelligence, PatchForgeApi, PatchForgeMetrics } from "./api";
 import { PatchForgeAuthSession } from "./auth";
 
 const metrics: PatchForgeMetrics = {
@@ -24,6 +24,16 @@ const auth: PatchForgeAuthSession = {
   signOut: vi.fn(async () => undefined),
   getAccessToken: vi.fn(async () => "test-token")
 };
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: Error) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+}
 
 const finding = {
   intelligence_id: "intel-CVE-2026-REAL-001",
@@ -910,6 +920,68 @@ describe("PatchForge simplified customer experience", () => {
     expect(screen.getByRole("status")).toHaveTextContent(/Collector config downloaded/i);
   });
 
+  it("distinguishes a reporting collector from package signature verification", async () => {
+    const api = createApi({
+      assetDiscoveryOverview: vi.fn(async () => ({
+        ...discoveryOverview,
+        collectors: [{ ...discoveryOverview.collectors[0], health_status: "ready", collector_version: "1.0.0", package_digest: "sha256:reported-digest" }]
+      }))
+    });
+    render(<App auth={auth} api={api} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Customer Estate" }));
+    const step = (await screen.findByText("Confirm collector reporting", {}, { timeout: 10000 })).closest("li");
+    expect(step).not.toBeNull();
+    expect(within(step!).getByText("Complete")).toBeInTheDocument();
+    expect(step).toHaveTextContent("heartbeat data does not verify package authenticity");
+    expect(screen.queryByText("Install signed package and verify")).not.toBeInTheDocument();
+  });
+
+  it("guides readers through observed tenant data and the responsible roles", async () => {
+    render(<App auth={{ ...auth, roles: ["PatchForge.Reader"] }} api={createApi()} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Getting started & guidance" }));
+    expect(await screen.findByRole("heading", { name: "From advisory to accountable decision" }, { timeout: 10000 })).toBeInTheDocument();
+    const guide = screen.getByRole("region", { name: "Guide" });
+    expect(within(guide).getByText("Tenant: diiac.io")).toBeInTheDocument();
+    expect(within(guide).getByText("A Security Lead, CAB Approver, or Admin must generate the pack.")).toBeInTheDocument();
+    expect(within(guide).queryByRole("button", { name: "Open system health" })).not.toBeInTheDocument();
+    expect(within(guide).getByRole("heading", { name: "Which report do I need?" })).toBeInTheDocument();
+    expect(within(guide).queryByText(/Mythos/)).not.toBeInTheDocument();
+    fireEvent.click(within(guide).getByRole("button", { name: "Choose a stakeholder report" }));
+    expect(await screen.findByRole("combobox", { name: "Verified decision pack" }, { timeout: 10000 })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Generate Signed Pack" })).toBeDisabled();
+  });
+
+  it("shows unavailable guide sources without inventing empty or complete states", async () => {
+    render(<App auth={auth} api={createApi({
+      customerEstate: vi.fn(async () => { throw new Error("estate unavailable"); }),
+      listDecisionPacks: vi.fn(async () => { throw new Error("packs unavailable"); }),
+      reportCatalog: vi.fn(async () => { throw new Error("reports unavailable"); })
+    })} />);
+    await screen.findByLabelText("Partially unavailable data sources");
+    fireEvent.click(screen.getByRole("button", { name: "Getting started & guidance" }));
+    const guide = await screen.findByRole("region", { name: "Guide" });
+    expect(await within(guide).findByText("Unavailable: Customer estate")).toBeInTheDocument();
+    expect(within(guide).getByText("Unavailable: Decision packs")).toBeInTheDocument();
+    expect(within(guide).getByText("Unavailable: Report catalogue")).toBeInTheDocument();
+    expect(within(guide).queryByText("No verified decision pack available")).not.toBeInTheDocument();
+    expect(within(guide).queryByText("No report templates available")).not.toBeInTheDocument();
+    expect(within(guide).getByRole("button", { name: "Open system health" })).toBeInTheDocument();
+  });
+
+  it("gives an empty tenant a practical first step without claiming setup completion", async () => {
+    render(<App auth={auth} api={createApi({
+      listDecisionPacks: vi.fn(async () => []),
+      actionCenter: vi.fn(async () => []),
+      reportCatalog: vi.fn(async () => [])
+    })} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Getting started & guidance" }));
+    expect(await screen.findByText("No analysed findings available")).toBeInTheDocument();
+    expect(screen.getByText("No verified decision pack available")).toBeInTheDocument();
+    expect(screen.getByText("No report templates available")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Set up customer estate" }));
+    expect(await screen.findByRole("heading", { name: "Collector Intake" })).toBeInTheDocument();
+  });
+
   it("extracts a device, confirms the customer asset, matches CVEs, and runs Patch Compare", async () => {
     const api = createApi();
     render(<App auth={auth} api={api} />);
@@ -1090,7 +1162,7 @@ describe("PatchForge simplified customer experience", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "Reports" }));
     expect(screen.getByRole("region", { name: "Reports" })).toBeInTheDocument();
-    expect(await screen.findByText("Pre-Export Check")).toBeInTheDocument();
+    expect(await screen.findByText("Pre-Export Check", {}, { timeout: 10000 })).toBeInTheDocument();
     expect(screen.getAllByText("PF-AZ11-CUSTOMER-DEMO-MATURITY").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("pfaz11-test")).toBeInTheDocument();
     expect(screen.getByText("Final approval false")).toBeInTheDocument();
@@ -1137,14 +1209,39 @@ describe("PatchForge simplified customer experience", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Reports" }));
     const selector = await screen.findByRole("combobox", { name: "Verified decision pack" });
     await waitFor(() => expect(selector).toHaveValue("PF-TEST-0001"));
+    expect(screen.getByText("4/4 PASS")).toBeInTheDocument();
     fireEvent.change(selector, { target: { value: "PF-HISTORY-0001" } });
     expect(selector).toHaveValue("PF-HISTORY-0001");
     expect(screen.getByRole("button", { name: "Download Board Vulnerability Summary DOCX from PF-HISTORY-0001" })).toBeEnabled();
+    expect(screen.queryByText("4/4 PASS")).not.toBeInTheDocument();
+    expect(screen.getByText("No QA bound to selected pack")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Generate Signed Pack" }));
     await waitFor(() => expect(api.generateReportsPack).toHaveBeenCalled());
     await waitFor(() => expect(selector).toHaveValue("PF-HISTORY-0001"));
   }, 15000);
+
+  it.each(["missing snapshot binding", "missing review binding", "different review binding"])("withholds report QA for %s", async (scenario) => {
+    const api = createApi();
+    const overview = await api.reportsPacks("diiac.io");
+    const preExport = overview.pre_export_state!;
+    api.reportsPacks = vi.fn(async () => ({
+      ...overview,
+      pre_export_state: {
+        ...preExport,
+        pack_id: scenario === "missing snapshot binding" ? undefined : "PF-TEST-0001",
+        report_quality_reviews: (preExport.report_quality_reviews || []).map((review) => ({
+          ...review,
+          pack_id: scenario === "missing review binding" ? undefined : scenario === "different review binding" ? "PF-OTHER" : review.pack_id
+        }))
+      }
+    }));
+    render(<App auth={auth} api={api} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Reports" }));
+    expect(await screen.findByText("No QA bound to selected pack")).toBeInTheDocument();
+    expect(screen.queryByText("4/4 PASS")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Download Board Vulnerability Summary DOCX from PF-TEST-0001" })).toBeEnabled();
+  });
 
   it("blocks signed report downloads when the newest pack is not verified", async () => {
     const api = createApi({
@@ -1398,4 +1495,152 @@ describe("PatchForge simplified customer experience", () => {
     await waitFor(() => expect(metricsRequest).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(screen.queryByLabelText("Partially unavailable data sources")).not.toBeInTheDocument());
   });
+
+  it.each(["before", "after"])("ignores an earlier tenant response arriving %s the current response", async (arrival) => {
+    const earlier = deferred<DecisionPackRecord[]>();
+    const current = deferred<DecisionPackRecord[]>();
+    const pack = (id: string): DecisionPackRecord => ({ pack_id: id, decision_pack_id: id, vulnerability_id: "CVE-2026-REAL-001", verification: { verified: true }, final_approval_issued: false });
+    const api = createApi({ listDecisionPacks: vi.fn((tenant) => tenant === "tenant-a" ? earlier.promise : current.promise) });
+    render(<App auth={auth} api={api} initialTenantId="tenant-a" />);
+    fireEvent.click(screen.getByRole("button", { name: "Admin" }));
+    fireEvent.change(await screen.findByLabelText("Tenant name", {}, { timeout: 10000 }), { target: { value: "tenant-b" } });
+    await waitFor(() => expect(api.listDecisionPacks).toHaveBeenCalledWith("tenant-b"));
+    fireEvent.click(screen.getByRole("button", { name: "Getting started & guidance" }));
+    await screen.findByRole("heading", { name: "From advisory to accountable decision" }, { timeout: 10000 });
+    const guide = screen.getByRole("region", { name: "Guide" });
+    expect(within(guide).getByText("Tenant: tenant-b")).toBeInTheDocument();
+    if (arrival === "before") {
+      await act(async () => { earlier.resolve([pack("PF-TENANT-A")]); await earlier.promise; });
+      expect(within(guide).getAllByText("Checking current tenant data…")).toHaveLength(5);
+    }
+    await act(async () => { current.resolve([pack("PF-TENANT-B")]); await current.promise; });
+    await within(guide).findByText("1 verified packs available");
+    if (arrival === "after") {
+      await act(async () => { earlier.resolve([pack("PF-TENANT-A")]); await earlier.promise; });
+    }
+    fireEvent.click(within(guide).getByRole("button", { name: "Choose a stakeholder report" }));
+    const selector = await screen.findByRole("combobox", { name: "Verified decision pack" }, { timeout: 10000 });
+    expect(selector).toHaveValue("PF-TENANT-B");
+    expect(screen.queryByRole("option", { name: /PF-TENANT-A/ })).not.toBeInTheDocument();
+  }, 30000);
+
+  it("clears previous tenant packs and selections when the new tenant request fails", async () => {
+    const newTenant = deferred<DecisionPackRecord[]>();
+    const api = createApi();
+    const originalPacks = await api.listDecisionPacks("diiac.io");
+    api.listDecisionPacks = vi.fn((tenant) => tenant === "diiac.io" ? Promise.resolve(originalPacks) : newTenant.promise);
+    render(<App auth={auth} api={api} />);
+    fireEvent.click(screen.getByRole("button", { name: "Reports" }));
+    await waitFor(() => expect(screen.getByRole("combobox", { name: "Verified decision pack" })).toHaveValue("PF-TEST-0001"), { timeout: 10000 });
+    fireEvent.click(screen.getByRole("button", { name: "Admin" }));
+    fireEvent.change(await screen.findByLabelText("Tenant name"), { target: { value: "tenant-failed" } });
+    fireEvent.click(screen.getByRole("button", { name: "Reports" }));
+    expect(await screen.findByRole("combobox", { name: "Verified decision pack" })).toBeDisabled();
+    expect(screen.queryByRole("option", { name: /PF-TEST-0001/ })).not.toBeInTheDocument();
+    await act(async () => { newTenant.reject(new Error("new tenant packs unavailable")); });
+    expect(await screen.findByLabelText("Partially unavailable data sources")).toHaveTextContent("new tenant packs unavailable");
+    fireEvent.click(screen.getByRole("button", { name: "Getting started & guidance" }));
+    expect(await screen.findByText("Tenant: tenant-failed")).toBeInTheDocument();
+    expect(screen.getByText("Unavailable: Decision packs")).toBeInTheDocument();
+    expect(screen.queryByText("1 verified packs available")).not.toBeInTheDocument();
+  }, 20000);
+
+  it.each(["success", "failure"])("ignores an old tenant evidence %s while the new tenant is loading", async (outcome) => {
+    const earlier = deferred<FindingEvidenceQueue>();
+    const current = deferred<FindingEvidenceQueue>();
+    const api = createApi({ findingEvidence: vi.fn((tenant) => tenant === "diiac.io" ? earlier.promise : current.promise) });
+    render(<App auth={auth} api={api} />);
+    fireEvent.click(screen.getByRole("button", { name: "Open review queue" }));
+    await waitFor(() => expect(api.findingEvidence).toHaveBeenCalledWith("diiac.io", "CVE-2026-REAL-001"));
+    fireEvent.click(screen.getByRole("button", { name: "Admin" }));
+    fireEvent.change(await screen.findByLabelText("Tenant name", {}, { timeout: 10000 }), { target: { value: "tenant-b" } });
+    await waitFor(() => expect(api.listDecisionPacks).toHaveBeenCalledWith("tenant-b"));
+    fireEvent.click(screen.getByRole("button", { name: "Open review queue" }));
+    await waitFor(() => expect(api.findingEvidence).toHaveBeenCalledWith("tenant-b", "CVE-2026-REAL-001"));
+    const queue = await screen.findByRole("region", { name: "Finding evidence queue" }, { timeout: 10000 });
+    await act(async () => {
+      if (outcome === "success") earlier.resolve(findingEvidenceQueue);
+      else earlier.reject(new Error("stale tenant evidence failure"));
+    });
+    expect(within(queue).getByRole("button", { name: "Refreshing…" })).toBeDisabled();
+    expect(within(queue).queryByText("Customer asset scope confirmed")).not.toBeInTheDocument();
+    expect(within(queue).queryByText("stale tenant evidence failure")).not.toBeInTheDocument();
+    await act(async () => { current.resolve({ ...findingEvidenceQueue, tenant_id: "tenant-b", evidence: [] }); await current.promise; });
+    await waitFor(() => expect(within(queue).getByRole("button", { name: "Refresh queue" })).toBeEnabled());
+    expect(within(queue).queryByText("Customer asset scope confirmed")).not.toBeInTheDocument();
+  }, 20000);
+
+  it("ignores an old tenant catalogue search result after the tenant changes", async () => {
+    const search = deferred<Awaited<ReturnType<PatchForgeApi["searchSecurityActionCenter"]>>>();
+    const api = createApi();
+    const catalogue = await api.securityActionCenter("diiac.io");
+    api.securityActionCenter = vi.fn(async (tenant) => tenant === "diiac.io" ? catalogue : { ...catalogue, tenant_id: tenant, catalogue_rows: [] });
+    api.searchSecurityActionCenter = vi.fn(() => search.promise);
+    render(<App auth={auth} api={api} />);
+    fireEvent.submit(screen.getByRole("search", { name: "Global PatchForge search" }));
+    await waitFor(() => expect(api.searchSecurityActionCenter).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole("button", { name: "Admin" }));
+    fireEvent.change(await screen.findByLabelText("Tenant name", {}, { timeout: 10000 }), { target: { value: "tenant-b" } });
+    fireEvent.click(screen.getByRole("button", { name: "Getting started & guidance" }));
+    expect(await screen.findByText("No catalogue records loaded")).toBeInTheDocument();
+    await act(async () => { search.resolve(catalogue); await search.promise; });
+    expect(screen.getByText("No catalogue records loaded")).toBeInTheDocument();
+    expect(screen.queryByText(/Global catalogue filtered/)).not.toBeInTheDocument();
+  }, 20000);
+
+  it("ignores an old tenant analysis result after the tenant changes", async () => {
+    const analysis = deferred<Awaited<ReturnType<PatchForgeApi["analyseFinding"]>>>();
+    const api = createApi({
+      actionCenter: vi.fn(async (tenant) => tenant === "diiac.io" ? [finding] : []),
+      analyseFinding: vi.fn(() => analysis.promise)
+    });
+    render(<App auth={auth} api={api} />);
+    fireEvent.click(screen.getByRole("button", { name: "Open review queue" }));
+    const refreshAnalysis = await screen.findByRole("button", { name: "Refresh Analysis" }, { timeout: 10000 });
+    await waitFor(() => expect(refreshAnalysis).toBeEnabled());
+    fireEvent.click(refreshAnalysis);
+    await waitFor(() => expect(api.analyseFinding).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole("button", { name: "Admin" }));
+    fireEvent.change(await screen.findByLabelText("Tenant name"), { target: { value: "tenant-b" } });
+    fireEvent.click(screen.getByRole("button", { name: "Getting started & guidance" }));
+    expect(await screen.findByText("No analysed findings available")).toBeInTheDocument();
+    await act(async () => { analysis.resolve({ intelligence: finding }); await analysis.promise; });
+    expect(screen.getByText("No analysed findings available")).toBeInTheDocument();
+    expect(screen.queryByText(/PatchForge intelligence analysis completed/)).not.toBeInTheDocument();
+  }, 20000);
+
+  it("does not restore a previous tenant mutation result or trigger its stale reload", async () => {
+    const generation = deferred<DecisionPackRecord>();
+    const api = createApi({ generateReportsPack: vi.fn(() => generation.promise) });
+    render(<App auth={auth} api={api} />);
+    fireEvent.click(screen.getByRole("button", { name: "Reports" }));
+    const generate = await screen.findByRole("button", { name: "Generate Signed Pack" }, { timeout: 10000 });
+    await waitFor(() => expect(generate).toBeEnabled());
+    fireEvent.click(generate);
+    await waitFor(() => expect(api.generateReportsPack).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole("button", { name: "Admin" }));
+    fireEvent.change(await screen.findByLabelText("Tenant name"), { target: { value: "tenant-b" } });
+    await waitFor(() => expect(api.listDecisionPacks).toHaveBeenCalledWith("tenant-b"));
+    const loadCount = vi.mocked(api.listDecisionPacks).mock.calls.length;
+    await act(async () => {
+      generation.resolve({ pack_id: "PF-OLD-MUTATION", decision_pack_id: "PF-OLD-MUTATION", vulnerability_id: finding.vulnerability_id, final_approval_issued: false });
+      await generation.promise;
+    });
+    expect(screen.getByRole("region", { name: "Admin" })).toBeInTheDocument();
+    expect(screen.queryByText(/PF-OLD-MUTATION/)).not.toBeInTheDocument();
+    expect(api.listDecisionPacks).toHaveBeenCalledTimes(loadCount);
+  }, 20000);
+
+  it("retains verified pack data when a refresh fails within the same tenant", async () => {
+    const api = createApi();
+    const packs = await api.listDecisionPacks("diiac.io");
+    api.listDecisionPacks = vi.fn().mockResolvedValueOnce(packs).mockRejectedValueOnce(new Error("same tenant refresh unavailable"));
+    render(<App auth={auth} api={api} />);
+    fireEvent.click(screen.getByRole("button", { name: "Reports" }));
+    const selector = await screen.findByRole("combobox", { name: "Verified decision pack" }, { timeout: 10000 });
+    await waitFor(() => expect(selector).toHaveValue("PF-TEST-0001"));
+    fireEvent.click(screen.getByRole("button", { name: "Generate Signed Pack" }));
+    expect(await screen.findByLabelText("Partially unavailable data sources")).toHaveTextContent("same tenant refresh unavailable");
+    expect(selector).toHaveValue("PF-TEST-0001");
+  }, 20000);
 });
