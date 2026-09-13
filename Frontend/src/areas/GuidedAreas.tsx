@@ -198,7 +198,7 @@ export function CustomerEstate({
   const collectorConfigured = collectorRegistered && policies.some((policy) => (
     !policy.collector_id || collectors.some((collector) => collector.collector_id === policy.collector_id)
   ));
-  const collectorVerified = collectors.some((collector) => (
+  const collectorReporting = collectors.some((collector) => (
     collector.health_status === "ready"
     && Boolean(collector.package_digest)
     && Boolean(collector.collector_version && collector.collector_version !== "unknown")
@@ -246,9 +246,9 @@ export function CustomerEstate({
           />
           <CollectorSetupStep
             step={3}
-            title="Install signed package and verify"
-            detail="Verify the signed Windows package and digest, run it, then confirm a healthy heartbeat and recorded version below."
-            complete={collectorVerified}
+            title="Confirm collector reporting"
+            detail="A healthy heartbeat with a reported version and digest confirms reporting. Verify the Windows package signature and digest separately before installation; heartbeat data does not verify package authenticity."
+            complete={collectorReporting}
           />
         </ol>
         <div className="split-grid">

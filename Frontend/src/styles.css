@@ -798,6 +798,12 @@ td small {
     rgba(16, 22, 25, 0.94);
 }
 
+@media (max-width: 1280px) {
+  .report-brief {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .report-brief h3 {
   margin: 3px 0 6px;
   font-size: 1.18rem;

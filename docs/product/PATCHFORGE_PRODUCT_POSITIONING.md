@@ -10,13 +10,17 @@ PatchForge is a dedicated DIIaC™ add-on product for vulnerability, patch, prot
 
 ## Public Description
 
-DIIaC™ PatchForge turns vulnerability intelligence, patch signals, exploitability context, asset and service exposure, compensating controls, and human approval into governed, signed patch-decision artefacts.
+DIIaC™ PatchForge helps security and service teams decide what to do about vulnerabilities affecting their estate, explain the evidence behind each decision, and prepare signed records for CAB, customer and audit review.
+
+It connects vulnerability intelligence, asset and service context, compensating controls, accountable human review and report preparation. Verified exports remain subject to the exact release and artifact evidence described in the [Claims Matrix](PATCHFORGE_CLAIMS_MATRIX.md).
 
 ## Product Thesis
 
-AI and automated tooling are accelerating vulnerability discovery. PatchForge governs what happens next: patch, mitigate, defer, risk accept, block go-live, or close verified.
+PatchForge focuses on the decision after a vulnerability signal: patch, mitigate, defer, request temporary risk acceptance, block go-live, or record verified closure after the required evidence and human approval.
 
-Most tools help discover vulnerabilities, ticket them, or deploy remediations. PatchForge owns the missing layer: governed, evidence-bound, human-reviewable patch and protection decisions for IT and OT assets.
+Its proposed differentiation is the combination of explicit evidence gaps, asset and service applicability, deterministic decision controls, role-authorised human review, and signed audience-specific records. This is a product design thesis to validate with customers, not proof of a unique market category or superior outcomes.
+
+Adjacent products already cover relevant parts of this workflow: ServiceNow documents vulnerability exceptions and compensating controls; Tenable describes exploitability and business-impact prioritisation; Qualys describes risk prioritisation with patching. PatchForge must demonstrate its evidence-to-decision experience and fit with a customer's existing tools instead of claiming those capabilities are absent elsewhere. [ServiceNow documentation](https://www.servicenow.com/docs/r/security-management/vulnerability-response/configure-exception-management-settings.html), [Tenable prioritisation](https://www.tenable.com/products/vulnerability-management/use-cases/prioritization), [Qualys VMDR Patch](https://www.qualys.com/apps/vmdr-patch).
 
 ## Primary Users
 
@@ -30,11 +34,13 @@ Most tools help discover vulnerabilities, ticket them, or deploy remediations. P
 
 ## Strategic Value
 
-For MSPs, PatchForge supports managed patch-governance services, customer-facing assurance packs, audit-ready evidence, and controlled emergency change governance.
+The initial proposed buyer is an enterprise security or service-governance lead with recurring CAB decisions and fragmented evidence. The daily users are the analyst, service owner and authorised reviewer. An MSP governance service is a second packaging route once customer isolation, repeatable onboarding and customer reporting are accepted.
 
-For enterprise IT, PatchForge helps reduce patch-decision delay, preserve decision rationale, prioritise based on service impact, and keep security urgency connected to operational reality.
+For enterprise IT, the outcomes to measure are decision preparation time, review cycle time, evidence completeness and the time needed to assemble a usable report. These are pilot hypotheses; no time saving, risk reduction or ROI percentage is established by the repository.
 
-For OT and critical infrastructure, PatchForge provides a governance bridge between cyber urgency, safety impact, vendor support, maintenance windows, rollback limits, and operational continuity.
+For OT and critical infrastructure, the intended value is documenting safety impact, vendor support, maintenance windows, rollback limits and operational continuity alongside cyber urgency. A customer-specific OT pilot and specialist review are required before making sector readiness claims.
+
+See the [Enterprise Offer and Pilot Framework](PATCHFORGE_ENTERPRISE_OFFER.md) for proposed packages, measurable acceptance and procurement work.
 
 ## Dedicated Product Rationale
 
@@ -58,6 +64,8 @@ The product should have:
 
 ## Shared DIIaC Governance Spine
 
-PatchForge may share DIIaC governance patterns, including signed packs, evidence states, replay certificates, trust registry concepts, Entra RBAC, policy packs, and Decision Control Center patterns.
+PatchForge belongs beside DIIaC IT Enterprise / IT Services as the specialised vulnerability and patch-decision product. The portfolio story is shared governance principles: traceable evidence, accountable human decisions and verifiable artifacts.
+
+Shared principles do not establish a shared deployed runtime, cross-product sign-in, common tenant provisioning, an integration connector, or portable trust between products. Current documentation describes the IT Services relationship as harness-ready; an implemented and customer-accepted handoff is not evidenced. The proposed [portfolio handoff](PATCHFORGE_ENTERPRISE_OFFER.md#proposed-portfolio-handoff) requires an explicit contract and end-to-end validation before it is sold as an integration.
 
 That shared spine does not change the product boundary: PatchForge governs decisions and evidence. It does not scan, exploit, deploy patches, or autonomously accept risk.

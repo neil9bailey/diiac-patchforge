@@ -1,4 +1,16 @@
 import { createHash, randomUUID } from "node:crypto";
+import { parseSecurityBoolean, parseSecurityBooleanAny } from "./securityBooleans.js";
+
+const WORKFLOW_REVIEW_STATES = new Set(["triage", "ciso_review_required"]);
+export const ACTION_PACK_ISSUANCE_GUIDANCE = Object.freeze({
+  error: "action_pack_issuance_unavailable",
+  message: "Auxiliary action-pack issuance has been retired. Generate a runtime-signed decision pack using the existing decision-pack workflow.",
+  decision_pack_endpoint: "/api/patchforge/decision-packs/generate",
+  decision_pack_method: "POST",
+  verified: false,
+  signature_ok: false,
+  final_approval_issued: false
+});
 
 const POSTURES = [
   ["Emergency action recommended", 80],
@@ -10,6 +22,7 @@ const POSTURES = [
 ];
 
 export function buildPriorityIndex(input = {}) {
+  input = normalizeDecisionFlags(input);
   const missing = requiredMissing(input, ["cve_id", "asset_id"]);
   const evidenceConfidence = number(input.evidence_confidence, 0.5);
   if (missing.length || evidenceConfidence < 0.25) {
@@ -24,7 +37,8 @@ export function buildPriorityIndex(input = {}) {
   add(number(input.cvss_score) >= 9, 14, "critical CVSS");
   add(number(input.cvss_score) >= 7 && number(input.cvss_score) < 9, 8, "high CVSS");
   add(input.active_exploitation || input.exploit_signal, 15, "active exploitation signal");
-  add(input.ransomware_association === true || String(input.ransomware_association).toLowerCase() === "known", 10, "ransomware association");
+  add(parseSecurityBoolean(input.ransomware_association)
+    || (typeof input.ransomware_association === "string" && input.ransomware_association.trim().toLowerCase() === "known"), 10, "ransomware association");
   add(input.internet_exposed, 10, "internet exposed asset");
   add(String(input.asset_criticality || "").toLowerCase() === "critical", 9, "critical asset");
   add(input.sla_pressure, 6, "SLA pressure");
@@ -60,6 +74,7 @@ export function buildPriorityIndex(input = {}) {
 }
 
 export function comparePatchActions(input = {}) {
+  input = normalizeDecisionFlags(input);
   const options = [
     actionOption("direct_patch", input, 88, 42, "Apply the vendor-supported fixed version through normal or emergency change."),
     actionOption("hotfix", input, 78, 55, "Use a vendor hotfix when the full patch cannot be adopted in the available window."),
@@ -87,10 +102,12 @@ export function comparePatchActions(input = {}) {
 }
 
 export function createWorkflowItem(input = {}) {
-  const status = input.status || (input.ciso_approval_required ? "ciso_review_required" : "triage");
+  const reviewRequired = parseSecurityBooleanAny(input.ciso_approval_required, input.ciso_review_required, input.exception_requested)
+    || /critical|emergency|exception|accepted_risk/i.test(String(input.recommended_action || ""));
+  const status = workflowReviewState(input.status ?? (reviewRequired ? "ciso_review_required" : "triage"));
   return {
     tenant_id: input.tenant_id,
-    id: input.id || `action-${Date.now()}-${randomUUID().slice(0, 8)}`,
+    id: `action-${randomUUID()}`,
     customer_id: input.customer_id || null,
     asset_id: input.asset_id || null,
     cve_id: input.cve_id || input.vulnerability_id || null,
@@ -98,15 +115,19 @@ export function createWorkflowItem(input = {}) {
     status,
     owner: input.owner || "unassigned",
     sla: input.sla || input.sla_due_at || null,
-    exception_requested: Boolean(input.exception_requested),
-    ciso_review_required: Boolean(input.ciso_review_required || /critical|emergency|exception|accepted_risk/i.test(String(input.status || input.recommended_action || ""))),
+    exception_requested: parseSecurityBoolean(input.exception_requested),
+    ciso_review_required: reviewRequired || status === "ciso_review_required",
     evidence_refs: list(input.evidence_refs),
     audit_trail: [{
       event: "workflow_item_created",
       status,
       actor: input.actor_upn || "system",
+      ...workflowLineage(input),
       at: new Date().toISOString()
     }],
+    ...workflowLineage(input),
+    final_approval_issued: false,
+    human_review_required: true,
     no_autonomous_production_approval: true,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
@@ -114,13 +135,17 @@ export function createWorkflowItem(input = {}) {
 }
 
 export function transitionWorkflowItem(item = {}, input = {}) {
-  const status = input.status || item.status || "triage";
+  const status = workflowReviewState(input.status ?? item.status ?? "triage");
   const next = {
     ...item,
     status,
     owner: input.owner || item.owner || "unassigned",
     sla: input.sla || input.sla_due_at || item.sla || null,
-    ciso_review_required: Boolean(item.ciso_review_required || input.ciso_review_required || /ciso|accepted_risk|exception/i.test(status)),
+    ciso_review_required: parseSecurityBooleanAny(item.ciso_review_required, input.ciso_review_required, input.ciso_approval_required)
+      || status === "ciso_review_required",
+    ...workflowLineage(input),
+    final_approval_issued: false,
+    human_review_required: true,
     no_autonomous_production_approval: true,
     updated_at: new Date().toISOString()
   };
@@ -131,59 +156,65 @@ export function transitionWorkflowItem(item = {}, input = {}) {
       from: item.status || null,
       to: status,
       actor: input.actor_upn || "system",
+      ...workflowLineage(input),
       at: next.updated_at
     }
   ];
   return next;
 }
 
-export function buildSignedActionPack(input = {}) {
-  const payload = {
-    customer_id: input.customer_id || null,
-    report_type: input.report_type || "CAB Patch Decision Report",
-    action: input.action || input.recommended_action || "human_review_required",
-    evidence_refs: list(input.evidence_refs),
-    generated_at: new Date().toISOString(),
-    final_approval_issued: false,
-    no_exploit_content: true,
-    no_raw_secrets: true
-  };
-  const sourceHashes = list(input.source_hashes, input.source_hash).filter(Boolean);
-  const packHash = sha256({ payload, source_hashes: sourceHashes });
-  return {
-    id: input.id || `sap-${Date.now()}-${randomUUID().slice(0, 8)}`,
-    customer_id: payload.customer_id,
-    report_type: payload.report_type,
-    payload,
-    evidence_refs: payload.evidence_refs,
-    source_hashes: sourceHashes,
-    pack_hash: packHash,
-    signature: `test-digest:${packHash}`,
-    verifier_result: {
-      verified: true,
-      method: "deterministic_test_digest",
-      production_key_management_required: true
-    },
-    replay_metadata: {
-      deterministic_payload_hash: packHash,
-      replayable: true,
-      human_reviewable: true
-    },
-    created_at: payload.generated_at
-  };
+export function buildSignedActionPack() {
+  const error = new Error(ACTION_PACK_ISSUANCE_GUIDANCE.message);
+  error.statusCode = 410;
+  error.publicError = ACTION_PACK_ISSUANCE_GUIDANCE.error;
+  error.publicMessage = ACTION_PACK_ISSUANCE_GUIDANCE.message;
+  throw error;
 }
 
 export function verifySignedActionPack(pack = {}) {
   const expected = sha256({ payload: pack.payload, source_hashes: pack.source_hashes || [] });
-  const verified = pack.pack_hash === expected && pack.signature === `test-digest:${expected}`;
+  const integrityOk = pack.pack_hash === expected && pack.signature === `test-digest:${expected}`;
   return {
-    verified,
+    verified: false,
+    integrity_ok: integrityOk,
+    method: "legacy_test_digest_integrity_only",
+    reason: "Auxiliary test digests do not authenticate a signer. Use runtime-signed decision packs for verified evidence.",
     pack_hash: pack.pack_hash || null,
     expected_hash: expected,
-    signature_ok: verified,
-    replayable: Boolean(pack.replay_metadata?.replayable),
-    production_key_management_required: String(pack.signature || "").startsWith("test-digest:")
+    signature_ok: false,
+    replayable: false,
+    production_key_management_required: true
   };
+}
+
+function workflowReviewState(value) {
+  if (typeof value !== "string" || !WORKFLOW_REVIEW_STATES.has(value)) {
+    const error = new Error("Workflow status must be triage or ciso_review_required. Final decisions require a separate evidence-bound human approval workflow.");
+    error.statusCode = 400;
+    error.publicError = "unsupported_workflow_status";
+    error.publicMessage = error.message;
+    throw error;
+  }
+  return value;
+}
+
+function workflowLineage(input) {
+  return {
+    actor_oid: input.actor_oid || null,
+    actor_upn: input.actor_upn || null,
+    actor_roles: Array.isArray(input.actor_roles) ? input.actor_roles : [],
+    actor_tenant_id: input.actor_tenant_id || null,
+    effective_tenant_id: input.effective_tenant_id || input.tenant_id || null
+  };
+}
+
+function normalizeDecisionFlags(input) {
+  const normalized = { ...input };
+  for (const field of ["confirmed_asset_match", "kev", "active_exploitation", "exploit_signal", "internet_exposed", "sla_pressure", "patch_available", "workaround_available", "compensating_controls", "production_impacting", "defer", "accepted_risk"]) {
+    normalized[field] = parseSecurityBoolean(input[field]);
+  }
+  normalized.kev = parseSecurityBooleanAny(input.kev, input.known_exploited, input.cisa_kev);
+  return normalized;
 }
 
 function actionOption(actionType, input, riskReductionBase, operationalRiskBase, recommendation) {

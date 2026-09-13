@@ -6,6 +6,11 @@ ENV NODE_ENV=production
 ENV PORT=8080
 ENV PATCHFORGE_DEFAULT_TENANT=diiac.io
 
+# Apply the Bookworm PCRE2 security update without changing the pinned base.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends --only-upgrade libpcre2-8-0 \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY package*.json ./
 RUN npm ci --omit=dev \
     && rm -rf /usr/local/lib/node_modules/npm /opt/yarn-v1.22.22 \

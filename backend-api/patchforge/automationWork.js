@@ -68,6 +68,12 @@ export async function executeSourceFeedWork(options = {}) {
   if (current.status === "completed") {
     return { work_item: { ...current, idempotent_reuse: true }, result: current.result || null, skipped: true };
   }
+  // Terminal failures must be reopened by the existing reconciliation path,
+  // which records replay intent and resets the attempt budget.
+  if (["dead_lettered", "quarantined"].includes(current.status)
+    || Number(current.attempts || 0) >= boundedNumber(current.max_attempts, 3, 1, 8)) {
+    return { work_item: current, result: null, deferred: true, reason: "reconciliation_required" };
+  }
 
   const ownerId = options.ownerId || `worker-${process.pid}-${randomUUID().slice(0, 8)}`;
   const leaseId = `automation-work:${current.work_id}`;

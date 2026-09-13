@@ -222,7 +222,7 @@ const adminSections: AdminCapability[] = [
   { label: "Source Feeds", status: "Runtime-backed", tone: "trust", detail: "Public advisory refresh and run history are exposed in the live source feed surfaces." },
   { label: "VendorLens Sources", status: "Runtime-backed", tone: "trust", detail: "Vendor, product, advisory, and customer-estate intelligence feed the advisory workflow." },
   { label: "Evidence Models", status: "Runtime-backed", tone: "trust", detail: "Reviewed evidence, rejected evidence, and gaps stay visible before report export." },
-  { label: "Policy Packs", status: "Baseline-bound", tone: "steel", detail: "Current policy behavior follows the approved PF-AZ12 governance baseline." },
+  { label: "Policy Packs", status: "Baseline-bound", tone: "steel", detail: "Inspect signed pack metadata for the exact policy and release baseline used for a decision." },
   { label: "Decision State Rules", status: "Human-gated", tone: "amber", detail: "Final approval, closure, and assurance claims require reviewed evidence and a named human." },
   { label: "Risk Acceptance Rules", status: "Human-only", tone: "amber", detail: "PatchForge records posture guidance but does not autonomously accept risk." },
   { label: "SLA / Ageing Rules", status: "Visible", tone: "steel", detail: "Ageing and priority signals are surfaced in queue and reporting contexts." },
@@ -307,6 +307,9 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
   const navigationRef = useRef<HTMLElement>(null);
   const navigationToggleRef = useRef<HTMLButtonElement>(null);
   const [tenantId, setTenantId] = useState(initialTenantId || config.tenantHeader);
+  const tenantContextRef = useRef({ tenantId, generation: 0 });
+  const liveRequestGenerationRef = useRef(0);
+  const evidenceRequestGenerationRef = useRef(0);
   const [state, setState] = useState<LiveState>(() => emptyLiveState(tenantId));
   const [refreshing, setRefreshing] = useState(false);
   const [loadFailures, setLoadFailures] = useState<LiveLoadFailure[]>([]);
@@ -372,22 +375,73 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
   );
   const evidenceVulnerabilityId = selectedVulnerabilityId || selectedFinding?.vulnerability_id || "";
 
+  function handleTenantChange(nextTenantId: string) {
+    if (nextTenantId === tenantContextRef.current.tenantId) return;
+    tenantContextRef.current = { tenantId: nextTenantId, generation: tenantContextRef.current.generation + 1 };
+    liveRequestGenerationRef.current += 1;
+    evidenceRequestGenerationRef.current += 1;
+    setTenantId(nextTenantId);
+    setState(emptyLiveState(nextTenantId));
+    setRefreshing(true);
+    setLoadFailures([]);
+    setOperationMessage(null);
+    setOperationError(null);
+    setFindingEvidenceQueue(null);
+    setFindingEvidenceLoading(false);
+    setFindingEvidenceError(null);
+    setFindingEvidenceConflict(null);
+    setSelectedVulnerabilityId("");
+    setSelectedCustomerAssetId("");
+    setSelectedAdvisoryId("");
+    setSelectedPosture("defer_pending_evidence");
+    setVulnerabilityForm(emptyForm);
+    setNetworkAssetForm(emptyNetworkAssetForm);
+    setVendorAdvisoryForm(emptyVendorAdvisoryForm);
+    setExtractedCustomerAsset(null);
+    setSraResult(null);
+    setVendorLensQuestion("");
+    setCustomerDeviceText("");
+    setAskQuestion("");
+    setPatchCompareForm({ current_version: "", proposed_version: "" });
+    setGlobalSearch("");
+    setGlobalFilters({ vendor: "", severity: "", customer_match: "", patch_available: "" });
+    setAdminEnvironment(config.environmentLabel);
+    setAdminTier("Enterprise Strict");
+    setPurgeScopes({ reports: false, catalogue: false, assets: false, uploads: false, logs: false, cache: false });
+    setLatestPurgePlan(null);
+    setPurgeConfirm("");
+    setLatestUatCleanupPlan(null);
+    setUatCleanupIdentifier("");
+    setUatCleanupConfirm("");
+  }
+
+  function captureTenantContext() {
+    const context = tenantContextRef.current;
+    return () => tenantContextRef.current === context && context.tenantId === tenantId;
+  }
+
   const loadFindingEvidence = useCallback(async (vulnerabilityId: string, preserveConflict = false) => {
-    if (!vulnerabilityId || session.status !== "authenticated") {
+    if (!vulnerabilityId || session.status !== "authenticated" || tenantContextRef.current.tenantId !== tenantId) {
       return;
     }
+    const tenantGeneration = tenantContextRef.current.generation;
+    const requestGeneration = ++evidenceRequestGenerationRef.current;
+    const isCurrentRequest = () => tenantContextRef.current.tenantId === tenantId
+      && tenantContextRef.current.generation === tenantGeneration
+      && evidenceRequestGenerationRef.current === requestGeneration;
     setFindingEvidenceLoading(true);
     setFindingEvidenceError(null);
     try {
       const queue = await liveApi.findingEvidence(tenantId, vulnerabilityId);
+      if (!isCurrentRequest()) return;
       setFindingEvidenceQueue(queue);
       if (!preserveConflict) {
         setFindingEvidenceConflict(null);
       }
     } catch (error) {
-      setFindingEvidenceError(error instanceof Error ? error.message : "Finding evidence could not be loaded.");
+      if (isCurrentRequest()) setFindingEvidenceError(error instanceof Error ? error.message : "Finding evidence could not be loaded.");
     } finally {
-      setFindingEvidenceLoading(false);
+      if (isCurrentRequest()) setFindingEvidenceLoading(false);
     }
   }, [liveApi, session.status, tenantId]);
 
@@ -440,9 +494,14 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
   }, [navigationCollapsed]);
 
   const loadLiveState = useCallback(async (retryKeys?: string[]) => {
-    if (session.status !== "authenticated") {
+    if (session.status !== "authenticated" || tenantContextRef.current.tenantId !== tenantId) {
       return;
     }
+    const tenantGeneration = tenantContextRef.current.generation;
+    const requestGeneration = ++liveRequestGenerationRef.current;
+    const isCurrentRequest = () => tenantContextRef.current.tenantId === tenantId
+      && tenantContextRef.current.generation === tenantGeneration
+      && liveRequestGenerationRef.current === requestGeneration;
     setRefreshing(true);
     setOperationError(null);
     try {
@@ -476,6 +535,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         return;
       }
       const results = await Promise.allSettled(selectedRequests.map((request) => request.run()));
+      if (!isCurrentRequest()) return;
       const values = new Map<string, unknown>();
       const failures: LiveLoadFailure[] = [];
       results.forEach((result, index) => {
@@ -491,7 +551,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         }
       });
       const value = <T,>(key: string, fallback: T): T => values.has(key) ? values.get(key) as T : fallback;
-      setState((current) => ({
+      setState((current) => isCurrentRequest() ? ({
         metrics: value("metrics", current.metrics),
         securityActionCenter: value("securityActionCenter", current.securityActionCenter),
         customerEstate: value("customerEstate", current.customerEstate),
@@ -525,8 +585,8 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         adminHealth: value("adminHealth", current.adminHealth),
         adminConfig: value("adminConfig", current.adminConfig),
         discovery: value("discovery", current.discovery)
-      }));
-      setLoadFailures((current) => retryKeys?.length
+      }) : current);
+      setLoadFailures((current) => !isCurrentRequest() ? current : retryKeys?.length
         ? [
             ...current.filter((failure) => !retryKeys.includes(failure.key)),
             ...failures
@@ -547,9 +607,9 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         setOperationError("Every PatchForge data source failed. Last-known workspace data has been retained.");
       }
     } catch (error) {
-      setOperationError(error instanceof Error ? error.message : "PatchForge API request failed.");
+      if (isCurrentRequest()) setOperationError(error instanceof Error ? error.message : "PatchForge API request failed.");
     } finally {
-      setRefreshing(false);
+      if (isCurrentRequest()) setRefreshing(false);
     }
   }, [canReadAdmin, liveApi, session.status, tenantId]);
 
@@ -568,6 +628,8 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
   }, [activePage, evidenceVulnerabilityId, loadFindingEvidence]);
 
   async function handleIngest(event: FormEvent<HTMLFormElement>) {
+    const isCurrentContext = captureTenantContext();
+    if (!isCurrentContext()) return;
     event.preventDefault();
     setOperationMessage(null);
     setOperationError(null);
@@ -601,10 +663,13 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         affected_asset_ids: parseList(vulnerabilityForm.affected_asset_ids),
         sources: source
       });
+      if (!isCurrentContext()) return;
       setOperationMessage(`Record ingested for ${vulnerabilityId}.`);
       setVulnerabilityForm(emptyForm);
       await loadLiveState();
+      if (!isCurrentContext()) return;
     } catch (error) {
+      if (!isCurrentContext()) return;
       setOperationError(error instanceof Error ? error.message : "Vulnerability ingest failed.");
     }
   }
@@ -615,6 +680,8 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
     advisoryId?: string;
     strictContext?: boolean;
   }) {
+    const isCurrentContext = captureTenantContext();
+    if (!isCurrentContext()) return;
     setOperationMessage(null);
     setOperationError(null);
     const vulnerabilityId = context?.vulnerabilityId || selectedVulnerabilityId;
@@ -652,15 +719,20 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         asset_id: assetId || undefined,
         advisory_id: advisoryId || undefined
       });
+      if (!isCurrentContext()) return;
       setOperationMessage(`Signed decision pack ${pack.pack_id} generated.`);
       await loadLiveState();
+      if (!isCurrentContext()) return;
       setActivePage("Reports");
     } catch (error) {
+      if (!isCurrentContext()) return;
       setOperationError(error instanceof Error ? error.message : "Decision pack generation failed.");
     }
   }
 
   async function handleBayesianAssess() {
+    const isCurrentContext = captureTenantContext();
+    if (!isCurrentContext()) return;
     setOperationMessage(null);
     setOperationError(null);
     const vulnerability = state.vulnerabilities.find((item) => item.vulnerability_id === selectedVulnerabilityId) || state.vulnerabilities[0];
@@ -673,9 +745,11 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         vulnerability,
         ...vulnerability
       });
+      if (!isCurrentContext()) return;
       setState((current) => ({ ...current, bayesian }));
       setOperationMessage(`Bayesian advisory recommends ${humanize(bayesian.recommended_governance_posture)}.`);
     } catch (error) {
+      if (!isCurrentContext()) return;
       setOperationError(error instanceof Error ? error.message : "Bayesian assessment failed.");
     }
   }
@@ -686,6 +760,8 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
   }
 
   async function handleAnalyseFinding() {
+    const isCurrentContext = captureTenantContext();
+    if (!isCurrentContext()) return;
     setOperationMessage(null);
     setOperationError(null);
     const vulnerabilityId = selectedVulnerabilityId || selectedFinding?.vulnerability_id || state.vulnerabilities[0]?.vulnerability_id;
@@ -695,6 +771,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
     }
     try {
       const result = await liveApi.analyseFinding(tenantId, vulnerabilityId);
+      if (!isCurrentContext()) return;
       setState((current) => ({
         ...current,
         bayesian: result.bayesian || current.bayesian,
@@ -703,11 +780,14 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
       setSelectedVulnerabilityId(result.intelligence.vulnerability_id);
       setOperationMessage(`PatchForge intelligence analysis completed for ${result.intelligence.vulnerability_id}. Human approval remains required.`);
     } catch (error) {
+      if (!isCurrentContext()) return;
       setOperationError(error instanceof Error ? error.message : "Finding intelligence analysis failed.");
     }
   }
 
   async function handleSraResearch() {
+    const isCurrentContext = captureTenantContext();
+    if (!isCurrentContext()) return;
     setOperationMessage(null);
     setOperationError(null);
     const vulnerability = state.vulnerabilities.find((item) => item.vulnerability_id === selectedVulnerabilityId) || state.vulnerabilities[0];
@@ -720,9 +800,11 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         vulnerability_id: vulnerability.vulnerability_id,
         source_refs: vulnerability.source_record_ids || []
       });
+      if (!isCurrentContext()) return;
       setSraResult(result);
       setOperationMessage("SRA advisory research returned source-bound output.");
     } catch (error) {
+      if (!isCurrentContext()) return;
       setOperationError(error instanceof Error ? error.message : "SRA advisory request failed.");
     }
   }
@@ -737,6 +819,8 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
   }
 
   async function handleSubmitFindingEvidence(payload: Record<string, unknown>) {
+    const isCurrentContext = captureTenantContext();
+    if (!isCurrentContext()) return;
     if (!evidenceVulnerabilityId) {
       setFindingEvidenceError("Select a persisted finding before submitting evidence.");
       return;
@@ -745,14 +829,19 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
     setFindingEvidenceConflict(null);
     try {
       const evidence = await liveApi.submitFindingEvidence(tenantId, evidenceVulnerabilityId, payload);
+      if (!isCurrentContext()) return;
       setOperationMessage(`Evidence ${evidence.evidence_id} submitted for review.`);
       await loadFindingEvidence(evidenceVulnerabilityId);
+      if (!isCurrentContext()) return;
     } catch (error) {
+      if (!isCurrentContext()) return;
       recordFindingEvidenceFailure(error, "Finding evidence submission failed.");
     }
   }
 
   async function handleReviewFindingEvidence(record: FindingEvidenceRecord, decision: "accept" | "reject", rationale: string) {
+    const isCurrentContext = captureTenantContext();
+    if (!isCurrentContext()) return;
     setFindingEvidenceError(null);
     setFindingEvidenceConflict(null);
     try {
@@ -762,15 +851,21 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         expected_content_hash: record.content_hash,
         expected_event_hash: record.latest_event_hash || null
       });
+      if (!isCurrentContext()) return;
       setOperationMessage(`Evidence ${record.evidence_id} ${decision === "accept" ? "accepted" : "rejected"}; final approval remains false.`);
       await loadFindingEvidence(record.vulnerability_id);
+      if (!isCurrentContext()) return;
     } catch (error) {
+      if (!isCurrentContext()) return;
       recordFindingEvidenceFailure(error, "Finding evidence review failed.");
       await loadFindingEvidence(record.vulnerability_id, true);
+      if (!isCurrentContext()) return;
     }
   }
 
   async function handleReopenFindingEvidence(record: FindingEvidenceRecord, rationale: string) {
+    const isCurrentContext = captureTenantContext();
+    if (!isCurrentContext()) return;
     setFindingEvidenceError(null);
     setFindingEvidenceConflict(null);
     try {
@@ -779,15 +874,21 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         expected_content_hash: record.content_hash,
         expected_event_hash: record.latest_event_hash || null
       });
+      if (!isCurrentContext()) return;
       setOperationMessage(`Evidence ${record.evidence_id} reopened for a new review event.`);
       await loadFindingEvidence(record.vulnerability_id);
+      if (!isCurrentContext()) return;
     } catch (error) {
+      if (!isCurrentContext()) return;
       recordFindingEvidenceFailure(error, "Finding evidence reopen failed.");
       await loadFindingEvidence(record.vulnerability_id, true);
+      if (!isCurrentContext()) return;
     }
   }
 
   async function handleRefreshSourceFeed(feedId: string, remainInCurrentArea = false) {
+    const isCurrentContext = captureTenantContext();
+    if (!isCurrentContext()) return;
     setOperationMessage(null);
     setOperationError(null);
     try {
@@ -795,17 +896,22 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         ? { feed_id: feedId, limit: 5 }
         : { feed_id: feedId, cve: selectedVulnerabilityId || state.vulnerabilities[0]?.vulnerability_id };
       const run = await liveApi.refreshSourceFeed(tenantId, payload);
+      if (!isCurrentContext()) return;
       setOperationMessage(`${run.feed_name} ${run.status}: ${run.message || "source-bound refresh recorded."}`);
       await loadLiveState();
+      if (!isCurrentContext()) return;
       if (!remainInCurrentArea) {
         setActivePage("Source Feeds");
       }
     } catch (error) {
+      if (!isCurrentContext()) return;
       setOperationError(error instanceof Error ? error.message : "Source feed refresh failed.");
     }
   }
 
   async function handleSearchSecurityActionCenter() {
+    const isCurrentContext = captureTenantContext();
+    if (!isCurrentContext()) return;
     setOperationMessage(null);
     setOperationError(null);
     try {
@@ -813,24 +919,32 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         q: globalSearch,
         ...globalFilters
       });
+      if (!isCurrentContext()) return;
       setState((current) => ({ ...current, securityActionCenter }));
       setOperationMessage(`Global catalogue filtered to ${securityActionCenter.catalogue_rows.length} record(s).`);
     } catch (error) {
+      if (!isCurrentContext()) return;
       setOperationError(error instanceof Error ? error.message : "Security Action Center search failed.");
     }
   }
 
   async function handleGlobalSearchSubmit(event: FormEvent<HTMLFormElement>) {
+    const isCurrentContext = captureTenantContext();
+    if (!isCurrentContext()) return;
     event.preventDefault();
     setActivePage("Patch & CVE Catalogue");
     await handleSearchSecurityActionCenter();
+    if (!isCurrentContext()) return;
   }
 
   async function handleExtractCustomerAsset() {
+    const isCurrentContext = captureTenantContext();
+    if (!isCurrentContext()) return;
     setOperationMessage(null);
     setOperationError(null);
     try {
       const extracted = await liveApi.extractCustomerAsset(tenantId, customerDeviceText);
+      if (!isCurrentContext()) return;
       setExtractedCustomerAsset(extracted);
       setNetworkAssetForm((current) => ({
         ...current,
@@ -847,11 +961,14 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
       }));
       setOperationMessage("Device fields extracted for user confirmation.");
     } catch (error) {
+      if (!isCurrentContext()) return;
       setOperationError(error instanceof Error ? error.message : "Device extraction failed.");
     }
   }
 
   async function handleConfirmCustomerAsset() {
+    const isCurrentContext = captureTenantContext();
+    if (!isCurrentContext()) return;
     setOperationMessage(null);
     setOperationError(null);
     try {
@@ -864,15 +981,20 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         evidence_state: networkAssetForm.evidence_state || "user_stated_unreviewed"
       };
       const asset = await liveApi.upsertCustomerEstateAsset(tenantId, payload);
+      if (!isCurrentContext()) return;
       setSelectedCustomerAssetId(asset.asset_id);
       setOperationMessage(`Customer asset ${asset.asset_id} saved for governed matching.`);
       await loadLiveState();
+      if (!isCurrentContext()) return;
     } catch (error) {
+      if (!isCurrentContext()) return;
       setOperationError(error instanceof Error ? error.message : "Customer asset save failed.");
     }
   }
 
   async function handleMatchCustomerEstate() {
+    const isCurrentContext = captureTenantContext();
+    if (!isCurrentContext()) return;
     setOperationMessage(null);
     setOperationError(null);
     try {
@@ -881,15 +1003,20 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         asset_id: assetId,
         advisory_id: selectedAdvisoryId || undefined
       });
+      if (!isCurrentContext()) return;
       setState((current) => ({ ...current, latestCustomerMatch: match }));
       setOperationMessage(`Customer estate matching found ${match.match_count} candidate advisory/CVE match(es).`);
       await loadLiveState();
+      if (!isCurrentContext()) return;
     } catch (error) {
+      if (!isCurrentContext()) return;
       setOperationError(error instanceof Error ? error.message : "Customer estate match failed.");
     }
   }
 
   async function handleCustomerPatchCompare() {
+    const isCurrentContext = captureTenantContext();
+    if (!isCurrentContext()) return;
     setOperationMessage(null);
     setOperationError(null);
     if (!selectedAdvisoryId) {
@@ -903,6 +1030,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         current_version: patchCompareForm.current_version,
         proposed_version: patchCompareForm.proposed_version
       });
+      if (!isCurrentContext()) return;
       setState((current) => ({
         ...current,
         vendorLens: { ...current.vendorLens, latestComparison: comparison },
@@ -913,11 +1041,14 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
       }));
       setOperationMessage(`Patch Compare prepared: current ${comparison.current_version_affected || comparison.current_version_status}, proposed ${comparison.proposed_version_remediates || comparison.target_version_status}.`);
     } catch (error) {
+      if (!isCurrentContext()) return;
       setOperationError(error instanceof Error ? error.message : "Patch Compare failed.");
     }
   }
 
   async function handleRegisterDiscoveryCollector() {
+    const isCurrentContext = captureTenantContext();
+    if (!isCurrentContext()) return;
     setOperationMessage(null);
     setOperationError(null);
     try {
@@ -928,14 +1059,19 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         site: "Primary site",
         categories: discoveryCollectorCategories
       });
+      if (!isCurrentContext()) return;
       setOperationMessage(`Collector ${collector.collector_id} registered as outbound-only.`);
       await loadLiveState();
+      if (!isCurrentContext()) return;
     } catch (error) {
+      if (!isCurrentContext()) return;
       setOperationError(error instanceof Error ? error.message : "Collector registration failed.");
     }
   }
 
   async function handleCreateDiscoveryPolicy() {
+    const isCurrentContext = captureTenantContext();
+    if (!isCurrentContext()) return;
     setOperationMessage(null);
     setOperationError(null);
     try {
@@ -952,9 +1088,12 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
           source_systems: ["local_host", "hyperv", "azure_cli", "http_json"]
         }
       });
+      if (!isCurrentContext()) return;
       setOperationMessage(`Discovery policy ${policy.policy_id} saved as read-only and reference-only.`);
       await loadLiveState();
+      if (!isCurrentContext()) return;
     } catch (error) {
+      if (!isCurrentContext()) return;
       setOperationError(error instanceof Error ? error.message : "Discovery policy save failed.");
     }
   }
@@ -976,6 +1115,8 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
   }
 
   async function handleAskPatchForge() {
+    const isCurrentContext = captureTenantContext();
+    if (!isCurrentContext()) return;
     setOperationMessage(null);
     setOperationError(null);
     try {
@@ -985,6 +1126,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         advisory_id: selectedAdvisoryId || undefined,
         patch_compare: activePatchComparison || undefined
       });
+      if (!isCurrentContext()) return;
       let agentGuidance: AgentGuidanceSnapshot | null = null;
       if (state.openAiAgentStatus?.enabled && state.openAiAgentStatus.configured) {
         try {
@@ -997,7 +1139,9 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
               patch_compare: activePatchComparison || undefined
             }
           });
+          if (!isCurrentContext()) return;
         } catch {
+          if (!isCurrentContext()) return;
           agentGuidance = null;
         }
       }
@@ -1006,11 +1150,14 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         ? `Ask PatchForge answered with verified AI assistance: ${answer.response.short_answer}`
         : `Ask PatchForge answered deterministically: ${answer.response.short_answer}`);
     } catch (error) {
+      if (!isCurrentContext()) return;
       setOperationError(error instanceof Error ? error.message : "Ask PatchForge failed.");
     }
   }
 
   async function handleSaveNetworkAsset(event: FormEvent<HTMLFormElement>) {
+    const isCurrentContext = captureTenantContext();
+    if (!isCurrentContext()) return;
     event.preventDefault();
     setOperationMessage(null);
     setOperationError(null);
@@ -1021,14 +1168,19 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         disabled_features: parseList(networkAssetForm.disabled_features),
         config_evidence_refs: parseList(networkAssetForm.config_evidence_refs)
       });
+      if (!isCurrentContext()) return;
       setOperationMessage(`VendorLens asset ${asset.asset_id} saved as source-bound customer evidence.`);
       await loadLiveState();
+      if (!isCurrentContext()) return;
     } catch (error) {
+      if (!isCurrentContext()) return;
       setOperationError(error instanceof Error ? error.message : "VendorLens asset save failed.");
     }
   }
 
   async function handleIngestVendorLensAdvisory(event: FormEvent<HTMLFormElement>) {
+    const isCurrentContext = captureTenantContext();
+    if (!isCurrentContext()) return;
     event.preventDefault();
     setOperationMessage(null);
     setOperationError(null);
@@ -1041,14 +1193,19 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         review_state: "pending_review",
         evidence_state: "referenced"
       });
+      if (!isCurrentContext()) return;
       setOperationMessage(`VendorLens advisory ${advisory.advisory_id} ingested as pending-review source intelligence.`);
       await loadLiveState();
+      if (!isCurrentContext()) return;
     } catch (error) {
+      if (!isCurrentContext()) return;
       setOperationError(error instanceof Error ? error.message : "VendorLens advisory ingest failed.");
     }
   }
 
   async function handleAssessVendorLens(assetId?: string, advisoryId?: string) {
+    const isCurrentContext = captureTenantContext();
+    if (!isCurrentContext()) return;
     setOperationMessage(null);
     setOperationError(null);
     const asset = state.vendorLens.assets.find((item) => item.asset_id === assetId)
@@ -1068,14 +1225,18 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         asset_id: asset.asset_id,
         advisory_id: advisory.advisory_id
       });
+      if (!isCurrentContext()) return;
       setState((current) => ({ ...current, vendorLens: { ...current.vendorLens, latestAssessment: assessment } }));
       setOperationMessage(`VendorLens assessed ${humanize(assessment.urgency_posture)}. Final approval remains human-controlled.`);
     } catch (error) {
+      if (!isCurrentContext()) return;
       setOperationError(error instanceof Error ? error.message : "VendorLens applicability assessment failed.");
     }
   }
 
   async function handleAskVendorLens(assetId?: string, advisoryId?: string) {
+    const isCurrentContext = captureTenantContext();
+    if (!isCurrentContext()) return;
     setOperationMessage(null);
     setOperationError(null);
     const asset = state.vendorLens.assets.find((item) => item.asset_id === assetId)
@@ -1100,6 +1261,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         advisory_id: advisory.advisory_id,
         assessment: assessment || undefined
       });
+      if (!isCurrentContext()) return;
       setState((current) => ({
         ...current,
         vendorLens: {
@@ -1109,11 +1271,14 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
       }));
       setOperationMessage(`Ask PatchForge response: ${chat.response.short_answer}`);
     } catch (error) {
+      if (!isCurrentContext()) return;
       setOperationError(error instanceof Error ? error.message : "Ask PatchForge request failed.");
     }
   }
 
   async function handleRefreshVendorLensSource(vendorIdOverride?: string) {
+    const isCurrentContext = captureTenantContext();
+    if (!isCurrentContext()) return;
     setOperationMessage(null);
     setOperationError(null);
     try {
@@ -1126,14 +1291,19 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         max_pages: 1,
         max_keywords: 4
       });
+      if (!isCurrentContext()) return;
       setOperationMessage(`${run.feed_name} ${run.status}: ${run.message || "VendorLens source refresh recorded."}`);
       await loadLiveState();
+      if (!isCurrentContext()) return;
     } catch (error) {
+      if (!isCurrentContext()) return;
       setOperationError(error instanceof Error ? error.message : "VendorLens source refresh failed.");
     }
   }
 
   async function handleCompareVendorLensPatch(assetId?: string, advisoryId?: string) {
+    const isCurrentContext = captureTenantContext();
+    if (!isCurrentContext()) return;
     setOperationMessage(null);
     setOperationError(null);
     const asset = state.vendorLens.assets.find((item) => item.asset_id === assetId) || state.vendorLens.assets[0];
@@ -1147,6 +1317,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         asset_id: asset.asset_id,
         advisory_id: advisory.advisory_id
       });
+      if (!isCurrentContext()) return;
       setState((current) => ({
         ...current,
         vendorLens: {
@@ -1156,47 +1327,62 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
       }));
       setOperationMessage(`Patch comparison prepared for CISO review: ${comparison.current_version || "current unknown"} to ${comparison.target_version || "target pending"}.`);
     } catch (error) {
+      if (!isCurrentContext()) return;
       setOperationError(error instanceof Error ? error.message : "VendorLens patch comparison failed.");
     }
   }
 
   async function handleExportPack(packId: string) {
+    const isCurrentContext = captureTenantContext();
+    if (!isCurrentContext()) return;
     setOperationMessage(null);
     setOperationError(null);
     try {
       const exported = await liveApi.exportDecisionPack(tenantId, packId);
+      if (!isCurrentContext()) return;
       downloadJson(`${packId}.json`, exported);
       setOperationMessage(`Decision pack JSON prepared for ${packId}.`);
     } catch (error) {
+      if (!isCurrentContext()) return;
       setOperationError(error instanceof Error ? error.message : "Decision pack JSON export failed.");
     }
   }
 
   async function handleDownloadPackZip(packId: string) {
+    const isCurrentContext = captureTenantContext();
+    if (!isCurrentContext()) return;
     setOperationMessage(null);
     setOperationError(null);
     try {
       const blob = await liveApi.downloadDecisionPackZip(tenantId, packId);
+      if (!isCurrentContext()) return;
       downloadBlob(`${packId}.zip`, blob);
       setOperationMessage(`Signed decision-pack ZIP prepared for ${packId}.`);
     } catch (error) {
+      if (!isCurrentContext()) return;
       setOperationError(error instanceof Error ? error.message : "Signed decision-pack ZIP export failed.");
     }
   }
 
   async function handleDownloadReport(packId: string, reportType: string, format: "docx" | "pdf") {
+    const isCurrentContext = captureTenantContext();
+    if (!isCurrentContext()) return;
     setOperationMessage(null);
     setOperationError(null);
     try {
       const blob = await liveApi.downloadDecisionPackReport(tenantId, packId, reportType, format);
+      if (!isCurrentContext()) return;
       downloadBlob(`${packId}-${reportType}.${format}`, blob);
       setOperationMessage(`${format.toUpperCase()} report prepared for ${packId}.`);
     } catch (error) {
+      if (!isCurrentContext()) return;
       setOperationError(error instanceof Error ? error.message : "Report export failed.");
     }
   }
 
   async function handleSaveAdmin() {
+    const isCurrentContext = captureTenantContext();
+    if (!isCurrentContext()) return;
     setOperationMessage(null);
     setOperationError(null);
     try {
@@ -1206,39 +1392,53 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
           governance_tier: adminTier
         }
       });
+      if (!isCurrentContext()) return;
       setOperationMessage("Admin configuration saved.");
       await loadLiveState();
+      if (!isCurrentContext()) return;
     } catch (error) {
+      if (!isCurrentContext()) return;
       setOperationError(error instanceof Error ? error.message : "Admin configuration save failed.");
     }
   }
 
   async function handlePreviewPurge() {
+    const isCurrentContext = captureTenantContext();
+    if (!isCurrentContext()) return;
     setOperationMessage(null);
     setOperationError(null);
     try {
       const purge = await liveApi.adminPurge(tenantId, { ...purgeScopes, dry_run: true });
+      if (!isCurrentContext()) return;
       setLatestPurgePlan(purge);
       setOperationMessage(`Purge dry-run found ${purge.total_records} record(s) across ${purge.collections.length} collection(s).`);
     } catch (error) {
+      if (!isCurrentContext()) return;
       setOperationError(error instanceof Error ? error.message : "Purge preview failed.");
     }
   }
 
   async function handleExecutePurge() {
+    const isCurrentContext = captureTenantContext();
+    if (!isCurrentContext()) return;
     setOperationMessage(null);
     setOperationError(null);
     try {
       const purge = await liveApi.adminPurge(tenantId, { ...purgeScopes, dry_run: false, confirm: purgeConfirm });
+      if (!isCurrentContext()) return;
       setLatestPurgePlan(purge);
       setOperationMessage(`Confirmed purge completed for ${Object.values(purge.removed || {}).reduce((total, count) => total + count, 0)} record(s).`);
       await loadLiveState();
+      if (!isCurrentContext()) return;
     } catch (error) {
+      if (!isCurrentContext()) return;
       setOperationError(error instanceof Error ? error.message : "Confirmed purge failed.");
     }
   }
 
   async function handlePreviewUatCleanup() {
+    const isCurrentContext = captureTenantContext();
+    if (!isCurrentContext()) return;
     setOperationMessage(null);
     setOperationError(null);
     try {
@@ -1246,16 +1446,20 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         identifier: uatCleanupIdentifier.trim(),
         dry_run: true
       });
+      if (!isCurrentContext()) return;
       setLatestUatCleanupPlan(cleanup);
       setUatCleanupConfirm("");
       setOperationMessage(`UAT cleanup preview found ${cleanup.total_records} exact-linked record(s) across ${cleanup.collections.length} collection(s).`);
     } catch (error) {
+      if (!isCurrentContext()) return;
       setLatestUatCleanupPlan(null);
       setOperationError(error instanceof Error ? error.message : "UAT cleanup preview failed.");
     }
   }
 
   async function handleExecuteUatCleanup() {
+    const isCurrentContext = captureTenantContext();
+    if (!isCurrentContext()) return;
     setOperationMessage(null);
     setOperationError(null);
     const identifier = uatCleanupIdentifier.trim();
@@ -1270,11 +1474,14 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
         confirm: uatCleanupConfirm,
         preview_token: latestUatCleanupPlan.preview_token
       });
+      if (!isCurrentContext()) return;
       setLatestUatCleanupPlan(cleanup);
       setUatCleanupConfirm("");
       setOperationMessage(`Targeted UAT cleanup removed ${cleanup.total_removed || 0} record(s); audit event ${cleanup.audit_id || "recorded"}.`);
       await loadLiveState();
+      if (!isCurrentContext()) return;
     } catch (error) {
+      if (!isCurrentContext()) return;
       setOperationError(error instanceof Error ? error.message : "Targeted UAT cleanup failed.");
     }
   }
@@ -1311,6 +1518,12 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
           ))}
         </nav>
         <div className="nav-footer">
+          <button type="button" className={activePage === "Guide" ? "nav-button active" : "nav-button"} aria-current={activePage === "Guide" ? "page" : undefined} tabIndex={navigationCollapsed ? -1 : 0} onClick={() => {
+            setActivePage("Guide");
+            if (typeof window.matchMedia === "function" && window.matchMedia("(max-width: 820px)").matches) setNavigationCollapsed(true);
+          }}>
+            <BookOpenCheck size={18} aria-hidden /><span>Getting started & guidance</span>
+          </button>
           <div className="nav-assurance">
             <ShieldCheck size={17} aria-hidden />
             <span><strong>Human-approved</strong><small>Automation prepares evidence; people decide.</small></span>
@@ -1570,7 +1783,23 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
                 setActivePage={setActivePage}
               />
             )}
-            {activePage === "Guide" && <Guide />}
+            {activePage === "Guide" && <Guide
+              tenantId={tenantId}
+              roles={session.roles}
+              canWrite={canWrite}
+              canSubmitEvidence={canSubmitEvidence}
+              canGeneratePacks={canGeneratePacks}
+              isAdmin={isAdmin}
+              refreshing={refreshing}
+              loadFailures={loadFailures}
+              catalogueCount={state.securityActionCenter.catalogue_rows.length}
+              customerAssetCount={state.customerEstate.assets.length}
+              collectorCount={state.discovery?.collectors.length || 0}
+              findings={state.findings}
+              decisionPacks={state.decisionPacks}
+              reports={state.reports}
+              setActivePage={setActivePage}
+            />}
             {activePage === "Vulnerability Queue" && (
               <VulnerabilityQueue
                 vulnerabilities={state.vulnerabilities}
@@ -1628,13 +1857,7 @@ export default function App({ auth, api, initialTenantId }: AppProps) {
             {activePage === "Admin" && (
               isAdmin ? <Admin
                 tenantId={tenantId}
-                setTenantId={(value) => {
-                  setTenantId(value);
-                  setLatestPurgePlan(null);
-                  setPurgeConfirm("");
-                  setLatestUatCleanupPlan(null);
-                  setUatCleanupConfirm("");
-                }}
+                setTenantId={handleTenantChange}
                 adminEnvironment={adminEnvironment}
                 setAdminEnvironment={setAdminEnvironment}
                 adminTier={adminTier}

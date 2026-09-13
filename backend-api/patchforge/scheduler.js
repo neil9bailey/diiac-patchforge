@@ -28,6 +28,7 @@ export async function runSchedulerOnce(options = {}) {
     cisa_run: null,
     epss_runs: [],
     work_items: [],
+    incomplete_work_items: [],
     failures: [],
     status: "running",
     boundary: {
@@ -94,6 +95,7 @@ export async function runSchedulerOnce(options = {}) {
     if (cisaExecution.error) {
       result.failures.push(cisaExecution.error);
     }
+    recordIncompleteWork(cisaExecution, cisaWork);
 
     const vulnerabilities = await storage.list("vulnerabilities", tenantId);
     const cves = prioritizedCves(vulnerabilities).slice(0, epssLimit);
@@ -125,23 +127,43 @@ export async function runSchedulerOnce(options = {}) {
       if (epssExecution.error) {
         result.failures.push(epssExecution.error);
       }
+      recordIncompleteWork(epssExecution, epssWork);
     }
 
-    result.completed_at = now().toISOString();
-    result.status = result.failures.length ? "completed_with_warnings" : "completed";
-    await storage.append("automation_checkpoints", {
-      tenant_id: tenantId,
-      checkpoint_id: cycleCheckpointId,
-      cycle_id: cycleId,
-      scheduler_run_id: schedulerRunId,
-      cursor: result.completed_at,
-      completed_at: result.completed_at,
-      result_status: result.status,
-      work_item_count: result.work_items.length,
-      failure_count: result.failures.length,
-      ...result.boundary
-    });
-    await storage.audit(tenantId, "scheduler_source_refresh_completed", {
+    // The priority sample can change between attempts. A previously enqueued
+    // CVE still belongs to this cycle even if it drops out of today's sample.
+    const cycleWork = (await storage.list("automation_work_items", tenantId))
+      .filter((work) => work.cycle_id === cycleId);
+    for (const work of cycleWork) {
+      if (!result.work_items.includes(work.work_id)) result.work_items.push(work.work_id);
+      if (work.status !== "completed" && !result.incomplete_work_items.some((item) => item.work_id === work.work_id)) {
+        recordIncompleteWork({ work_item: work, reason: "cycle_work_not_completed" }, work);
+      }
+    }
+    result.finished_at = now().toISOString();
+    const incomplete = result.incomplete_work_items.length > 0;
+    const feedWarnings = [result.cisa_run, ...result.epss_runs, ...cycleWork.map((work) => work.result)]
+      .some((run) => run?.status === "completed_with_warnings");
+    result.status = incomplete ? "incomplete" : (feedWarnings || result.failures.length ? "completed_with_warnings" : "completed");
+    result.deferred = incomplete;
+    result.completed_at = incomplete ? null : result.finished_at;
+    // A cycle checkpoint is a completion claim. Work leases and failed tasks
+    // must remain retryable in this cycle instead of becoming idempotent skips.
+    if (!incomplete) {
+      await storage.append("automation_checkpoints", {
+        tenant_id: tenantId,
+        checkpoint_id: cycleCheckpointId,
+        cycle_id: cycleId,
+        scheduler_run_id: schedulerRunId,
+        cursor: result.completed_at,
+        completed_at: result.completed_at,
+        result_status: result.status,
+        work_item_count: result.work_items.length,
+        failure_count: result.failures.length,
+        ...result.boundary
+      });
+    }
+    await storage.audit(tenantId, incomplete ? "scheduler_source_refresh_incomplete" : "scheduler_source_refresh_completed", {
       scheduler_run_id: result.scheduler_run_id,
       cycle_id: cycleId,
       status: result.status,
@@ -149,11 +171,23 @@ export async function runSchedulerOnce(options = {}) {
       epss_runs: result.epss_runs.length,
       work_items: result.work_items.length,
       failures: result.failures.length,
+      incomplete_work_items: result.incomplete_work_items,
       ...lineage
     });
     return result;
   } finally {
     await storage.releaseAutomationLease(tenantId, leaseId, leaseOwner, now());
+  }
+
+  function recordIncompleteWork(execution, work) {
+    if (execution.deferred || execution.error || execution.work_item?.status !== "completed") {
+      result.incomplete_work_items.push({
+        work_id: work.work_id,
+        feed_id: work.feed_id,
+        status: execution.work_item?.status || "unknown",
+        reason: execution.reason || execution.error?.error_class || "work_not_completed"
+      });
+    }
   }
 }
 
@@ -176,6 +210,7 @@ export function startScheduler(options = {}) {
         scheduler_run_id: result.scheduler_run_id,
         cisa_records_ingested: result.cisa_run?.records_ingested || 0,
         epss_runs: result.epss_runs.length,
+        incomplete_work_items: result.incomplete_work_items,
         completed_at: result.completed_at
       }));
     } catch (error) {

@@ -1,0 +1,146 @@
+{
+  "validation_mode": "local_schema_compatibility",
+  "reason": "The legacy team_validate_handoff MCP tool is unavailable; workspace instructions permit the same local gate and handoff contract.",
+  "handoffs": [
+    {
+      "handoff_id": "HO-PF-ENTERPRISE-20260913-G0",
+      "from_role": "delivery-lead",
+      "to_role": "ea",
+      "epic_ref": "EPIC-PF-ENTERPRISE-READINESS-20260913",
+      "gate": "G0_intake",
+      "status": "complete",
+      "user_facing": true,
+      "payload": {
+        "summary": "User-authorized enterprise product review and bounded improvements. Success means evidence-backed portfolio positioning, corrected trust claims and workflow bypasses, actionable operator guidance, and verified local changes against latest remote source.",
+        "decisions": ["Use an isolated worktree of origin/main a102f69 to preserve existing user changes.", "Read Azure state without changing the deployment during this review."]
+      },
+      "drift_check": {"aligned_to_epic": true, "design_altering": true, "requires_arb": true},
+      "next_action": "Review corrections to auxiliary API trust and state contracts."
+    },
+    {
+      "handoff_id": "HO-PF-ENTERPRISE-20260913-G1",
+      "from_role": "ea",
+      "to_role": "principal-engineer",
+      "epic_ref": "EPIC-PF-ENTERPRISE-READINESS-20260913",
+      "gate": "G1_architecture",
+      "status": "approved",
+      "user_facing": true,
+      "payload": {
+        "summary": "Approve bounded trust boundary corrections, existing UI guidance refinements and evidence-qualified commercial documentation.",
+        "adr": {"ref": "governance/adr/ADR-PF-ENTERPRISE-001-trust-boundary-corrections.md", "status": "Approved", "approved_by": "Codex acting as Enterprise Architect"},
+        "artifacts": ["governance/adr/ADR-PF-ENTERPRISE-001-trust-boundary-corrections.md"]
+      },
+      "drift_check": {"aligned_to_epic": true, "design_altering": true, "requires_arb": true},
+      "next_action": "Implement in isolated worktree and verify corrected semantics with regression tests."
+    },
+    {
+      "handoff_id": "HO-PF-ENTERPRISE-20260913-G2",
+      "from_role": "principal-engineer",
+      "to_role": "qa-engineer",
+      "epic_ref": "EPIC-PF-ENTERPRISE-READINESS-20260913",
+      "gate": "G2_implementation",
+      "status": "complete",
+      "user_facing": true,
+      "payload": {
+        "summary": "Implemented bounded trust and workflow corrections, scheduler completion/reconciliation fixes, tenant-context UI guards, actionable operator guidance and evidence-qualified enterprise positioning in the isolated worktree.",
+        "artifacts": [
+          "backend-api/enterpriseTrustBoundary.test.mjs",
+          "backend-api/patchforge/automationWork.test.mjs",
+          "Frontend/src/App.test.tsx",
+          "Frontend/e2e/preview-accessibility.spec.ts",
+          "docs/product/PATCHFORGE_ENTERPRISE_REVIEW_2026-09-13.md",
+          "docs/product/PATCHFORGE_ENTERPRISE_OFFER.md"
+        ],
+        "verification": {
+          "commands": [
+            "npm --prefix backend-api test",
+            "npm --prefix Frontend test",
+            "npm --prefix Frontend run build",
+            "git diff --check"
+          ],
+          "result": "pass",
+          "output_summary": "Backend 108/108 and frontend 44/44 passed; production frontend and bundle budgets passed. Independent final product diff audit found no outstanding actionable defects. Initial historical purge fixture was migrated without weakening purge assertions. Browser journey verification is recorded at G3."
+        },
+        "adr": {"ref": "governance/adr/ADR-PF-ENTERPRISE-001-trust-boundary-corrections.md", "status": "Approved"},
+        "decisions": [
+          "No new approval engine, signing service or cross-product connector was introduced.",
+          "No prior tenant response may repopulate a new tenant context; already-sent server actions are not cancelled.",
+          "No commit, push or Azure mutation was performed. Original user changes remain untouched."
+        ]
+      },
+      "drift_check": {"aligned_to_epic": true, "design_altering": true, "requires_arb": true, "notes": "Implements the approved correction ADR and existing operator-journey architecture."},
+      "open_concerns": ["Live acceptance, formal security/compliance and human release remain separate gates."],
+      "next_action": "Complete technical verification, including all desktop/mobile browser journeys, then record the live-UAT boundary."
+    },
+    {
+      "handoff_id": "HO-PF-ENTERPRISE-20260913-G3",
+      "from_role": "qa-engineer",
+      "to_role": "uat-lead",
+      "epic_ref": "EPIC-PF-ENTERPRISE-READINESS-20260913",
+      "gate": "G3_verification",
+      "status": "complete",
+      "user_facing": true,
+      "payload": {
+        "summary": "Local technical verification passed on the final product diff. Browser checks found and drove correction of keyboard access and mobile overflow in Reports; original failed runs are retained in the validation narrative.",
+        "artifacts": [
+          "docs/validation/PATCHFORGE_ENTERPRISE_REVIEW_VALIDATION_2026-09-13.md",
+          "Frontend/e2e/preview-accessibility.spec.ts",
+          "Frontend/src/styles.css",
+          "Frontend/src/areas/GovernanceAreas.tsx"
+        ],
+        "verification": {
+          "commands": [
+            "npm --prefix backend-api test",
+            "npm --prefix Frontend test",
+            "npm --prefix Frontend run build",
+            "npm --prefix Frontend run test:e2e",
+            "npm run collector:test",
+            "python -m pytest -q --basetemp C:\\Users\\Public\\patchforge-review-pytest-20260913",
+            "npm --prefix Frontend audit --audit-level=moderate",
+            "npm --prefix backend-api audit --audit-level=moderate",
+            "git diff --check"
+          ],
+          "result": "pass",
+          "output_summary": "Backend 108, frontend 44, Python 53, collector 9 and browser journeys 4 passed. Final frontend suite/build were repeated after Reports accessibility changes. Bundle budgets passed; npm audits returned zero findings. Independent read-only product and documentation reviews completed. Direct-only Python audits returned no known vulnerabilities; full transitive Python audit did not complete. These checks do not clear G4 or G5."
+        },
+        "adr": {"ref": "governance/adr/ADR-PF-ENTERPRISE-001-trust-boundary-corrections.md", "status": "Approved"}
+      },
+      "drift_check": {"aligned_to_epic": true, "design_altering": true, "requires_arb": true, "notes": "No change to production topology, authentication, signing implementation or human-only authority."},
+      "open_concerns": ["Focused browser accessibility coverage is not whole-product accessibility certification.", "Local and mock-backed checks are not live end-user acceptance."],
+      "next_action": "Bind a release candidate to the target deployment and obtain signed-in role and exact-artifact end-user evidence."
+    },
+    {
+      "handoff_id": "HO-PF-ENTERPRISE-20260913-G4",
+      "from_role": "uat-lead",
+      "to_role": "human",
+      "epic_ref": "EPIC-PF-ENTERPRISE-READINESS-20260913",
+      "gate": "G4_uat",
+      "status": "blocked",
+      "user_facing": true,
+      "payload": {
+        "summary": "Enterprise review and bounded local improvements are delivered, but live acceptance cannot be cleared. Azure remains configured with the July image tag, this candidate was not deployed, and the live sign-in reached a password prompt without completing an authenticated session.",
+        "artifacts": [
+          "docs/product/PATCHFORGE_ENTERPRISE_REVIEW_2026-09-13.md",
+          "docs/product/PATCHFORGE_ENTERPRISE_OFFER.md",
+          "docs/validation/PATCHFORGE_ENTERPRISE_REVIEW_VALIDATION_2026-09-13.md"
+        ],
+        "verification": {"result": "partial", "output_summary": "Read-only live availability and unauthenticated rejection checks passed. Local real-API Guide/Reports inspection and mock-backed browser journeys passed. No new signed-in customer journey or production report-byte verification was completed."},
+        "uat": {
+          "evidence": "synthetic_only",
+          "sessions": ["Local development-preview Guide-to-Reports inspection with isolated JSON storage", "Four mock-backed desktop/mobile browser journeys"],
+          "human_session_outstanding": true
+        },
+        "adr": {"ref": "governance/adr/ADR-PF-ENTERPRISE-001-trust-boundary-corrections.md", "status": "Approved"},
+        "decisions": ["G4, G5 and G6 are not cleared. Paid pilot admission remains conditional; general availability, legal approval and service commitments are not asserted."]
+      },
+      "drift_check": {"aligned_to_epic": true, "design_altering": true, "requires_arb": true, "notes": "No production mutation or expansion into a shared-MSP entitlement model was undertaken."},
+      "open_concerns": [
+        "Customer deployment and role boundaries require live acceptance.",
+        "Scheduler continuity, exact report artifacts, restore/retention and collector lifecycle need the evidence specified by the offer.",
+        "Formal security/compliance review and a named human release decision remain outstanding."
+      ],
+      "next_action": "Plan the controlled candidate release and accountable live acceptance session, then complete security and commercial admission evidence before making customer commitments."
+    }
+  ],
+  "completed_gates": ["G0_intake", "G1_architecture", "G2_implementation", "G3_verification"]
+}

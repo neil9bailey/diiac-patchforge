@@ -848,60 +848,92 @@ export function CommandCenter({
   );
 }
 
-export function Guide() {
-  const workflow = [
-    ["1", "Agent-led intake", "MCP agents, Mythos, SRA, scanners, and advisory feeds submit real findings through protected intake paths. Manual entry is the exception path."],
-    ["2", "Evidence binding", "PatchForge normalises the finding, binds source provenance, and keeps every agent output source-bound pending review."],
-    ["3", "Exposure mapping", "Assets and services are linked so leading-class findings are governed against operational reality, not severity alone."],
-    ["4", "Human review", "The operator accepts, rejects, or supersedes sources and approves the decision. Agent output never approves risk or closes hard gates alone."],
-    ["5", "Signed decision", "The runtime compiles readiness, blockers, and final posture into a signed pack for CAB, board, customer, audit, or service-owner review."]
+export function Guide({ tenantId, roles, canWrite, canSubmitEvidence, canGeneratePacks, isAdmin, refreshing, loadFailures, catalogueCount, customerAssetCount, collectorCount, findings, decisionPacks, reports, setActivePage }: {
+  tenantId: string;
+  roles: string[];
+  canWrite: boolean;
+  canSubmitEvidence: boolean;
+  canGeneratePacks: boolean;
+  isAdmin: boolean;
+  refreshing: boolean;
+  loadFailures: Array<{ key: string; label: string }>;
+  catalogueCount: number;
+  customerAssetCount: number;
+  collectorCount: number;
+  findings: FindingIntelligence[];
+  decisionPacks: DecisionPackRecord[];
+  reports: ReportCatalogItem[];
+  setActivePage: (page: PageKey) => void;
+}) {
+  const verifiedPacks = decisionPacks.filter((pack) => pack.verification?.verified);
+  const steps: Array<{ title: string; keys: string[]; observation: string; detail: string; owner: string; action: string; page: PageKey }> = [
+    { title: "Find the advisory", keys: ["securityActionCenter"], observation: catalogueCount ? `${catalogueCount} catalogue records available` : "No catalogue records loaded", detail: "Search a CVE, vendor, or product and select the relevant advisory. Inspect its source and currency before using it for a decision.", owner: canWrite ? "You can refresh sources and submit findings." : "Ask a Triage Analyst, Security Lead, or Admin to submit or refresh records.", action: "Browse patch and CVE catalogue", page: "Patch & CVE Catalogue" },
+    { title: "Confirm the customer estate", keys: ["customerEstate", "discovery"], observation: `${customerAssetCount} customer assets / ${collectorCount} registered collectors`, detail: "Describe an asset or configure a collector, then confirm product, version, exposure, owner, and supporting evidence. Registration alone does not confirm a successful import.", owner: canWrite ? "You can capture assets and configure collector intake." : "Ask a Triage Analyst, Security Lead, or Admin to capture customer assets.", action: "Set up customer estate", page: "Customer Estate" },
+    { title: "Review evidence and decisions", keys: ["findings"], observation: findings.length ? `${findings.length} analysed findings available` : "No analysed findings available", detail: "Open a finding, inspect evidence gaps, and submit source references. The review queue shows who can accept, reject, or reopen each evidence class.", owner: canSubmitEvidence ? "You can submit evidence. Review permission depends on your role and the evidence class." : "You can inspect evidence; request contributions from the accountable service owner or security team.", action: "Open evidence review", page: "Review & Approve" },
+    { title: "Prepare a verified decision pack", keys: ["decisionPacks"], observation: verifiedPacks.length ? `${verifiedPacks.length} verified packs available` : "No verified decision pack available", detail: "Generate a pack for the selected finding, check its verification and readiness, and inspect unresolved blockers. A verified signature is separate from evidence acceptance and human approval.", owner: canGeneratePacks ? "Your role can generate signed packs." : "A Security Lead, CAB Approver, or Admin must generate the pack.", action: "Open decision packs and reports", page: "Reports" },
+    { title: "Choose the audience and export", keys: ["reports"], observation: reports.length ? `${reports.length} report templates available` : "No report templates available", detail: "Select the exact verified pack in Reports, inspect checks bound to that pack, and download DOCX, PDF, or the signed ZIP. Historical packs preserve their original context.", owner: "Share the output with the accountable reviewer. Report creation does not issue approval or deploy a patch.", action: "Choose a stakeholder report", page: "Reports" }
   ];
-
-  const intelligence = [
-    "MCP Agent Intelligence researches, correlates, challenges, and enriches findings before human review.",
-    "Mythos and other AGI-agent findings are accepted as leading-class intelligence inputs, not unreviewed truth.",
-    "Agents can raise attention, expose contradictions, map likely exposure, and draft decision context.",
-    "Final governance comes from reviewed evidence, deterministic policy, signed packs, and accountable human approval."
-  ];
-
-  const humanModel = [
-    ["Human input", "Review, approve, reject, assign owner, record risk rationale"],
-    ["Agent input", "Research, correlate, source-map, flag contradiction, propose posture"],
-    ["Runtime input", "Apply evidence model, calculate readiness, preserve blockers, sign pack"],
-    ["Boundary", "No exploit generation, no patch deployment, no autonomous risk acceptance"]
-  ];
-
+  const reportPurposes: Record<string, string> = {
+    customer_patch_governance_pack: "Customer scope, impact, evidence gaps, and recommended next actions.",
+    board_vulnerability_remediation_summary: "Executive risk, decision required, and outstanding assurance.",
+    cab_patch_decision_report: "Change decision, operational impact, prerequisites, and rollback considerations.",
+    technical_evidence_appendix: "Source references and technical evidence for detailed review."
+  };
   return (
     <>
-      <section className="wide-band">
+      <section className="wide-band" aria-label="Getting started context">
         <div className="section-title">
-          <h3>Operational Walkthrough</h3>
-          <span className="pill trust">Real data only</span>
+          <div><p className="eyebrow">PatchForge by DIIaC</p><h3>From advisory to accountable decision</h3></div>
+          <span className="pill steel">Tenant: {tenantId}</span>
         </div>
+        <p className="muted-copy">Use PatchForge to connect vulnerability intelligence to your estate, record the evidence behind a decision, and prepare the right report for each stakeholder.</p>
+        <p><strong>Your roles:</strong> {roles.length ? roles.map((role) => humanize(role.replace(/^PatchForge\./, ""))).join(", ") : "No PatchForge role reported"}. Permissions are enforced by the service.</p>
+        <p className="boundary-copy">The observations below describe the current tenant data. They are not an onboarding certification, evidence approval, or production readiness assessment.</p>
+      </section>
+
+      <section className="wide-band" aria-label="Tenant workflow checklist">
+        <div className="section-title"><h3>Your next steps</h3><span className="pill teal">Open any step to continue</span></div>
         <div className="guide-flow">
-          {workflow.map(([step, title, detail]) => (
-            <article className="guide-step" key={step}>
-              <strong>{step}</strong>
-              <div>
-                <h4>{title}</h4>
-                <p>{detail}</p>
-              </div>
-            </article>
-          ))}
+          {steps.map((step, index) => {
+            const failures = loadFailures.filter((failure) => step.keys.includes(failure.key));
+            const observation = failures.length ? `Unavailable: ${failures.map((failure) => failure.label).join(", ")}` : refreshing ? "Checking current tenant data…" : step.observation;
+            return (
+              <article className="guide-step" key={step.title} aria-label={step.title}>
+                <strong>{index + 1}</strong>
+                <div>
+                  <h4>{step.title}</h4>
+                  <span className={`pill ${failures.length ? "amber" : "steel"}`}>{observation}</span>
+                  <p>{step.detail}</p><p><strong>Responsibility:</strong> {step.owner}</p>
+                  {failures.length > 0 && <p className="boundary-copy">Retry the unavailable source above before assessing this step; retained data may be out of date.</p>}
+                  <button type="button" className="action-button secondary-action" onClick={() => setActivePage(step.page)}>{step.action}<ChevronRight size={16} aria-hidden /></button>
+                </div>
+              </article>
+            );
+          })}
         </div>
       </section>
 
       <div className="split-grid">
-        <section className="data-band">
-          <h3>MCP Agent Intelligence</h3>
-          <div className="line-stack">
-            {intelligence.map((line) => <p key={line}>{line}</p>)}
-          </div>
+        <section className="data-band" aria-label="Report purpose guide">
+          <h3>Which report do I need?</h3>
+          {loadFailures.some((failure) => failure.key === "reports") ? <p>Report catalogue unavailable. Retry the source above to see the available outputs.</p> : refreshing ? <p>Checking available reports…</p> : reports.length ? reports.map((report) => (
+            <article className="guide-fact" key={report.report_type}>
+              <h4>{report.title}</h4><p><strong>Audience:</strong> {report.audience}</p>
+              <p>{reportPurposes[report.report_type] || "Inspect the report catalogue for its audience and supported output formats."}</p>
+            </article>
+          )) : <p>No report templates are available for this tenant. Ask your administrator to check the report catalogue.</p>}
+          <button type="button" className="action-button secondary-action" onClick={() => setActivePage("Reports")}>Open report downloads<FileText size={16} aria-hidden /></button>
         </section>
         <section className="data-band">
-          <h3>Minimal Human Input Model</h3>
+          <h3>Understand the trust states</h3>
           <div className="guide-facts">
-            {humanModel.map(([label, value]) => (
+            {[
+              ["Source-bound", "The record identifies its source. A reviewer still needs to establish relevance and reliability."],
+              ["Accepted evidence", "An authorised reviewer accepted evidence for a specific class and finding. Check expiry and remaining gaps."],
+              ["Verified pack", "The service verified the pack signature and integrity. This does not mean every evidence gap is closed."],
+              ["Report quality checks", "Checks apply only to the exact pack identified in Reports. They do not establish human approval."],
+              ["Human approval", "Follow the recorded approval state and your organisation's accountable decision process. AI guidance is advisory."]
+            ].map(([label, value]) => (
               <article className="guide-fact" key={label}>
                 <strong>{label}</strong>
                 <p>{value}</p>
@@ -910,6 +942,12 @@ export function Guide() {
           </div>
         </section>
       </div>
+      <section className="wide-band">
+        <h3>Need operational help?</h3>
+        <p>{isAdmin ? "Use Admin to inspect service health and tenant settings. Check source failures before repeating an operation." : "Ask your tenant administrator to check service health or assign the role needed for your work. Include the tenant, finding or pack ID, and the error shown; never include credentials."}</p>
+        {isAdmin && <button type="button" className="action-button secondary-action" onClick={() => setActivePage("Admin")}>Open system health<SlidersHorizontal size={16} aria-hidden /></button>}
+        <p className="boundary-copy">PatchForge supports the decision and evidence workflow. It does not deploy patches, issue autonomous approval, or accept risk on your behalf.</p>
+      </section>
     </>
   );
 }

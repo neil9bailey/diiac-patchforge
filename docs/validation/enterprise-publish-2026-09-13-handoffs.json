@@ -1,0 +1,24 @@
+{
+  "validation_mode": "local_schema_compatibility",
+  "reason": "The legacy team_validate_handoff tool is unavailable; the workspace permits the same local handoff contract.",
+  "handoffs": [
+    {
+      "handoff_id": "HO-PF-20260913-PUBLISH-G0",
+      "from_role": "delivery-lead",
+      "to_role": "principal-platform",
+      "epic_ref": "EPIC-PF-ENTERPRISE-READINESS-20260913",
+      "gate": "G0_intake",
+      "status": "complete",
+      "user_facing": true,
+      "payload": {
+        "summary": "User requested repository publishing/synchronization, Azure update and practical acceptance tests. Continue through protected repository and release workflows, preserve original edits/evidence, and report any gate that cannot be cleared.",
+        "artifacts": ["docs/release/PATCHFORGE_ENTERPRISE_PUBLISH_2026-09-13.md", "docs/validation/PATCHFORGE_ENTERPRISE_USER_ACCEPTANCE_2026-09-13.md"],
+        "decisions": ["Do not bypass protected branch or environment approval.", "Do not mix scheduler/metadata configuration changes into image-only release authorization.", "Do not claim live UAT, commercial readiness or release success without actual evidence."]
+      },
+      "drift_check": {"aligned_to_epic": true, "design_altering": false, "requires_arb": false, "notes": "Publish the already reviewed product diff. Any additional topology or configuration contract change requires its own reviewed plan."},
+      "open_concerns": ["G4 live UAT remains outstanding.", "Current Azure publisher is image-only; scheduler continuity and release metadata remain separate configuration scope."],
+      "next_action": "Preserve absorbed local edits, commit/push candidate and pass remote checks; execute Azure publication only when its prerequisites and protected authorization are satisfied."
+    }
+  ],
+  "completed_gates": ["G0_intake"]
+}
